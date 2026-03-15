@@ -324,6 +324,24 @@ export function subscribeToDocuments(
   });
 }
 
+// --- Generated Documents ---
+
+export async function addGeneratedDocument(data: {
+  projectId: string;
+  name: string;
+  type: string;
+  phase: string;
+  templateId: string;
+  generatedAt: string;
+}): Promise<string> {
+  const docRef = push(ref(db, `documents/${data.projectId}`));
+  await set(docRef, {
+    ...data,
+    date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+  });
+  return docRef.key!;
+}
+
 // --- Photos ---
 
 export async function addPhoto(data: Omit<PhotoData, "id">): Promise<string> {
