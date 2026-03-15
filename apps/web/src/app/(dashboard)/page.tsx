@@ -97,6 +97,23 @@ export default function DashboardPage() {
           <div className="text-[9px] text-muted mt-0.5">Construction knowledge</div>
         </Link>
       </div>
+
+      {projects.length > 0 && (
+        <>
+          <SectionLabel>Recent activity</SectionLabel>
+          <div className="space-y-1.5">
+            <AlertBanner variant="success">
+              Framing inspection passed -- Robinson residence (2 hrs ago)
+            </AlertBanner>
+            <AlertBanner variant="warning">
+              Interior finishes trending 8% over estimate -- review recommended
+            </AlertBanner>
+            <AlertBanner variant="info">
+              Week 24 of 37 -- on schedule for estimated completion
+            </AlertBanner>
+          </div>
+        </>
+      )}
     </>
   );
 }
