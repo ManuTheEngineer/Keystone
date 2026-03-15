@@ -347,6 +347,97 @@ export function subscribeToPhotos(
   });
 }
 
+// --- Inspection Results ---
+
+export interface InspectionResultData {
+  id?: string;
+  projectId: string;
+  inspectionId: string;
+  phase: string;
+  completedItems: boolean[];
+  passed: boolean;
+  notes?: string;
+  photoIds?: string[];
+  completedAt?: string;
+  updatedAt: string;
+}
+
+export async function addInspectionResult(data: Omit<InspectionResultData, "id">): Promise<string> {
+  const resultRef = push(ref(db, `inspectionResults/${data.projectId}`));
+  await set(resultRef, data);
+  return resultRef.key!;
+}
+
+export function subscribeToInspectionResults(
+  projectId: string,
+  callback: (results: InspectionResultData[]) => void
+): Unsubscribe {
+  return onValue(ref(db, `inspectionResults/${projectId}`), (snapshot) => {
+    const results: InspectionResultData[] = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        results.push({ id: child.key!, ...child.val() });
+      });
+    }
+    callback(results);
+  });
+}
+
+export async function updateInspectionResult(
+  projectId: string,
+  resultId: string,
+  data: Partial<InspectionResultData>
+): Promise<void> {
+  await update(ref(db, `inspectionResults/${projectId}/${resultId}`), {
+    ...data,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+// --- Punch List Items ---
+
+export interface PunchListItemData {
+  id?: string;
+  projectId: string;
+  description: string;
+  trade: string;
+  severity: "critical" | "major" | "minor";
+  status: "open" | "in-progress" | "resolved";
+  notes?: string;
+  photoIds?: string[];
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+export async function addPunchListItem(data: Omit<PunchListItemData, "id" | "createdAt">): Promise<string> {
+  const itemRef = push(ref(db, `punchListItems/${data.projectId}`));
+  await set(itemRef, { ...data, createdAt: new Date().toISOString() });
+  return itemRef.key!;
+}
+
+export function subscribeToPunchListItems(
+  projectId: string,
+  callback: (items: PunchListItemData[]) => void
+): Unsubscribe {
+  return onValue(ref(db, `punchListItems/${projectId}`), (snapshot) => {
+    const items: PunchListItemData[] = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        items.push({ id: child.key!, ...child.val() });
+      });
+    }
+    callback(items);
+  });
+}
+
+export async function updatePunchListItem(
+  projectId: string,
+  itemId: string,
+  data: Partial<PunchListItemData>
+): Promise<void> {
+  await update(ref(db, `punchListItems/${projectId}/${itemId}`), data);
+}
+
 // --- Seed demo data ---
 
 export async function seedDemoProject(userId: string): Promise<string> {

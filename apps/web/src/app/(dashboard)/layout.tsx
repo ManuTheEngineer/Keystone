@@ -123,6 +123,8 @@ function getActiveSectionFromPath(pathname: string): string {
   if (pathname.includes("/documents")) return "documents";
   if (pathname.includes("/photos")) return "photos";
   if (pathname.includes("/daily-log")) return "daily-log";
+  if (pathname.includes("/inspections")) return "inspections";
+  if (pathname.includes("/punch-list")) return "punch-list";
   if (pathname.includes("/ai-assistant")) return "ai-assistant";
   if (pathname.includes("/tasks")) return "tasks";
   return "dashboard";
@@ -139,6 +141,8 @@ function sectionToRoute(section: string, currentProjectId: string | null): strin
     documents: `/project/${pid}/documents`,
     photos: `/project/${pid}/photos`,
     "daily-log": `/project/${pid}/daily-log`,
+    inspections: `/project/${pid}/inspections`,
+    "punch-list": `/project/${pid}/punch-list`,
     "ai-assistant": `/project/${pid}/ai-assistant`,
   };
   if (projectRoutes[section]) return projectRoutes[section];

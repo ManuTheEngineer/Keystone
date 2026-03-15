@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
-import { subscribeToContacts, addContact, type ContactData } from "@/lib/services/project-service";
+import {
+  subscribeToContacts,
+  subscribeToProject,
+  addContact,
+  type ContactData,
+  type ProjectData,
+} from "@/lib/services/project-service";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
-import { Plus, Phone, Mail } from "lucide-react";
+import { Plus, Phone, Mail, Wrench, AlertCircle } from "lucide-react";
+import { getTradesForPhase, PHASE_ORDER, PHASE_NAMES } from "@keystone/market-data";
+import type { Market, ProjectPhase, TradeDefinition } from "@keystone/market-data";
 
 const COLORS = [
   { bg: "var(--color-info-bg)", text: "var(--color-info)" },
@@ -15,14 +23,98 @@ const COLORS = [
   { bg: "var(--color-danger-bg)", text: "var(--color-danger)" },
 ];
 
+function TradeRequirementList({
+  trades,
+  phaseName,
+  contacts,
+}: {
+  trades: TradeDefinition[];
+  phaseName: string;
+  contacts: ContactData[];
+}) {
+  if (trades.length === 0) {
+    return (
+      <Card padding="md" className="text-center mb-4">
+        <p className="text-[12px] text-muted">
+          No specific trades required for the {phaseName} phase.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5 mb-4">
+      {trades.map((trade) => {
+        const matchedContact = contacts.find(
+          (c) =>
+            c.role?.toLowerCase() === trade.name.toLowerCase() ||
+            c.role?.toLowerCase() === trade.localName?.toLowerCase()
+        );
+        const hasContact = !!matchedContact;
+
+        return (
+          <div
+            key={trade.id}
+            className={`flex items-center gap-3 p-3 border rounded-[var(--radius)] transition-all ${
+              hasContact
+                ? "border-emerald-200 bg-emerald-50"
+                : "border-warning bg-warning-bg"
+            }`}
+          >
+            <div
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                hasContact
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-warning-bg text-warning"
+              }`}
+            >
+              <Wrench size={14} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[12px] font-medium text-earth">
+                {trade.name}
+                {trade.localName && (
+                  <span className="text-muted font-normal ml-1">({trade.localName})</span>
+                )}
+              </div>
+              <div className="text-[10px] text-muted mt-0.5 line-clamp-1">
+                {trade.description}
+              </div>
+              {trade.licensingRequired && (
+                <div className="flex items-center gap-1 mt-0.5">
+                  <AlertCircle size={9} className="text-warning shrink-0" />
+                  <span className="text-[9px] text-warning">
+                    License required{trade.licensingNotes ? `: ${trade.licensingNotes}` : ""}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="text-right shrink-0">
+              {hasContact ? (
+                <span className="text-[10px] text-emerald-700 font-medium">
+                  {matchedContact.name}
+                </span>
+              ) : (
+                <span className="text-[10px] text-warning font-medium">Needed</span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function TeamClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const projectId = params.id as string;
   const [contacts, setContacts] = useState<ContactData[]>([]);
+  const [project, setProject] = useState<ProjectData | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
+  const [customRole, setCustomRole] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [rating, setRating] = useState("5");
@@ -34,28 +126,55 @@ export function TeamClient() {
   }, [projectId]);
 
   useEffect(() => {
+    const unsub = subscribeToProject(projectId, setProject);
+    return unsub;
+  }, [projectId]);
+
+  useEffect(() => {
     setTopbar("Team", `${contacts.length} contacts`, "info");
   }, [setTopbar, contacts.length]);
+
+  const market = (project?.market ?? "USA") as Market;
+  const currentPhaseKey: ProjectPhase = PHASE_ORDER[project?.currentPhase ?? 0];
+
+  // Get all trades for all phases to populate the role dropdown
+  const allTrades = useMemo(() => {
+    const tradeSet = new Map<string, TradeDefinition>();
+    PHASE_ORDER.forEach((phase) => {
+      const trades = getTradesForPhase(market, phase);
+      trades.forEach((t) => tradeSet.set(t.id, t));
+    });
+    return Array.from(tradeSet.values());
+  }, [market]);
+
+  // Get trades needed for the current phase
+  const currentPhaseTrades = useMemo(() => {
+    return getTradesForPhase(market, currentPhaseKey);
+  }, [market, currentPhaseKey]);
+
+  const resolvedRole = role === "__other__" ? customRole.trim() : role;
 
   async function handleSave() {
     if (!name.trim()) return;
     setSaving(true);
     try {
       const words = name.trim().split(/\s+/);
-      const initials = words.length >= 2
-        ? (words[0][0] + words[1][0]).toUpperCase()
-        : words[0].slice(0, 2).toUpperCase();
+      const initials =
+        words.length >= 2
+          ? (words[0][0] + words[1][0]).toUpperCase()
+          : words[0].slice(0, 2).toUpperCase();
       await addContact({
         projectId,
         name: name.trim(),
         initials,
-        role: role.trim(),
+        role: resolvedRole,
         rating: Number(rating),
         phone: phone.trim() || undefined,
         email: email.trim() || undefined,
       });
       setName("");
       setRole("");
+      setCustomRole("");
       setPhone("");
       setEmail("");
       setRating("5");
@@ -67,6 +186,19 @@ export function TeamClient() {
 
   return (
     <>
+      {/* Trades needed this phase */}
+      <div className="mb-2">
+        <SectionLabel>
+          Trades needed this phase ({PHASE_NAMES[currentPhaseKey]})
+        </SectionLabel>
+      </div>
+      <TradeRequirementList
+        trades={currentPhaseTrades}
+        phaseName={PHASE_NAMES[currentPhaseKey]}
+        contacts={contacts}
+      />
+
+      {/* Contacts section */}
       <div className="flex items-center justify-between">
         <SectionLabel>Active contractors and professionals</SectionLabel>
         <span
@@ -92,13 +224,34 @@ export function TeamClient() {
             </div>
             <div>
               <label className="block text-[11px] text-muted font-medium mb-1">Role</label>
-              <input
-                type="text"
+              <select
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
-                placeholder="e.g. Electrician, Architect"
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
-              />
+                onChange={(e) => {
+                  setRole(e.target.value);
+                  if (e.target.value !== "__other__") {
+                    setCustomRole("");
+                  }
+                }}
+                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+              >
+                <option value="">Select a role...</option>
+                {allTrades.map((trade) => (
+                  <option key={trade.id} value={trade.name}>
+                    {trade.name}
+                    {trade.localName ? ` (${trade.localName})` : ""}
+                  </option>
+                ))}
+                <option value="__other__">Other (custom)</option>
+              </select>
+              {role === "__other__" && (
+                <input
+                  type="text"
+                  value={customRole}
+                  onChange={(e) => setCustomRole(e.target.value)}
+                  placeholder="Enter custom role"
+                  className="mt-2 px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                />
+              )}
             </div>
             <div>
               <label className="block text-[11px] text-muted font-medium mb-1">Phone</label>
@@ -121,7 +274,9 @@ export function TeamClient() {
               />
             </div>
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">Rating (1-5)</label>
+              <label className="block text-[11px] text-muted font-medium mb-1">
+                Rating (1-5)
+              </label>
               <input
                 type="number"
                 min={1}
@@ -151,7 +306,9 @@ export function TeamClient() {
       )}
       {contacts.length === 0 ? (
         <Card padding="md" className="text-center">
-          <p className="text-[12px] text-muted">No team members yet. Add contractors and professionals as you build your team.</p>
+          <p className="text-[12px] text-muted">
+            No team members yet. Add contractors and professionals as you build your team.
+          </p>
         </Card>
       ) : (
         <div className="space-y-1.5">

@@ -1,15 +1,35 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import { subscribeToProject, type ProjectData } from "@/lib/services/project-service";
 import { Send, Loader2 } from "lucide-react";
+import {
+  getMarketData,
+  getPhaseDefinition,
+  getCostBenchmarks,
+  formatCurrencyCompact,
+  PHASE_ORDER,
+} from "@keystone/market-data";
+import type { Market, ProjectPhase } from "@keystone/market-data";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
+
+const USA_SUGGESTIONS = [
+  "How is my budget tracking?",
+  "What should I check before rough-in inspection?",
+  "Draft a message to my contractor about a delay",
+];
+
+const TOGO_SUGGESTIONS = [
+  "What should I check before the rebar pour?",
+  "How does the titre foncier process work?",
+  "What's a fair daily rate for a macon in Lome?",
+];
 
 export function AIAssistantClient() {
   const params = useParams();
@@ -33,6 +53,63 @@ export function AIAssistantClient() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  const market = (project?.market ?? "USA") as Market;
+  const isUSAMarket = market === "USA" || market === "GHANA";
+  const suggestions = isUSAMarket ? USA_SUGGESTIONS : TOGO_SUGGESTIONS;
+
+  // Build enriched project context with market data
+  const enrichedContext = useMemo(() => {
+    if (!project) return undefined;
+
+    const marketData = getMarketData(market);
+    const currentPhaseKey: ProjectPhase = PHASE_ORDER[project.currentPhase ?? 0];
+    const phaseDef = getPhaseDefinition(market, currentPhaseKey);
+    const benchmarks = getCostBenchmarks(market);
+
+    // Build construction method string
+    const constructionMethod = phaseDef?.constructionMethod ?? "Unknown";
+
+    // Build milestone summary for current phase
+    const milestonesSummary = phaseDef
+      ? phaseDef.milestones.map((m) => `- ${m.name}: ${m.description}`).join("\n")
+      : "No milestones defined";
+
+    // Build cost benchmark summary (top 5 by midRange)
+    const topBenchmarks = [...benchmarks]
+      .sort((a, b) => b.midRange - a.midRange)
+      .slice(0, 5);
+    const costSummary = topBenchmarks
+      .map(
+        (b) =>
+          `- ${b.category}${b.subcategory ? ` / ${b.subcategory}` : ""}: ${formatCurrencyCompact(
+            b.midRange,
+            marketData.currency
+          )}/${b.unit}`
+      )
+      .join("\n");
+
+    const lines = [
+      `Project: ${project.name}`,
+      `Market: ${project.market}`,
+      `Construction method: ${constructionMethod}`,
+      `Currency: ${marketData.currency.code} (${marketData.currency.symbol})`,
+      `Phase: ${project.phaseName} (${currentPhaseKey})`,
+      `Budget: ${project.totalBudget} ${project.currency}`,
+      `Spent: ${project.totalSpent} ${project.currency}`,
+      `Progress: ${project.progress}%`,
+      `Week: ${project.currentWeek} of ${project.totalWeeks}`,
+      `Sub-phase: ${project.subPhase}`,
+      "",
+      "Current phase milestones:",
+      milestonesSummary,
+      "",
+      "Top cost benchmarks (per unit):",
+      costSummary,
+    ];
+
+    return lines.join("\n");
+  }, [project, market]);
 
   async function handleSend() {
     const text = input.trim();
@@ -59,16 +136,12 @@ export function AIAssistantClient() {
         return;
       }
 
-      const projectContext = project
-        ? `Project: ${project.name}\nMarket: ${project.market}\nPhase: ${project.phaseName}\nBudget: ${project.totalBudget} ${project.currency}\nSpent: ${project.totalSpent} ${project.currency}\nProgress: ${project.progress}%\nWeek: ${project.currentWeek} of ${project.totalWeeks}\nSub-phase: ${project.subPhase}`
-        : undefined;
-
       const res = await fetch(aiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: newMessages,
-          projectContext,
+          projectContext: enrichedContext,
         }),
       });
 
@@ -110,11 +183,7 @@ export function AIAssistantClient() {
               Ask about your project, construction methods, costs, regulations, or get help drafting messages.
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
-              {[
-                "How is my budget tracking?",
-                "What should I check before rough-in inspection?",
-                "Draft a message to my contractor about a delay",
-              ].map((suggestion) => (
+              {suggestions.map((suggestion) => (
                 <button
                   key={suggestion}
                   onClick={() => setInput(suggestion)}
