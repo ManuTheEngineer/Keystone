@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy": "npm run build && firebase deploy --only hosting",
+    "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",

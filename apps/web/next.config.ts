@@ -1,22 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "export",
   reactStrictMode: true,
-  headers: async () => [
-    {
-      source: "/sw.js",
-      headers: [
-        {
-          key: "Cache-Control",
-          value: "public, max-age=0, must-revalidate",
-        },
-        {
-          key: "Service-Worker-Allowed",
-          value: "/",
-        },
-      ],
-    },
-  ],
+  images: {
+    unoptimized: true,
+  },
+  trailingSlash: true,
 };
 
 export default nextConfig;
