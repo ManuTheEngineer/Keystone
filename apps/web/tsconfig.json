@@ -20,6 +20,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
+      "@keystone/core": ["../../packages/core/src"],
+      "@keystone/core/*": ["../../packages/core/src/*"],
       "@keystone/market-data": ["../../packages/market-data/src"],
       "@keystone/market-data/*": ["../../packages/market-data/src/*"]
     }

@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
-  transpilePackages: ["@keystone/market-data"],
+  transpilePackages: ["@keystone/core", "@keystone/market-data"],
   turbopack: {
     root: path.resolve(__dirname, "../.."),
   },
