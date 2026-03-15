@@ -13,6 +13,8 @@ import {
   FileText,
   Image,
   ClipboardList,
+  ClipboardCheck,
+  ListChecks,
   HelpCircle,
   X,
   LogOut,
@@ -39,6 +41,8 @@ const projectNav: NavItem[] = [
   { id: "documents", label: "Documents", icon: <FileText size={16} /> },
   { id: "photos", label: "Photos", icon: <Image size={16} /> },
   { id: "daily-log", label: "Daily log", icon: <ClipboardList size={16} /> },
+  { id: "inspections", label: "Inspections", icon: <ClipboardCheck size={16} /> },
+  { id: "punch-list", label: "Punch list", icon: <ListChecks size={16} /> },
   { id: "ai-assistant", label: "AI assistant", icon: <HelpCircle size={16} /> },
 ];
 

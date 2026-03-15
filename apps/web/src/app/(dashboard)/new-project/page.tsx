@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTopbar } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { createProject, type Market, type BuildPurpose, type PropertyType } from "@/lib/services/project-service";
-import { Home, Building2, TrendingUp } from "lucide-react";
+import { Home, Building2, TrendingUp, Info } from "lucide-react";
+import {
+  getMarketData,
+  getCostBenchmarks,
+  formatCurrencyCompact,
+  PHASE_ORDER,
+} from "@keystone/market-data";
+import type { Market as MarketType } from "@keystone/market-data";
 
 interface WizardOption {
   id: string;
@@ -83,7 +90,9 @@ const STEPS = [
 const MARKET_MAP: Record<string, Market> = { usa: "USA", togo: "TOGO", ghana: "GHANA", benin: "BENIN" };
 const PURPOSE_MAP: Record<string, BuildPurpose> = { occupy: "OCCUPY", rent: "RENT", sell: "SELL" };
 const PROPERTY_MAP: Record<string, PropertyType> = { sfh: "SFH", duplex: "DUPLEX", triplex: "TRIPLEX", fourplex: "FOURPLEX", apartment: "APARTMENT" };
-const CURRENCY_MAP: Record<string, string> = { usa: "USD", togo: "XOF", ghana: "GHS", benin: "XOF" };
+
+const SIZE_SQFT_USA: Record<string, number> = { small: 1200, medium: 2000, large: 3200, xlarge: 4500 };
+const SIZE_SQM_TOGO: Record<string, number> = { small: 110, medium: 185, large: 300, xlarge: 420 };
 
 export default function NewProjectPage() {
   const { setTopbar } = useTopbar();
@@ -102,6 +111,44 @@ export default function NewProjectPage() {
   const isLastStep = step === STEPS.length;
   const canProceed = step < STEPS.length ? !!selections[step] : projectName.trim().length > 0;
 
+  // Derive market data when a market is selected
+  const selectedMarketKey = selections[1] ? (MARKET_MAP[selections[1]] as MarketType) : null;
+  const marketData = useMemo(() => {
+    if (!selectedMarketKey) return null;
+    return getMarketData(selectedMarketKey);
+  }, [selectedMarketKey]);
+
+  // Compute total weeks from market phase durations (sum of mid values)
+  const totalWeeksFromMarket = useMemo(() => {
+    if (!marketData) return 0;
+    return marketData.phases.reduce(
+      (sum, p) => sum + Math.round((p.typicalDurationWeeks.min + p.typicalDurationWeeks.max) / 2),
+      0
+    );
+  }, [marketData]);
+
+  // Compute estimated budget range based on market + size selection
+  const budgetEstimate = useMemo(() => {
+    if (!selectedMarketKey || !selections[3]) return null;
+    const benchmarks = getCostBenchmarks(selectedMarketKey);
+    const totalMidPerUnit = benchmarks.reduce((sum, b) => sum + b.midRange, 0);
+    const totalLowPerUnit = benchmarks.reduce((sum, b) => sum + b.lowRange, 0);
+    const totalHighPerUnit = benchmarks.reduce((sum, b) => sum + b.highRange, 0);
+
+    const isUSA = selectedMarketKey === "USA" || selectedMarketKey === "GHANA";
+    const sizeMap = isUSA ? SIZE_SQFT_USA : SIZE_SQM_TOGO;
+    const sizeValue = sizeMap[selections[3]] ?? sizeMap.medium;
+    const unit = isUSA ? "sqft" : "sqm";
+
+    return {
+      low: Math.round(totalLowPerUnit * sizeValue),
+      mid: Math.round(totalMidPerUnit * sizeValue),
+      high: Math.round(totalHighPerUnit * sizeValue),
+      sizeValue,
+      unit,
+    };
+  }, [selectedMarketKey, selections]);
+
   function handleSelect(id: string) {
     setSelections((prev) => ({ ...prev, [step]: id }));
   }
@@ -116,7 +163,7 @@ export default function NewProjectPage() {
         const market = MARKET_MAP[selections[1]] ?? "USA";
         const purpose = PURPOSE_MAP[selections[0]] ?? "OCCUPY";
         const propertyType = PROPERTY_MAP[selections[2]] ?? "SFH";
-        const currency = CURRENCY_MAP[selections[1]] ?? "USD";
+        const currency = marketData ? marketData.currency.code : "USD";
 
         const projectId = await createProject({
           userId: user.uid,
@@ -134,7 +181,7 @@ export default function NewProjectPage() {
           totalSpent: 0,
           currency,
           currentWeek: 0,
-          totalWeeks: 0,
+          totalWeeks: totalWeeksFromMarket,
           openItems: 0,
           subPhase: "Getting started",
           details: `${propertyType} / ${market}`,
@@ -199,6 +246,74 @@ export default function NewProjectPage() {
               </button>
             ))}
           </div>
+
+          {/* Market preview card — shown after step 2 (market) is selected, on step 2 */}
+          {step === 1 && marketData && (
+            <div className="mt-4 p-4 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 text-left">
+              <div className="flex items-center gap-2 mb-2">
+                <Info size={14} className="text-emerald-700 shrink-0" />
+                <span className="text-[12px] font-semibold text-emerald-800">Market preview</span>
+              </div>
+              <div className="space-y-1 text-[11px] text-emerald-800">
+                <div className="flex justify-between">
+                  <span className="text-muted">Construction method</span>
+                  <span className="font-medium">{marketData.phases[0]?.constructionMethod ?? "N/A"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Currency</span>
+                  <span className="font-medium">{marketData.currency.code} ({marketData.currency.symbol})</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Estimated total timeline</span>
+                  <span className="font-medium">
+                    {marketData.phases.reduce((s, p) => s + p.typicalDurationWeeks.min, 0)}
+                    {" - "}
+                    {marketData.phases.reduce((s, p) => s + p.typicalDurationWeeks.max, 0)}
+                    {" weeks"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Budget estimate card — shown on step 4 (size) after selection */}
+          {step === 3 && budgetEstimate && marketData && (
+            <div className="mt-4 p-4 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 text-left">
+              <div className="flex items-center gap-2 mb-2">
+                <Info size={14} className="text-emerald-700 shrink-0" />
+                <span className="text-[12px] font-semibold text-emerald-800">Estimated budget range</span>
+              </div>
+              <div className="space-y-1 text-[11px] text-emerald-800">
+                <div className="flex justify-between">
+                  <span className="text-muted">Size</span>
+                  <span className="font-medium font-data">
+                    {budgetEstimate.sizeValue.toLocaleString()} {budgetEstimate.unit}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Low estimate</span>
+                  <span className="font-medium font-data">
+                    {formatCurrencyCompact(budgetEstimate.low, marketData.currency)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Mid estimate</span>
+                  <span className="font-semibold font-data">
+                    {formatCurrencyCompact(budgetEstimate.mid, marketData.currency)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">High estimate</span>
+                  <span className="font-medium font-data">
+                    {formatCurrencyCompact(budgetEstimate.high, marketData.currency)}
+                  </span>
+                </div>
+              </div>
+              <p className="text-[10px] text-emerald-600 mt-2">
+                Based on market cost benchmarks. Actual costs vary by location, materials, and finishes.
+              </p>
+            </div>
+          )}
         </>
       ) : (
         <>

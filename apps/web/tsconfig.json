@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@keystone/market-data": ["../../packages/market-data/src"],
+      "@keystone/market-data/*": ["../../packages/market-data/src/*"]
     }
   },
   "include": [

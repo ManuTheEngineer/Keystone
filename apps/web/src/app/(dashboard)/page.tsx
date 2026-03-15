@@ -9,16 +9,9 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { AlertBanner } from "@/components/ui/AlertBanner";
-
-function formatCurrency(amount: number, currency: string): string {
-  if (currency === "XOF") {
-    return `CFA ${(amount / 1000000).toFixed(1)}M`;
-  }
-  if (amount >= 1000) {
-    return `$${(amount / 1000).toFixed(0)}K`;
-  }
-  return `$${amount.toLocaleString()}`;
-}
+import { MarketBadge } from "@/components/ui/MarketBadge";
+import { getMarketData, formatCurrencyCompact } from "@keystone/market-data";
+import type { Market } from "@keystone/market-data";
 
 export default function DashboardPage() {
   const { setTopbar } = useTopbar();
@@ -53,36 +46,42 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-          {projects.map((p) => (
-            <Link
-              key={p.id}
-              href={`/project/${p.id}/overview`}
-              className="bg-surface border border-border rounded-[var(--radius)] p-4 cursor-pointer hover:shadow-[var(--shadow-md)] transition-shadow block"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <h4 className="text-[14px] font-semibold text-earth">{p.name}</h4>
-                <Badge variant={p.currentPhase >= 5 ? "warning" : "info"}>
-                  {p.phaseName}
-                </Badge>
-              </div>
-              <p className="text-[11px] text-muted mb-3">{p.details}</p>
-              <div className="mb-1.5">
-                <div className="flex justify-between text-[9px] text-muted mb-1">
-                  <span>Overall progress</span>
-                  <span className="font-data">{p.progress}%</span>
+          {projects.map((p) => {
+            const marketData = getMarketData(p.market as Market);
+            return (
+              <Link
+                key={p.id}
+                href={`/project/${p.id}/overview`}
+                className="bg-surface border border-border rounded-[var(--radius)] p-4 cursor-pointer hover:shadow-[var(--shadow-md)] transition-shadow block"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-[14px] font-semibold text-earth">{p.name}</h4>
+                    <MarketBadge market={p.market as Market} />
+                  </div>
+                  <Badge variant={p.currentPhase >= 5 ? "warning" : "info"}>
+                    {p.phaseName}
+                  </Badge>
                 </div>
-                <ProgressBar
-                  value={p.progress}
-                  color={p.currentPhase >= 5 ? "var(--color-success)" : "var(--color-info)"}
-                />
-              </div>
-              <div className="flex gap-3 mt-3 text-[9px] text-muted">
-                <span>Budget: {formatCurrency(p.totalBudget, p.currency)}</span>
-                <span>Spent: {formatCurrency(p.totalSpent, p.currency)}</span>
-                <span>Wk {p.currentWeek}/{p.totalWeeks}</span>
-              </div>
-            </Link>
-          ))}
+                <p className="text-[11px] text-muted mb-3">{p.details}</p>
+                <div className="mb-1.5">
+                  <div className="flex justify-between text-[9px] text-muted mb-1">
+                    <span>Overall progress</span>
+                    <span className="font-data">{p.progress}%</span>
+                  </div>
+                  <ProgressBar
+                    value={p.progress}
+                    color={p.currentPhase >= 5 ? "var(--color-success)" : "var(--color-info)"}
+                  />
+                </div>
+                <div className="flex gap-3 mt-3 text-[9px] text-muted">
+                  <span>Budget: {formatCurrencyCompact(p.totalBudget, marketData.currency)}</span>
+                  <span>Spent: {formatCurrencyCompact(p.totalSpent, marketData.currency)}</span>
+                  <span>Wk {p.currentWeek}/{p.totalWeeks}</span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
 

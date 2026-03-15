@@ -1,0 +1,338 @@
+"use client";
+
+import { useEffect, useState, useMemo } from "react";
+import { useParams } from "next/navigation";
+import { ClipboardCheck, ChevronDown, ChevronRight, Shield } from "lucide-react";
+import { useTopbar } from "../../../layout";
+import {
+  subscribeToProject,
+  subscribeToInspectionResults,
+  addInspectionResult,
+  updateInspectionResult,
+  type ProjectData,
+  type InspectionResultData,
+} from "@/lib/services/project-service";
+import { SectionLabel } from "@/components/ui/SectionLabel";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { AlertBanner } from "@/components/ui/AlertBanner";
+import { InspectionChecklist } from "@/components/ui/InspectionChecklist";
+import {
+  getInspectionsForPhase,
+  getMarketData,
+  PHASE_ORDER,
+  PHASE_NAMES,
+} from "@keystone/market-data";
+import type { Market, ProjectPhase, InspectionRequirement } from "@keystone/market-data";
+
+export function InspectionsClient() {
+  const params = useParams();
+  const { setTopbar } = useTopbar();
+  const projectId = params.id as string;
+  const [project, setProject] = useState<ProjectData | null>(null);
+  const [results, setResults] = useState<InspectionResultData[]>([]);
+  const [expandedUpcoming, setExpandedUpcoming] = useState<string | null>(null);
+  const [expandedCompleted, setExpandedCompleted] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub1 = subscribeToProject(projectId, setProject);
+    const unsub2 = subscribeToInspectionResults(projectId, setResults);
+    return () => {
+      unsub1();
+      unsub2();
+    };
+  }, [projectId]);
+
+  const market = (project?.market ?? "USA") as Market;
+  const currentPhaseIndex = project?.currentPhase ?? 0;
+  const currentPhaseKey = PHASE_ORDER[currentPhaseIndex] ?? "DEFINE";
+
+  // Group inspections by phase category: completed, current, upcoming
+  const { completedPhases, currentPhaseInspections, upcomingPhases } = useMemo(() => {
+    const completed: { phase: ProjectPhase; inspections: InspectionRequirement[] }[] = [];
+    const upcoming: { phase: ProjectPhase; inspections: InspectionRequirement[] }[] = [];
+    let current: InspectionRequirement[] = [];
+
+    for (let i = 0; i < PHASE_ORDER.length; i++) {
+      const phase = PHASE_ORDER[i];
+      const inspections = getInspectionsForPhase(market, phase);
+      if (inspections.length === 0) continue;
+
+      if (i < currentPhaseIndex) {
+        completed.push({ phase, inspections });
+      } else if (i === currentPhaseIndex) {
+        current = inspections;
+      } else {
+        upcoming.push({ phase, inspections });
+      }
+    }
+
+    return {
+      completedPhases: completed,
+      currentPhaseInspections: current,
+      upcomingPhases: upcoming,
+    };
+  }, [market, currentPhaseIndex]);
+
+  // Build completedItems map from Firebase results for current phase
+  const completedItems = useMemo(() => {
+    const map: Record<string, boolean[]> = {};
+    for (const result of results) {
+      if (result.inspectionId && result.completedItems) {
+        map[result.inspectionId] = result.completedItems;
+      }
+    }
+    return map;
+  }, [results]);
+
+  // Count stats
+  const totalCurrentItems = currentPhaseInspections.reduce(
+    (sum, insp) => sum + insp.checklistItems.length,
+    0
+  );
+  const completedCurrentItems = currentPhaseInspections.reduce((sum, insp) => {
+    const items = completedItems[insp.id] ?? [];
+    return sum + items.filter(Boolean).length;
+  }, 0);
+  const passedCount = currentPhaseInspections.filter((insp) => {
+    const items = completedItems[insp.id] ?? [];
+    return items.length === insp.checklistItems.length && items.every(Boolean);
+  }).length;
+
+  useEffect(() => {
+    setTopbar(
+      "Inspections",
+      currentPhaseInspections.length > 0
+        ? `${passedCount}/${currentPhaseInspections.length} passed`
+        : "No inspections",
+      passedCount === currentPhaseInspections.length && currentPhaseInspections.length > 0
+        ? "success"
+        : "info"
+    );
+  }, [setTopbar, passedCount, currentPhaseInspections]);
+
+  async function handleToggle(inspectionId: string, itemIndex: number) {
+    const inspection = currentPhaseInspections.find((i) => i.id === inspectionId);
+    if (!inspection) return;
+
+    const existing = results.find((r) => r.inspectionId === inspectionId);
+    const currentItems = existing?.completedItems
+      ? [...existing.completedItems]
+      : new Array(inspection.checklistItems.length).fill(false);
+
+    // Ensure array is correct length
+    while (currentItems.length < inspection.checklistItems.length) {
+      currentItems.push(false);
+    }
+
+    currentItems[itemIndex] = !currentItems[itemIndex];
+    const allPassed =
+      currentItems.length === inspection.checklistItems.length && currentItems.every(Boolean);
+
+    if (existing?.id) {
+      await updateInspectionResult(projectId, existing.id, {
+        completedItems: currentItems,
+        passed: allPassed,
+        completedAt: allPassed ? new Date().toISOString() : undefined,
+      });
+    } else {
+      await addInspectionResult({
+        projectId,
+        inspectionId,
+        phase: currentPhaseKey,
+        completedItems: currentItems,
+        passed: allPassed,
+        completedAt: allPassed ? new Date().toISOString() : undefined,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  return (
+    <>
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <Card padding="sm">
+          <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">This phase</p>
+          <p className="text-[16px] font-semibold text-earth font-data">
+            {currentPhaseInspections.length}
+          </p>
+          <p className="text-[10px] text-muted">inspections</p>
+        </Card>
+        <Card padding="sm">
+          <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">Items done</p>
+          <p className="text-[16px] font-semibold text-earth font-data">
+            {completedCurrentItems}/{totalCurrentItems}
+          </p>
+          <p className="text-[10px] text-muted">checklist items</p>
+        </Card>
+        <Card padding="sm">
+          <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">Passed</p>
+          <p className="text-[16px] font-semibold text-success font-data">
+            {passedCount}
+          </p>
+          <p className="text-[10px] text-muted">of {currentPhaseInspections.length}</p>
+        </Card>
+      </div>
+
+      {/* Current phase inspections */}
+      <SectionLabel>
+        Current phase: {PHASE_NAMES[currentPhaseKey]} inspections
+      </SectionLabel>
+
+      {currentPhaseInspections.length === 0 ? (
+        <Card padding="md" className="mb-5">
+          <p className="text-[12px] text-muted">
+            No inspections required for the {PHASE_NAMES[currentPhaseKey]} phase.
+          </p>
+        </Card>
+      ) : (
+        <div className="mb-5">
+          <InspectionChecklist
+            inspections={currentPhaseInspections}
+            completedItems={completedItems}
+            onToggle={handleToggle}
+          />
+        </div>
+      )}
+
+      {/* Completed phases */}
+      {completedPhases.length > 0 && (
+        <>
+          <SectionLabel>Completed phases</SectionLabel>
+          <div className="space-y-2 mb-5">
+            {completedPhases.map(({ phase, inspections }) => {
+              const isExpanded = expandedCompleted === phase;
+              const phaseResults = results.filter((r) => r.phase === phase);
+              const phasePassed = phaseResults.filter((r) => r.passed).length;
+
+              return (
+                <Card key={phase} padding="sm">
+                  <button
+                    onClick={() => setExpandedCompleted(isExpanded ? null : phase)}
+                    className="w-full flex items-center justify-between text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      {isExpanded ? (
+                        <ChevronDown size={14} className="text-muted" />
+                      ) : (
+                        <ChevronRight size={14} className="text-muted" />
+                      )}
+                      <span className="text-[12px] font-medium text-earth">
+                        {PHASE_NAMES[phase]}
+                      </span>
+                      <Badge variant="success">
+                        {phasePassed}/{inspections.length} passed
+                      </Badge>
+                    </div>
+                    <span className="text-[10px] text-muted font-data">
+                      {inspections.length} inspection{inspections.length !== 1 ? "s" : ""}
+                    </span>
+                  </button>
+                  {isExpanded && (
+                    <div className="mt-2 pt-2 border-t border-border">
+                      {inspections.map((insp) => {
+                        const result = phaseResults.find((r) => r.inspectionId === insp.id);
+                        return (
+                          <div
+                            key={insp.id}
+                            className="flex items-center justify-between py-1.5 text-[11px]"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted">{insp.name}</span>
+                              <Badge variant={insp.formal ? "info" : "emerald"}>
+                                {insp.formal ? "Formal" : "Informal"}
+                              </Badge>
+                            </div>
+                            <Badge variant={result?.passed ? "success" : "warning"}>
+                              {result?.passed ? "Passed" : "Incomplete"}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Upcoming phases */}
+      {upcomingPhases.length > 0 && (
+        <>
+          <SectionLabel>Upcoming phases</SectionLabel>
+          <div className="space-y-2 mb-5">
+            {upcomingPhases.map(({ phase, inspections }) => {
+              const isExpanded = expandedUpcoming === phase;
+
+              return (
+                <Card key={phase} padding="sm" className="opacity-60">
+                  <button
+                    onClick={() => setExpandedUpcoming(isExpanded ? null : phase)}
+                    className="w-full flex items-center justify-between text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      {isExpanded ? (
+                        <ChevronDown size={14} className="text-muted" />
+                      ) : (
+                        <ChevronRight size={14} className="text-muted" />
+                      )}
+                      <span className="text-[12px] font-medium text-earth">
+                        {PHASE_NAMES[phase]}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted font-data">
+                      {inspections.length} inspection{inspections.length !== 1 ? "s" : ""}
+                    </span>
+                  </button>
+                  {isExpanded && (
+                    <div className="mt-2 pt-2 border-t border-border">
+                      {inspections.map((insp) => (
+                        <div
+                          key={insp.id}
+                          className="flex items-center justify-between py-1.5 text-[11px]"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted">{insp.name}</span>
+                            <Badge variant={insp.formal ? "info" : "emerald"}>
+                              {insp.formal ? "Formal" : "Informal"}
+                            </Badge>
+                          </div>
+                          <span className="text-[10px] text-muted">Upcoming</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Educational footer */}
+      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-[var(--radius)] p-4 mt-2">
+        <div className="flex items-start gap-2.5">
+          <Shield size={16} className="shrink-0 mt-0.5" />
+          <div>
+            <p className="text-[12px] font-medium mb-1">Why inspections matter</p>
+            <p className="text-[11px] leading-relaxed opacity-80">
+              Inspections verify that construction work meets building codes and safety standards.
+              In the USA, formal inspections by licensed inspectors are required before proceeding
+              to the next construction phase. In West African markets like Togo, many inspections
+              are informal -- conducted by the owner or a hired professional -- but they are equally
+              critical for ensuring structural integrity and long-term durability.
+              Skipping inspections can lead to costly rework, safety hazards, or failed final
+              inspections that delay occupancy.
+            </p>
+            <p className="text-[10px] mt-2 opacity-60">
+              This is educational guidance. Consult a licensed professional for your specific situation.
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
