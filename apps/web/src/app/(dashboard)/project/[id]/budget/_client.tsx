@@ -6,6 +6,7 @@ import { useTopbar } from "../../../layout";
 import {
   subscribeToProject,
   subscribeToBudgetItems,
+  addBudgetItem,
   type ProjectData,
   type BudgetItemData,
 } from "@/lib/services/project-service";
@@ -13,6 +14,7 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCard } from "@/components/ui/StatCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Card } from "@/components/ui/Card";
+import { Plus } from "lucide-react";
 
 function fmt(amount: number, currency: string): string {
   if (currency === "XOF") return `CFA ${(amount / 1000000).toFixed(1)}M`;
@@ -26,6 +28,11 @@ export function BudgetClient() {
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [items, setItems] = useState<BudgetItemData[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [category, setCategory] = useState("");
+  const [estimated, setEstimated] = useState("");
+  const [actual, setActual] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const unsub1 = subscribeToProject(projectId, setProject);
@@ -55,7 +62,99 @@ export function BudgetClient() {
         <StatCard value={`${variance}%`} label="Variance" valueClassName={Number(variance) <= 0 ? "text-success" : "text-warning"} />
       </div>
 
-      <SectionLabel>Budget line items</SectionLabel>
+      <div className="flex items-center justify-between mb-0">
+        <SectionLabel>Budget line items</SectionLabel>
+        <button
+          type="button"
+          onClick={() => setShowForm((v) => !v)}
+          className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
+        >
+          <Plus size={14} />
+          Add item
+        </button>
+      </div>
+
+      {showForm && (
+        <Card padding="md" className="mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-[11px] text-muted font-medium mb-1 block">Category</label>
+              <input
+                type="text"
+                placeholder="e.g. Framing, Plumbing"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] text-muted font-medium mb-1 block">Estimated cost</label>
+              <input
+                type="number"
+                placeholder="0"
+                value={estimated}
+                onChange={(e) => setEstimated(e.target.value)}
+                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] text-muted font-medium mb-1 block">Actual cost</label>
+              <input
+                type="number"
+                placeholder="0"
+                value={actual}
+                onChange={(e) => setActual(e.target.value)}
+                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 mt-3">
+            <button
+              type="button"
+              disabled={saving}
+              onClick={async () => {
+                if (!category.trim() || Number(estimated) <= 0) return;
+                setSaving(true);
+                try {
+                  await addBudgetItem({
+                    projectId,
+                    category: category.trim(),
+                    estimated: Number(estimated),
+                    actual: Number(actual),
+                    status:
+                      Number(actual) > Number(estimated)
+                        ? "over"
+                        : Number(actual) > 0
+                          ? "on-track"
+                          : "not-started",
+                  });
+                  setCategory("");
+                  setEstimated("");
+                  setActual("");
+                  setShowForm(false);
+                } finally {
+                  setSaving(false);
+                }
+              }}
+              className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+            >
+              {saving ? "Saving..." : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowForm(false);
+                setCategory("");
+                setEstimated("");
+                setActual("");
+              }}
+              className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </Card>
+      )}
       {items.length === 0 ? (
         <Card padding="md" className="text-center">
           <p className="text-[12px] text-muted">No budget items yet. They will populate as you plan your project.</p>

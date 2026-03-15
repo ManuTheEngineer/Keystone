@@ -7,6 +7,7 @@ import { useTopbar } from "../../../layout";
 import {
   subscribeToProject,
   subscribeToTasks,
+  updateTask,
   type ProjectData,
   type TaskData,
 } from "@/lib/services/project-service";
@@ -76,7 +77,10 @@ export function OverviewClient() {
                 i < Math.min(activeTasks.length, 6) - 1 ? "border-b border-border" : ""
               }`}
             >
-              <div className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0" />
+              <div
+                className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
+                onClick={() => updateTask(projectId, task.id!, { done: true, status: "done" })}
+              />
               <span className="flex-1 text-muted">{task.label}</span>
               <Badge variant={task.status === "in-progress" ? "warning" : "info"}>
                 {task.status === "in-progress" ? "In progress" : "Upcoming"}
@@ -91,6 +95,46 @@ export function OverviewClient() {
           <p className="text-[12px] text-muted">No tasks yet. They will appear as your project progresses.</p>
         </Card>
       )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+        <div>
+          <SectionLabel>Risk alerts</SectionLabel>
+          <div className="space-y-1.5">
+            {project.totalSpent > project.totalBudget * 0.9 && (
+              <AlertBanner variant="danger">
+                Budget {Math.round((project.totalSpent / project.totalBudget) * 100)}% spent with {100 - project.progress}% of work remaining
+              </AlertBanner>
+            )}
+            {activeTasks.length > 5 && (
+              <AlertBanner variant="warning">
+                {activeTasks.length} open tasks -- consider prioritizing critical path items
+              </AlertBanner>
+            )}
+            {activeTasks.length <= 5 && project.progress < 100 && (
+              <AlertBanner variant="info">
+                Project on track -- {activeTasks.length} active tasks remaining in current phase
+              </AlertBanner>
+            )}
+          </div>
+        </div>
+        <div>
+          <SectionLabel>Next milestones</SectionLabel>
+          <Card padding="sm">
+            <div className="space-y-0">
+              {[
+                { date: "Next", label: "Complete current sub-phase" },
+                { date: "Then", label: "Schedule phase inspection" },
+                { date: "After", label: "Begin next sub-phase" },
+              ].map((m, i) => (
+                <div key={i} className={`flex items-center gap-2 py-2 text-[11px] ${i < 2 ? "border-b border-border" : ""}`}>
+                  <span className="w-12 text-muted font-data text-[10px] shrink-0">{m.date}</span>
+                  <span className="text-muted">{m.label}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
@@ -115,7 +159,10 @@ export function OverviewClient() {
                     i < Math.min(completedTasks.length, 5) - 1 ? "border-b border-border" : ""
                   }`}
                 >
-                  <div className="w-4 h-4 rounded border-[1.5px] bg-success border-success shrink-0 flex items-center justify-center">
+                  <div
+                    className="w-4 h-4 rounded border-[1.5px] bg-success border-success shrink-0 flex items-center justify-center cursor-pointer"
+                    onClick={() => updateTask(projectId, task.id!, { done: false, status: "upcoming" })}
+                  >
                     <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
                       <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
