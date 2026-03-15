@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTopbar } from "../layout";
-import { Home, Building2, TrendingUp, MapPin } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { createProject, type Market, type BuildPurpose, type PropertyType } from "@/lib/services/project-service";
+import { Home, Building2, TrendingUp } from "lucide-react";
 
 interface WizardOption {
   id: string;
@@ -78,12 +80,19 @@ const STEPS = [
   { title: "What size are you planning?", subtitle: "Helps us estimate budget ranges and timelines for your market.", options: SIZE_OPTIONS },
 ];
 
+const MARKET_MAP: Record<string, Market> = { usa: "USA", togo: "TOGO", ghana: "GHANA", benin: "BENIN" };
+const PURPOSE_MAP: Record<string, BuildPurpose> = { occupy: "OCCUPY", rent: "RENT", sell: "SELL" };
+const PROPERTY_MAP: Record<string, PropertyType> = { sfh: "SFH", duplex: "DUPLEX", triplex: "TRIPLEX", fourplex: "FOURPLEX", apartment: "APARTMENT" };
+const CURRENCY_MAP: Record<string, string> = { usa: "USD", togo: "XOF", ghana: "GHS", benin: "XOF" };
+
 export default function NewProjectPage() {
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [selections, setSelections] = useState<Record<number, string>>({});
   const [projectName, setProjectName] = useState("");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     setTopbar("New project", "Setup wizard", "info");
@@ -97,12 +106,44 @@ export default function NewProjectPage() {
     setSelections((prev) => ({ ...prev, [step]: id }));
   }
 
-  function handleNext() {
+  async function handleNext() {
     if (step < STEPS.length) {
       setStep(step + 1);
     } else {
-      // Create project -- for now just redirect to dashboard
-      router.push("/");
+      if (!user || creating) return;
+      setCreating(true);
+      try {
+        const market = MARKET_MAP[selections[1]] ?? "USA";
+        const purpose = PURPOSE_MAP[selections[0]] ?? "OCCUPY";
+        const propertyType = PROPERTY_MAP[selections[2]] ?? "SFH";
+        const currency = CURRENCY_MAP[selections[1]] ?? "USD";
+
+        const projectId = await createProject({
+          userId: user.uid,
+          name: projectName.trim(),
+          market,
+          purpose,
+          propertyType,
+          sizeRange: selections[3] ?? "medium",
+          currentPhase: 0,
+          completedPhases: 0,
+          phaseName: "Phase 0: Define",
+          progress: 0,
+          status: "ACTIVE",
+          totalBudget: 0,
+          totalSpent: 0,
+          currency,
+          currentWeek: 0,
+          totalWeeks: 0,
+          openItems: 0,
+          subPhase: "Getting started",
+          details: `${propertyType} / ${market}`,
+        });
+        router.push(`/project/${projectId}/overview`);
+      } catch (err) {
+        console.error("Failed to create project:", err);
+        setCreating(false);
+      }
     }
   }
 
@@ -191,7 +232,7 @@ export default function NewProjectPage() {
           disabled={!canProceed}
           className="px-6 py-2.5 text-[13px] rounded-[var(--radius)] bg-earth text-warm hover:bg-earth-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {isLastStep ? "Create project" : "Next"}
+          {isLastStep ? (creating ? "Creating..." : "Create project") : "Next"}
         </button>
       </div>
     </div>

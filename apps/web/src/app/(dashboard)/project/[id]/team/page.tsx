@@ -1,47 +1,67 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
-import { getProject, ROBINSON_CONTACTS } from "@/lib/data/mock-projects";
+import { subscribeToContacts, type ContactData } from "@/lib/services/project-service";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import { Card } from "@/components/ui/Card";
+
+const COLORS = [
+  { bg: "var(--color-info-bg)", text: "var(--color-info)" },
+  { bg: "var(--color-success-bg)", text: "var(--color-success)" },
+  { bg: "var(--color-warning-bg)", text: "var(--color-warning)" },
+  { bg: "var(--color-danger-bg)", text: "var(--color-danger)" },
+];
 
 export default function TeamPage() {
   const params = useParams();
   const { setTopbar } = useTopbar();
-  const project = getProject(params.id as string);
+  const projectId = params.id as string;
+  const [contacts, setContacts] = useState<ContactData[]>([]);
 
   useEffect(() => {
-    setTopbar("Team", "26 contacts", "info");
-  }, [setTopbar]);
+    const unsub = subscribeToContacts(projectId, setContacts);
+    return unsub;
+  }, [projectId]);
 
-  if (!project) return <p className="text-muted text-sm">Project not found.</p>;
+  useEffect(() => {
+    setTopbar("Team", `${contacts.length} contacts`, "info");
+  }, [setTopbar, contacts.length]);
 
   return (
     <>
       <SectionLabel>Active contractors and professionals</SectionLabel>
-      <div className="space-y-1.5">
-        {ROBINSON_CONTACTS.map((c, i) => (
-          <button
-            key={i}
-            className="w-full flex items-center gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface hover:border-border-dark hover:shadow-[var(--shadow-sm)] transition-all text-left"
-          >
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
-              style={{ background: c.bgColor, color: c.textColor }}
-            >
-              {c.initials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-medium text-earth truncate">{c.name}</div>
-              <div className="text-[10px] text-muted">{c.role}</div>
-            </div>
-            <div className="text-[10px] text-muted font-data">{c.rating}/5</div>
-          </button>
-        ))}
-      </div>
+      {contacts.length === 0 ? (
+        <Card padding="md" className="text-center">
+          <p className="text-[12px] text-muted">No team members yet. Add contractors and professionals as you build your team.</p>
+        </Card>
+      ) : (
+        <div className="space-y-1.5">
+          {contacts.map((c, i) => {
+            const color = COLORS[i % COLORS.length];
+            return (
+              <button
+                key={c.id}
+                className="w-full flex items-center gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface hover:border-border-dark hover:shadow-[var(--shadow-sm)] transition-all text-left"
+              >
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
+                  style={{ background: color.bg, color: color.text }}
+                >
+                  {c.initials}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium text-earth truncate">{c.name}</div>
+                  <div className="text-[10px] text-muted">{c.role}</div>
+                </div>
+                <div className="text-[10px] text-muted font-data">{c.rating}/5</div>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Educational callout */}
       <div className="mt-5 p-4 rounded-[var(--radius)] bg-emerald-50 border border-emerald-200 text-[12px] text-emerald-800 leading-relaxed">
         <p className="font-semibold mb-1">Managing your construction team</p>
         <p>

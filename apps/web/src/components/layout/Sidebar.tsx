@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
 import {
   LayoutGrid,
@@ -16,6 +15,7 @@ import {
   ClipboardList,
   HelpCircle,
   X,
+  LogOut,
 } from "lucide-react";
 
 interface NavItem {
@@ -48,6 +48,9 @@ interface SidebarProps {
   projectName?: string;
   isOpen: boolean;
   onClose: () => void;
+  userName?: string;
+  userPlan?: string;
+  onSignOut?: () => void;
 }
 
 export function Sidebar({
@@ -56,7 +59,18 @@ export function Sidebar({
   projectName,
   isOpen,
   onClose,
+  userName = "User",
+  userPlan = "FOUNDATION",
+  onSignOut,
 }: SidebarProps) {
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const planLabel = userPlan.charAt(0) + userPlan.slice(1).toLowerCase() + " plan";
   return (
     <>
       {/* Mobile overlay */}
@@ -158,12 +172,21 @@ export function Sidebar({
         {/* User footer */}
         <div className="mt-auto px-5 py-3.5 border-t border-sand/10 flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-sand/15 flex items-center justify-center text-[11px] font-semibold text-sand">
-            AK
+            {initials}
           </div>
-          <div>
-            <p className="text-[12px] text-warm">Ayo K.</p>
-            <p className="text-[10px] text-sand/35">Builder plan</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] text-warm truncate">{userName}</p>
+            <p className="text-[10px] text-sand/35">{planLabel}</p>
           </div>
+          {onSignOut && (
+            <button
+              onClick={onSignOut}
+              className="p-1.5 rounded text-sand/40 hover:text-sand/80 transition-colors"
+              title="Sign out"
+            >
+              <LogOut size={14} />
+            </button>
+          )}
         </div>
       </aside>
     </>
