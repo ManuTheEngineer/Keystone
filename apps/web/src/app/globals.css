@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* === Brand Core === */
+  --color-earth: #2C1810;
+  --color-earth-light: #3D2215;
+  --color-clay: #8B4513;
+  --color-clay-light: #A0522D;
+  --color-sand: #D4A574;
+  --color-sand-light: #E0BC92;
+  --color-warm: #F5E6D3;
+  --color-cream: #FDF8F0;
+
+  /* === Emerald Green Palette === */
+  --color-emerald-50: #ECFDF5;
+  --color-emerald-100: #D1FAE5;
+  --color-emerald-200: #A7F3D0;
+  --color-emerald-300: #6EE7B7;
+  --color-emerald-400: #34D399;
+  --color-emerald-500: #10B981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065F46;
+  --color-emerald-900: #064E3B;
+  --color-emerald-950: #022C22;
+
+  /* === Text === */
+  --color-slate-text: #3A3A3A;
+  --color-muted: #6A6A6A;
+
+  /* === Market Accents === */
+  --color-accent-usa: #1B4965;
+  --color-accent-usa-light: #E8F0F5;
+  --color-accent-wa: #6B4226;
+  --color-accent-wa-light: #F5EDE6;
+
+  /* === Status === */
+  --color-success: #2D6A4F;
+  --color-success-bg: #EDF7ED;
+  --color-warning: #BC6C25;
+  --color-warning-bg: #FFF8E7;
+  --color-danger: #9B2226;
+  --color-danger-bg: #FDEDED;
+  --color-info: #1B4965;
+  --color-info-bg: #E8F0F5;
+
+  /* === Borders === */
+  --color-border: #E0D5C8;
+  --color-border-dark: #C8BBAD;
+
+  /* === Shadows === */
+  --shadow-sm: 0 1px 3px rgba(44, 24, 16, 0.06);
+  --shadow-md: 0 4px 16px rgba(44, 24, 16, 0.08);
+  --shadow-lg: 0 12px 40px rgba(44, 24, 16, 0.12);
+
+  /* === Radius === */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* === Fonts === */
+  --font-heading: "Instrument Serif", serif;
+  --font-body: "DM Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* === Semantic aliases === */
+  --color-background: #FDF8F0;
+  --color-foreground: #3A3A3A;
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #F5F0E8;
+  --color-surface-dim: #EDE6DA;
+  --color-primary: #2C1810;
+  --color-primary-foreground: #F5E6D3;
+  --color-secondary: #8B4513;
+  --color-secondary-foreground: #FFFFFF;
+  --color-accent: #059669;
+  --color-accent-foreground: #FFFFFF;
+  --color-accent-light: #ECFDF5;
+}
+
+/* === Base Styles === */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === Typography === */
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  color: var(--color-earth);
+  letter-spacing: -0.3px;
+}
+
+/* === Monospace numbers === */
+.font-data {
+  font-family: var(--font-mono);
+}
+
+/* === Scrollbar === */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-dark);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-sand);
+}
+
+/* === Selection === */
+::selection {
+  background: var(--color-emerald-200);
+  color: var(--color-earth);
+}
+
+/* === Focus ring === */
+*:focus-visible {
+  outline: 2px solid var(--color-emerald-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
