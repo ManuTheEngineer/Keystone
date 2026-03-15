@@ -5,6 +5,7 @@ import {
   LayoutGrid,
   Plus,
   BookOpen,
+  Calculator,
   Clock,
   CheckSquare,
   DollarSign,
@@ -14,6 +15,7 @@ import {
   Image,
   ClipboardList,
   HelpCircle,
+  Settings,
   X,
   LogOut,
 } from "lucide-react";
@@ -28,6 +30,7 @@ const mainNav: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: <LayoutGrid size={16} /> },
   { id: "new-project", label: "New project", icon: <Plus size={16} /> },
   { id: "learn", label: "Learn", icon: <BookOpen size={16} /> },
+  { id: "tools", label: "Tools", icon: <Calculator size={16} /> },
 ];
 
 const projectNav: NavItem[] = [
@@ -40,6 +43,7 @@ const projectNav: NavItem[] = [
   { id: "photos", label: "Photos", icon: <Image size={16} /> },
   { id: "daily-log", label: "Daily log", icon: <ClipboardList size={16} /> },
   { id: "ai-assistant", label: "AI assistant", icon: <HelpCircle size={16} /> },
+  { id: "settings", label: "Settings", icon: <Settings size={16} /> },
 ];
 
 interface SidebarProps {

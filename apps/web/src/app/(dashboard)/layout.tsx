@@ -116,6 +116,7 @@ function getActiveSectionFromPath(pathname: string): string {
   if (pathname === "/") return "dashboard";
   if (pathname.includes("/new-project")) return "new-project";
   if (pathname.includes("/learn")) return "learn";
+  if (pathname.includes("/tools")) return "tools";
   if (pathname.includes("/overview")) return "overview";
   if (pathname.includes("/budget")) return "budget";
   if (pathname.includes("/schedule")) return "schedule";
@@ -125,6 +126,7 @@ function getActiveSectionFromPath(pathname: string): string {
   if (pathname.includes("/daily-log")) return "daily-log";
   if (pathname.includes("/ai-assistant")) return "ai-assistant";
   if (pathname.includes("/tasks")) return "tasks";
+  if (pathname.includes("/settings")) return "settings";
   return "dashboard";
 }
 
@@ -132,7 +134,7 @@ function sectionToRoute(section: string, currentProjectId: string | null): strin
   const pid = currentProjectId ?? "new";
   const projectRoutes: Record<string, string> = {
     overview: `/project/${pid}/overview`,
-    tasks: `/project/${pid}/overview`,
+    tasks: `/project/${pid}/tasks`,
     budget: `/project/${pid}/budget`,
     schedule: `/project/${pid}/schedule`,
     team: `/project/${pid}/team`,
@@ -140,9 +142,11 @@ function sectionToRoute(section: string, currentProjectId: string | null): strin
     photos: `/project/${pid}/photos`,
     "daily-log": `/project/${pid}/daily-log`,
     "ai-assistant": `/project/${pid}/ai-assistant`,
+    settings: `/project/${pid}/settings`,
   };
   if (projectRoutes[section]) return projectRoutes[section];
   if (section === "new-project") return "/new-project";
   if (section === "learn") return "/learn";
+  if (section === "tools") return "/tools";
   return "/";
 }
