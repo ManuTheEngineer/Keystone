@@ -4,38 +4,39 @@ description: What's built vs planned in the Keystone construction management pla
 type: project
 ---
 
-Keystone is a construction project lifecycle management app (USA + West Africa markets). Currently a Next.js 16 static-export PWA deployed to Firebase Hosting.
+Keystone is a construction project lifecycle management app (USA + West Africa markets). Monorepo with Turborepo + npm workspaces.
 
-**Stack in use:** Next.js 16, React 19, TypeScript, Tailwind CSS 4, Firebase (Auth + RTDB + Storage), Zustand, Lucide icons, next-pwa. Firebase project: keystone-21811.
+**Stack:** Next.js 16, React 19, TypeScript, Tailwind CSS 4, Firebase (Auth + RTDB + Storage + Hosting), Zustand, Lucide icons. Firebase project: keystone-21811. Live URL: https://keystone-21811.web.app
 
-**Fully built:**
-- Auth (register/login/reset) with Firebase Auth
-- Dashboard with project listing and activity feed
-- 5-step project creation wizard (purpose → market → property type → size → name)
-- Project workspace with 7 working sub-pages: overview, budget, daily-log, team, photos, learn, ai-assistant
-- Phase tracker (9 phases: Define → Operate)
-- Budget line items CRUD, daily logs CRUD, contacts/team CRUD, photo upload
-- Learn page with 10 educational modules
-- Responsive layout with sidebar + mobile hamburger
-- Design system: earth/clay/sand palette, Instrument Serif + DM Sans + JetBrains Mono fonts
+**Packages:**
+- `@keystone/market-data` — Comprehensive USA + Togo construction data (costs, phases, trades, inspections, financing, education, templates, glossary)
+- `@keystone/core` — 7 financial calculators (loan qualification, mortgage, rental yield, budget estimator, draw schedule, currency converter, contingency)
+- `@keystone/ai` — 5 AI prompt modes (general, budget, schedule, risk, contract) with context builders and Claude tool definitions
 
-**Partially built / scaffolded:**
-- Documents page (route exists, not fully implemented)
-- Schedule page (route exists, not fully implemented)
-- AI assistant (chat UI built, no endpoint configured)
+**Pages (21 routes):**
+- Auth: login, register, forgot-password
+- Dashboard with market badges
+- New project wizard with market preview and budget estimates
+- Project workspace: overview, budget, schedule, financials, team, documents, photos, daily-log, inspections, punch-list, ai-assistant
+- Learn page (10 education modules)
 
-**Not yet built (per CLAUDE.md plan):**
-- packages/ directory (market-data, ai, documents, core)
-- Prisma/PostgreSQL (using Firebase RTDB instead)
-- Market-specific data modules (cost benchmarks, regulations, templates)
-- Document generation engine
-- Advanced financial modeling
-- Inspection tracking, punch list
+**Cloud Function:** `functions/` directory with AI proxy (auth + rate limiting). NOT YET DEPLOYED — needs `npm install`, API key secret, and `firebase deploy --only functions`.
+
+**RTDB Rules:** Deployed with per-user and per-project ownership rules.
+
+**Not yet built:**
+- Document generation engine (PDF output from templates)
+- Offline-first sync mechanism
+- Multi-language (French)
 - Mobile app (React Native)
-- Multi-language support (French, Ewe, etc.)
-- Offline sync mechanism
-- Real image compression for 2G
+- Real photo compression for 2G
 
-**Why:** MVP was built rapidly to establish core UI and Firebase integration. Next phase should focus on market-specific intelligence and backend migration.
+**Known issues resolved this session:**
+- SWC patcher infinite loop with npm workspaces (fix: copy root lockfile to apps/web, set turbopack.root)
+- RTDB rules were default deny-all (fix: deployed proper rules)
+- setTopbar infinite re-render (fix: useCallback)
+- Missing packageManager field for Turborepo 2.8+
 
-**How to apply:** When building new features, work within the existing Firebase + static export architecture unless explicitly migrating. All new pages follow the `_client.tsx` pattern in `(dashboard)/project/[id]/`.
+**Why:** MVP is now feature-rich with market intelligence and financial tools. Next priority: document generation engine.
+
+**How to apply:** When building, use the existing monorepo pattern (add to packages/ for shared logic, transpilePackages for web consumption). All new pages follow the page.tsx + _client.tsx pattern.
