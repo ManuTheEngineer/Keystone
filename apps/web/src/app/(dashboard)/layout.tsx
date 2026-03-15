@@ -10,6 +10,8 @@ import { WifiOff, LogOut } from "lucide-react";
 import { usePWA } from "@/lib/hooks/use-pwa";
 import { signOut } from "@/lib/services/auth-service";
 import { getUserProjects, type ProjectData } from "@/lib/services/project-service";
+import { LocaleContext } from "@/lib/hooks/use-locale";
+import { getLocaleForMarket } from "@/lib/i18n";
 
 interface DashboardContextValue {
   setTopbar: (title: string, badge?: string, badgeVariant?: "success" | "warning" | "info" | "danger") => void;
@@ -74,10 +76,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const isProjectRoute = pathname.includes("/project/");
   const projectName = isProjectRoute ? (currentProject?.name ?? "Project") : undefined;
+  const locale = currentProject ? getLocaleForMarket(currentProject.market ?? "") : "en";
 
   return (
     <AuthGuard>
       <DashboardContext.Provider value={{ setTopbar, projects, currentProjectId }}>
+        <LocaleContext.Provider value={locale}>
         <div className="min-h-screen bg-background">
           <Sidebar
             activeSection={activeSection}
@@ -88,6 +92,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             userName={profile?.name ?? user?.displayName ?? "User"}
             userPlan={profile?.plan ?? "FOUNDATION"}
             onSignOut={handleSignOut}
+            locale={locale}
           />
           <div className="lg:ml-[260px] flex flex-col min-h-screen">
             <Topbar
@@ -107,6 +112,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </main>
           </div>
         </div>
+        </LocaleContext.Provider>
       </DashboardContext.Provider>
     </AuthGuard>
   );

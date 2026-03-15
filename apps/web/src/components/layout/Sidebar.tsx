@@ -1,6 +1,7 @@
 "use client";
 
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
+import type { Locale } from "@/lib/i18n";
 import {
   LayoutGrid,
   Plus,
@@ -19,6 +20,7 @@ import {
   HelpCircle,
   X,
   LogOut,
+  Globe,
 } from "lucide-react";
 
 interface NavItem {
@@ -57,6 +59,7 @@ interface SidebarProps {
   userName?: string;
   userPlan?: string;
   onSignOut?: () => void;
+  locale?: Locale;
 }
 
 export function Sidebar({
@@ -68,6 +71,7 @@ export function Sidebar({
   userName = "User",
   userPlan = "FOUNDATION",
   onSignOut,
+  locale = "en",
 }: SidebarProps) {
   const initials = userName
     .split(" ")
@@ -175,8 +179,16 @@ export function Sidebar({
           </nav>
         )}
 
+        {/* Language indicator */}
+        <div className="mt-auto px-5 py-2 flex items-center gap-2 text-sand/40">
+          <Globe size={12} />
+          <span className="text-[10px] uppercase tracking-[1.5px] font-medium">
+            {locale === "fr" ? "FR" : "EN"}
+          </span>
+        </div>
+
         {/* User footer */}
-        <div className="mt-auto px-5 py-3.5 border-t border-sand/10 flex items-center gap-2.5">
+        <div className="px-5 py-3.5 border-t border-sand/10 flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full bg-sand/15 flex items-center justify-center text-[11px] font-semibold text-sand">
             {initials}
           </div>
