@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GroundUp — The Complete Home Building Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --earth: #2C1810;
+  --clay: #8B4513;
+  --sand: #D4A574;
+  --warm: #F5E6D3;
+  --cream: #FDF8F0;
+  --white: #FFFFFF;
+  --slate: #3A3A3A;
+  --muted: #6A6A6A;
+  --accent-usa: #1B4965;
+  --accent-usa-light: #E8F0F5;
+  --accent-wa: #6B4226;
+  --accent-wa-light: #F5EDE6;
+  --success: #2D6A4F;
+  --success-bg: #EDF7ED;
+  --warning: #BC6C25;
+  --warning-bg: #FFF8E7;
+  --danger: #9B2226;
+  --danger-bg: #FDEDED;
+  --border: #E0D5C8;
+  --shadow-sm: 0 1px 3px rgba(44,24,16,0.06);
+  --shadow-md: 0 4px 16px rgba(44,24,16,0.08);
+  --shadow-lg: 0 12px 40px rgba(44,24,16,0.12);
+  --radius: 10px;
+  --radius-lg: 16px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--slate);line-height:1.75;overflow-x:hidden}
+
+/* ===== ICON SYSTEM (inline SVG via CSS) ===== */
+.ico{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0}
+.ico svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ico-sm{width:16px;height:16px}
+.ico-lg{width:24px;height:24px}
+
+/* ===== SIDEBAR ===== */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:300px;background:var(--earth);color:var(--sand);z-index:100;overflow-y:auto;padding:32px 0;transform:translateX(0);transition:transform .35s cubic-bezier(.4,0,.2,1);scrollbar-width:thin;scrollbar-color:var(--clay) transparent}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--clay);border-radius:2px}
+.sidebar-logo{padding:0 28px 28px;border-bottom:1px solid rgba(212,165,116,.15);margin-bottom:16px}
+.sidebar-logo h1{font-family:'Instrument Serif',serif;font-size:1.75rem;color:var(--warm);letter-spacing:-.5px}
+.sidebar-logo p{font-size:.65rem;text-transform:uppercase;letter-spacing:2.5px;color:var(--sand);opacity:.5;margin-top:4px}
+.nav-section{padding:8px 0}
+.nav-section-title{padding:6px 28px;font-size:.58rem;text-transform:uppercase;letter-spacing:2.2px;color:var(--sand);opacity:.35;font-weight:600}
+.nav-item{display:flex;align-items:flex-start;gap:12px;padding:10px 28px;cursor:pointer;transition:all .2s;text-decoration:none;color:var(--sand);font-size:.84rem;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(212,165,116,.08);color:var(--warm)}
+.nav-item.active{background:rgba(212,165,116,.12);color:var(--warm);border-left-color:var(--sand)}
+.nav-num{font-family:'JetBrains Mono',monospace;font-size:.68rem;opacity:.45;min-width:22px;padding-top:2px}
+.nav-label{line-height:1.4}
+.progress-wrap{padding:20px 28px 8px;border-top:1px solid rgba(212,165,116,.15);margin-top:12px}
+.progress-label{font-size:.6rem;text-transform:uppercase;letter-spacing:2px;opacity:.35;margin-bottom:8px}
+.progress-track{height:3px;background:rgba(212,165,116,.12);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--sand);border-radius:2px;transition:width .5s ease;width:0%}
+
+/* ===== MOBILE ===== */
+.menu-toggle{display:none;position:fixed;top:16px;left:16px;z-index:200;width:44px;height:44px;background:var(--earth);border:none;border-radius:10px;cursor:pointer;color:var(--sand);box-shadow:var(--shadow-md);transition:all .2s;align-items:center;justify-content:center}
+.menu-toggle svg{width:20px;height:20px;stroke:var(--sand);fill:none;stroke-width:2;stroke-linecap:round}
+.menu-toggle:hover{background:var(--clay)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(44,24,16,.4);z-index:90;backdrop-filter:blur(2px)}
+.overlay.show{display:block}
+
+/* ===== MAIN ===== */
+.main{margin-left:300px;min-height:100vh;transition:margin-left .35s cubic-bezier(.4,0,.2,1)}
+
+/* ===== HERO ===== */
+.hero{background:linear-gradient(165deg,var(--earth) 0%,#3D2215 40%,var(--clay) 100%);color:var(--warm);padding:100px 60px 80px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D4A574' fill-opacity='0.035'%3E%3Cpath d='M20 20h-2v2h2v-2zm0-20h-2v2h2V0zM0 20h2v-2H0v2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.hero-content{position:relative;max-width:800px}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(212,165,116,.1);border:1px solid rgba(212,165,116,.18);padding:6px 16px;border-radius:100px;font-size:.68rem;text-transform:uppercase;letter-spacing:2.2px;margin-bottom:28px;color:var(--sand)}
+.hero-badge .ico{width:14px;height:14px;color:var(--sand)}
+.hero h2{font-family:'Instrument Serif',serif;font-size:clamp(2.2rem,5vw,3.5rem);line-height:1.12;margin-bottom:20px;color:var(--white);letter-spacing:-1px}
+.hero p{font-size:1.05rem;line-height:1.85;max-width:620px;opacity:.75}
+.hero-markets{display:flex;gap:14px;margin-top:32px;flex-wrap:wrap}
+.hero-market-tag{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:var(--radius);font-size:.78rem;font-weight:600;letter-spacing:.3px}
+.hero-market-tag.usa{background:rgba(27,73,101,.3);color:#B8D4E8}
+.hero-market-tag.wa{background:rgba(212,165,116,.18);color:var(--sand)}
+
+/* ===== CONTENT ===== */
+.content-wrap{max-width:940px;margin:0 auto;padding:0 40px}
+.chapter{padding:80px 0;border-bottom:1px solid var(--border);opacity:0;transform:translateY(20px);transition:all .6s cubic-bezier(.4,0,.2,1)}
+.chapter.visible{opacity:1;transform:translateY(0)}
+.chapter-header{margin-bottom:48px}
+.chapter-number{font-family:'JetBrains Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:3px;color:var(--clay);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.chapter h2{font-family:'Instrument Serif',serif;font-size:clamp(1.8rem,3.5vw,2.4rem);color:var(--earth);line-height:1.2;letter-spacing:-.5px}
+.chapter-intro{font-size:1.02rem;color:var(--muted);margin-top:16px;max-width:720px;line-height:1.85}
+
+/* ===== PROSE ===== */
+.prose{margin:20px 0}
+.prose p{margin-bottom:16px;font-size:.92rem;line-height:1.88}
+.prose h3{font-family:'Instrument Serif',serif;font-size:1.35rem;color:var(--earth);margin:44px 0 16px;letter-spacing:-.3px}
+.prose h4{font-size:.95rem;font-weight:700;color:var(--earth);margin:28px 0 10px}
+.prose strong{color:var(--earth)}
+.prose em{color:var(--clay);font-style:italic}
+
+/* ===== DEFINITION CARDS ===== */
+.def-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;margin:24px 0}
+.def-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:24px;transition:all .25s}
+.def-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.def-term{font-weight:700;font-size:.92rem;color:var(--earth);margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.def-term .ico{color:var(--clay)}
+.def-text{font-size:.84rem;color:var(--muted);line-height:1.75}
+
+/* ===== COMPARISON BLOCKS ===== */
+.compare-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:24px 0}
+.compare-block{border-radius:var(--radius-lg);padding:28px;border:1px solid}
+.compare-block.usa{background:var(--accent-usa-light);border-color:rgba(27,73,101,.12)}
+.compare-block.wa{background:var(--accent-wa-light);border-color:rgba(107,66,38,.12)}
+.compare-tag{display:inline-flex;align-items:center;gap:6px;font-size:.58rem;text-transform:uppercase;letter-spacing:2px;font-weight:700;padding:4px 12px;border-radius:4px;margin-bottom:14px}
+.compare-block.usa .compare-tag{background:var(--accent-usa);color:white}
+.compare-block.wa .compare-tag{background:var(--accent-wa);color:white}
+.compare-block h4{font-family:'Instrument Serif',serif;font-size:1.12rem;margin-bottom:12px;color:var(--earth)}
+.compare-block p,.compare-block li{font-size:.84rem;line-height:1.78;color:var(--slate)}
+.compare-block ul{list-style:none;padding:0}
+.compare-block li{padding:5px 0 5px 20px;position:relative}
+.compare-block li::before{content:'';position:absolute;left:0;top:13px;width:8px;height:1.5px;background:var(--clay)}
+
+/* ===== ACCORDION ===== */
+.accordion{margin:24px 0}
+.acc-item{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;transition:all .25s}
+.acc-item:hover{border-color:var(--sand)}
+.acc-trigger{width:100%;padding:20px 24px;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:600;color:var(--earth);text-align:left;gap:16px}
+.acc-icon{width:20px;height:20px;flex-shrink:0;transition:transform .3s;color:var(--clay)}
+.acc-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.acc-item.open .acc-icon{transform:rotate(180deg)}
+.acc-body{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.4,0,.2,1)}
+.acc-body-inner{padding:0 24px 24px;font-size:.86rem;line-height:1.85;color:var(--slate)}
+.acc-body-inner p{margin-bottom:12px}
+
+/* ===== CALLOUT BOXES ===== */
+.callout{border-radius:var(--radius);padding:22px 22px 22px 54px;margin:24px 0;position:relative;font-size:.86rem;line-height:1.78}
+.callout .callout-icon{position:absolute;left:18px;top:22px;width:22px;height:22px}
+.callout .callout-icon svg{width:100%;height:100%;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.callout.tip{background:var(--success-bg);border-left:3px solid var(--success)}
+.callout.tip .callout-icon svg{stroke:var(--success)}
+.callout.warn{background:var(--warning-bg);border-left:3px solid var(--warning)}
+.callout.warn .callout-icon svg{stroke:var(--warning)}
+.callout.danger{background:var(--danger-bg);border-left:3px solid var(--danger)}
+.callout.danger .callout-icon svg{stroke:var(--danger)}
+.callout.info{background:var(--accent-usa-light);border-left:3px solid var(--accent-usa)}
+.callout.info .callout-icon svg{stroke:var(--accent-usa)}
+.callout strong{color:var(--earth)}
+
+/* ===== TIMELINE ===== */
+.timeline{margin:32px 0;position:relative}
+.timeline::before{content:'';position:absolute;left:22px;top:0;bottom:0;width:2px;background:var(--border)}
+.tl-item{display:flex;gap:24px;padding:0 0 28px;position:relative}
+.tl-dot{width:44px;height:44px;flex-shrink:0;background:var(--white);border:2px solid var(--sand);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;color:var(--clay);z-index:1;font-family:'JetBrains Mono',monospace}
+.tl-item.active .tl-dot{background:var(--clay);color:white;border-color:var(--clay)}
+.tl-content{flex:1;padding-top:8px}
+.tl-title{font-weight:700;font-size:.95rem;color:var(--earth);margin-bottom:6px}
+.tl-desc{font-size:.84rem;color:var(--muted);line-height:1.78}
+.tl-tags{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.tl-tag{font-size:.62rem;padding:3px 10px;border-radius:4px;font-weight:600;text-transform:uppercase;letter-spacing:1px;display:inline-flex;align-items:center;gap:4px}
+.tl-tag.time{background:var(--success-bg);color:var(--success)}
+.tl-tag.cost{background:var(--warning-bg);color:var(--warning)}
+
+/* ===== TABLES ===== */
+.table-wrap{overflow-x:auto;margin:24px 0;border-radius:var(--radius);border:1px solid var(--border);background:var(--white)}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+thead{background:var(--warm)}
+th{padding:14px 18px;text-align:left;font-weight:600;color:var(--earth);font-size:.72rem;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border);white-space:nowrap}
+td{padding:12px 18px;border-bottom:1px solid var(--border);color:var(--slate)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(212,165,116,.03)}
+
+/* ===== STEP CARDS ===== */
+.step-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:12px;display:flex;gap:18px;transition:all .2s}
+.step-card:hover{box-shadow:var(--shadow-sm)}
+.step-num{width:38px;height:38px;flex-shrink:0;background:var(--warm);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:700;color:var(--clay)}
+.step-body h4{font-size:.95rem;color:var(--earth);margin-bottom:6px}
+.step-body p{font-size:.84rem;color:var(--muted);line-height:1.78}
+
+/* ===== CHECKLIST ===== */
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(224,213,200,.5);font-size:.86rem}
+.check-box{width:20px;height:20px;flex-shrink:0;border:2px solid var(--sand);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:3px}
+.check-box:hover{border-color:var(--clay)}
+.check-box.checked{background:var(--success);border-color:var(--success)}
+.check-box.checked svg{display:block}
+.check-box svg{display:none;width:12px;height:12px;stroke:white;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.check-label{line-height:1.7}
+
+/* ===== STAT ROW ===== */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:24px 0}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:700;color:var(--clay);margin-bottom:4px}
+.stat-label{font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted)}
+
+/* ===== FOOTER ===== */
+.guide-footer{background:var(--earth);color:var(--sand);padding:48px 40px;text-align:center;font-size:.8rem;line-height:1.8}
+.guide-footer strong{color:var(--warm)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:1024px){
+  .sidebar{transform:translateX(-300px)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0!important}
+  .menu-toggle{display:flex}
+  .hero{padding:80px 28px 60px}
+  .content-wrap{padding:0 24px}
+  .compare-row{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .hero h2{font-size:1.8rem}
+  .def-grid{grid-template-columns:1fr}
+  .step-card{flex-direction:column;gap:10px}
+  .stat-row{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- SVG SPRITE (hidden) -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></symbol>
+  <symbol id="i-dollar" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></symbol>
+  <symbol id="i-build" viewBox="0 0 24 24"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></symbol>
+  <symbol id="i-check-shield" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></symbol>
+  <symbol id="i-lightbulb" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></symbol>
+  <symbol id="i-x-octagon" viewBox="0 0 24 24"><path d="M10 15l5-5m0 5l-5-5m11.356-2.643l-4.713-4.714A2 2 0 0015.228 2H8.772a2 2 0 00-1.414.586L2.643 7.357A2 2 0 002.057 8.77v6.457a2 2 0 00.586 1.414l4.713 4.714a2 2 0 001.414.586h6.457a2 2 0 001.414-.586l4.714-4.714a2 2 0 00.586-1.414V8.772a2 2 0 00-.586-1.415z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></symbol>
+  <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+</svg>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <h1>GroundUp</h1>
+    <p>Home Building Guide</p>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">Foundations</div>
+    <a class="nav-item active" href="#ch1" onclick="navTo(event)"><span class="nav-num">01</span><span class="nav-label">The Big Picture</span></a>
+    <a class="nav-item" href="#ch2" onclick="navTo(event)"><span class="nav-num">02</span><span class="nav-label">Financing, Budgets & Loans</span></a>
+    <a class="nav-item" href="#ch3" onclick="navTo(event)"><span class="nav-num">03</span><span class="nav-label">Finding & Buying Land</span></a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">Planning</div>
+    <a class="nav-item" href="#ch4" onclick="navTo(event)"><span class="nav-num">04</span><span class="nav-label">Design & Architecture</span></a>
+    <a class="nav-item" href="#ch5" onclick="navTo(event)"><span class="nav-num">05</span><span class="nav-label">Permits & Approvals</span></a>
+    <a class="nav-item" href="#ch6" onclick="navTo(event)"><span class="nav-num">06</span><span class="nav-label">Contractors & Suppliers</span></a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">Building</div>
+    <a class="nav-item" href="#ch7" onclick="navTo(event)"><span class="nav-num">07</span><span class="nav-label">Construction Process</span></a>
+    <a class="nav-item" href="#ch8" onclick="navTo(event)"><span class="nav-num">08</span><span class="nav-label">Inspections & Quality</span></a>
+    <a class="nav-item" href="#ch9" onclick="navTo(event)"><span class="nav-num">09</span><span class="nav-label">Project Management</span></a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">Completion</div>
+    <a class="nav-item" href="#ch10" onclick="navTo(event)"><span class="nav-num">10</span><span class="nav-label">Full Cost Breakdown</span></a>
+    <a class="nav-item" href="#ch11" onclick="navTo(event)"><span class="nav-num">11</span><span class="nav-label">Post-Construction</span></a>
+    <a class="nav-item" href="#ch12" onclick="navTo(event)"><span class="nav-num">12</span><span class="nav-label">Legal & Technology</span></a>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label">Reading Progress</div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+</nav>
+
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+<button class="menu-toggle" id="menuBtn" onclick="toggleSidebar()"><svg><use href="#i-menu"/></svg></button>
+
+<div class="main" id="mainContent">
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-content">
+    <div class="hero-badge"><span class="ico ico-sm"><svg><use href="#i-compass"/></svg></span> Complete Interactive Reference</div>
+    <h2>Build Your Own Home.<br>From Zero Knowledge<br>to Finished Project.</h2>
+    <p>A systematic, step-by-step educational guide covering every phase of residential construction. Written for two markets, one builder: you. Every term is explained, every cost is benchmarked, every process is documented.</p>
+    <div class="hero-markets">
+      <span class="hero-market-tag usa">United States</span>
+      <span class="hero-market-tag wa">Togo &middot; Ghana &middot; Benin</span>
+    </div>
+  </div>
+</header>
+
+<div class="content-wrap">
+
+<!-- ===== CH 1 ===== -->
+<section class="chapter" id="ch1">
+  <div class="chapter-header">
+    <div class="chapter-number">Chapter 01</div>
+    <h2>The Big Picture &mdash; What Are You Building and Why?</h2>
+    <p class="chapter-intro">Before you pick up a phone, open a spreadsheet, or visit a single plot of land, you need to answer one question clearly: <strong>what is this building for?</strong> The answer determines your financing strategy, your design decisions, your tax treatment, and your entire project timeline. Getting this wrong costs tens of thousands of dollars in misdirected effort.</p>
+  </div>
+
+  <div class="prose">
+    <h3>The Three Paths</h3>
+    <p>Every home building project falls into one of three categories. Understanding the distinctions is not academic &mdash; they affect every decision downstream, from the type of loan you qualify for to how aggressively you negotiate material prices.</p>
+  </div>
+
+  <div class="def-grid">
+    <div class="def-card">
+      <div class="def-term"><span class="ico"><svg><use href="#i-home"/></svg></span> Build to Occupy</div>
+      <div class="def-text">You are building a home to live in as your primary residence. This is the most common path. You get access to the best loan terms (lowest interest rates, lowest down payments). In the USA, you can exclude up to $250K/$500K in capital gains from taxes when you eventually sell under Section 121. In West Africa, this is typically the first build a family undertakes, often on inherited or family-acquired land. The downside: no income generation while you occupy.</div>
+    </div>
+    <div class="def-card">
+      <div class="def-term"><span class="ico"><svg><use href="#i-key"/></svg></span> Build to Rent</div>
+      <div class="def-text">You are building to generate ongoing rental income &mdash; a single-family house, duplex, or apartment building kept as a long-term investment. In the USA, you can depreciate the building over 27.5 years, sheltering rental income from taxes. In West Africa, rental yields of 8&ndash;13% are common &mdash; roughly double US markets &mdash; driven by massive housing shortages and extremely limited mortgage access that keeps homeownership rates low.</div>
+    </div>
+    <div class="def-card">
+      <div class="def-term"><span class="ico"><svg><use href="#i-dollar"/></svg></span> Build to Sell (Spec Home)</div>
+      <div class="def-text">You are building a "spec home" &mdash; speculating that a buyer will want what you build. This is the highest-risk, highest-reward path. You need deep understanding of your local market: what styles sell, what price points move fastest, and how long homes sit before closing. In the USA, profits are taxed as ordinary income plus 15.3% self-employment tax if you are classified as a dealer. In West Africa, diaspora buyers are the primary target market for spec homes.</div>
+    </div>
+  </div>
+
+  <div class="prose">
+    <h3>Essential Terminology</h3>
+    <p>The construction and real estate world speaks its own language. These are terms you will encounter in the first week of research and use constantly throughout your project. Understanding them precisely avoids expensive misunderstandings.</p>
+  </div>
+
+  <div class="def-grid">
+    <div class="def-card">
+      <div class="def-term">DTI (Debt-to-Income Ratio)</div>
+      <div class="def-text">The percentage of your gross monthly income consumed by debt payments. If you earn $10,000/month and owe $3,000 in debts, your DTI is 30%. Banks use DTI as the primary metric to determine how large a loan you can service. Most construction loans require DTI below 43&ndash;45%. Every existing debt &mdash; car payments, credit cards, student loans &mdash; reduces the mortgage you can qualify for.</div>
+    </div>
+    <div class="def-card">
+      <div class="def-term">LTC (Loan-to-Cost)</div>
+      <div class="def-text">The percentage of total project cost a lender will finance. If a bank offers 85% LTC on a $500,000 project, they lend $425,000 and you must supply $75,000 as a down payment. LTC varies by loan type: conventional construction loans typically offer 80&ndash;85% LTC, while hard money lenders may go to 90% but at much higher interest rates.</div>
+    </div>
+    <div class="def-card">
+      <div class="def-term">Cap Rate (Capitalization Rate)</div>
+      <div class="def-text">Net Operating Income divided by Property Value. A $200,000 property generating $16,000/year in net income has an 8% cap rate. This is the standard metric for comparing investment properties. Higher cap rates indicate better returns but typically come with higher risk, less desirable locations, or older construction. Target 5&ndash;8% in the USA; 8&ndash;13% in West Africa.</div>
+    </div>
+    <div class="def-card">
+      <div class="def-term">Titre Foncier (Land Title Certificate)</div>
+      <div class="def-text">The official land title in francophone West Africa (Togo, Benin). It is the <strong>only definitive proof of ownership</strong> recognized by courts. Without it, your claim to land is legally vulnerable. Yet only approximately 8% of Lom&eacute; residents hold one, and the process of obtaining one takes six formal steps through the OTR. In Ghana, the equivalent is a registered lease or indenture confirmed by the Lands Commission.</div>
+    </div>
+    <div class="def-card">
+      <div class="def-term">Owner Builder</div>
+      <div class="def-text">A person who acts as their own general contractor, managing subcontractors directly instead of hiring a GC to run the project. This eliminates the general contractor's 15&ndash;25% markup but requires you to coordinate every trade, manage every schedule conflict, call every inspection, and resolve every dispute yourself. Most owner-builder loans require a minimum credit score of 675.</div>
+    </div>
+    <div class="def-card">
+      <div class="def-term">Poteau-Poutre (Column-and-Beam)</div>
+      <div class="def-text">The reinforced concrete construction system dominant across West Africa. Concrete columns and horizontal beams form the structural skeleton; concrete masonry blocks fill in between as non-load-bearing walls. This is to West Africa what wood framing is to America. The system is robust, termite-proof, and well-suited to tropical climates, but requires careful supervision of rebar placement and concrete mixing.</div>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <span class="callout-icon"><svg><use href="#i-lightbulb"/></svg></span>
+    <strong>Beginner's Rule:</strong> Do not skip the planning stages. The builders who go 30&ndash;40% over budget are the ones who started pouring concrete before finishing their budget spreadsheet. A disciplined approach &mdash; collecting bids from every subcontractor before breaking ground &mdash; can achieve 98%+ budget accuracy on total project cost.
+  </div>
+
+  <div class="prose">
+    <h3>Market Analysis: Evaluating Where and What to Build</h3>
+    <p>Before committing any capital, you need to understand the demand dynamics of your target market. The metrics differ between regions, but the logic is the same: build what people want to buy or rent, in locations where demand outstrips supply.</p>
+  </div>
+
+  <div class="compare-row">
+    <div class="compare-block usa">
+      <span class="compare-tag">USA Tools</span>
+      <h4>Market Research Methods</h4>
+      <ul>
+        <li><strong>Zillow Home Value Index</strong> and <strong>Redfin sale-to-list ratios</strong> for pricing trends</li>
+        <li><strong>Days on market</strong> &mdash; under 30 indicates a hot seller's market</li>
+        <li><strong>Absorption rate</strong> &mdash; under 4 months of inventory favors sellers</li>
+        <li><strong>Price-to-rent ratio</strong> &mdash; under 15 suggests buying/building is favorable vs. renting</li>
+        <li><strong>Census Bureau data</strong> (data.census.gov) for population growth and vacancy rates at zip-code level</li>
+        <li>MLS data accessed through a buyer's agent for recent comparable sales</li>
+      </ul>
+    </div>
+    <div class="compare-block wa">
+      <span class="compare-tag">West Africa Tools</span>
+      <h4>Market Research Methods</h4>
+      <ul>
+        <li><strong>Ghana:</strong> Meqasa.com, Tonaton.com, GhanaPropertyFinder.com for listing prices</li>
+        <li><strong>Togo:</strong> CoinAfrique, ImmoAsk, Immooz for comparable listings</li>
+        <li><strong>Benin:</strong> Keur-Immo, CoinAfrique Benin for pricing data</li>
+        <li>Local real estate agencies remain the most reliable intelligence source</li>
+        <li>Diaspora WhatsApp and Facebook groups for recent buyer experiences</li>
+        <li>Housing Finance Africa Yearbook for country-level market data</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-val">8&ndash;13%</div><div class="stat-label">Ghana Rental Yield</div></div>
+    <div class="stat-card"><div class="stat-val">7&ndash;12%</div><div class="stat-label">Togo Rental Yield</div></div>
+    <div class="stat-card"><div class="stat-val">4&ndash;8%</div><div class="stat-label">USA Rental Yield</div></div>
+    <div class="stat-card"><div class="stat-val">1.8M</div><div class="stat-label">Ghana Housing Deficit</div></div>
+  </div>
+</section>
+
+<!-- ===== CH 2 ===== -->
+<section class="chapter" id="ch2">
+  <div class="chapter-header">
+    <div class="chapter-number">Chapter 02</div>
+    <h2>Money &mdash; Financing, Budgets and Loans</h2>
+    <p class="chapter-intro">The construction industry runs on money flowing at the right time to the right people. Understanding how construction financing works &mdash; the types, the math, the draw schedules, the pitfalls &mdash; is the difference between a finished home and an abandoned foundation slab.</p>
+  </div>
+
+  <div class="prose"><h3>USA: The Construction Loan Landscape</h3><p>In America, most people cannot pay cash for a home build. The system is designed around <strong>construction loans</strong> &mdash; specialized products that release money in controlled stages as your house progresses through verified milestones.</p></div>
+
+  <div class="accordion">
+    <div class="acc-item">
+      <button class="acc-trigger" onclick="toggleAcc(this)"><span>Construction-to-Permanent Loan (One-Time Close)</span><span class="acc-icon"><svg><use href="#i-chevron"/></svg></span></button>
+      <div class="acc-body"><div class="acc-body-inner">
+        <p>This is the standard for owner-builders. <strong>A single loan covers both the construction phase and your permanent mortgage.</strong> You close once, saving thousands in duplicate closing costs and avoiding the risk of rate changes between closings.</p>
+        <p><strong>How it works:</strong> During construction (typically 6&ndash;12 months), you make interest-only payments on funds drawn to date. Once the house passes final inspection, the loan automatically converts to a standard 15- or 30-year amortizing mortgage with principal-plus-interest payments. No re-qualification, no second appraisal, no second set of closing costs.</p>
+        <p><strong>Typical requirements:</strong> Credit score 680+, down payment 15&ndash;20% of total project cost, DTI ratio under 43&ndash;45%, 12+ months of cash reserves. Interest rates currently run 6.9&ndash;8.2%. Funds are disbursed through 5&ndash;7 draws tied to construction milestones, with lender inspections before each disbursement and 5&ndash;10% retainage held until completion.</p>
+        <p><strong>Draw schedule example:</strong> Draw 1 (foundation complete): 15%. Draw 2 (framing complete): 20%. Draw 3 (roof and exterior): 15%. Draw 4 (mechanical rough-in): 20%. Draw 5 (drywall and finishes): 15%. Draw 6 (final completion): 15%. The bank sends an inspector to verify each milestone before releasing funds.</p>
+      </div></div>
+    </div>
+    <div class="acc-item">
+      <button class="acc-trigger" onclick="toggleAcc(this)"><span>FHA Construction Loan &mdash; Lower Barrier to Entry</span><span class="acc-icon"><svg><use href="#i-chevron"/></svg></span></button>
+      <div class="acc-body"><div class="acc-body-inner">
+        <p>Backed by the Federal Housing Administration, these loans allow you to build with just <strong>3.5% down</strong> and a credit score as low as <strong>580</strong>. The trade-off is mandatory mortgage insurance premium (1.75% upfront plus 0.55% annually) for the entire life of the loan &mdash; not just until you reach 20% equity.</p>
+        <p>FHA loans cap at $524,225 in standard areas (higher in designated expensive markets). They require a <strong>licensed general contractor</strong> &mdash; FHA does not allow owner-builders acting as their own GC. The home must serve as your primary residence. DTI limits extend to 50%, making qualification easier for borrowers with existing debts.</p>
+      </div></div>
+    </div>
+    <div class="acc-item">
+      <button class="acc-trigger" onclick="toggleAcc(this)"><span>VA Construction Loan &mdash; For Veterans, Zero Down</span><span class="acc-icon"><svg><use href="#i-chevron"/></svg></span></button>
+      <div class="acc-body"><div class="acc-body-inner">
+        <p>If you are an eligible veteran or active-duty service member, this is the strongest deal in construction lending: <strong>zero down payment, no PMI</strong>, and competitive interest rates. The challenge: very few lenders offer VA construction loans. The Federal Savings Bank and GO Mortgage are among the rare providers.</p>
+        <p>A common workaround: use a conventional construction loan during the build, then refinance into a VA permanent loan after completion. This approach is more widely available but involves two closings, two sets of closing costs, and the risk that rates may change between closings. The VA funding fee (1.25&ndash;3.3% of loan amount) replaces PMI as a one-time cost.</p>
+      </div></div>
+    </div>
+    <div class="acc-item">
+      <button class="acc-trigger" onclick="toggleAcc(this)"><span>Hard Money and Private Loans &mdash; For Investors and Spec Builders</span><span class="acc-icon"><svg><use href="#i-chevron"/></svg></span></button>
+      <div class="acc-body"><div class="acc-body-inner">
+        <p>Private lenders evaluate the <strong>deal itself</strong>, not your personal financial situation. This makes them ideal for spec builders and investors who may not qualify for traditional financing due to irregular income, multiple existing properties, or LLC-based ownership structures.</p>
+        <p>The cost is steep: <strong>9&ndash;15% interest rates, 2&ndash;5 origination points, and 6&ndash;24 month terms.</strong> Loan-to-cost ratios reach 75&ndash;90%, capped at 60&ndash;75% of after-repair value (ARV). These loans make mathematical sense only when you can build fast, sell fast, and your profit margin absorbs the high financing cost. A $400,000 build at 12% interest costs $48,000/year in interest alone &mdash; that is $4,000/month of carrying cost before a single nail is driven.</p>
+      </div></div>
+    </div>
+    <div class="acc-item">
+      <button class="acc-trigger" onclick="toggleAcc(this)"><span>Commercial Loans &mdash; For Multi-Unit Rental Properties</span><span class="acc-icon"><svg><use href="#i-chevron"/></svg></span></button>
+      <div class="acc-body"><div class="acc-body-inner">
+        <p>If you are building a duplex, triplex, fourplex, or apartment complex to hold as a rental investment, commercial lending is the primary channel. Unlike residential loans that evaluate <strong>you</strong> (income, credit, DTI), commercial lenders evaluate <strong>the deal</strong> &mdash; projected rental income, operating expenses, and the debt service coverage ratio (DSCR).</p>
+        <p>DSCR is calculated as Net Operating Income divided by Annual Debt Service. Most commercial lenders require a minimum DSCR of 1.20&ndash;1.25, meaning the property must generate 20&ndash;25% more income than the mortgage payment. Down payments range from 20&ndash;30%, and terms are typically 5&ndash;10 year adjustable with 25&ndash;30 year amortization schedules.</p>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="prose"><h3>West Africa: Self-Funding as the Dominant Model</h3><p>Formal bank financing barely exists for residential construction in Togo, Ghana, or Benin. Understanding why &mdash; and how people actually build &mdash; is critical context for any project in this region.</p></div>
+
+  <div class="compare-row">
+    <div class="compare-block usa">
+      <span class="compare-tag">USA</span>
+      <h4>Institutional Lending Model</h4>
+      <ul>
+        <li>77% of custom homes use construction-to-permanent loans</li>
+        <li>Mortgage rates: 6&ndash;8% fixed (USD)</li>
+        <li>Build in one continuous phase: 6&ndash;12 months</li>
+        <li>Bank inspects site and controls draw schedule</li>
+        <li>Down payment: 3.5&ndash;20% depending on loan type</li>
+        <li>Draw schedule forces milestone completion before funding</li>
+      </ul>
+    </div>
+    <div class="compare-block wa">
+      <span class="compare-tag">West Africa</span>
+      <h4>Self-Funding / Phased Model</h4>
+      <ul>
+        <li>70&ndash;90% of homes are self-funded incrementally</li>
+        <li>Ghana mortgage rates: 24&ndash;36% (cedi); Togo: ~7.75% (CFA via Orabank)</li>
+        <li>Build in phases as funds arrive: 1&ndash;10+ years</li>
+        <li>No bank oversight &mdash; quality control depends entirely on you</li>
+        <li>No formal down payment &mdash; land purchased with cash, building with cash</li>
+        <li>CFA franc pegged to Euro (655.957 XOF = 1 EUR) stabilizes Togo/Benin costs</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <span class="callout-icon"><svg><use href="#i-alert"/></svg></span>
+    <strong>Phased building carries compounding risks:</strong> Exposed rebar rusts and weakens, unroofed walls absorb rain and crack, material prices escalate 10&ndash;20% annually, and different crews at each phase produce inconsistent quality. If funding allows, get from foundation to roofed structure in one continuous phase &mdash; even if interior finishing must wait for the next funding cycle.
+  </div>
+
+  <div class="prose"><h3>The DTI Calculation &mdash; How Banks Determine Your Loan</h3><p>This is the exact math a loan officer runs when you apply. Understanding it lets you pre-qualify yourself before wasting time on applications you will not pass.</p></div>
+
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-body"><h4>Calculate gross monthly income</h4><p>Annual salary divided by 12. Self-employed borrowers: banks average your last 2 years of tax returns. Example: $180,000/year = $15,000/month gross income.</p></div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-body"><h4>Apply the DTI ceiling</h4><p>Most lenders cap at 43&ndash;45%. Multiply: $15,000 x 0.45 = <strong>$6,750</strong>. This is your maximum allowable total monthly debt load, including the future mortgage payment.</p></div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">3</div>
+    <div class="step-body"><h4>Subtract existing monthly debts</h4><p>Car payment ($600) + credit card minimums ($300) + student loan ($400) = $1,300 in existing obligations. $6,750 minus $1,300 = <strong>$5,450 maximum monthly mortgage payment</strong> you can qualify for.</p></div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">4</div>
+    <div class="step-body"><h4>Back into your total project budget</h4><p>Using a mortgage calculator (mortgagecalculator.org) with 8% interest, 30-year term, 15% down, $10K property tax, and $2,400 insurance: a $5,450 monthly payment supports roughly a <strong>$575,000 total project cost</strong>. Your down payment at 15% would be $86,250.</p></div>
+  </div>
+
+  <div class="prose"><h3>Construction Cost Benchmarks by Market</h3><p>These figures represent construction cost only (excluding land). Use them to sanity-check your budget against market reality. The ranges reflect basic-to-custom quality tiers.</p></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Region</th><th>Basic</th><th>Standard</th><th>Custom</th><th>Luxury</th></tr></thead>
+      <tbody>
+        <tr><td><strong>USA Southeast</strong></td><td>$130&ndash;160/sf</td><td>$160&ndash;210/sf</td><td>$210&ndash;300/sf</td><td>$300+/sf</td></tr>
+        <tr><td><strong>USA Midwest</strong></td><td>$130&ndash;190/sf</td><td>$190&ndash;250/sf</td><td>$250&ndash;350/sf</td><td>$350+/sf</td></tr>
+        <tr><td><strong>USA West Coast</strong></td><td>$220&ndash;280/sf</td><td>$280&ndash;400/sf</td><td>$400&ndash;600/sf</td><td>$600+/sf</td></tr>
+        <tr><td><strong>USA Northeast</strong></td><td>$200&ndash;260/sf</td><td>$260&ndash;350/sf</td><td>$350&ndash;500/sf</td><td>$500+/sf</td></tr>
+        <tr><td><strong>Lom&eacute;, Togo</strong></td><td>$19&ndash;33/sf</td><td>$33&ndash;56/sf</td><td>$56&ndash;111/sf</td><td>$111+/sf</td></tr>
+        <tr><td><strong>Accra, Ghana</strong></td><td>$23&ndash;42/sf</td><td>$42&ndash;74/sf</td><td>$74&ndash;195/sf</td><td>$195+/sf</td></tr>
+        <tr><td><strong>Cotonou, Benin</strong></td><td>$19&ndash;33/sf</td><td>$33&ndash;56/sf</td><td>$56&ndash;93/sf</td><td>$93+/sf</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout info">
+    <span class="callout-icon"><svg><use href="#i-book"/></svg></span>
+    <strong>Always add contingency:</strong> Budget 10&ndash;20% extra in the USA, 15&ndash;25% in West Africa. Material prices fluctuate, underground surprises are common, and change orders are inevitable. The contingency is not a "maybe" &mdash; it is a mathematical certainty that something will cost more than estimated. The NAHB 2024 national average was $162/sf for a 2,647 sf home, totaling $428,215 &mdash; the highest ever recorded.
+  </div>
+</section>
+
+<!-- ===== CH 3 ===== -->
+<section class="chapter" id="ch3">
+  <div class="chapter-header">
+    <div class="chapter-number">Chapter 03</div>
+    <h2>Land &mdash; Finding, Verifying and Buying</h2>
+    <p class="chapter-intro">Land is the foundation of everything &mdash; literally and legally. In the USA, an institutional system of recorded deeds and title insurance protects buyers. In West Africa, <strong>land disputes are the number one cause of construction project failure</strong>, and protecting yourself requires rigorous personal diligence that no institution will perform for you.</p>
+  </div>
+
+  <div class="compare-row">
+    <div class="compare-block usa">
+      <span class="compare-tag">USA</span>
+      <h4>Finding Land</h4>
+      <ul>
+        <li><strong>MLS</strong> through your buyer's agent (free to you as buyer &mdash; seller pays agent commissions)</li>
+        <li>Zillow.com &rarr; Buy &rarr; Filter by "Lots &amp; Land" &rarr; set price and location</li>
+        <li>LandWatch.com and Land.com for rural and agricultural parcels</li>
+        <li>County tax assessor records for identifying off-market or tax-delinquent parcels</li>
+        <li>Physical drive-throughs of target neighborhoods looking for "For Sale" signs</li>
+      </ul>
+    </div>
+    <div class="compare-block wa">
+      <span class="compare-tag">West Africa</span>
+      <h4>Finding Land</h4>
+      <ul>
+        <li>Local land agents ("<em>d&eacute;marcheurs</em>") &mdash; typical commission: 5&ndash;10% of sale price</li>
+        <li>Ghana: Meqasa.com, Tonaton.com for urban listings</li>
+        <li>Togo/Benin: CoinAfrique, ImmoAsk, Immooz</li>
+        <li>Chiefs, family heads, and traditional authorities for customary land</li>
+        <li>Diaspora WhatsApp and Facebook community groups for peer-verified leads</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="prose"><h3>USA Due Diligence Checklist</h3><p>Before you close on land in the USA, every item below must be verified. Skipping any single item can result in purchasing an unbuildable lot, incurring massive unexpected costs, or discovering competing ownership claims after you have already paid.</p></div>
+
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Title search and title insurance</strong> &mdash; Confirms no liens, encumbrances, or competing ownership claims exist. Costs 0.5&ndash;1% of purchase price. Vacant land is the top target for title fraud, representing 52% of all title fraud cases nationally.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Boundary survey</strong> &mdash; A licensed surveyor physically marks exact property lines with stakes or pins. Residential surveys cost $500&ndash;$1,200; ALTA surveys for complex situations run $2,000&ndash;$25,000. Without this, you risk building on a neighbor's property.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Zoning verification</strong> &mdash; Confirm the lot is zoned for your intended use (R-1 single-family, R-2 duplex, R-3 multi-family, etc.). Check with the local planning department. Rezoning is possible but expensive and time-consuming.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Geotechnical / soil report</strong> &mdash; A soil engineer tests bearing capacity, composition, and water table depth. $1,000&ndash;$5,000. Results determine your foundation type, cost, and engineering requirements. Expansive clay soils require engineered foundations that can add $10,000&ndash;$30,000.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Flood zone verification</strong> &mdash; Check FEMA's Flood Map Service Center (free). Zone A or AE designation requires flood insurance ($700&ndash;$3,000+/year) and may impose elevation requirements that add $20,000&ndash;$50,000 to construction costs.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Utility access</strong> &mdash; Confirm water, sewer, electric, gas, and internet are available at or near the lot line. Remote utility extensions can cost $10,000&ndash;$30,000 for electric, $5,000&ndash;$15,000 for a private well, and $3,400&ndash;$20,000 for septic systems. Total utility costs for remote lots can reach $45,000&ndash;$90,000.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Percolation test</strong> &mdash; Required if no municipal sewer is available (you will need a septic system). $250&ndash;$1,500. Some soil types fail perc tests entirely, making the lot effectively unbuildable without an expensive engineered septic system.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Setback and easement review</strong> &mdash; Setbacks define how close to property edges you can build (front 20&ndash;35ft, side 5&ndash;15ft, rear 20&ndash;35ft typical). Easements grant utility companies or neighbors access rights across your property. Both reduce your buildable area.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>HOA/deed restrictions</strong> &mdash; If in a subdivision, read every page of CC&Rs. These may dictate minimum home size, exterior materials, roof pitch, paint colors, fence height, and even landscaping choices. Violations can result in fines or forced remediation.</div></div>
+
+  <div class="prose"><h3>West Africa: Navigating the Land Title Crisis</h3><p>In Togo, <strong>75% of court cases involve land disputes</strong>. In Ghana, land cases consume roughly <strong>80% of High Court capacity</strong>. This is not a minor inconvenience &mdash; it is the defining risk of building in this region. The following process is not optional; it is your primary defense against financial loss.</p></div>
+
+  <div class="callout danger">
+    <span class="callout-icon"><svg><use href="#i-x-octagon"/></svg></span>
+    <strong>The primary scam targeting diaspora buyers: double-selling.</strong> A seller, or sometimes a chief or family member without authority, sells the same plot to 2&ndash;5 different buyers, each receiving convincing documents. The only protection: official verification at the government land registry before any payment changes hands. Never skip this step. Never trust documents alone. Never send money before verification is complete.
+  </div>
+
+  <div class="step-card"><div class="step-num">1</div><div class="step-body"><h4>Hire a local real estate lawyer first</h4><p>Before you look at a single plot. In Togo and Benin, engage a <em>notaire</em> (legally mandated intermediary for all property transactions). In Ghana, engage a solicitor experienced in land law. Budget $300&ndash;$1,000 for their services. This is the highest-ROI expenditure of your entire project.</p></div></div>
+  <div class="step-card"><div class="step-num">2</div><div class="step-body"><h4>Verify ownership at the government registry</h4><p><strong>Togo:</strong> Search at the DCCFE (Conservation Fonci&egrave;re) for existing titre foncier. <strong>Ghana:</strong> Official search at the Lands Commission (~GHS 500). <strong>Benin:</strong> Search the ANDF registry. This confirms whether the seller actually owns what they claim to sell and whether the property is already pledged, mortgaged, or in active litigation.</p></div></div>
+  <div class="step-card"><div class="step-num">3</div><div class="step-body"><h4>Commission a licensed surveyor to confirm boundaries</h4><p>A <em>g&eacute;om&egrave;tre agr&eacute;&eacute;</em> (licensed surveyor) physically marks the land and cross-references coordinates against registry records. Without this, you risk being shown one plot while being sold documentation for a different one. Cost: CFA 100,000&ndash;500,000 ($160&ndash;$800).</p></div></div>
+  <div class="step-card"><div class="step-num">4</div><div class="step-body"><h4>For customary land (Ghana specifically): verify elder consensus</h4><p>If purchasing from a stool, chief, or family, demand written allocation letters signed by <strong>both the chief and principal elders</strong>. A sale by the chief alone without elder concurrence can be legally voided years later. Physically visit the land and interview neighboring property owners about its history and any prior disputes.</p></div></div>
+  <div class="step-card"><div class="step-num">5</div><div class="step-body"><h4>Obtain the titre foncier or register the lease</h4><p>In Togo, the titre foncier process takes six steps through the OTR (CFA 200,000&ndash;500,000 in fees, several months). In Ghana, register the lease at the Lands Commission. In Benin, the notaire handles registration and pays transfer taxes (~5%). <strong>Do not begin construction until registration is complete or well underway.</strong></p></div></div>
+
+  <div class="prose"><h3>Typical Land Costs by Location</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Location</th><th>Price Range</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Prime Lom&eacute;</strong> (H&eacute;dzranawo&eacute;, Tokoin)</td><td>$80,000&ndash;130,000 / 600m&sup2;</td><td>Near embassies and commercial centers</td></tr>
+        <tr><td><strong>Lom&eacute; outskirts</strong> (Adidogom&eacute;, S&eacute;gb&eacute;)</td><td>$10,000&ndash;20,000 / 600m&sup2;</td><td>Rapidly developing; infrastructure expanding</td></tr>
+        <tr><td><strong>Accra prime</strong> (East Legon, Cantonments)</td><td>$100,000&ndash;400,000 / plot</td><td>Highest appreciation; established neighborhoods</td></tr>
+        <tr><td><strong>Accra emerging</strong> (Kasoa, Oyibi)</td><td>$10,000&ndash;40,000 / plot</td><td>High growth areas; infrastructure catching up</td></tr>
+        <tr><td><strong>Cotonou prime</strong> (Haie Vive)</td><td>$100&ndash;160/m&sup2;</td><td>Diplomatic quarter; expatriate demand</td></tr>
+        <tr><td><strong>Cotonou suburbs</strong> (Abomey-Calavi)</td><td>$30&ndash;60/m&sup2;</td><td>University area; growing residential demand</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===== CH 4 through CH 12 follow the same pattern ===== -->
+<!-- Keeping the most critical chapters fully fleshed, remaining chapters condensed but complete -->
+
+<!-- ===== CH 4 ===== -->
+<section class="chapter" id="ch4">
+  <div class="chapter-header"><div class="chapter-number">Chapter 04</div><h2>Design &mdash; Architects, Plans and Climate</h2><p class="chapter-intro">Your building plans are the instruction manual for your entire project. Every contractor, every material supplier, and every inspector works from them. Good plans prevent expensive mistakes; incomplete plans guarantee improvisation, rework, and budget overruns.</p></div>
+
+  <div class="prose"><h3>Components of a Complete Plan Set</h3><p>A finished set of building plans contains multiple sheets, each serving a distinct purpose. Understanding what each page shows prepares you to review and approve your architect's work intelligently.</p></div>
+
+  <div class="accordion">
+    <div class="acc-item"><button class="acc-trigger" onclick="toggleAcc(this)"><span>Floor Plans &mdash; The layout of every room on every level</span><span class="acc-icon"><svg><use href="#i-chevron"/></svg></span></button><div class="acc-body"><div class="acc-body-inner"><p>A bird's-eye view of each floor showing room locations, dimensions, wall thicknesses, door swings, window placements, and built-in features. One page per story. This is the sheet most people visualize when they think "blueprints." Your framer, electrician, plumber, and HVAC contractor all reference the floor plan constantly.</p></div></div></div>
+    <div class="acc-item"><button class="acc-trigger" onclick="toggleAcc(this)"><span>Elevations &mdash; The four exterior faces of the building</span><span class="acc-icon"><svg><use href="#i-chevron"/></svg></span></button><div class="acc-body"><div class="acc-body-inner"><p>Flat drawings of the exterior from front, rear, left, and right. They show roof lines, window positions, siding materials, finished grade lines, and overall proportions. HOAs and building departments review elevations to ensure aesthetic and height code compliance. Siding and roofing contractors use them to calculate material quantities.</p></div></div></div>
+    <div class="acc-item"><button class="acc-trigger" onclick="toggleAcc(this)"><span>Site Plan &mdash; Where the house sits on the lot</span><span class="acc-icon"><svg><use href="#i-chevron"/></svg></span></button><div class="acc-body"><div class="acc-body-inner"><p>Shows property lines, building setback lines, the house footprint position on the lot, driveway and sidewalk locations, utility connection points, and drainage flow arrows. The building department uses this to verify you are building within legal boundaries. Your dirt contractor and surveyor work from this sheet to position the foundation correctly.</p></div></div></div>
+    <div class="acc-item"><button class="acc-trigger" onclick="toggleAcc(this)"><span>Foundation Plan &mdash; The structural base specifications</span><span class="acc-icon"><svg><use href="#i-chevron"/></svg></span></button><div class="acc-body"><div class="acc-body-inner"><p>Designed by the structural engineer. Shows the foundation footprint, footer locations and depths, beam placement, rebar specifications (size, spacing, lap lengths, and grid pattern), concrete slab thickness, and anchor bolt positions. Specifies the concrete mix ratio (typically 3,000&ndash;4,000 PSI in the USA; 1:2:4 ratio in West Africa). The concrete contractor and building inspector both work directly from this sheet.</p></div></div></div>
+    <div class="acc-item"><button class="acc-trigger" onclick="toggleAcc(this)"><span>Electrical, Plumbing, and Mechanical Plans</span><span class="acc-icon"><svg><use href="#i-chevron"/></svg></span></button><div class="acc-body"><div class="acc-body-inner"><p>The electrical plan shows every outlet, switch, light fixture, ceiling fan, and the electrical panel location with circuit routing. The plumbing plan shows supply lines, drain lines, vent stacks, fixture locations, and water heater placement. The HVAC plan shows duct routing, register locations, return air paths, and equipment sizing based on Manual J heat load calculations. These three plans guide the rough-in phase &mdash; all the work that happens inside walls before drywall closes them up.</p></div></div></div>
+    <div class="acc-item"><button class="acc-trigger" onclick="toggleAcc(this)"><span>Framing and Roof Plans &mdash; The structural skeleton</span><span class="acc-icon"><svg><use href="#i-chevron"/></svg></span></button><div class="acc-body"><div class="acc-body-inner"><p>The framing plan shows joist sizes, spacing (typically 16 inches on center), beam locations, load paths, and header sizes above windows and doors. The roof plan shows truss layout, pitch angles, ridge and valley locations, and rafter specifications. In West Africa, these are replaced by reinforced concrete structural plans showing column dimensions, beam cross-sections, rebar schedules with stirrup spacing, and slab reinforcement patterns.</p></div></div></div>
+  </div>
+
+  <div class="prose"><h3>Climate-Responsive Design: Tropical vs. Temperate</h3></div>
+  <div class="compare-row">
+    <div class="compare-block usa"><span class="compare-tag">USA (Temperate)</span><h4>Designing for Insulation and Heating</h4><ul><li>Wall insulation to R-20+; attic insulation to R-49 (per 2021 IECC)</li><li>Airtight construction: maximum 3 air changes per hour at 50 Pascals</li><li>Central HVAC with ducted distribution; Manual J load calculation required</li><li>Standard 8-foot (2.4m) ceiling height; 9-foot in better construction</li><li>Double-pane or triple-pane windows; Low-E coatings standard</li><li>Vapor barriers positioned correctly for climate zone (interior in cold, exterior in hot-humid)</li></ul></div>
+    <div class="compare-block wa"><span class="compare-tag">West Africa (Tropical)</span><h4>Designing for Ventilation and Passive Cooling</h4><ul><li>Cross-ventilation: openings on opposite walls to create airflow paths</li><li>High ceilings: 3.0&ndash;3.5 meters (10&ndash;12 feet) allowing hot air to stratify above occupant level</li><li>Deep roof overhangs: 60&ndash;90cm minimum to protect walls from sun and driving rain</li><li>Louvered windows (jalousies) that allow airflow even during rain</li><li>Light-colored exterior surfaces to reflect solar heat</li><li>Ceiling fans in every room; split AC units for bedrooms; breeze blocks above windows</li><li>Minimum 25-degree roof pitch for metal roofing; oversized gutters (150mm+)</li></ul></div>
+  </div>
+
+  <div class="callout tip"><span class="callout-icon"><svg><use href="#i-lightbulb"/></svg></span><strong>For diaspora builders managing remotely:</strong> Insist on weekly video calls during active construction, timestamped geotagged photos at every milestone, and milestone-based payments released only after photographic and video verification. Consider hiring a professional construction supervisor ($200&ndash;$500/month) or a quantity surveyor as your eyes and quality control on the ground. Architect fees: USA $5,000&ndash;$25,000 (8&ndash;15% of construction cost); West Africa $500&ndash;$5,000 for registered architects.</div>
+</section>
+
+<!-- ===== CH 5 ===== -->
+<section class="chapter" id="ch5">
+  <div class="chapter-header"><div class="chapter-number">Chapter 05</div><h2>Permits &mdash; Government Approval to Build</h2><p class="chapter-intro">A building permit is the government's official authorization to construct. Without one, your structure is illegal &mdash; subject to fines, stop-work orders, or demolition. The process is systematic but varies significantly between markets.</p></div>
+  <div class="compare-row">
+    <div class="compare-block usa"><span class="compare-tag">USA</span><h4>Permit Process</h4><p><strong>Required documents:</strong> Stamped architectural and structural drawings, site plan, proof of ownership or authorization, geotechnical report, and energy code compliance documentation.</p><p style="margin-top:12px"><strong>Cost:</strong> $1,000&ndash;$5,000 for standard residential; up to $30,000 in high-regulation jurisdictions. Impact fees (one-time charges for infrastructure burden) add $2,000&ndash;$30,000+. Utility tap fees for water and sewer connections can exceed $20,000.</p><p style="margin-top:12px"><strong>Timeline:</strong> 2&ndash;8 weeks for standard processing. Plan check comments requiring revisions add additional cycles.</p><p style="margin-top:12px"><strong>Outcome:</strong> A posted permit card displayed at the job site, activating a mandatory inspection schedule at each major construction milestone.</p></div>
+    <div class="compare-block wa"><span class="compare-tag">West Africa</span><h4>Permit Process</h4><p><strong>Togo:</strong> Applications filed through the Direction G&eacute;n&eacute;rale de l'Urbanisme et de l'Habitat. Must be submitted by a registered architect. Fee: 100 CFA per square meter of planned built area. The SIGPC digital system is modernizing processing.</p><p style="margin-top:12px"><strong>Ghana:</strong> Submitted to the District Assembly (e.g., AMA in Accra, AKSMA in Kumasi) with 4&ndash;5 sets of drawings signed by a licensed architect and structural engineer, plus Lands Commission documentation. Processing: 4&ndash;12 weeks. Permits valid for 5 years.</p><p style="margin-top:12px"><strong>Benin:</strong> Three permit categories based on building complexity, processed through the Mairie. Legal maximum processing time: 25&ndash;30 days. Digitization through service-public.bj improving efficiency. Permits valid for 4 years.</p><p style="margin-top:12px"><strong>Enforcement reality:</strong> Many buildings across all three countries are constructed without permits. This carries serious risk &mdash; governments issue demolition orders, and unpermitted structures have no legal protection in disputes.</p></div>
+  </div>
+</section>
+
+<!-- ===== CH 6 ===== -->
+<section class="chapter" id="ch6">
+  <div class="chapter-header"><div class="chapter-number">Chapter 06</div><h2>Your Team &mdash; Contractors, Subcontractors and Suppliers</h2><p class="chapter-intro">You will not physically build this house yourself. You need 20&ndash;30 specialized subcontractors and multiple material suppliers, coordinated in precise sequence. Finding, evaluating, negotiating with, and managing these people is your primary job as an owner-builder.</p></div>
+
+  <div class="prose"><h3>The Trades You Need to Hire</h3></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Trade</th><th>Scope of Work</th><th>USA Rate</th><th>W. Africa Rate</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Site Work / Earthwork</strong></td><td>Clear lot, grade, build dirt pad, drainage</td><td>$50&ndash;90/hr</td><td>$5&ndash;10/day</td></tr>
+        <tr><td><strong>Concrete / Foundation</strong></td><td>Form boards, rebar, pour, finish slab</td><td>$55&ndash;100/hr</td><td>$7&ndash;15/day</td></tr>
+        <tr><td><strong>Framing / Masonry</strong></td><td>Wood frame (USA) or block walls (WA)</td><td>$55&ndash;110/hr</td><td>$7&ndash;16/day</td></tr>
+        <tr><td><strong>Roofing</strong></td><td>Deck, underlayment, shingles or metal panels</td><td>$55&ndash;90/hr</td><td>$6&ndash;12/day</td></tr>
+        <tr><td><strong>Plumbing</strong></td><td>Underground, rough-in, fixtures, water heater</td><td>$95&ndash;150/hr</td><td>$10&ndash;22/day</td></tr>
+        <tr><td><strong>Electrical</strong></td><td>Panel, wiring, outlets, lights, fixtures</td><td>$95&ndash;150/hr</td><td>$10&ndash;24/day</td></tr>
+        <tr><td><strong>HVAC</strong></td><td>Ductwork, condenser, registers, thermostat</td><td>$80&ndash;130/hr</td><td>$10&ndash;20/day</td></tr>
+        <tr><td><strong>Insulation</strong></td><td>Batts, blown-in, or spray foam</td><td>$40&ndash;70/hr</td><td>Minimal</td></tr>
+        <tr><td><strong>Drywall / Plastering</strong></td><td>Hang, tape, mud, sand, texture</td><td>$50&ndash;85/hr</td><td>$5&ndash;10/day</td></tr>
+        <tr><td><strong>Flooring</strong></td><td>Tile, hardwood, LVP, or carpet</td><td>$45&ndash;80/hr</td><td>$6&ndash;12/day</td></tr>
+        <tr><td><strong>Painting</strong></td><td>Interior and exterior, primer and finish</td><td>$40&ndash;70/hr</td><td>$5&ndash;10/day</td></tr>
+        <tr><td><strong>Trim / Carpentry</strong></td><td>Cabinets, baseboards, doors, shelving</td><td>$55&ndash;100/hr</td><td>$7&ndash;15/day</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="prose"><h3>Payment Structure That Protects You</h3><p>The payment schedule is your single most powerful tool for maintaining quality control and contractor accountability. Never deviate from milestone-based payments.</p></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Milestone</th><th>Payment %</th><th>Release Condition</th></tr></thead>
+      <tbody>
+        <tr><td>Contract execution</td><td>10%</td><td>Signed contract with full scope, price, timeline, and penalty clauses</td></tr>
+        <tr><td>Foundation complete</td><td>15%</td><td>Inspector approval (USA) or personal verification with timestamped photos (WA)</td></tr>
+        <tr><td>Framing / walls complete</td><td>20%</td><td>Structure verified plumb and square; rough openings match specifications</td></tr>
+        <tr><td>Mechanical rough-in complete</td><td>20%</td><td>All plumbing, electrical, HVAC in walls; pressure tests passed; inspections passed</td></tr>
+        <tr><td>Drywall and interior finishes</td><td>20%</td><td>Interior 90%+ complete; fixtures installed and functional</td></tr>
+        <tr><td>Final punch list resolution</td><td>15%</td><td>Every item on the punch list corrected and personally verified</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout danger"><span class="callout-icon"><svg><use href="#i-x-octagon"/></svg></span><strong>Never pay ahead of completed work.</strong> This is the most violated rule in construction and the greatest cause of contractor disputes. Once a contractor holds your money, your negotiating leverage disappears. Hold 10&ndash;15% retainage until the punch list is fully resolved. In West Africa, require lien waivers or signed receipts with every payment, and photograph the completed work before transferring funds.</div>
+</section>
+
+<!-- ===== CH 7 ===== -->
+<section class="chapter" id="ch7">
+  <div class="chapter-header"><div class="chapter-number">Chapter 07</div><h2>Construction &mdash; The Full Physical Process</h2><p class="chapter-intro">Every step must happen in precise sequence. You cannot install wiring before walls exist, and you cannot pour a foundation before the ground is prepared and surveyed. Here is the complete construction timeline for both building systems, with costs and durations at each phase.</p></div>
+
+  <div class="prose"><h3>USA: Wood-Frame Construction Sequence</h3></div>
+  <div class="timeline">
+    <div class="tl-item active"><div class="tl-dot">01</div><div class="tl-content"><div class="tl-title">Site Preparation</div><div class="tl-desc">Clear trees and brush. Install silt fencing around perimeter for erosion control. Set temporary electric pole and request utility connection (3&ndash;5 business days). Place portable toilet. Build temporary crushed-concrete driveway to prevent tracking mud onto streets. Grade the lot for proper drainage away from the future building pad.</div><div class="tl-tags"><span class="tl-tag time">1&ndash;2 weeks</span><span class="tl-tag cost">$3,000&ndash;15,000</span></div></div></div>
+    <div class="tl-item"><div class="tl-dot">02</div><div class="tl-content"><div class="tl-title">Foundation</div><div class="tl-desc">Surveyor stakes building corners with precision nails. Dirt contractor scrapes topsoil and builds compacted fill pad to elevation. Concrete contractor installs form boards around perimeter. Plumber installs underground drain lines. Electrician runs under-slab conduit for kitchen island. Rebar installed in grid pattern per structural plan. Concrete delivered in 70,000-lb trucks, poured to fill forms, floated and troweled smooth. Cure 3&ndash;7 days before stripping forms.</div><div class="tl-tags"><span class="tl-tag time">1&ndash;3 weeks</span><span class="tl-tag cost">$8,000&ndash;30,000</span></div></div></div>
+    <div class="tl-item"><div class="tl-dot">03</div><div class="tl-content"><div class="tl-title">Framing</div><div class="tl-desc">Bottom plates bolted to foundation with anchor bolts. First-floor walls framed with 2x4 or 2x6 studs at 16 inches on center. Headers installed over all window and door openings. If two-story: floor joists, subfloor, then second-story walls. Roof trusses set by crane and nailed to top plates. Walk the frame to verify walls are plumb (vertical) and square (90-degree corners).</div><div class="tl-tags"><span class="tl-tag time">1&ndash;3 weeks</span><span class="tl-tag cost">$20,000&ndash;50,000</span></div></div></div>
+    <div class="tl-item"><div class="tl-dot">04</div><div class="tl-content"><div class="tl-title">Exterior Envelope (Dry-In)</div><div class="tl-desc">Wall sheathing (4x8 OSB or plywood panels) nailed to exterior studs &mdash; provides structural rigidity and air barrier. House wrap (Tyvek or equivalent) rolled over sheathing. Siding material installed. Windows and exterior doors set and sealed. Roof deck sheathing installed, followed by felt underlayment, drip edge, ice-and-water shield at valleys and eaves, then shingles or metal roofing with flashing at all penetrations. Once "dried in," the structure is weather-protected.</div><div class="tl-tags"><span class="tl-tag time">2&ndash;4 weeks</span><span class="tl-tag cost">$25,000&ndash;60,000</span></div></div></div>
+    <div class="tl-item"><div class="tl-dot">05</div><div class="tl-content"><div class="tl-title">Mechanical Rough-Ins</div><div class="tl-desc"><strong>HVAC first</strong> (largest ducts, need most routing space), <strong>plumbing second</strong> (medium-diameter pipes), <strong>electrical last</strong> (smallest wires, most flexible routing). This sequence is critical &mdash; reversing it forces costly rework. HVAC installs ductwork, supply boots, and return air paths. Plumber runs PEX or copper supply lines and PVC drain/vent lines. Electrician installs 200-amp panel, runs all branch circuits, places outlet and switch boxes, and mounts light brackets. Inspections follow completion of all three trades.</div><div class="tl-tags"><span class="tl-tag time">2&ndash;4 weeks</span><span class="tl-tag cost">$25,000&ndash;45,000</span></div></div></div>
+    <div class="tl-item"><div class="tl-dot">06</div><div class="tl-content"><div class="tl-title">Insulation, Drywall, and Interior Finishes</div><div class="tl-desc">Insulation installed in all wall cavities and attic (fiberglass batts, blown cellulose, or spray foam). Drywall hung on all walls and ceilings, then taped, mudded (3&ndash;5 coats), sanded smooth, and textured if desired. Flooring installed with protective paper covering. Cabinets, vanities, and countertops. Interior painting. Trim carpentry (baseboards, door casings, crown molding). Mechanical trim-out: electrician installs fixtures, outlets, and plates; plumber installs faucets, toilets, and garbage disposal; HVAC installs registers, thermostat, and condenser unit.</div><div class="tl-tags"><span class="tl-tag time">4&ndash;8 weeks</span><span class="tl-tag cost">$45,000&ndash;110,000</span></div></div></div>
+    <div class="tl-item"><div class="tl-dot">07</div><div class="tl-content"><div class="tl-title">Exterior Finishes and Landscaping</div><div class="tl-desc">Concrete flatwork: driveway, sidewalks, patio, AC equipment pad. Fencing installation. Final grading to ensure water flows away from foundation on all sides. Topsoil spread, flower and rock beds installed, plants placed, sod or grass seed laid. Permanent electrical connection replaces temporary pole. Final cleaning and debris removal.</div><div class="tl-tags"><span class="tl-tag time">1&ndash;3 weeks</span><span class="tl-tag cost">$10,000&ndash;35,000</span></div></div></div>
+  </div>
+
+  <div class="prose"><h3>West Africa: Reinforced Concrete Block (Poteau-Poutre) Sequence</h3></div>
+  <div class="timeline">
+    <div class="tl-item active"><div class="tl-dot">01</div><div class="tl-content"><div class="tl-title">Site Clearing and Foundation</div><div class="tl-desc">Clear vegetation (often by hand). Excavate strip foundation trenches 60&ndash;100cm deep, 50&ndash;75cm wide. Pour blinding concrete (5&ndash;10cm lean mix) at trench bottom. Tie rebar cages with stirrups at 20&ndash;25cm spacing. Pour foundation concrete using 1:2:4 cement-sand-gravel ratio. Cure minimum 7 days with twice-daily watering. Build foundation walls to DPC (damp-proof course) level. Apply bituminous waterproofing layer to prevent rising damp.</div><div class="tl-tags"><span class="tl-tag time">2&ndash;4 weeks</span><span class="tl-tag cost">$3,000&ndash;8,000</span></div></div></div>
+    <div class="tl-item"><div class="tl-dot">02</div><div class="tl-content"><div class="tl-title">Walls, Columns, and Ring Beams</div><div class="tl-desc">Tie column rebar to foundation starter bars. Erect timber or steel formwork around column rebar cages. Pour concrete columns and cure. Lay concrete masonry blocks between columns course by course using cement mortar. Pour reinforced concrete lintels above all door and window openings. At roof level, pour continuous ring beams (<em>cha&icirc;nage</em>) connecting all columns into a rigid structural frame. For multi-story buildings: pour reinforced concrete floor slab with rebar mesh, then repeat the column-wall-beam cycle for each additional level.</div><div class="tl-tags"><span class="tl-tag time">4&ndash;8 weeks</span><span class="tl-tag cost">$8,000&ndash;25,000</span></div></div></div>
+    <div class="tl-item"><div class="tl-dot">03</div><div class="tl-content"><div class="tl-title">Roofing</div><div class="tl-desc">Install wooden or steel trusses anchored to ring beams. Lay corrugated aluminum or galvanized steel sheets (<em>t&ocirc;le</em>) secured with rubber-washer screws (never nails &mdash; they work loose). Maintain 60&ndash;100cm overhang on all sides to protect walls from tropical rain. Install gutters and downspouts sized for heavy tropical rainfall. Install separate ceiling structure below trusses (PVC panels, plywood, or plasterboard) creating an insulating air gap.</div><div class="tl-tags"><span class="tl-tag time">1&ndash;2 weeks</span><span class="tl-tag cost">$3,000&ndash;8,000</span></div></div></div>
+    <div class="tl-item"><div class="tl-dot">04</div><div class="tl-content"><div class="tl-title">Plumbing, Electrical, and Plastering</div><div class="tl-desc">Run PVC drain lines to 2&ndash;3 chamber septic tank with soak-away pit. Install water supply pipes leading to overhead polyethylene storage tank (500&ndash;5,000 liters) mounted on steel tower for gravity-fed pressure. Embed PVC electrical conduit in walls (1.5mm&sup2; wire for lighting, 2.5mm&sup2; for outlets, 4mm&sup2;+ for heavy appliances). Apply plaster (<em>cr&eacute;pissage</em>) in three coats: scratch coat, body coat (10&ndash;15mm), and finishing coat. Install aluminum louvered window frames with welded steel security grilles on all openings.</div><div class="tl-tags"><span class="tl-tag time">3&ndash;6 weeks</span><span class="tl-tag cost">$5,000&ndash;15,000</span></div></div></div>
+    <div class="tl-item"><div class="tl-dot">05</div><div class="tl-content"><div class="tl-title">Finishes and Compound Wall</div><div class="tl-desc">Pour cement screed over floor slab. Lay ceramic floor tiles (30x30 to 60x60cm). Paint interior and exterior walls. Install interior doors, kitchen cabinets, bathroom fixtures, and countertops. Install electrical fixtures: distribution board, circuit breakers, outlets, switches, and light fittings. Build compound perimeter wall (1.5&ndash;2.5m height, concrete block) with reinforced steel entrance gate &mdash; this represents 10&ndash;15% of total budget but is culturally essential and critical for security. Final grading and basic landscaping.</div><div class="tl-tags"><span class="tl-tag time">3&ndash;6 weeks</span><span class="tl-tag cost">$8,000&ndash;20,000</span></div></div></div>
+  </div>
+</section>
+
+<!-- ===== CH 8 ===== -->
+<section class="chapter" id="ch8">
+  <div class="chapter-header"><div class="chapter-number">Chapter 08</div><h2>Quality Control &mdash; Inspections and Standards</h2><p class="chapter-intro">In the USA, government inspectors check your work at every major milestone. In West Africa, <strong>you are the inspector</strong>. Either way, knowing exactly what to look for prevents structural failures, safety hazards, and costly rework.</p></div>
+
+  <div class="prose"><h3>USA: Mandatory Inspection Schedule</h3></div>
+  <div class="table-wrap"><table><thead><tr><th>Inspection</th><th>Timing</th><th>What the Inspector Checks</th></tr></thead><tbody>
+    <tr><td><strong>Foundation</strong></td><td>Before concrete pour</td><td>Form dimensions and alignment, rebar size/spacing/lap lengths, anchor bolt placement, setback compliance, trench depth</td></tr>
+    <tr><td><strong>Under-slab plumbing</strong></td><td>Before slab pour</td><td>Water or air pressure test on DWV system (must hold for specified duration), pipe routing and slope</td></tr>
+    <tr><td><strong>Framing</strong></td><td>After structure dried in</td><td>Nailing patterns per code, fire blocking at all floor/ceiling penetrations, bracing, hold-down hardware, rough opening dimensions</td></tr>
+    <tr><td><strong>Mechanical rough-in</strong></td><td>Before drywall</td><td>Plumbing pressure test, electrical wiring gauge and routing, panel load calculations, HVAC duct sizing and sealing</td></tr>
+    <tr><td><strong>Insulation / Energy</strong></td><td>After insulation, before drywall</td><td>R-values match energy code requirements, vapor barriers correctly positioned, air sealing at penetrations</td></tr>
+    <tr><td><strong>Final</strong></td><td>All work complete</td><td>Every system operational, all fixtures connected, GFCI/AFCI protection verified, grading correct, smoke/CO detectors installed, address posted</td></tr>
+  </tbody></table></div>
+
+  <div class="prose"><h3>West Africa: Personal Quality Control Protocol</h3><p>Formal inspection regimes are limited and inconsistently enforced across Togo, Ghana, and Benin. Research on construction sites in Kumasi, Ghana found that site-produced concrete strength was 26&ndash;60% below the Ghana Building Code minimum of 25 MPa, primarily due to hand-mixing with improper water content. This finding illustrates why personal oversight is not optional &mdash; it is the only reliable quality assurance available.</p></div>
+
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Concrete mix verification:</strong> Confirm 1:2:4 ratio (cement:sand:gravel) for all structural elements. Watch the mixing process directly. Crews commonly add excessive water for easier pouring, which can reduce concrete strength by 30&ndash;50%. Proper concrete should be stiff enough to hold its shape briefly when formed by hand.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Rebar specifications:</strong> Check bar sizes against structural plans. Verify lap joint overlaps of at least 40 times the bar diameter (12mm bar = 480mm minimum overlap). Confirm adequate concrete cover (minimum 25mm) to prevent corrosion. Ensure stirrups in columns and beams match specified spacing.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Block quality test:</strong> Drop a block from waist height onto hard ground. It should not shatter or crumble. A proper 15cm block requires at least 1 bag of cement per 30&ndash;35 blocks. Substandard block makers use half that amount, producing blocks that fail under structural load.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Wall plumbness:</strong> Apply a spirit level to every wall surface. Walls must be perfectly vertical. Even slight deviations compound through every subsequent trade &mdash; doors will not hang properly, tiles will not align, and cabinets will not sit flush.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Concrete curing protocol:</strong> All structural concrete (columns, beams, slabs, lintels) must be kept continuously wet for a minimum of 7 days after pouring. Assign a crew member to water curing concrete at least twice daily. Insufficient curing is the most common cause of premature structural cracking in tropical construction.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Roof integrity:</strong> Verify every metal sheet is secured with screws (not nails) fitted with rubber compression washers. Confirm consistent overhang dimensions (60cm+ minimum). Inspect all truss-to-ring-beam connections for secure fastening. Test gutter slope by pouring water and verifying flow toward downspouts.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Plumbing pressure test:</strong> Before walls are plastered, run water through all supply lines for 30+ minutes inspecting every joint for leaks. Flush water through all drains and physically verify flow reaches the septic tank. Check that water tank overflow is properly routed away from the building.</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label"><strong>Electrical safety verification:</strong> Test every circuit with a multimeter. Verify proper earth grounding. Confirm RCD/GFCI protection on all wet-area circuits (kitchen, bathrooms, outdoor). Check that wire gauge matches load requirements at every connection point.</div></div>
+</section>
+
+<!-- ===== CH 9 ===== -->
+<section class="chapter" id="ch9">
+  <div class="chapter-header"><div class="chapter-number">Chapter 09</div><h2>Project Management &mdash; Schedules, Risk, and Communication</h2><p class="chapter-intro">An owner-builder's actual job is management &mdash; coordinating 20+ subcontractors, tracking a budget with hundreds of line items, sequencing material deliveries, scheduling inspections, and adapting to problems that will inevitably arise. This chapter covers the operational discipline that separates successful builds from abandoned ones.</p></div>
+
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-val">7.7 mo</div><div class="stat-label">USA Average Build</div></div>
+    <div class="stat-card"><div class="stat-val">6&ndash;12 mo</div><div class="stat-label">W. Africa (Continuous)</div></div>
+    <div class="stat-card"><div class="stat-val">2&ndash;5+ yr</div><div class="stat-label">W. Africa (Phased)</div></div>
+    <div class="stat-card"><div class="stat-val">20&ndash;30</div><div class="stat-label">Subcontractors to Manage</div></div>
+  </div>
+
+  <div class="def-grid">
+    <div class="def-card"><div class="def-term"><span class="ico"><svg><use href="#i-calendar"/></svg></span> Schedule Coordination</div><div class="def-text">Before each trade arrives, verify: the previous trade is complete, their work has passed inspection or your review, and all materials for the incoming trade are on-site. A framing crew arriving to a site without lumber wastes their time, your money, and damages the relationship. Build a Gantt chart showing every trade's start/finish date and dependencies.</div></div>
+    <div class="def-card"><div class="def-term"><span class="ico"><svg><use href="#i-chart"/></svg></span> Budget Tracking</div><div class="def-text">Update your budget spreadsheet with every payment, every material purchase, and every change order. Compare actual spend against projected spend weekly, by line item. Catching a 5% overrun during the foundation phase gives you time to adjust; discovering it at the finish stage leaves no options. Use the draw schedule as your budget checkpoint.</div></div>
+    <div class="def-card"><div class="def-term"><span class="ico"><svg><use href="#i-camera"/></svg></span> Documentation</div><div class="def-text">Photograph everything &mdash; before concrete covers rebar, before drywall covers wiring, before tile covers waterproofing membranes. These photos serve as insurance claim evidence, warranty documentation, maintenance reference, and dispute resolution proof. Store them organized by date and phase in cloud storage accessible from any device.</div></div>
+    <div class="def-card"><div class="def-term"><span class="ico"><svg><use href="#i-shield"/></svg></span> Risk Mitigation</div><div class="def-text"><strong>USA:</strong> Builder's risk insurance ($1,000&ndash;$5,000), lien waivers with every contractor payment, written change orders. <strong>West Africa:</strong> Night security guard (CFA 30,000&ndash;75,000/month), bulk material purchases locked in early to hedge price increases, milestone-based payments, and maintaining a USD or EUR account to manage currency conversion timing for diaspora builders.</div></div>
+  </div>
+
+  <div class="callout warn"><span class="callout-icon"><svg><use href="#i-alert"/></svg></span><strong>Seasonal strategy for West Africa:</strong> Break ground in October (early dry season). Prioritize getting the roof completed by April/May before heavy rains arrive in June. Interior finishing can continue through the rainy season since the structure is covered. Foundation work during the rainy season (June&ndash;September) produces waterlogged trenches, compromised concrete curing, and inaccessible sites. Planning your schedule around the seasons is not optional &mdash; it is structural.</div>
+</section>
+
+<!-- ===== CH 10 ===== -->
+<section class="chapter" id="ch10">
+  <div class="chapter-header"><div class="chapter-number">Chapter 10</div><h2>Full Cost Breakdown &mdash; USA vs. West Africa</h2><p class="chapter-intro">Here is where every estimate becomes specific. These ranges reflect current market data for a standard 150m&sup2; (approximately 1,600 sf) three-bedroom home. Use them as the foundation for your own itemized budget.</p></div>
+
+  <div class="table-wrap"><table><thead><tr><th>Category</th><th>USA</th><th>West Africa (Togo baseline)</th></tr></thead><tbody>
+    <tr><td><strong>Land</strong></td><td>$30,000&ndash;200,000+</td><td>$10,000&ndash;80,000</td></tr>
+    <tr><td><strong>Design / Architecture</strong></td><td>$5,000&ndash;25,000</td><td>$500&ndash;3,000</td></tr>
+    <tr><td><strong>Permits and Impact Fees</strong></td><td>$3,000&ndash;33,000</td><td>$200&ndash;1,000</td></tr>
+    <tr><td><strong>Site Preparation</strong></td><td>$3,000&ndash;15,000</td><td>$1,000&ndash;3,000</td></tr>
+    <tr><td><strong>Foundation</strong></td><td>$8,000&ndash;30,000</td><td>$3,000&ndash;8,000</td></tr>
+    <tr><td><strong>Structure (frame or block walls)</strong></td><td>$20,000&ndash;50,000</td><td>$8,000&ndash;25,000</td></tr>
+    <tr><td><strong>Roofing</strong></td><td>$8,000&ndash;25,000</td><td>$3,000&ndash;8,000</td></tr>
+    <tr><td><strong>Plumbing (complete)</strong></td><td>$8,000&ndash;15,000</td><td>$2,000&ndash;5,000</td></tr>
+    <tr><td><strong>Electrical (complete)</strong></td><td>$8,000&ndash;15,000</td><td>$1,500&ndash;4,000</td></tr>
+    <tr><td><strong>HVAC / Cooling</strong></td><td>$7,000&ndash;15,000</td><td>$1,000&ndash;4,000</td></tr>
+    <tr><td><strong>Insulation</strong></td><td>$3,000&ndash;10,000</td><td>Minimal / N/A</td></tr>
+    <tr><td><strong>Interior Finishes</strong></td><td>$30,000&ndash;80,000</td><td>$8,000&ndash;20,000</td></tr>
+    <tr><td><strong>Exterior Finishes + Landscape</strong></td><td>$10,000&ndash;35,000</td><td>$3,000&ndash;8,000</td></tr>
+    <tr><td><strong>Compound Wall and Gate</strong></td><td>N/A</td><td>$3,000&ndash;8,000</td></tr>
+    <tr><td><strong>Water Storage / Solar / Generator</strong></td><td>Optional</td><td>$2,000&ndash;8,000</td></tr>
+    <tr style="background:var(--warm)"><td><strong>TOTAL (excluding land)</strong></td><td><strong>$150,000&ndash;350,000</strong></td><td><strong>$35,000&ndash;105,000</strong></td></tr>
+    <tr style="background:var(--success-bg)"><td><strong>Contingency (15&ndash;20%)</strong></td><td><strong>$22,500&ndash;70,000</strong></td><td><strong>$5,250&ndash;21,000</strong></td></tr>
+  </tbody></table></div>
+
+  <div class="prose"><h3>Hidden Costs That Beginners Consistently Underestimate</h3></div>
+  <div class="compare-row">
+    <div class="compare-block usa"><span class="compare-tag">USA</span><h4>Overlooked Expenses</h4><ul>
+      <li>Utility tap fees: $2,000&ndash;$20,000+ (water and sewer connection)</li>
+      <li>Builder's risk insurance: $1,000&ndash;$5,000 during construction period</li>
+      <li>Construction loan interest carry: thousands per month during the build</li>
+      <li>Survey and soil testing: $2,000&ndash;$7,000 combined</li>
+      <li>Landscaping: $5,000&ndash;$20,000 (often budgeted last, over-cut first)</li>
+      <li>Temporary facilities: porta-potty, dumpster, temp power at $500&ndash;$1,500/month</li>
+      <li>Loan closing costs: 2&ndash;5% of loan amount</li>
+    </ul></div>
+    <div class="compare-block wa"><span class="compare-tag">West Africa</span><h4>Overlooked Expenses</h4><ul>
+      <li>Land documentation and notary fees: 5&ndash;10% of land value</li>
+      <li>Compound wall and gate: 10&ndash;15% of total construction budget</li>
+      <li>Water tank, tower, and pump system: $500&ndash;$3,000</li>
+      <li>Generator or solar backup system: $1,500&ndash;$10,000</li>
+      <li>Security guard during construction period: $50&ndash;$150/month</li>
+      <li>Material price inflation over phased build: 10&ndash;20% per year compounding</li>
+      <li>Transport costs for materials to remote building sites</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ===== CH 11 ===== -->
+<section class="chapter" id="ch11">
+  <div class="chapter-header"><div class="chapter-number">Chapter 11</div><h2>Post-Construction &mdash; Occupancy and Ongoing Operations</h2><p class="chapter-intro">The build is complete. Getting to legal occupancy, connecting permanent utilities, conducting the final walkthrough, and &mdash; if building to rent &mdash; setting up operations requires its own systematic process.</p></div>
+
+  <div class="prose"><h3>Final Punch List Walkthrough</h3><p>Before accepting any contractor's final work and releasing the last 15% payment, walk through every room testing every component. This is your last point of leverage to get corrections made at the contractor's expense.</p></div>
+
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label">Open and close every interior and exterior door &mdash; verify smooth operation, secure latching, no sticking or rubbing</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label">Open and close every window &mdash; verify locks, screens, smooth operation, and weathertight seal</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label">Flush every toilet, run every faucet and showerhead for 3+ minutes &mdash; check for leaks under all sinks and around all base connections</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label">Turn on every light switch and test every outlet with a plug tester (available for under $15 at any hardware store)</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label">Run HVAC on both heat and cooling modes &mdash; verify airflow from every register and return, check for unusual noises</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label">Test all appliances: dishwasher full cycle, range all burners, oven to temperature, disposal, microwave, washer/dryer hookups</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label">Inspect all painted surfaces for drips, missed spots, inconsistent sheen, or bleed-through</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label">Examine flooring for scratches, gaps between planks, uneven transitions between rooms, cracked or loose tiles</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label">Walk the entire exterior &mdash; verify grading slopes away from foundation, inspect siding and trim for damage, check caulking at all penetrations</div></div>
+  <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"><svg><use href="#i-check"/></svg></div><div class="check-label">Open every cabinet door and drawer &mdash; check alignment, smooth operation, secure hinges, and proper closing mechanisms</div></div>
+
+  <div class="prose"><h3>Rental Property Returns by Market</h3></div>
+  <div class="table-wrap"><table><thead><tr><th>Metric</th><th>USA</th><th>Ghana (Accra)</th><th>Togo (Lom&eacute;)</th></tr></thead><tbody>
+    <tr><td>Gross rental yield</td><td>4&ndash;8%</td><td>8&ndash;13%</td><td>7&ndash;12%</td></tr>
+    <tr><td>Annual appreciation</td><td>3&ndash;6%</td><td>8&ndash;15%</td><td>5&ndash;12%</td></tr>
+    <tr><td>Estimated payback period</td><td>12&ndash;20 years</td><td>8&ndash;12 years</td><td>8&ndash;14 years</td></tr>
+    <tr><td>Property management cost</td><td>8&ndash;12% of rent</td><td>5&ndash;10% or family</td><td>5&ndash;10% or family</td></tr>
+    <tr><td>Tax on rental income</td><td>Ordinary income rate (depreciation shelters significant portion)</td><td>8% resident; 15% non-resident</td><td>Varies by entity structure</td></tr>
+  </tbody></table></div>
+</section>
+
+<!-- ===== CH 12 ===== -->
+<section class="chapter" id="ch12">
+  <div class="chapter-header"><div class="chapter-number">Chapter 12</div><h2>Legal Protections and Emerging Technology</h2><p class="chapter-intro">Protect what you have built &mdash; through legal structures, insurance, and proper registration. And know what technologies are changing the economics of construction in both markets.</p></div>
+
+  <div class="callout danger"><span class="callout-icon"><svg><use href="#i-x-octagon"/></svg></span><strong>Foreign ownership restrictions are significant.</strong> <strong>Ghana</strong> prohibits freehold ownership for non-citizens under Article 266 of the 1992 Constitution; foreigners are limited to 50-year renewable leaseholds. <strong>Togo</strong> restricts outright land ownership to Togolese citizens, French citizens, and those with granted citizenship; others require Prime Minister approval. <strong>Benin</strong> limits foreigners to 50-year non-extendable leases for a maximum of 1,000 hectares per investor. Engaging a local real estate lawyer is mandatory in all three countries.</div>
+
+  <div class="prose"><h3>USA Legal Protection Framework</h3><p>Form an <strong>LLC</strong> ($50&ndash;$500 filing fee) for each rental property to create liability separation between your personal assets and property obligations. Require <strong>lien waivers</strong> with every contractor payment &mdash; without them, an unpaid subcontractor or supplier can place a mechanic's lien against your property even if you paid the general contractor in full. Carry <strong>builder's risk insurance</strong> during construction and convert to <strong>landlord insurance</strong> for rental properties. Use <strong>1031 exchanges</strong> to defer capital gains taxes when selling one investment property and purchasing another of equal or greater value.</p></div>
+
+  <div class="prose"><h3>Emerging Construction Technologies</h3></div>
+  <div class="def-grid">
+    <div class="def-card"><div class="def-term"><span class="ico"><svg><use href="#i-build"/></svg></span> 3D-Printed Construction</div><div class="def-text">ICON (Austin, Texas) prints homes ranging from $195K (650 sf affordable) to $1.3M (luxury), with walls completed in 5&ndash;7 days using Lavacrete material. In Africa, 14Trees (Holcim joint venture) built 52 3D-printed homes in Kilifi, Kenya, achieving 70% CO2 reduction versus traditional methods. The technology is expanding but has not yet reached Togo, Ghana, or Benin at commercial scale.</div></div>
+    <div class="def-card"><div class="def-term"><span class="ico"><svg><use href="#i-sun"/></svg></span> Solar Energy Integration</div><div class="def-text">In West Africa, solar is driven by grid unreliability rather than environmental preference. Togo imports approximately 90% of its electricity. A 3kW residential system with lithium battery storage costs ~GHS 45,000 (~$3,000) in Ghana and generates 12&ndash;15 kWh daily. Ghana offers a 20% rebate for systems under 10kW and exempts VAT and import duties on solar panels. Pre-wiring for solar during construction costs virtually nothing extra and should be standard for every West African build.</div></div>
+    <div class="def-card"><div class="def-term"><span class="ico"><svg><use href="#i-layers"/></svg></span> Prefabricated Construction</div><div class="def-text">Africa's prefabricated construction market reached an estimated $13.5 billion in 2025, growing at approximately 10.3% annually through 2030. Prefab delivers buildings up to 30% cheaper and 6 times faster than traditional on-site methods. Current adoption is strongest in South and East Africa; West Africa represents an emerging frontier with growing government interest driven by massive housing deficits.</div></div>
+    <div class="def-card"><div class="def-term"><span class="ico"><svg><use href="#i-tool"/></svg></span> Project Management Tools</div><div class="def-text"><strong>USA:</strong> Buildertrend (~$99/month after merger with CoConstruct) dominates residential construction management with scheduling, budgeting, client portals, and draw management. Procore serves larger projects. <strong>West Africa diaspora builds:</strong> WhatsApp project groups for daily communication, Google Sheets for shared budget tracking, Google Drive for contracts and receipts, and a local quantity surveyor ($200&ndash;$500/month) as on-site representative.</div></div>
+  </div>
+</section>
+
+</div><!-- /content-wrap -->
+
+<footer class="guide-footer">
+  <p><strong>GroundUp &mdash; The Complete Home Building Guide</strong></p>
+  <p>Covering the United States &middot; Togo &middot; Ghana &middot; Benin</p>
+  <p style="margin-top:12px;opacity:.5">Built for builders who start with zero knowledge and finish with keys in hand.<br>Research current as of March 2026. Always verify local regulations and costs with qualified professionals before committing funds.</p>
+</footer>
+</div><!-- /main -->
+
+<script>
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+function navTo(e){
+  if(window.innerWidth<=1024) toggleSidebar();
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+}
+function toggleAcc(btn){
+  const item=btn.parentElement,body=item.querySelector('.acc-body'),isOpen=item.classList.contains('open');
+  item.parentElement.querySelectorAll('.acc-item').forEach(i=>{i.classList.remove('open');i.querySelector('.acc-body').style.maxHeight='0'});
+  if(!isOpen){item.classList.add('open');body.style.maxHeight=body.scrollHeight+'px'}
+}
+function toggleCheck(el){el.classList.toggle('checked')}
+const chapters=document.querySelectorAll('.chapter'),navItems=document.querySelectorAll('.nav-item'),pf=document.getElementById('progressFill');
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');const id=e.target.id;navItems.forEach(n=>n.classList.toggle('active',n.getAttribute('href')==='#'+id))}})},{threshold:.12,rootMargin:'-60px 0px'});
+chapters.forEach(c=>obs.observe(c));
+window.addEventListener('scroll',()=>{const s=window.scrollY,d=document.documentElement.scrollHeight-window.innerHeight;pf.style.width=Math.min(s/d*100,100)+'%'});
+setTimeout(()=>document.getElementById('ch1').classList.add('visible'),100);
+</script>
+</body>
+</html>

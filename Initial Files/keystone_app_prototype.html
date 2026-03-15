@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keystone — App Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FDFBF7;--bg2:#F5F0E8;--bg3:#EDE6DA;--white:#FFFFFF;--t1:#2C1810;--t2:#5A5A5A;--t3:#9A9590;--b1:#E0D5C8;--b2:#C8BBAD;--clay:#8B4513;--sand:#D4A574;--success:#2D6A4F;--success-bg:#EDF7ED;--warning:#BC6C25;--warning-bg:#FFF8E7;--danger:#9B2226;--danger-bg:#FDEDED;--info:#1B4965;--info-bg:#E8F0F5;--r:10px;--rm:8px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:#E8E0D5;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+.device{background:#C8BBAD;border-radius:20px;padding:10px;max-width:960px;width:100%;box-shadow:0 20px 60px rgba(44,24,16,.2)}
+.frame{border-radius:14px;overflow:hidden;border:1px solid var(--b1);background:var(--bg);display:flex;height:680px}
+
+/* SIDEBAR */
+.side{width:220px;background:var(--t1);color:var(--sand);flex-shrink:0;display:flex;flex-direction:column;overflow-y:auto}
+.side-logo{padding:20px 20px 16px;border-bottom:1px solid rgba(212,165,116,.1)}
+.side-logo h2{font-size:16px;font-weight:600;color:#F5E6D3;letter-spacing:-.3px}
+.side-logo p{font-size:8px;letter-spacing:2px;text-transform:uppercase;opacity:.3;margin-top:3px}
+.sgrp{padding:12px 0}
+.sgl{font-size:8px;text-transform:uppercase;letter-spacing:2px;opacity:.25;padding:0 20px;margin-bottom:6px;font-weight:500}
+.si{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:12px;cursor:pointer;opacity:.4;transition:all .15s;border-left:2.5px solid transparent;color:var(--sand)}
+.si:hover{opacity:.65;background:rgba(212,165,116,.05)}
+.si.on{opacity:1;background:rgba(212,165,116,.08);border-left-color:var(--sand);color:#F5E6D3}
+.si svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.side-foot{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(212,165,116,.1);display:flex;align-items:center;gap:10px}
+.sav{width:30px;height:30px;border-radius:50%;background:rgba(212,165,116,.15);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--sand)}
+.sinfo .sn{font-size:11px;color:#F5E6D3}
+.sinfo .se{font-size:9px;opacity:.35}
+
+/* CONTENT */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:14px 24px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;background:var(--white);flex-shrink:0}
+.topbar h3{font-size:14px;font-weight:600;color:var(--t1)}
+.tbr{display:flex;gap:8px;align-items:center}
+.badge{font-size:9px;padding:4px 10px;border-radius:20px;font-weight:500}
+.bg-s{background:var(--success-bg);color:var(--success)}
+.bg-w{background:var(--warning-bg);color:var(--warning)}
+.bg-i{background:var(--info-bg);color:var(--info)}
+.bg-d{background:var(--danger-bg);color:var(--danger)}
+.scr{flex:1;padding:20px 24px;overflow-y:auto;background:var(--bg)}
+
+/* COMPONENTS */
+.sl{font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:2px;color:var(--t3);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sl::after{content:'';flex:1;height:0.5px;background:var(--b1)}
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.st{background:var(--white);border:1px solid var(--b1);border-radius:var(--rm);padding:12px;text-align:center}
+.st .v{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:500;color:var(--t1)}
+.st .l{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px}
+.cd{background:var(--white);border:1px solid var(--b1);border-radius:var(--r);padding:14px 16px;margin-bottom:10px}
+.cd h4{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:5px}
+.cd p{font-size:11px;color:var(--t2);line-height:1.65}
+.tr{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--b1);font-size:11px}
+.tr:last-child{border-bottom:none}
+.ck{width:15px;height:15px;border:1.5px solid var(--b2);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ck.d{background:var(--success);border-color:var(--success)}
+.ck.d::after{content:'';width:5px;height:3px;border-left:1.5px solid var(--white);border-bottom:1.5px solid var(--white);transform:rotate(-45deg) translateY(-1px)}
+.tt{flex:1;color:var(--t2)}
+.tt.d{text-decoration:line-through;opacity:.3}
+.tg{font-size:8px;padding:3px 8px;border-radius:12px;font-weight:500;white-space:nowrap}
+.al{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:var(--rm);margin-bottom:6px;font-size:10px;line-height:1.55}
+.al svg{width:13px;height:13px;flex-shrink:0;margin-top:1px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.sh h4{font-size:12px;font-weight:600;color:var(--t1)}
+.sh a{font-size:9px;color:var(--info);cursor:pointer;text-decoration:none}
+.ps{display:flex;gap:2px;margin-bottom:12px}
+.pd{flex:1;height:5px;border-radius:3px;background:var(--b1)}
+.pd.dn{background:var(--success)}
+.pd.cr{background:var(--t1)}
+.pl{display:flex;justify-content:space-between;font-size:7px;color:var(--t3);margin-top:3px;letter-spacing:.3px}
+
+/* Budget */
+.br{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid var(--b1);font-size:11px}
+.br:last-child{border-bottom:none}
+.bc{flex:1;color:var(--t2)}
+.be{width:65px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3)}
+.ba{width:65px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px}
+.bw{width:70px;height:5px;background:var(--b1);border-radius:3px;margin-left:8px;overflow:hidden}
+.bf{height:100%;border-radius:3px}
+
+/* Gantt */
+.gr{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--b1);font-size:10px}
+.gr:last-child{border-bottom:none}
+.gn{width:90px;color:var(--t2);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gt{flex:1;height:12px;background:var(--bg2);border-radius:3px;position:relative;overflow:hidden}
+.gf{position:absolute;height:100%;border-radius:3px;top:0}
+
+/* Contacts */
+.cc{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--b1);border-radius:var(--rm);margin-bottom:6px;cursor:pointer;background:var(--white);transition:all .12s}
+.cc:hover{border-color:var(--b2);box-shadow:0 2px 8px rgba(44,24,16,.05)}
+.ca{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+.cn{font-size:12px;font-weight:500;color:var(--t1)}
+.ct{font-size:9px;color:var(--t3)}
+
+/* Docs */
+.di{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--b1);cursor:pointer}
+.di:last-child{border-bottom:none}
+.dk{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dk svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dn{font-size:12px;font-weight:500;color:var(--t1)}
+.dd{font-size:9px;color:var(--t3)}
+
+/* Photos */
+.pg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pt{aspect-ratio:1;background:var(--bg2);border-radius:var(--rm);display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--b1);position:relative;cursor:pointer;transition:all .12s}
+.pt:hover{border-color:var(--b2)}
+.pt svg{width:18px;height:18px;stroke:var(--t3);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.phl{font-size:8px;color:var(--t3);margin-top:3px}
+.pht{position:absolute;bottom:4px;right:4px;font-size:7px;padding:2px 6px;border-radius:3px;background:var(--t1);color:var(--sand);opacity:.7}
+
+/* Chat */
+.msgs{flex:1}
+.msg{margin-bottom:10px;display:flex;gap:8px}
+.mav{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600}
+.mav.ai{background:var(--bg2);color:var(--clay)}
+.mav.us{background:var(--t1);color:var(--sand)}
+.mb{font-size:11px;line-height:1.65;color:var(--t2);max-width:82%;padding:10px 14px;border-radius:12px;background:var(--white);border:1px solid var(--b1)}
+.mb.us{background:var(--t1);color:#F5E6D3;border-color:var(--t1)}
+.cin{display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--b1);margin-top:12px}
+.cin input{flex:1;font-size:11px;font-family:'DM Sans',sans-serif;padding:8px 12px;border:1px solid var(--b1);border-radius:var(--rm);background:var(--white);outline:none;color:var(--t1)}
+.cin input:focus{border-color:var(--clay)}
+.cin button{font-size:11px;padding:8px 16px;font-family:'DM Sans',sans-serif;background:var(--t1);color:#F5E6D3;border:1px solid var(--t1);border-radius:var(--rm);cursor:pointer}
+
+/* Wizard */
+.wz{text-align:center;padding:20px}
+.wz h3{font-size:16px;font-weight:600;color:var(--t1);margin-bottom:4px}
+.wz>p{font-size:12px;color:var(--t2);margin-bottom:18px}
+.wo{display:grid;gap:8px;max-width:320px;margin:0 auto}
+.wop{padding:14px 16px;border:1px solid var(--b1);border-radius:var(--r);cursor:pointer;text-align:left;transition:all .12s;background:var(--white)}
+.wop:hover{border-color:var(--b2);background:var(--bg2)}
+.wop.sel{border-color:var(--t1);border-width:2px;background:var(--bg2)}
+.wop h5{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px}
+.wop p{font-size:10px;color:var(--t3);margin:0}
+.wdots{display:flex;gap:6px;justify-content:center;margin-bottom:20px}
+.wdots span{width:8px;height:8px;border-radius:50%;background:var(--b1)}
+.wdots span.on{background:var(--t1)}
+.wbtn{display:flex;justify-content:center;gap:8px;margin-top:20px}
+.wbtn button{font-size:12px;padding:9px 24px;font-family:'DM Sans',sans-serif;border:1px solid var(--b2);border-radius:var(--rm);background:var(--white);cursor:pointer;color:var(--t1)}
+.wbtn .primary{background:var(--t1);color:#F5E6D3;border-color:var(--t1)}
+
+/* Log */
+.le{padding:10px 0;border-bottom:1px solid var(--b1)}
+.le:last-child{border-bottom:none}
+.ld{font-size:9px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-bottom:3px}
+.lt{font-size:11px;color:var(--t2);line-height:1.65}
+
+/* Milestone row */
+.mi{font-size:10px;color:var(--t2);padding:6px 0;border-bottom:1px solid var(--b1)}
+.mi:last-child{border-bottom:none}
+.mi span{font-family:'JetBrains Mono',monospace;color:var(--t3);margin-right:6px;font-size:9px}
+
+@media(max-width:700px){
+  .frame{flex-direction:column;height:auto}
+  .side{width:100%;flex-direction:row;overflow-x:auto;padding:8px}
+  .sgrp,.side-foot,.side-logo p,.sgl{display:none}
+  .side-logo{padding:8px 12px;border:none}
+  .si{padding:6px 10px;font-size:10px;border-left:none;border-bottom:2px solid transparent;white-space:nowrap}
+  .si.on{border-bottom-color:var(--sand);border-left:none}
+  .sg{grid-template-columns:1fr 1fr}
+  .pg{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div class="device">
+<div class="frame">
+<div class="side">
+  <div class="side-logo"><h2>Keystone</h2><p>Build with confidence</p></div>
+  <div class="sgrp">
+    <div class="sgl">Main</div>
+    <div class="si on" onclick="go('dash')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Dashboard</div>
+    <div class="si" onclick="go('wiz')"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New project</div>
+    <div class="si" onclick="go('learn')"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg> Learn</div>
+  </div>
+  <div class="sgrp" id="pN" style="display:none">
+    <div class="sgl">Robinson residence</div>
+    <div class="si on" onclick="go('ov')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Overview</div>
+    <div class="si" onclick="go('tk')"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> Tasks</div>
+    <div class="si" onclick="go('bu')"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Budget</div>
+    <div class="si" onclick="go('sc')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Schedule</div>
+    <div class="si" onclick="go('tm')"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> Team</div>
+    <div class="si" onclick="go('dc')"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Documents</div>
+    <div class="si" onclick="go('ph')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Photos</div>
+    <div class="si" onclick="go('lg')"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Daily log</div>
+    <div class="si" onclick="go('ai')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> AI assistant</div>
+  </div>
+  <div class="side-foot"><div class="sav">AK</div><div class="sinfo"><div class="sn">Ayo K.</div><div class="se">Builder plan</div></div></div>
+</div>
+
+<div class="main">
+  <div class="topbar"><h3 id="tH">Dashboard</h3><div class="tbr"><span class="badge bg-s" id="tB">2 projects</span></div></div>
+  <div class="scr" id="S"></div>
+</div>
+</div>
+</div>
+
+<script>
+const E=id=>document.getElementById(id),Q=s=>document.querySelectorAll(s);
+function sn(id){Q('.si').forEach(i=>i.classList.remove('on'));const m={dash:'dashboard',wiz:'new project',learn:'learn',ov:'overview',tk:'tasks',bu:'budget',sc:'schedule',tm:'team',dc:'documents',ph:'photos',lg:'daily log',ai:'ai assistant'};Q('.si').forEach(i=>{if(i.textContent.trim().toLowerCase().includes(m[id]||''))i.classList.add('on')})}
+function go(id){sn(id);const ip=['ov','tk','bu','sc','tm','dc','ph','lg','ai'].includes(id);E('pN').style.display=ip?'block':'none';if(ip)sn(id);V[id]()}
+const V={};
+
+V.dash=()=>{E('tH').textContent='Dashboard';E('tB').textContent='2 projects';E('tB').className='badge bg-s';
+E('S').innerHTML=`<div class="sl">Your projects</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px"><div class="cd" style="cursor:pointer" onclick="go('ov')"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h4>Robinson residence</h4><span class="tg bg-w">Phase 6: Build</span></div><p>4 bed / 3 bath / 2,200 sf / Houston, TX</p><div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);margin-bottom:3px"><span>Overall progress</span><span style="font-family:'JetBrains Mono',monospace">62%</span></div><div style="height:4px;background:var(--b1);border-radius:2px;overflow:hidden"><div style="width:62%;height:100%;background:var(--success);border-radius:2px"></div></div></div><div style="display:flex;gap:12px;margin-top:10px;font-size:9px;color:var(--t3)"><span>Budget: $385K</span><span>Spent: $239K</span><span>8.5 mo</span></div></div><div class="cd" style="cursor:pointer"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h4>Lome rental duplex</h4><span class="tg bg-i">Phase 2: Land</span></div><p>2x 2-bed / 180 m&#xB2; / Adidogome, Lome, Togo</p><div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);margin-bottom:3px"><span>Overall progress</span><span style="font-family:'JetBrains Mono',monospace">18%</span></div><div style="height:4px;background:var(--b1);border-radius:2px;overflow:hidden"><div style="width:18%;height:100%;background:var(--info);border-radius:2px"></div></div></div><div style="display:flex;gap:12px;margin-top:10px;font-size:9px;color:var(--t3)"><span>Budget: CFA 42M</span><span>Spent: CFA 7.5M</span><span>7 mo</span></div></div></div>
+<div class="sl">Recent activity</div>
+<div class="al" style="background:var(--success-bg);color:var(--success)"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Framing inspection passed -- Robinson residence (2 hrs ago)</div>
+<div class="al" style="background:var(--warning-bg);color:var(--warning)"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Interior finishes trending 8% over estimate -- review recommended</div>
+<div class="al" style="background:var(--info-bg);color:var(--info)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Lome duplex: titre foncier verified at DCCFE. Proceed to offer.</div>`};
+
+V.wiz=()=>{E('tH').textContent='New project';E('tB').textContent='Setup wizard';E('tB').className='badge bg-i';
+E('S').innerHTML=`<div class="wz"><div class="wdots"><span class="on"></span><span></span><span></span><span></span><span></span></div><h3>What are you building for?</h3><p>This determines your financing options, tax treatment, and design priorities.</p><div class="wo"><div class="wop sel" onclick="Q('.wop').forEach(o=>o.classList.remove('sel'));this.classList.add('sel')"><h5>Build to occupy</h5><p>A home for you and your family to live in</p></div><div class="wop" onclick="Q('.wop').forEach(o=>o.classList.remove('sel'));this.classList.add('sel')"><h5>Build to rent</h5><p>Investment property generating rental income</p></div><div class="wop" onclick="Q('.wop').forEach(o=>o.classList.remove('sel'));this.classList.add('sel')"><h5>Build to sell</h5><p>Spec home built for resale profit</p></div></div><div class="wbtn"><button onclick="go('dash')">Cancel</button><button class="primary" onclick="wz2()">Next</button></div></div>`};
+
+window.wz2=()=>{E('S').innerHTML=`<div class="wz"><div class="wdots"><span></span><span class="on"></span><span></span><span></span><span></span></div><h3>Where are you building?</h3><p>Sets your cost benchmarks, regulations, templates, and construction method.</p><div class="wo"><div class="wop sel" onclick="Q('.wop').forEach(o=>o.classList.remove('sel'));this.classList.add('sel')"><h5>United States</h5><p>Wood-frame construction, institutional lending, IRC building codes</p></div><div class="wop" onclick="Q('.wop').forEach(o=>o.classList.remove('sel'));this.classList.add('sel')"><h5>Togo</h5><p>Reinforced concrete block, CFA zone, titre foncier system</p></div><div class="wop" onclick="Q('.wop').forEach(o=>o.classList.remove('sel'));this.classList.add('sel')"><h5>Ghana</h5><p>Concrete block, cedi currency, Lands Commission registration</p></div><div class="wop" onclick="Q('.wop').forEach(o=>o.classList.remove('sel'));this.classList.add('sel')"><h5>Benin</h5><p>Concrete block, CFA zone, ANDF land registry</p></div></div><div class="wbtn"><button onclick="V.wiz()">Back</button><button class="primary" onclick="go('ov')">Continue setup</button></div></div>`};
+
+V.ov=()=>{E('tH').textContent='Robinson residence';E('tB').textContent='Phase 6: Build';E('tB').className='badge bg-w';
+E('S').innerHTML=`<div class="ps">${[0,1,2,3,4,5,6,7,8].map(i=>`<div class="pd${i<5?' dn':i===5?' cr':''}"></div>`).join('')}</div><div class="pl"><span>Define</span><span>Finance</span><span>Land</span><span>Design</span><span>Approve</span><span style="font-weight:600;color:var(--t1)">Build</span><span>Verify</span><span></span><span>Operate</span></div>
+<div class="sg" style="margin-top:14px"><div class="st"><div class="v">62%</div><div class="l">Progress</div></div><div class="st"><div class="v">$239K</div><div class="l">Spent of $385K</div></div><div class="st"><div class="v">Wk 24</div><div class="l">Of est. 37</div></div><div class="st"><div class="v">3</div><div class="l">Open items</div></div></div>
+<div class="sh"><h4>Current sub-phase: mechanical rough-in</h4><a onclick="go('tk')">All tasks</a></div>
+<div class="cd" style="padding:10px 14px"><div class="tr"><div class="ck d"></div><span class="tt d">HVAC ductwork installation complete</span><span class="tg bg-s">Done</span></div><div class="tr"><div class="ck d"></div><span class="tt d">Plumbing rough-in (PEX supply + PVC drain)</span><span class="tg bg-s">Done</span></div><div class="tr"><div class="ck"></div><span class="tt">Electrical rough-in (200A panel + all circuits)</span><span class="tg bg-w">In progress</span></div><div class="tr"><div class="ck"></div><span class="tt">Schedule mechanical rough-in inspection</span><span class="tg bg-i">Upcoming</span></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px"><div><div class="sh"><h4>Risk alerts</h4></div><div class="al" style="background:var(--warning-bg);color:var(--warning);font-size:10px"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Interior finishes trending 8% over</div><div class="al" style="background:var(--info-bg);color:var(--info);font-size:10px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Rain forecast Thu-Fri</div></div><div><div class="sh"><h4>Next milestones</h4></div><div class="mi"><span>Mar 22</span>Mechanical rough-in inspection</div><div class="mi"><span>Mar 24</span>Draw request #5 to lender</div><div class="mi"><span>Mar 29</span>Insulation contractor starts</div></div></div>`};
+
+V.tk=()=>{E('tH').textContent='Tasks';E('tB').textContent='12 remaining';E('tB').className='badge bg-w';E('S').innerHTML=`<div class="sl">Active + upcoming</div><div class="cd" style="padding:8px 14px"><div class="tr"><div class="ck"></div><span class="tt">Electrical: run all branch circuits</span><span class="tg bg-w">In progress</span></div><div class="tr"><div class="ck"></div><span class="tt">Electrical: outlet and switch boxes</span><span class="tg bg-w">In progress</span></div><div class="tr"><div class="ck"></div><span class="tt">Schedule rough-in inspection</span><span class="tg bg-i">Upcoming</span></div><div class="tr"><div class="ck"></div><span class="tt">Pass mechanical rough-in inspection</span><span class="tg bg-i">Upcoming</span></div><div class="tr"><div class="ck"></div><span class="tt">Insulation: spray foam walls (R-21)</span><span class="tg bg-i">Upcoming</span></div><div class="tr"><div class="ck"></div><span class="tt">Insulation: blown attic (R-49)</span><span class="tg bg-i">Upcoming</span></div></div><div class="sl" style="margin-top:14px">Completed (35)</div><div class="cd" style="padding:8px 14px"><div class="tr"><div class="ck d"></div><span class="tt d">HVAC ductwork installation</span><span class="tg bg-s">Done</span></div><div class="tr"><div class="ck d"></div><span class="tt d">Plumbing supply lines (PEX)</span><span class="tg bg-s">Done</span></div><div class="tr"><div class="ck d"></div><span class="tt d">Plumbing drain/vent lines (PVC)</span><span class="tg bg-s">Done</span></div><div class="tr"><div class="ck d"></div><span class="tt d">Bathtub installation (3 units)</span><span class="tg bg-s">Done</span></div><div class="tr"><div class="ck d"></div><span class="tt d">Water heater placed in utility closet</span><span class="tg bg-s">Done</span></div></div>`};
+
+V.bu=()=>{E('tH').textContent='Budget';E('tB').textContent='$239K / $385K';E('tB').className='badge bg-s';const items=[['Site prep',8.5,8.2,'s'],['Foundation',22,21.8,'s'],['Framing',48,49.2,'w'],['Envelope',52,51.5,'s'],['Rough-in',42,38,'i'],['Insulation/drywall',28,0,'n'],['Interior finishes',118,55,'i'],['Exterior',24,0,'n'],['Permits/fees',9.5,9.5,'s'],['Contingency (15%)',57.75,5.5,'i']];E('S').innerHTML=`<div class="sg"><div class="st"><div class="v">$385K</div><div class="l">Total budget</div></div><div class="st"><div class="v">$239K</div><div class="l">Spent to date</div></div><div class="st"><div class="v">$146K</div><div class="l">Remaining</div></div><div class="st"><div class="v" style="color:var(--success)">-0.8%</div><div class="l">Variance</div></div></div><div class="sl">Budget line items</div><div class="cd" style="padding:8px 14px"><div class="br" style="font-size:9px;color:var(--t3);font-weight:500;padding-bottom:6px;border-bottom:1.5px solid var(--b2)"><span class="bc" style="color:var(--t3)">Category</span><span class="be">Est.</span><span class="ba">Actual</span><span class="bw" style="visibility:hidden"></span></div>${items.map(r=>{const p=r[1]>0?Math.min(Math.round(r[2]/r[1]*100),120):0;const o=r[2]>r[1];const clr=r[3]==='s'?'var(--success)':r[3]==='w'?'var(--warning)':r[3]==='i'?'var(--info)':'var(--t3)';return`<div class="br"><span class="bc">${r[0]}</span><span class="be">$${r[1]}K</span><span class="ba" style="color:${clr}">$${r[2]}K</span><div class="bw"><div class="bf" style="width:${Math.min(p,100)}%;background:${o?'var(--warning)':'var(--success)'}"></div></div></div>`}).join('')}</div>`};
+
+V.sc=()=>{E('tH').textContent='Schedule';E('tB').textContent='Week 24 of 37';E('tB').className='badge bg-i';const g=[['Site prep',0,8,'#0F6E56'],['Foundation',3,14,'#185FA5'],['Framing',8,20,'#534AB7'],['Envelope',14,26,'#993C1D'],['Rough-in',20,30,'#854F0B'],['Insul./drywall',26,33,'#993556'],['Int. finishes',30,37,'#993556'],['Exterior',34,38,'#5F5E5A']];E('S').innerHTML=`<div style="display:flex;justify-content:space-between;font-size:8px;color:var(--t3);margin-bottom:6px;letter-spacing:.3px">${['W1','','W9','','W17','','W25','','W33','W37'].map(w=>`<span>${w}</span>`).join('')}</div><div class="cd" style="padding:8px 14px;position:relative"><div style="position:absolute;left:calc(14px + ${(24/38*100).toFixed(1)}% * .88);top:0;bottom:0;width:1.5px;background:var(--danger);opacity:.5;z-index:1"></div>${g.map(r=>`<div class="gr"><span class="gn">${r[0]}</span><div class="gt"><div class="gf" style="left:${(r[1]/38*100).toFixed(1)}%;width:${((r[2]-r[1])/38*100).toFixed(1)}%;background:${r[3]};opacity:${r[2]<24?.3:.85}"></div></div></div>`).join('')}</div><div style="display:flex;align-items:center;gap:6px;font-size:9px;color:var(--t3);margin-top:6px"><div style="width:10px;height:1.5px;background:var(--danger)"></div> Current week (24)</div>`};
+
+V.tm=()=>{E('tH').textContent='Team';E('tB').textContent='26 contacts';E('tB').className='badge bg-i';const c=[['JM','Martinez Framing LLC','Framing contractor','var(--info-bg)','var(--info)','4.8'],['RW','R. Williams Plumbing','Plumber (rough + trim)','var(--success-bg)','var(--success)','4.5'],['DL','Delta Electric Co.','Electrician','var(--warning-bg)','var(--warning)','4.7'],['AC','AirComfort HVAC','HVAC contractor','var(--danger-bg)','var(--danger)','4.3'],['TS','TexStar Concrete','Foundation + flatwork','var(--info-bg)','var(--info)','4.6'],['KB','K. Brown Architecture','Architect','var(--success-bg)','var(--success)','4.9']];E('S').innerHTML=`<div class="sl">Active contractors and professionals</div>${c.map(r=>`<div class="cc"><div class="ca" style="background:${r[3]};color:${r[4]}">${r[0]}</div><div style="flex:1"><div class="cn">${r[1]}</div><div class="ct">${r[2]}</div></div><div style="font-size:9px;color:var(--t3);font-family:'JetBrains Mono',monospace">${r[5]}/5</div></div>`).join('')}`};
+
+V.dc=()=>{E('tH').textContent='Documents';E('tB').textContent='18 files';E('tB').className='badge bg-i';const d=[['Construction loan agreement','Phase 1: Finance / Mar 2','var(--info-bg)','var(--info)'],['Land purchase agreement','Phase 2: Land / Feb 15','var(--success-bg)','var(--success)'],['Building plans (full set)','Phase 3: Design / Feb 28','var(--warning-bg)','var(--warning)'],['Building permit #BP-2026-4421','Phase 4: Approve / Mar 8','var(--danger-bg)','var(--danger)'],['Martinez Framing -- contract','Phase 5: Assemble / Mar 10','var(--info-bg)','var(--info)'],['Draw request #4 (approved)','Phase 6: Build / Mar 12','var(--success-bg)','var(--success)'],['Framing inspection -- passed','Phase 6: Build / Mar 14','var(--warning-bg)','var(--warning)'],['Change order #2 -- windows','Phase 6: Build / Mar 15','var(--danger-bg)','var(--danger)']];E('S').innerHTML=`<div class="sl">All project documents</div>${d.map(r=>`<div class="di"><div class="dk" style="background:${r[2]};color:${r[3]}"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div style="flex:1"><div class="dn">${r[0]}</div><div class="dd">${r[1]}</div></div><div style="font-size:9px;color:var(--info);cursor:pointer">View</div></div>`).join('')}`};
+
+V.ph=()=>{E('tH').textContent='Photos';E('tB').textContent='47 photos';E('tB').className='badge bg-i';const p=['Foundation','Foundation','Framing','Framing','Framing','Framing','Envelope','Envelope','Envelope','Rough-in','Rough-in','Rough-in'];E('S').innerHTML=`<div class="sl">Geotagged site documentation</div><div class="pg">${p.map((t,i)=>`<div class="pt"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div class="phl">Mar ${3+i}</div><div class="pht">${t}</div></div>`).join('')}<div class="pt" style="border-style:dashed"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div class="phl">Upload</div></div></div>`};
+
+V.lg=()=>{E('tH').textContent='Daily log';E('tB').textContent='Day 142';E('tB').className='badge bg-i';E('S').innerHTML=`<div class="sl">Recent entries</div><div class="cd" style="padding:10px 14px"><div class="le"><div class="ld">Mar 15, 2026 -- Day 142 -- Partly cloudy 72F -- Crew: 4</div><div class="lt">Electrician (Delta Electric) continued rough-in on second floor. All bedroom circuits wired. Kitchen island conduit connected to panel. Need to schedule inspection for early next week. Plumber came back to fix a leaking PEX connection near master bath -- resolved same day, no charge under warranty.</div></div><div class="le"><div class="ld">Mar 14, 2026 -- Day 141 -- Sunny 75F -- Crew: 6</div><div class="lt">Electrician started rough-in. 200A panel mounted. First floor wiring 80% complete. Verified outlet box locations against electrical plan -- two missing in garage, corrected on site. 4 photos uploaded. Draw request #5 prepared for lender submission Monday.</div></div><div class="le"><div class="ld">Mar 13, 2026 -- Day 140 -- Sunny 70F -- Crew: 3</div><div class="lt">Plumbing rough-in completed. PEX supply lines pressure tested 80 PSI for 30 min -- no drop. PVC drain slope verified with level. Water heater placed in utility closet. Bathtubs set in all 3 bathrooms. Ready for electrical rough-in.</div></div></div><div style="margin-top:12px"><button onclick="go('ai')" style="font-family:'DM Sans';font-size:11px;padding:8px 16px;border:1px solid var(--b2);border-radius:var(--rm);background:var(--white);cursor:pointer;color:var(--t1)">Add today's entry with AI assist</button></div>`};
+
+V.ai=()=>{E('tH').textContent='AI assistant';E('tB').textContent='Context: Robinson residence';E('tB').className='badge bg-i';E('S').innerHTML=`<div class="msgs"><div class="msg"><div class="mav us">AK</div><div class="mb us">My electrician says he needs 3 more days than estimated. Should I be concerned? How does this affect the schedule?</div></div><div class="msg"><div class="mav ai">K</div><div class="mb"><div style="font-weight:600;margin-bottom:6px;color:var(--t1)">Schedule impact analysis</div><div style="margin-bottom:8px">Based on your current schedule, the electrical rough-in is on the critical path. A 3-day extension pushes your mechanical rough-in inspection from March 22 to March 25, which in turn delays insulation start by the same amount.</div><div style="margin-bottom:8px"><span style="font-weight:500;color:var(--t1)">Impact:</span> 3 days added to overall timeline (37 to 37.4 weeks). This is within acceptable range and does not trigger any downstream contractor conflicts based on your current schedule.</div><div style="margin-bottom:8px"><span style="font-weight:500;color:var(--t1)">Recommended actions:</span></div><div style="padding-left:12px;margin-bottom:8px;font-size:10px">1. Confirm the 3-day extension in writing<br>2. Notify insulation contractor of revised start<br>3. Reschedule inspection for March 25<br>4. Verify no additional cost will be incurred</div><div style="font-size:9px;color:var(--t3);font-style:italic;border-top:1px solid var(--b1);padding-top:6px;margin-top:6px">Project-specific guidance based on your schedule data. For electrical code questions, consult a licensed electrician.</div></div></div><div class="msg"><div class="mav us">AK</div><div class="mb us">Can you draft a message to the insulation contractor about the delay?</div></div><div class="msg"><div class="mav ai">K</div><div class="mb"><div style="font-weight:600;margin-bottom:6px;color:var(--t1)">Draft message</div><div style="background:var(--bg2);padding:10px 12px;border-radius:8px;font-size:10px;margin-bottom:8px;line-height:1.7;color:var(--t1)">Hi,<br><br>Quick update on the Robinson residence project. Our electrical rough-in is running 3 days past the original estimate. This pushes the mechanical inspection to March 25, which means your insulation start will shift from March 26 to March 29.<br><br>Please confirm this revised date works for your schedule. All other scope and terms remain unchanged.<br><br>Thanks,<br>Ayo</div><div style="display:flex;gap:6px"><button style="font-family:'DM Sans';font-size:10px;padding:5px 12px;border:1px solid var(--b2);border-radius:6px;background:var(--white);cursor:pointer;color:var(--t1)">Copy text</button><button style="font-family:'DM Sans';font-size:10px;padding:5px 12px;border:1px solid var(--b2);border-radius:6px;background:var(--white);cursor:pointer;color:var(--t1)">Send via WhatsApp</button><button style="font-family:'DM Sans';font-size:10px;padding:5px 12px;border:1px solid var(--b2);border-radius:6px;background:var(--white);cursor:pointer;color:var(--t1)">Send via email</button></div></div></div></div><div class="cin"><input type="text" placeholder="Ask about your project, costs, methods, regulations..."><button>Send</button></div>`};
+
+V.learn=()=>{E('tH').textContent='Learn';E('tB').textContent='Knowledge base';E('tB').className='badge bg-s';E('pN').style.display='none';const m=[['Construction loan types explained','Finance','bg-i'],['How to read a floor plan','Design','bg-w'],['The 12 trades: who does what and when','Team','bg-s'],['Understanding DTI and loan qualification','Finance','bg-i'],['West African land tenure systems','Land','bg-d'],['Concrete block vs. wood frame construction','Build','bg-w'],['What building inspectors actually check','Quality','bg-s'],['Payment schedules that protect you','Budget','bg-i'],['Designing for tropical climates','Design','bg-w'],['The titre foncier process: 6 steps','Land','bg-d']];E('S').innerHTML=`<div class="sl">Educational modules</div>${m.map(r=>`<div class="di"><div class="dk" style="background:var(--bg2)"><svg viewBox="0 0 24 24" style="stroke:var(--t2)"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></div><div style="flex:1"><div class="dn">${r[0]}</div><div class="dd"><span class="tg ${r[2]}" style="font-size:8px">${r[1]}</span></div></div><div style="font-size:9px;color:var(--info);cursor:pointer">Start lesson</div></div>`).join('')}`};
+
+V.dash();
+</script>
+</body>
+</html>
