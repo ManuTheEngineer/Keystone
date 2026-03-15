@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
+import { sendAIMessage, getAIUsage, type AIMessage, type AIUsage } from "@/lib/services/ai-service";
 import { subscribeToProject, type ProjectData } from "@/lib/services/project-service";
-import { Send, Loader2 } from "lucide-react";
 import {
   getMarketData,
   getPhaseDefinition,
@@ -13,33 +13,128 @@ import {
   PHASE_ORDER,
 } from "@keystone/market-data";
 import type { Market, ProjectPhase } from "@keystone/market-data";
+import { Send, Loader2, AlertTriangle, Zap } from "lucide-react";
 
-interface Message {
-  role: "user" | "assistant";
-  content: string;
+/* ------------------------------------------------------------------ */
+/*  Mode definitions                                                   */
+/* ------------------------------------------------------------------ */
+
+type Mode = "general" | "budget" | "schedule" | "risk" | "contract";
+
+const MODES: { key: Mode; label: string; description: string }[] = [
+  { key: "general", label: "General", description: "Ask anything about your project, construction methods, costs, regulations, or get help drafting messages." },
+  { key: "budget", label: "Budget", description: "Analyze spending, find cost savings, compare against benchmarks, and forecast remaining costs." },
+  { key: "schedule", label: "Schedule", description: "Evaluate timeline progress, identify critical path items, and plan around delays." },
+  { key: "risk", label: "Risk", description: "Identify project risks, evaluate contingency adequacy, and get mitigation strategies." },
+  { key: "contract", label: "Contract", description: "Review contractor agreements, check for missing clauses, and evaluate payment schedules." },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Suggestions per mode + market                                      */
+/* ------------------------------------------------------------------ */
+
+const SUGGESTIONS: Record<Mode, { usa: string[]; wa: string[] }> = {
+  general: {
+    usa: [
+      "How is my budget tracking?",
+      "What should I check before rough-in inspection?",
+      "Draft a message to my contractor about a delay",
+    ],
+    wa: [
+      "What should I check before the rebar pour?",
+      "How does the titre foncier process work?",
+      "What's a fair daily rate for a macon in Lome?",
+    ],
+  },
+  budget: {
+    usa: ["Analyze my spending rate", "Where can I cut costs?", "Am I on budget?"],
+    wa: ["Analyze my spending rate", "Where can I cut costs?", "Am I on budget?"],
+  },
+  schedule: {
+    usa: ["Am I on schedule?", "What's the critical path?", "How will rain affect my timeline?"],
+    wa: ["Am I on schedule?", "What's the critical path?", "How will rain affect my timeline?"],
+  },
+  risk: {
+    usa: ["What are my top project risks?", "Is my contingency adequate?", "What should I watch out for?"],
+    wa: ["What are my top project risks?", "Is my contingency adequate?", "What should I watch out for?"],
+  },
+  contract: {
+    usa: ["Review my contractor agreement", "What clauses am I missing?", "Is my payment schedule fair?"],
+    wa: ["Review my contractor agreement", "What clauses am I missing?", "Is my payment schedule fair?"],
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/*  Simple inline markdown renderer                                    */
+/* ------------------------------------------------------------------ */
+
+function renderMarkdown(text: string) {
+  return text.split("\n").map((line, i) => {
+    if (line.trim() === "") return <p key={i} className="h-2" />;
+
+    // Numbered list
+    const numMatch = line.match(/^(\d+)\.\s+(.*)$/);
+    if (numMatch) {
+      return (
+        <p key={i} className="mb-1 pl-3">
+          <span className="font-semibold">{numMatch[1]}.</span> {renderInline(numMatch[2])}
+        </p>
+      );
+    }
+
+    // Bullet list
+    if (line.trimStart().startsWith("- ") || line.trimStart().startsWith("* ")) {
+      const content = line.replace(/^\s*[-*]\s+/, "");
+      return (
+        <p key={i} className="mb-1 pl-3 flex gap-1.5">
+          <span className="shrink-0 mt-[2px]">&#8226;</span>
+          <span>{renderInline(content)}</span>
+        </p>
+      );
+    }
+
+    return (
+      <p key={i} className="mb-1">
+        {renderInline(line)}
+      </p>
+    );
+  });
 }
 
-const USA_SUGGESTIONS = [
-  "How is my budget tracking?",
-  "What should I check before rough-in inspection?",
-  "Draft a message to my contractor about a delay",
-];
+function renderInline(text: string) {
+  // Bold: **text**
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={i} className="font-semibold">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return part;
+  });
+}
 
-const TOGO_SUGGESTIONS = [
-  "What should I check before the rebar pour?",
-  "How does the titre foncier process work?",
-  "What's a fair daily rate for a macon in Lome?",
-];
+/* ------------------------------------------------------------------ */
+/*  Main component                                                     */
+/* ------------------------------------------------------------------ */
 
 export function AIAssistantClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const projectId = params.id as string;
+
   const [project, setProject] = useState<ProjectData | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<AIMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [mode, setMode] = useState<Mode>("general");
+  const [usage, setUsage] = useState<AIUsage | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  /* ---------- subscriptions ---------- */
 
   useEffect(() => {
     const unsub = subscribeToProject(projectId, setProject);
@@ -54,76 +149,80 @@ export function AIAssistantClient() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const market = (project?.market ?? "USA") as Market;
-  const isUSAMarket = market === "USA" || market === "GHANA";
-  const suggestions = isUSAMarket ? USA_SUGGESTIONS : TOGO_SUGGESTIONS;
+  // Fetch usage on mount
+  useEffect(() => {
+    getAIUsage().then(setUsage).catch(() => {});
+  }, []);
 
-  // Build enriched project context with market data
-  const enrichedContext = useMemo(() => {
-    if (!project) return undefined;
+  /* ---------- derived ---------- */
+
+  const market = (project?.market ?? "USA") as Market;
+  const isWAMarket = market === "TOGO" || market === "BENIN";
+  const suggestions = isWAMarket ? SUGGESTIONS[mode].wa : SUGGESTIONS[mode].usa;
+  const modeInfo = MODES.find((m) => m.key === mode)!;
+
+  /* ---------- build project context ---------- */
+
+  const projectContext = useMemo(() => {
+    if (!project) return {};
 
     const marketData = getMarketData(market);
     const currentPhaseKey: ProjectPhase = PHASE_ORDER[project.currentPhase ?? 0];
     const phaseDef = getPhaseDefinition(market, currentPhaseKey);
     const benchmarks = getCostBenchmarks(market);
 
-    // Build construction method string
-    const constructionMethod = phaseDef?.constructionMethod ?? "Unknown";
-
-    // Build milestone summary for current phase
-    const milestonesSummary = phaseDef
-      ? phaseDef.milestones.map((m) => `- ${m.name}: ${m.description}`).join("\n")
-      : "No milestones defined";
-
-    // Build cost benchmark summary (top 5 by midRange)
     const topBenchmarks = [...benchmarks]
       .sort((a, b) => b.midRange - a.midRange)
       .slice(0, 5);
     const costSummary = topBenchmarks
       .map(
         (b) =>
-          `- ${b.category}${b.subcategory ? ` / ${b.subcategory}` : ""}: ${formatCurrencyCompact(
+          `${b.category}${b.subcategory ? ` / ${b.subcategory}` : ""}: ${formatCurrencyCompact(
             b.midRange,
             marketData.currency
           )}/${b.unit}`
       )
-      .join("\n");
+      .join("; ");
 
-    const lines = [
-      `Project: ${project.name}`,
-      `Market: ${project.market}`,
-      `Construction method: ${constructionMethod}`,
-      `Currency: ${marketData.currency.code} (${marketData.currency.symbol})`,
-      `Phase: ${project.phaseName} (${currentPhaseKey})`,
-      `Budget: ${project.totalBudget} ${project.currency}`,
-      `Spent: ${project.totalSpent} ${project.currency}`,
-      `Progress: ${project.progress}%`,
-      `Week: ${project.currentWeek} of ${project.totalWeeks}`,
-      `Sub-phase: ${project.subPhase}`,
-      "",
-      "Current phase milestones:",
-      milestonesSummary,
-      "",
-      "Top cost benchmarks (per unit):",
+    return {
+      projectName: project.name,
+      market: project.market,
+      phase: PHASE_ORDER[project.currentPhase ?? 0],
+      phaseName: project.phaseName,
+      propertyType: project.propertyType,
+      purpose: project.purpose,
+      totalBudget: project.totalBudget,
+      totalSpent: project.totalSpent,
+      currency: project.currency,
+      currentWeek: project.currentWeek,
+      totalWeeks: project.totalWeeks,
+      progress: project.progress,
+      constructionMethod: phaseDef?.constructionMethod ?? "",
+      milestones: phaseDef?.milestones.map((m) => m.name) ?? [],
       costSummary,
-    ];
-
-    return lines.join("\n");
+    };
   }, [project, market]);
 
-  async function handleSend() {
+  /* ---------- send handler ---------- */
+
+  const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || sending) return;
 
-    const newMessages: Message[] = [...messages, { role: "user", content: text }];
+    setError(null);
+    const newMessages: AIMessage[] = [...messages, { role: "user", content: text }];
     setMessages(newMessages);
     setInput("");
     setSending(true);
 
     try {
-      const aiEndpoint = process.env.NEXT_PUBLIC_AI_ENDPOINT;
+      const result = await sendAIMessage(newMessages, projectContext, mode);
+      setMessages([...newMessages, { role: "assistant", content: result.message }]);
+      setUsage(result.usage);
+    } catch (err: any) {
+      const errMsg: string = err?.message ?? "";
 
-      if (!aiEndpoint) {
+      if (errMsg === "AI_NOT_CONFIGURED") {
         setMessages([
           ...newMessages,
           {
@@ -132,38 +231,29 @@ export function AIAssistantClient() {
               "The AI assistant is not yet configured. To enable it:\n\n1. Deploy a Cloud Function or API endpoint that proxies calls to the Anthropic API\n2. Set NEXT_PUBLIC_AI_ENDPOINT in your environment variables\n\nIn the meantime, you can find construction guidance in the Learn section.",
           },
         ]);
-        setSending(false);
-        return;
-      }
-
-      const res = await fetch(aiEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: newMessages,
-          projectContext: enrichedContext,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.message) {
-        setMessages([...newMessages, { role: "assistant", content: data.message }]);
+      } else if (errMsg.startsWith("RATE_LIMITED:")) {
+        const parts = errMsg.split(":");
+        const used = parts[1];
+        const limit = parts[2];
+        setError(`You've used ${used} of ${limit} daily queries. Upgrade your plan for more.`);
+        // Remove the pending user message since it wasn't processed
+        setMessages(messages);
+      } else if (errMsg === "Not authenticated") {
+        setError("You must be signed in to use the AI assistant.");
+        setMessages(messages);
       } else {
         setMessages([
           ...newMessages,
-          { role: "assistant", content: data.error ?? "Something went wrong. Please try again." },
+          {
+            role: "assistant",
+            content: "Unable to reach the AI service. Please check your connection and try again.",
+          },
         ]);
       }
-    } catch {
-      setMessages([
-        ...newMessages,
-        { role: "assistant", content: "Unable to reach the AI service. Please check your connection and try again." },
-      ]);
     } finally {
       setSending(false);
     }
-  }
+  }, [input, sending, messages, projectContext, mode]);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -172,16 +262,60 @@ export function AIAssistantClient() {
     }
   }
 
+  /* ---------- render ---------- */
+
   return (
     <div className="flex flex-col h-[calc(100vh-130px)]">
+      {/* Top bar: usage + mode selector */}
+      <div className="flex items-center justify-between pb-3 mb-3 border-b border-border">
+        <div className="flex items-center gap-2">
+          <Zap size={14} className="text-clay" />
+          <span className="text-[12px] font-medium text-earth">AI Assistant</span>
+        </div>
+        {usage && (
+          <span className="text-[11px] text-muted">
+            {usage.used}/{usage.limit} queries today
+          </span>
+        )}
+      </div>
+
+      {/* Mode selector */}
+      <div className="flex gap-1.5 pb-3 mb-1 overflow-x-auto">
+        {MODES.map((m) => (
+          <button
+            key={m.key}
+            onClick={() => setMode(m.key)}
+            className={`px-3 py-1 text-[11px] rounded-full whitespace-nowrap transition-colors ${
+              mode === m.key
+                ? "bg-earth text-warm font-medium"
+                : "bg-surface border border-border text-muted hover:border-emerald-400 hover:text-emerald-700"
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-center gap-2 px-3 py-2 mb-2 rounded-lg bg-danger/10 border border-danger/20">
+          <AlertTriangle size={14} className="text-danger shrink-0" />
+          <span className="text-[11px] text-danger">{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="ml-auto text-[10px] text-danger/60 hover:text-danger"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 pb-4">
         {messages.length === 0 && (
           <div className="text-center py-12">
             <p className="text-[14px] text-earth font-medium mb-1">Keystone AI Assistant</p>
-            <p className="text-[12px] text-muted mb-4">
-              Ask about your project, construction methods, costs, regulations, or get help drafting messages.
-            </p>
+            <p className="text-[12px] text-muted mb-4">{modeInfo.description}</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {suggestions.map((suggestion) => (
                 <button
@@ -197,16 +331,15 @@ export function AIAssistantClient() {
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className="flex gap-2">
-            <div
-              className={`w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold ${
-                msg.role === "user"
-                  ? "bg-earth text-sand"
-                  : "bg-surface-alt text-clay"
-              }`}
-            >
-              {msg.role === "user" ? "U" : "K"}
-            </div>
+          <div
+            key={i}
+            className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+          >
+            {msg.role === "assistant" && (
+              <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold bg-surface-alt text-clay">
+                K
+              </div>
+            )}
             <div
               className={`max-w-[82%] px-3.5 py-2.5 rounded-xl text-[12px] leading-relaxed ${
                 msg.role === "user"
@@ -214,17 +347,18 @@ export function AIAssistantClient() {
                   : "bg-surface border border-border text-muted"
               }`}
             >
-              {msg.content.split("\n").map((line, j) => (
-                <p key={j} className={line === "" ? "h-2" : "mb-1"}>
-                  {line}
-                </p>
-              ))}
+              {renderMarkdown(msg.content)}
               {msg.role === "assistant" && (
                 <div className="mt-2 pt-2 border-t border-border text-[10px] text-muted/60 italic">
                   This is educational guidance. Consult a licensed professional for your specific situation.
                 </div>
               )}
             </div>
+            {msg.role === "user" && (
+              <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold bg-earth text-sand">
+                U
+              </div>
+            )}
           </div>
         ))}
 
@@ -247,7 +381,7 @@ export function AIAssistantClient() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about your project, costs, methods, regulations..."
+          placeholder={`Ask about ${mode === "general" ? "your project" : mode}...`}
           className="flex-1 px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
           disabled={sending}
         />

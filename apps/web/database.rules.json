@@ -1,0 +1,79 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid"
+      }
+    },
+    "projects": {
+      ".indexOn": ["userId"],
+      ".read": "auth !== null && query.orderByChild === 'userId' && query.equalTo === auth.uid",
+      ".write": "false",
+      "$projectId": {
+        ".read": "data.child('userId').val() === auth.uid",
+        ".write": "auth !== null && (!data.exists() || data.child('userId').val() === auth.uid)"
+      }
+    },
+    "budgetItems": {
+      "$projectId": {
+        ".read": "root.child('projects').child($projectId).child('userId').val() === auth.uid",
+        ".write": "root.child('projects').child($projectId).child('userId').val() === auth.uid || !root.child('projects').child($projectId).exists()"
+      }
+    },
+    "contacts": {
+      "$projectId": {
+        ".read": "root.child('projects').child($projectId).child('userId').val() === auth.uid",
+        ".write": "root.child('projects').child($projectId).child('userId').val() === auth.uid || !root.child('projects').child($projectId).exists()"
+      }
+    },
+    "dailyLogs": {
+      "$projectId": {
+        ".read": "root.child('projects').child($projectId).child('userId').val() === auth.uid",
+        ".write": "root.child('projects').child($projectId).child('userId').val() === auth.uid || !root.child('projects').child($projectId).exists()"
+      }
+    },
+    "tasks": {
+      "$projectId": {
+        ".read": "root.child('projects').child($projectId).child('userId').val() === auth.uid",
+        ".write": "root.child('projects').child($projectId).child('userId').val() === auth.uid || !root.child('projects').child($projectId).exists()"
+      }
+    },
+    "documents": {
+      "$projectId": {
+        ".read": "root.child('projects').child($projectId).child('userId').val() === auth.uid",
+        ".write": "root.child('projects').child($projectId).child('userId').val() === auth.uid || !root.child('projects').child($projectId).exists()"
+      }
+    },
+    "photos": {
+      "$projectId": {
+        ".read": "root.child('projects').child($projectId).child('userId').val() === auth.uid",
+        ".write": "root.child('projects').child($projectId).child('userId').val() === auth.uid || !root.child('projects').child($projectId).exists()"
+      }
+    },
+    "inspectionResults": {
+      "$projectId": {
+        ".read": "root.child('projects').child($projectId).child('userId').val() === auth.uid",
+        ".write": "root.child('projects').child($projectId).child('userId').val() === auth.uid || !root.child('projects').child($projectId).exists()"
+      }
+    },
+    "punchListItems": {
+      "$projectId": {
+        ".read": "root.child('projects').child($projectId).child('userId').val() === auth.uid",
+        ".write": "root.child('projects').child($projectId).child('userId').val() === auth.uid || !root.child('projects').child($projectId).exists()"
+      }
+    },
+    "conversations": {
+      "$projectId": {
+        ".read": "root.child('projects').child($projectId).child('userId').val() === auth.uid",
+        ".write": "root.child('projects').child($projectId).child('userId').val() === auth.uid || !root.child('projects').child($projectId).exists()"
+      }
+    },
+    "aiUsage": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid"
+      }
+    }
+  }
+}

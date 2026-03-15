@@ -2,7 +2,20 @@
   "permissions": {
     "allow": [
       "Bash(ls -la /c/Users/ManuT/OneDrive/Documents/GitHub/Keystone/apps/web/src/app/\\\\\\(dashboard\\\\\\)/project/[id\\\\\\)/*/page.tsx)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npx next:*)",
+      "Bash(netstat -ano)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object OwningProcess\")",
+      "Bash(taskkill //PID 46284 //F)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} - Time: %{time_total}s\" http://localhost:3000/new-project/)",
+      "Bash(tasklist)",
+      "Bash(taskkill //IM node.exe //F)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} - Time: %{time_total}s\\\\n\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} - Time: %{time_total}s\\\\n\" http://localhost:3000/login/)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} - Compile time: %{time_total}s\\\\n\" http://localhost:3000/new-project/)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} - %{time_total}s\\\\n\" \"https://keystone-21811-default-rtdb.firebaseio.com/.json?shallow=true\")",
+      "Bash(curl -s \"https://keystone-21811-default-rtdb.firebaseio.com/.json?shallow=true\")"
     ]
   }
 }

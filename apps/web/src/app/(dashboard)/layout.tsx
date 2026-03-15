@@ -117,6 +117,7 @@ function getActiveSectionFromPath(pathname: string): string {
   if (pathname.includes("/new-project")) return "new-project";
   if (pathname.includes("/learn")) return "learn";
   if (pathname.includes("/overview")) return "overview";
+  if (pathname.includes("/financials")) return "financials";
   if (pathname.includes("/budget")) return "budget";
   if (pathname.includes("/schedule")) return "schedule";
   if (pathname.includes("/team")) return "team";
@@ -136,6 +137,7 @@ function sectionToRoute(section: string, currentProjectId: string | null): strin
     overview: `/project/${pid}/overview`,
     tasks: `/project/${pid}/overview`,
     budget: `/project/${pid}/budget`,
+    financials: `/project/${pid}/financials`,
     schedule: `/project/${pid}/schedule`,
     team: `/project/${pid}/team`,
     documents: `/project/${pid}/documents`,

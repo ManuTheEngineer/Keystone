@@ -1,4 +1,7 @@
 {
+  "database": {
+    "rules": "database.rules.json"
+  },
   "hosting": {
     "site": "keystone-21811",
     "public": "out",
@@ -8,10 +11,18 @@
       "**/node_modules/**"
     ],
     "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
+      { "source": "/project/*/overview/**", "destination": "/project/_/overview/index.html" },
+      { "source": "/project/*/budget/**", "destination": "/project/_/budget/index.html" },
+      { "source": "/project/*/schedule/**", "destination": "/project/_/schedule/index.html" },
+      { "source": "/project/*/financials/**", "destination": "/project/_/financials/index.html" },
+      { "source": "/project/*/team/**", "destination": "/project/_/team/index.html" },
+      { "source": "/project/*/documents/**", "destination": "/project/_/documents/index.html" },
+      { "source": "/project/*/photos/**", "destination": "/project/_/photos/index.html" },
+      { "source": "/project/*/daily-log/**", "destination": "/project/_/daily-log/index.html" },
+      { "source": "/project/*/inspections/**", "destination": "/project/_/inspections/index.html" },
+      { "source": "/project/*/punch-list/**", "destination": "/project/_/punch-list/index.html" },
+      { "source": "/project/*/ai-assistant/**", "destination": "/project/_/ai-assistant/index.html" },
+      { "source": "**", "destination": "/index.html" }
     ],
     "headers": [
       {
