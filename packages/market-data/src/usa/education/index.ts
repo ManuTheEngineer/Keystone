@@ -1,0 +1,34 @@
+import type { ProjectPhase, EducationModule } from "../../types";
+import { USA_EDUCATION_DEFINE } from "./define";
+import { USA_EDUCATION_FINANCE } from "./finance";
+import { USA_EDUCATION_LAND } from "./land";
+import { USA_EDUCATION_DESIGN } from "./design";
+import { USA_EDUCATION_APPROVE } from "./approve";
+import { USA_EDUCATION_ASSEMBLE } from "./assemble";
+import { USA_EDUCATION_BUILD } from "./build";
+import { USA_EDUCATION_VERIFY } from "./verify";
+import { USA_EDUCATION_OPERATE } from "./operate";
+
+export const USA_EDUCATION: Record<ProjectPhase, EducationModule> = {
+  DEFINE: USA_EDUCATION_DEFINE,
+  FINANCE: USA_EDUCATION_FINANCE,
+  LAND: USA_EDUCATION_LAND,
+  DESIGN: USA_EDUCATION_DESIGN,
+  APPROVE: USA_EDUCATION_APPROVE,
+  ASSEMBLE: USA_EDUCATION_ASSEMBLE,
+  BUILD: USA_EDUCATION_BUILD,
+  VERIFY: USA_EDUCATION_VERIFY,
+  OPERATE: USA_EDUCATION_OPERATE,
+};
+
+export {
+  USA_EDUCATION_DEFINE,
+  USA_EDUCATION_FINANCE,
+  USA_EDUCATION_LAND,
+  USA_EDUCATION_DESIGN,
+  USA_EDUCATION_APPROVE,
+  USA_EDUCATION_ASSEMBLE,
+  USA_EDUCATION_BUILD,
+  USA_EDUCATION_VERIFY,
+  USA_EDUCATION_OPERATE,
+};

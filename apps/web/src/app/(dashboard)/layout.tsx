@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext, type ReactNode } from "react";
+import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
@@ -63,9 +63,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     router.push(route);
   }
 
-  function setTopbar(title: string, badge?: string, badgeVariant?: "success" | "warning" | "info" | "danger") {
+  const setTopbar = useCallback((title: string, badge?: string, badgeVariant?: "success" | "warning" | "info" | "danger") => {
     setTopbarState({ title, badge: badge ?? "", badgeVariant: badgeVariant ?? "info" });
-  }
+  }, []);
 
   async function handleSignOut() {
     await signOut();

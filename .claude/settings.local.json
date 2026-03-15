@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /c/Users/ManuT/OneDrive/Documents/GitHub/Keystone/apps/web/src/app/\\\\\\(dashboard\\\\\\)/project/[id\\\\\\)/*/page.tsx)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

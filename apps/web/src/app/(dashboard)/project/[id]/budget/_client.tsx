@@ -14,13 +14,15 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCard } from "@/components/ui/StatCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Card } from "@/components/ui/Card";
-import { Plus } from "lucide-react";
-
-function fmt(amount: number, currency: string): string {
-  if (currency === "XOF") return `CFA ${(amount / 1000000).toFixed(1)}M`;
-  if (amount >= 1000) return `$${(amount / 1000).toFixed(0)}K`;
-  return `$${amount.toLocaleString()}`;
-}
+import { CostRangeBar } from "@/components/ui/CostRangeBar";
+import { Plus, Download } from "lucide-react";
+import {
+  getMarketData,
+  getCostBenchmarks,
+  formatCurrency,
+  formatCurrencyCompact,
+} from "@keystone/market-data";
+import type { Market, PropertyType, CostBenchmark } from "@keystone/market-data";
 
 export function BudgetClient() {
   const params = useParams();
@@ -29,10 +31,12 @@ export function BudgetClient() {
   const [project, setProject] = useState<ProjectData | null>(null);
   const [items, setItems] = useState<BudgetItemData[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [showBenchmarks, setShowBenchmarks] = useState(false);
   const [category, setCategory] = useState("");
   const [estimated, setEstimated] = useState("");
   const [actual, setActual] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadingBenchmarks, setLoadingBenchmarks] = useState(false);
 
   useEffect(() => {
     const unsub1 = subscribeToProject(projectId, setProject);
@@ -42,163 +46,244 @@ export function BudgetClient() {
 
   useEffect(() => {
     if (project) {
-      setTopbar("Budget", `${fmt(project.totalSpent, project.currency)} / ${fmt(project.totalBudget, project.currency)}`, "success");
+      const marketData = getMarketData(project.market as Market);
+      setTopbar(
+        "Budget",
+        `${formatCurrencyCompact(project.totalSpent, marketData.currency)} / ${formatCurrencyCompact(project.totalBudget, marketData.currency)}`,
+        "success"
+      );
     }
   }, [project, setTopbar]);
 
   if (!project) return <p className="text-muted text-sm">Loading...</p>;
+
+  const market = project.market as Market;
+  const marketData = getMarketData(market);
+  const benchmarks = getCostBenchmarks(market, project.propertyType as PropertyType);
+  const fmt = (amount: number) => formatCurrency(amount, marketData.currency);
+  const fmtCompact = (amount: number) => formatCurrencyCompact(amount, marketData.currency);
 
   const remaining = project.totalBudget - project.totalSpent;
   const variance = project.totalBudget > 0
     ? (((project.totalSpent - project.totalBudget) / project.totalBudget) * 100).toFixed(1)
     : "0";
 
+  function findBenchmark(cat: string): CostBenchmark | undefined {
+    return benchmarks.find(
+      (b) => b.category.toLowerCase().includes(cat.toLowerCase()) ||
+             cat.toLowerCase().includes(b.category.toLowerCase().split(" ")[0])
+    );
+  }
+
+  async function handleSave() {
+    if (!category.trim() || !estimated.trim()) return;
+    setSaving(true);
+    try {
+      await addBudgetItem({
+        projectId,
+        category: category.trim(),
+        estimated: Number(estimated),
+        actual: Number(actual) || 0,
+        status: Number(actual) > Number(estimated) ? "over" : Number(actual) > 0 ? "on-track" : "not-started",
+      });
+      setCategory("");
+      setEstimated("");
+      setActual("");
+      setShowForm(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleLoadBenchmarks() {
+    setLoadingBenchmarks(true);
+    try {
+      for (const bm of benchmarks.filter((b) => b.unit !== "lump")) {
+        const exists = items.some(
+          (item) => item.category.toLowerCase() === bm.category.toLowerCase()
+        );
+        if (!exists) {
+          await addBudgetItem({
+            projectId,
+            category: bm.category,
+            estimated: bm.midRange,
+            actual: 0,
+            status: "not-started",
+          });
+        }
+      }
+    } finally {
+      setLoadingBenchmarks(false);
+    }
+  }
+
   return (
     <>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
-        <StatCard value={fmt(project.totalBudget, project.currency)} label="Total budget" />
-        <StatCard value={fmt(project.totalSpent, project.currency)} label="Spent to date" />
-        <StatCard value={fmt(remaining, project.currency)} label="Remaining" />
-        <StatCard value={`${variance}%`} label="Variance" valueClassName={Number(variance) <= 0 ? "text-success" : "text-warning"} />
+        <StatCard value={fmtCompact(project.totalBudget)} label="Total budget" />
+        <StatCard value={fmtCompact(project.totalSpent)} label="Spent to date" />
+        <StatCard value={fmtCompact(remaining)} label="Remaining" />
+        <StatCard value={`${variance}%`} label="Variance" />
       </div>
 
-      <div className="flex items-center justify-between mb-0">
+      <div className="mb-4">
+        <div className="flex justify-between text-[9px] text-muted mb-1">
+          <span>Budget utilization</span>
+          <span className="font-data">{project.totalBudget > 0 ? Math.round((project.totalSpent / project.totalBudget) * 100) : 0}%</span>
+        </div>
+        <ProgressBar
+          value={project.totalBudget > 0 ? Math.round((project.totalSpent / project.totalBudget) * 100) : 0}
+          color={project.totalSpent > project.totalBudget * 0.9 ? "var(--color-danger)" : "var(--color-success)"}
+        />
+      </div>
+
+      {/* Market benchmarks toggle */}
+      {items.length === 0 && benchmarks.length > 0 && (
+        <Card padding="md" className="mb-4 text-center">
+          <p className="text-[12px] text-earth font-medium mb-1">Start with market benchmarks?</p>
+          <p className="text-[11px] text-muted mb-3">
+            Pre-fill your budget with typical {market === "USA" ? "per-sqft" : "per-sqm"} cost ranges for {market === "USA" ? "US" : "Togo"} residential construction.
+          </p>
+          <button
+            onClick={handleLoadBenchmarks}
+            disabled={loadingBenchmarks}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+          >
+            <Download size={14} />
+            {loadingBenchmarks ? "Loading..." : "Load market benchmarks"}
+          </button>
+        </Card>
+      )}
+
+      <div className="flex items-center justify-between mb-2">
         <SectionLabel>Budget line items</SectionLabel>
-        <button
-          type="button"
-          onClick={() => setShowForm((v) => !v)}
-          className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
-        >
-          <Plus size={14} />
-          Add item
-        </button>
+        <div className="flex items-center gap-2">
+          {items.length > 0 && benchmarks.length > 0 && (
+            <button
+              onClick={() => setShowBenchmarks((p) => !p)}
+              className="text-[10px] text-info hover:underline cursor-pointer"
+            >
+              {showBenchmarks ? "Hide ranges" : "Show typical ranges"}
+            </button>
+          )}
+          <span
+            className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
+            onClick={() => setShowForm(true)}
+          >
+            <Plus size={12} /> Add item
+          </span>
+        </div>
       </div>
 
       {showForm && (
         <Card padding="md" className="mb-3">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="space-y-3">
             <div>
-              <label className="text-[11px] text-muted font-medium mb-1 block">Category</label>
+              <label className="block text-[11px] text-muted font-medium mb-1">Category *</label>
               <input
                 type="text"
-                placeholder="e.g. Framing, Plumbing"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
+                placeholder="e.g. Foundation, Framing"
                 className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
               />
             </div>
-            <div>
-              <label className="text-[11px] text-muted font-medium mb-1 block">Estimated cost</label>
-              <input
-                type="number"
-                placeholder="0"
-                value={estimated}
-                onChange={(e) => setEstimated(e.target.value)}
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] text-muted font-medium mb-1">Estimated ({marketData.currency.code})</label>
+                <input
+                  type="number"
+                  value={estimated}
+                  onChange={(e) => setEstimated(e.target.value)}
+                  placeholder="0"
+                  className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full font-data"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] text-muted font-medium mb-1">Actual ({marketData.currency.code})</label>
+                <input
+                  type="number"
+                  value={actual}
+                  onChange={(e) => setActual(e.target.value)}
+                  placeholder="0"
+                  className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full font-data"
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-[11px] text-muted font-medium mb-1 block">Actual cost</label>
-              <input
-                type="number"
-                placeholder="0"
-                value={actual}
-                onChange={(e) => setActual(e.target.value)}
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
-              />
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                onClick={handleSave}
+                disabled={saving || !category.trim() || !estimated.trim()}
+                className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+              >
+                {saving ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={() => setShowForm(false)}
+                className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+              >
+                Cancel
+              </button>
             </div>
-          </div>
-          <div className="flex items-center gap-2 mt-3">
-            <button
-              type="button"
-              disabled={saving}
-              onClick={async () => {
-                if (!category.trim() || Number(estimated) <= 0) return;
-                setSaving(true);
-                try {
-                  await addBudgetItem({
-                    projectId,
-                    category: category.trim(),
-                    estimated: Number(estimated),
-                    actual: Number(actual),
-                    status:
-                      Number(actual) > Number(estimated)
-                        ? "over"
-                        : Number(actual) > 0
-                          ? "on-track"
-                          : "not-started",
-                  });
-                  setCategory("");
-                  setEstimated("");
-                  setActual("");
-                  setShowForm(false);
-                } finally {
-                  setSaving(false);
-                }
-              }}
-              className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
-            >
-              {saving ? "Saving..." : "Save"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowForm(false);
-                setCategory("");
-                setEstimated("");
-                setActual("");
-              }}
-              className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
-            >
-              Cancel
-            </button>
           </div>
         </Card>
       )}
-      {items.length === 0 ? (
+
+      {items.length === 0 && !showForm ? (
         <Card padding="md" className="text-center">
-          <p className="text-[12px] text-muted">No budget items yet. They will populate as you plan your project.</p>
+          <p className="text-[12px] text-muted">No budget items yet. Add line items or load market benchmarks to get started.</p>
         </Card>
       ) : (
         <Card padding="sm">
-          <div className="flex items-center py-1.5 pb-2 mb-1 border-b-2 border-border-dark text-[10px] text-muted font-medium">
-            <span className="flex-1">Category</span>
-            <span className="w-16 text-right">Est.</span>
-            <span className="w-16 text-right">Actual</span>
-            <span className="w-[70px] ml-2" />
-          </div>
           {items.map((item, i) => {
-            const pct = item.estimated > 0 ? Math.min((item.actual / item.estimated) * 100, 120) : 0;
-            const isOver = item.actual > item.estimated;
-            const barColor = isOver ? "var(--color-warning)" : item.status === "not-started" ? "var(--color-border)" : "var(--color-success)";
-            const textColor = item.status === "on-track" ? "text-success" : item.status === "over" ? "text-warning" : item.status === "under" ? "text-info" : "text-muted";
-
-            const formatItem = (v: number) => {
-              if (project.currency === "XOF") return `${(v / 1000).toFixed(0)}K`;
-              return `$${(v / 1000).toFixed(1)}K`;
-            };
+            const benchmark = findBenchmark(item.category);
+            const statusColor = item.status === "over" ? "text-danger" : item.status === "on-track" ? "text-success" : "text-muted";
 
             return (
-              <div key={item.id ?? i} className={`flex items-center py-1.5 text-[12px] ${i < items.length - 1 ? "border-b border-border" : ""}`}>
-                <span className="flex-1 text-muted">{item.category}</span>
-                <span className="w-16 text-right font-data text-[11px] text-muted">{formatItem(item.estimated)}</span>
-                <span className={`w-16 text-right font-data text-[11px] ${textColor}`}>{formatItem(item.actual)}</span>
-                <div className="w-[70px] ml-2">
-                  <ProgressBar value={Math.min(pct, 100)} color={barColor} height={5} />
+              <div
+                key={item.id}
+                className={`py-2.5 ${i < items.length - 1 ? "border-b border-border" : ""}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-medium text-earth">{item.category}</span>
+                  <span className={`text-[10px] font-medium ${statusColor}`}>
+                    {item.status === "over" ? "Over budget" : item.status === "on-track" ? "On track" : item.status === "under" ? "Under budget" : "Not started"}
+                  </span>
                 </div>
+                <div className="flex items-center gap-4 mt-1 text-[11px] font-data">
+                  <span className="text-muted">Est: {fmt(item.estimated)}</span>
+                  <span className="text-earth">Actual: {fmt(item.actual)}</span>
+                  {item.actual > 0 && (
+                    <span className={item.actual > item.estimated ? "text-danger" : "text-success"}>
+                      {item.actual > item.estimated ? "+" : ""}{fmt(item.actual - item.estimated)}
+                    </span>
+                  )}
+                </div>
+                {showBenchmarks && benchmark && (
+                  <div className="mt-2">
+                    <CostRangeBar
+                      low={benchmark.lowRange}
+                      mid={benchmark.midRange}
+                      high={benchmark.highRange}
+                      actual={item.estimated > 0 ? item.estimated : undefined}
+                      currency={marketData.currency}
+                    />
+                    <p className="text-[9px] text-muted mt-0.5">{benchmark.notes}</p>
+                  </div>
+                )}
               </div>
             );
           })}
         </Card>
       )}
 
-      <div className="mt-5 p-4 rounded-[var(--radius)] bg-emerald-50 border border-emerald-200 text-[12px] text-emerald-800 leading-relaxed">
-        <p className="font-semibold mb-1">How to read your budget tracker</p>
+      <div className="mt-4 p-4 rounded-[var(--radius)] bg-emerald-50 border border-emerald-200 text-[12px] text-emerald-800 leading-relaxed">
+        <p className="font-semibold mb-1">Understanding your budget</p>
         <p>
-          Each line item shows the estimated cost versus actual spending. The progress bar fills
-          green when spending is on track, and turns amber when actual costs exceed the estimate.
-          A healthy project typically stays within 5% of estimates. Your contingency
-          buffer absorbs unexpected costs without impacting the total budget.
+          Every financial calculation should be auditable. The estimated column shows your planned cost,
+          the actual column shows what you have spent. Toggle &quot;Show typical ranges&quot; to see how your
+          estimates compare to market benchmarks for {market === "USA" ? "US" : "Togolese"} residential construction.
+          The low-mid-high range bar shows where your estimate falls relative to typical costs{market === "USA" ? " per square foot" : " per square meter"}.
         </p>
       </div>
     </>

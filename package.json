@@ -1,6 +1,7 @@
 {
   "name": "keystone",
   "private": true,
+  "packageManager": "npm@11.11.1",
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev": "turbo dev",

@@ -17,12 +17,16 @@ import { PhaseTracker } from "@/components/ui/PhaseTracker";
 import { Badge } from "@/components/ui/Badge";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { Card } from "@/components/ui/Card";
-
-function formatCurrency(amount: number, currency: string): string {
-  if (currency === "XOF") return `CFA ${(amount / 1000000).toFixed(1)}M`;
-  if (amount >= 1000) return `$${(amount / 1000).toFixed(0)}K`;
-  return `$${amount.toLocaleString()}`;
-}
+import { MarketBadge } from "@/components/ui/MarketBadge";
+import { PhaseEducationCard } from "@/components/ui/PhaseEducationCard";
+import {
+  getMarketData,
+  getPhaseDefinition,
+  getEducationForPhase,
+  formatCurrencyCompact,
+  PHASE_ORDER,
+} from "@keystone/market-data";
+import type { Market, ProjectPhase } from "@keystone/market-data";
 
 export function OverviewClient() {
   const params = useParams();
@@ -47,17 +51,32 @@ export function OverviewClient() {
     return <p className="text-muted text-sm">Loading project...</p>;
   }
 
+  const market = project.market as Market;
+  const marketData = getMarketData(market);
+  const currentPhaseKey = PHASE_ORDER[project.currentPhase] ?? "DEFINE";
+  const phaseDef = getPhaseDefinition(market, currentPhaseKey);
+  const education = getEducationForPhase(market, currentPhaseKey);
+
   const activeTasks = tasks.filter((t) => !t.done);
   const completedTasks = tasks.filter((t) => t.done);
-  const remaining = project.totalBudget - project.totalSpent;
 
   return (
     <>
       <PhaseTracker currentPhase={project.currentPhase} completedPhases={project.completedPhases} />
 
+      {/* Phase education */}
+      {education && (
+        <div className="mt-3 mb-4">
+          <PhaseEducationCard module={education} />
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 mb-5">
         <StatCard value={`${project.progress}%`} label="Progress" />
-        <StatCard value={formatCurrency(project.totalSpent, project.currency)} label={`Spent of ${formatCurrency(project.totalBudget, project.currency)}`} />
+        <StatCard
+          value={formatCurrencyCompact(project.totalSpent, marketData.currency)}
+          label={`Spent of ${formatCurrencyCompact(project.totalBudget, marketData.currency)}`}
+        />
         <StatCard value={`Wk ${project.currentWeek}`} label={`Of est. ${project.totalWeeks}`} />
         <StatCard value={String(project.openItems)} label="Open items" />
       </div>
@@ -121,16 +140,34 @@ export function OverviewClient() {
           <SectionLabel>Next milestones</SectionLabel>
           <Card padding="sm">
             <div className="space-y-0">
-              {[
-                { date: "Next", label: "Complete current sub-phase" },
-                { date: "Then", label: "Schedule phase inspection" },
-                { date: "After", label: "Begin next sub-phase" },
-              ].map((m, i) => (
-                <div key={i} className={`flex items-center gap-2 py-2 text-[11px] ${i < 2 ? "border-b border-border" : ""}`}>
-                  <span className="w-12 text-muted font-data text-[10px] shrink-0">{m.date}</span>
-                  <span className="text-muted">{m.label}</span>
-                </div>
-              ))}
+              {phaseDef ? (
+                phaseDef.milestones
+                  .filter((m) => !m.requiresInspection || m.order >= 0)
+                  .slice(0, 3)
+                  .map((m, i, arr) => (
+                    <div key={i} className={`flex items-center gap-2 py-2 text-[11px] ${i < arr.length - 1 ? "border-b border-border" : ""}`}>
+                      <span className="w-6 text-muted font-data text-[10px] shrink-0">{m.order + 1}</span>
+                      <span className="flex-1 text-muted">{m.name}</span>
+                      {m.requiresInspection && (
+                        <Badge variant="warning">Inspection</Badge>
+                      )}
+                      {m.requiresPayment && m.paymentPct && (
+                        <span className="text-[9px] font-data text-muted">{m.paymentPct}%</span>
+                      )}
+                    </div>
+                  ))
+              ) : (
+                [
+                  { label: "Complete current sub-phase" },
+                  { label: "Schedule phase inspection" },
+                  { label: "Begin next sub-phase" },
+                ].map((m, i) => (
+                  <div key={i} className={`flex items-center gap-2 py-2 text-[11px] ${i < 2 ? "border-b border-border" : ""}`}>
+                    <span className="w-12 text-muted font-data text-[10px] shrink-0">Next</span>
+                    <span className="text-muted">{m.label}</span>
+                  </div>
+                ))
+              )}
             </div>
           </Card>
         </div>
@@ -140,9 +177,12 @@ export function OverviewClient() {
         <div>
           <SectionLabel>Project details</SectionLabel>
           <Card padding="sm">
-            <DetailRow label="Market" value={project.market} />
+            <DetailRow label="Market" value={<MarketBadge market={market} />} />
             <DetailRow label="Purpose" value={project.purpose} />
             <DetailRow label="Type" value={project.propertyType} />
+            {phaseDef && (
+              <DetailRow label="Method" value={phaseDef.constructionMethod} />
+            )}
             <DetailRow label="Details" value={project.details} last />
           </Card>
         </div>
@@ -178,11 +218,11 @@ export function OverviewClient() {
   );
 }
 
-function DetailRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
+function DetailRow({ label, value, last }: { label: string; value: React.ReactNode; last?: boolean }) {
   return (
-    <div className={`flex justify-between py-1.5 text-[11px] ${last ? "" : "border-b border-border"}`}>
+    <div className={`flex justify-between items-center py-1.5 text-[11px] ${last ? "" : "border-b border-border"}`}>
       <span className="text-muted">{label}</span>
-      <span className="text-earth font-medium">{value}</span>
+      <span className="text-earth font-medium">{typeof value === "string" ? value : value}</span>
     </div>
   );
 }
