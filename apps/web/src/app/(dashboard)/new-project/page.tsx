@@ -444,7 +444,11 @@ export default function NewProjectPage() {
   // Fetch existing project count for plan limit enforcement
   useEffect(() => {
     if (!user) return;
-    getUserProjects(user.uid).then((projects) => setProjectCount(projects.length)).catch(() => {});
+    getUserProjects(user.uid).then((projects) => {
+      // Demo/sample projects don't count toward plan limits
+      const realProjects = projects.filter((p: any) => !p.isDemo);
+      setProjectCount(realProjects.length);
+    }).catch(() => {});
   }, [user]);
 
   useEffect(() => {
