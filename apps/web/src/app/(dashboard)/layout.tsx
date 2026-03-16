@@ -250,8 +250,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 You are offline. Changes will sync when connection is restored.
               </div>
             )}
-            <main className="flex-1 p-5 overflow-y-auto min-w-0">
-              {children}
+            <main className="flex-1 p-3 sm:p-4 overflow-y-auto min-w-0 bg-surface-dim">
+              <div className="bg-background rounded-2xl sm:rounded-3xl p-4 sm:p-5 min-h-full shadow-[var(--shadow-sm)]">
+                {children}
+              </div>
             </main>
             <AIMentor
               page={activeSection}
