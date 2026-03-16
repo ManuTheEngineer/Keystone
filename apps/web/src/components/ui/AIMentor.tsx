@@ -110,10 +110,10 @@ function getMentorGuidance(
     };
   }
 
-  // Deal analyzer
-  if (page === "deal-analyzer") {
+  // New project (includes deal analysis)
+  if (page === "new-project") {
     return {
-      id: "deal-analyzer-guide",
+      id: "new-project-guide",
       title: "Analyzing deals",
       guidance:
         "Run every potential deal through the numbers before you commit any money. The best developers pass on more deals than they take. Discipline in deal selection is what separates profitable builders from broke ones.",

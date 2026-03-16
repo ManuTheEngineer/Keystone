@@ -7,7 +7,6 @@ import type { Locale } from "@/lib/i18n";
 import {
   LayoutGrid,
   Plus,
-  TrendingUp,
   BookOpen,
   Settings,
   Clock,
@@ -49,7 +48,6 @@ function makeNav(items: { id: string; label: string; Icon: React.ComponentType<{
 const mainNav = makeNav([
   { id: "dashboard", label: "Dashboard", Icon: LayoutGrid },
   { id: "new-project", label: "New project", Icon: Plus },
-  { id: "deal-analyzer", label: "Deal Analyzer", Icon: TrendingUp },
   { id: "learn", label: "Learn", Icon: BookOpen },
 ]);
 

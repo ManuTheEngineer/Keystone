@@ -245,7 +245,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 function getActiveSectionFromPath(pathname: string): string {
   if (pathname === "/" || pathname === "/dashboard") return "dashboard";
   if (pathname.includes("/new-project")) return "new-project";
-  if (pathname.includes("/deal-analyzer")) return "deal-analyzer";
   if (pathname.includes("/learn")) return "learn";
   if (pathname.includes("/settings")) return "settings";
   if (pathname.includes("/overview")) return "overview";
@@ -287,7 +286,6 @@ function sectionToRoute(section: string, currentProjectId: string | null): strin
   if (projectRoutes[section]) return projectRoutes[section];
   if (section === "portfolio") return "/vault";
   if (section === "new-project") return "/new-project";
-  if (section === "deal-analyzer") return "/deal-analyzer";
   if (section === "learn") return "/learn";
   if (section === "settings") return "/settings";
   return "/dashboard";

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import {
   Target,
   Hammer,
@@ -44,7 +45,7 @@ export default function LandingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <KeystoneIcon size={48} className="text-earth animate-pulse" />
       </div>
     );
@@ -55,12 +56,12 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-background">
       {/* Section 1: Navigation Bar */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
           navScrolled
-            ? "bg-white/95 backdrop-blur-sm shadow-[0_1px_8px_rgba(44,24,16,0.06)]"
+            ? "bg-surface/95 backdrop-blur-sm shadow-[0_1px_8px_rgba(44,24,16,0.06)]"
             : "bg-transparent"
         }`}
       >
@@ -89,27 +90,31 @@ export default function LandingPage() {
             >
               Sign in
             </Link>
+            <ThemeToggle />
             <Link
               href="/register"
-              className="inline-flex items-center px-5 py-2 text-[14px] font-medium rounded-full bg-earth text-warm hover:bg-earth-light transition-colors btn-hover"
+              className="inline-flex items-center px-5 py-2 text-[14px] font-medium rounded-full btn-earth btn-hover"
             >
               Start free
             </Link>
           </div>
 
           {/* Mobile hamburger */}
-          <button
-            className="sm:hidden p-2 text-earth"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <div className="sm:hidden flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              className="p-2 text-earth"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile slide-out panel */}
         {mobileMenuOpen && (
-          <div className="sm:hidden bg-white border-t border-border shadow-lg animate-fade-in">
+          <div className="sm:hidden bg-surface border-t border-border shadow-lg animate-fade-in">
             <div className="px-4 py-4 space-y-3">
               <Link
                 href="/learn"
@@ -127,7 +132,7 @@ export default function LandingPage() {
               </Link>
               <Link
                 href="/register"
-                className="block w-full text-center px-5 py-3 text-[14px] font-medium rounded-full bg-earth text-warm hover:bg-earth-light transition-colors"
+                className="block w-full text-center px-5 py-3 text-[14px] font-medium rounded-full btn-earth"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Start free
@@ -164,7 +169,7 @@ export default function LandingPage() {
               <div className="flex flex-wrap gap-4">
                 <Link
                   href="/register"
-                  className="inline-flex items-center px-8 py-4 text-[15px] font-medium rounded-full bg-earth text-warm hover:bg-earth-light transition-colors btn-hover"
+                  className="inline-flex items-center px-8 py-4 text-[15px] font-medium rounded-full btn-earth btn-hover"
                 >
                   Start your project
                   <ArrowRight size={16} className="ml-2" />
@@ -188,52 +193,52 @@ export default function LandingPage() {
                 aria-hidden="true"
               >
                 {/* Foundation base */}
-                <line x1="60" y1="300" x2="340" y2="300" stroke="#D4A574" strokeWidth="2.5" strokeLinecap="round" />
-                <line x1="80" y1="310" x2="320" y2="310" stroke="#D4A574" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="60" y1="300" x2="340" y2="300" stroke="var(--color-sand)" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="80" y1="310" x2="320" y2="310" stroke="var(--color-sand)" strokeWidth="1.5" strokeLinecap="round" />
 
                 {/* Vertical framing studs */}
-                <line x1="100" y1="300" x2="100" y2="160" stroke="#8B4513" strokeWidth="2" strokeLinecap="round" />
-                <line x1="160" y1="300" x2="160" y2="130" stroke="#8B4513" strokeWidth="2" strokeLinecap="round" />
-                <line x1="200" y1="300" x2="200" y2="115" stroke="#8B4513" strokeWidth="2" strokeLinecap="round" />
-                <line x1="240" y1="300" x2="240" y2="130" stroke="#8B4513" strokeWidth="2" strokeLinecap="round" />
-                <line x1="300" y1="300" x2="300" y2="160" stroke="#8B4513" strokeWidth="2" strokeLinecap="round" />
+                <line x1="100" y1="300" x2="100" y2="160" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" />
+                <line x1="160" y1="300" x2="160" y2="130" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" />
+                <line x1="200" y1="300" x2="200" y2="115" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" />
+                <line x1="240" y1="300" x2="240" y2="130" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" />
+                <line x1="300" y1="300" x2="300" y2="160" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" />
 
                 {/* Horizontal beam */}
-                <line x1="90" y1="200" x2="310" y2="200" stroke="#D4A574" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="90" y1="200" x2="310" y2="200" stroke="var(--color-sand)" strokeWidth="1.5" strokeLinecap="round" />
 
                 {/* Roof peak outline */}
-                <line x1="60" y1="160" x2="200" y2="70" stroke="#2C1810" strokeWidth="2.5" strokeLinecap="round" />
-                <line x1="200" y1="70" x2="340" y2="160" stroke="#2C1810" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="60" y1="160" x2="200" y2="70" stroke="var(--color-earth)" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="200" y1="70" x2="340" y2="160" stroke="var(--color-earth)" strokeWidth="2.5" strokeLinecap="round" />
 
                 {/* Roof ridge beam */}
-                <line x1="60" y1="160" x2="340" y2="160" stroke="#2C1810" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="60" y1="160" x2="340" y2="160" stroke="var(--color-earth)" strokeWidth="1.5" strokeLinecap="round" />
 
                 {/* Keystone at apex */}
                 <path
                   d="M192 66 L208 66 L206 82 L194 82 Z"
                   fill="none"
-                  stroke="#8B4513"
+                  stroke="var(--color-clay)"
                   strokeWidth="2"
                   strokeLinejoin="round"
                 />
 
                 {/* Door opening */}
-                <rect x="180" y="240" width="40" height="60" rx="1" fill="none" stroke="#D4A574" strokeWidth="1.5" />
-                <path d="M180 240 Q200 228 220 240" fill="none" stroke="#D4A574" strokeWidth="1.5" />
+                <rect x="180" y="240" width="40" height="60" rx="1" fill="none" stroke="var(--color-sand)" strokeWidth="1.5" />
+                <path d="M180 240 Q200 228 220 240" fill="none" stroke="var(--color-sand)" strokeWidth="1.5" />
 
                 {/* Window left */}
-                <rect x="110" y="220" width="30" height="30" rx="1" fill="none" stroke="#D4A574" strokeWidth="1.5" />
-                <line x1="125" y1="220" x2="125" y2="250" stroke="#D4A574" strokeWidth="1" />
-                <line x1="110" y1="235" x2="140" y2="235" stroke="#D4A574" strokeWidth="1" />
+                <rect x="110" y="220" width="30" height="30" rx="1" fill="none" stroke="var(--color-sand)" strokeWidth="1.5" />
+                <line x1="125" y1="220" x2="125" y2="250" stroke="var(--color-sand)" strokeWidth="1" />
+                <line x1="110" y1="235" x2="140" y2="235" stroke="var(--color-sand)" strokeWidth="1" />
 
                 {/* Window right */}
-                <rect x="260" y="220" width="30" height="30" rx="1" fill="none" stroke="#D4A574" strokeWidth="1.5" />
-                <line x1="275" y1="220" x2="275" y2="250" stroke="#D4A574" strokeWidth="1" />
-                <line x1="260" y1="235" x2="290" y2="235" stroke="#D4A574" strokeWidth="1" />
+                <rect x="260" y="220" width="30" height="30" rx="1" fill="none" stroke="var(--color-sand)" strokeWidth="1.5" />
+                <line x1="275" y1="220" x2="275" y2="250" stroke="var(--color-sand)" strokeWidth="1" />
+                <line x1="260" y1="235" x2="290" y2="235" stroke="var(--color-sand)" strokeWidth="1" />
 
                 {/* Construction detail lines */}
-                <line x1="130" y1="160" x2="160" y2="115" stroke="#D4A574" strokeWidth="1" strokeLinecap="round" strokeDasharray="4 4" />
-                <line x1="270" y1="160" x2="240" y2="115" stroke="#D4A574" strokeWidth="1" strokeLinecap="round" strokeDasharray="4 4" />
+                <line x1="130" y1="160" x2="160" y2="115" stroke="var(--color-sand)" strokeWidth="1" strokeLinecap="round" strokeDasharray="4 4" />
+                <line x1="270" y1="160" x2="240" y2="115" stroke="var(--color-sand)" strokeWidth="1" strokeLinecap="round" strokeDasharray="4 4" />
               </svg>
             </div>
           </div>
@@ -250,7 +255,7 @@ export default function LandingPage() {
             Three steps to your new home
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-            <div className="bg-white rounded-xl p-8 shadow-[var(--shadow-sm)] card-hover">
+            <div className="bg-surface rounded-xl p-8 shadow-[var(--shadow-sm)] card-hover">
               <span
                 className="block text-[48px] text-clay/30 font-bold mb-4"
                 style={{ fontFamily: "var(--font-heading)" }}
@@ -272,7 +277,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-8 shadow-[var(--shadow-sm)] card-hover">
+            <div className="bg-surface rounded-xl p-8 shadow-[var(--shadow-sm)] card-hover">
               <span
                 className="block text-[48px] text-clay/30 font-bold mb-4"
                 style={{ fontFamily: "var(--font-heading)" }}
@@ -294,7 +299,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-xl p-8 shadow-[var(--shadow-sm)] card-hover">
+            <div className="bg-surface rounded-xl p-8 shadow-[var(--shadow-sm)] card-hover">
               <span
                 className="block text-[48px] text-clay/30 font-bold mb-4"
                 style={{ fontFamily: "var(--font-heading)" }}
@@ -320,7 +325,7 @@ export default function LandingPage() {
       </section>
 
       {/* Section 4: Features Grid */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
+      <section className="py-16 sm:py-24 px-4 sm:px-6 bg-surface">
         <div className="max-w-7xl mx-auto">
           <h2
             className="text-[28px] sm:text-[32px] text-earth text-center mb-16"
@@ -369,7 +374,7 @@ export default function LandingPage() {
             ].map((feature) => (
               <div
                 key={feature.title}
-                className="bg-white border border-border rounded-xl p-6 card-hover"
+                className="bg-surface border border-border rounded-xl p-6 card-hover"
               >
                 <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-4">
                   <feature.icon size={22} className="text-clay" />
@@ -420,13 +425,13 @@ export default function LandingPage() {
                     <div className="w-5 h-5 rounded-full bg-earth/10 flex items-center justify-center mt-0.5 shrink-0">
                       <Check size={12} className="text-earth" />
                     </div>
-                    <span className="text-[14px] text-slate-text">{item}</span>
+                    <span className="text-[14px] text-foreground">{item}</span>
                   </li>
                 ))}
               </ul>
               <Link
                 href="/register"
-                className="inline-flex items-center px-8 py-4 text-[15px] font-medium rounded-full bg-earth text-warm hover:bg-earth-light transition-colors btn-hover"
+                className="inline-flex items-center px-8 py-4 text-[15px] font-medium rounded-full btn-earth btn-hover"
               >
                 Start building remotely
                 <ArrowRight size={16} className="ml-2" />
@@ -434,13 +439,13 @@ export default function LandingPage() {
             </div>
 
             {/* Mock monitor card */}
-            <div className="bg-white rounded-xl shadow-[var(--shadow-lg)] p-6 border border-border">
+            <div className="bg-surface rounded-xl shadow-[var(--shadow-lg)] p-6 border border-border">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-2 h-2 rounded-full bg-success" />
                 <span className="text-[12px] font-medium text-earth">Live project monitor</span>
               </div>
               <div className="space-y-4">
-                <div className="bg-cream rounded-lg p-4">
+                <div className="bg-background rounded-lg p-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-[11px] text-muted">Phase 6: Build</span>
                     <span className="text-[11px] font-data text-success">68% complete</span>
@@ -450,16 +455,16 @@ export default function LandingPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-cream rounded-lg p-3">
+                  <div className="bg-background rounded-lg p-3">
                     <span className="block text-[10px] text-muted mb-1">Budget remaining</span>
                     <span className="text-[16px] font-data text-earth">4,200,000 FCFA</span>
                   </div>
-                  <div className="bg-cream rounded-lg p-3">
+                  <div className="bg-background rounded-lg p-3">
                     <span className="block text-[10px] text-muted mb-1">Photos this week</span>
                     <span className="text-[16px] font-data text-earth">12</span>
                   </div>
                 </div>
-                <div className="bg-cream rounded-lg p-3">
+                <div className="bg-background rounded-lg p-3">
                   <span className="block text-[10px] text-muted mb-1">Latest milestone</span>
                   <span className="text-[13px] text-earth">Roofing complete. Awaiting inspection.</span>
                 </div>
@@ -483,7 +488,7 @@ export default function LandingPage() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* Foundation */}
-            <div className="bg-white rounded-xl p-6 border border-border card-hover">
+            <div className="bg-surface rounded-xl p-6 border border-border card-hover">
               <h3
                 className="text-[18px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
@@ -510,7 +515,7 @@ export default function LandingPage() {
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <Check size={14} className="text-success shrink-0" />
-                    <span className="text-[13px] text-slate-text">{item}</span>
+                    <span className="text-[13px] text-foreground">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -523,7 +528,7 @@ export default function LandingPage() {
             </div>
 
             {/* Builder - highlighted */}
-            <div className="bg-white rounded-xl p-6 border-2 border-emerald-500 relative card-hover">
+            <div className="bg-surface rounded-xl p-6 border-2 border-emerald-500 relative card-hover">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-emerald-500 text-white text-[11px] font-medium rounded-full">
                 Most popular
               </div>
@@ -553,20 +558,20 @@ export default function LandingPage() {
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <Check size={14} className="text-success shrink-0" />
-                    <span className="text-[13px] text-slate-text">{item}</span>
+                    <span className="text-[13px] text-foreground">{item}</span>
                   </li>
                 ))}
               </ul>
               <Link
                 href="/register"
-                className="block w-full text-center py-3 text-[14px] font-medium rounded-full bg-earth text-warm hover:bg-earth-light transition-colors"
+                className="block w-full text-center py-3 text-[14px] font-medium rounded-full btn-earth"
               >
                 Start building
               </Link>
             </div>
 
             {/* Developer */}
-            <div className="bg-white rounded-xl p-6 border border-border card-hover">
+            <div className="bg-surface rounded-xl p-6 border border-border card-hover">
               <h3
                 className="text-[18px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
@@ -593,7 +598,7 @@ export default function LandingPage() {
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <Check size={14} className="text-success shrink-0" />
-                    <span className="text-[13px] text-slate-text">{item}</span>
+                    <span className="text-[13px] text-foreground">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -606,7 +611,7 @@ export default function LandingPage() {
             </div>
 
             {/* Enterprise */}
-            <div className="bg-white rounded-xl p-6 border border-border card-hover">
+            <div className="bg-surface rounded-xl p-6 border border-border card-hover">
               <h3
                 className="text-[18px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
@@ -632,7 +637,7 @@ export default function LandingPage() {
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <Check size={14} className="text-success shrink-0" />
-                    <span className="text-[13px] text-slate-text">{item}</span>
+                    <span className="text-[13px] text-foreground">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -647,22 +652,22 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Section 7: Footer */}
-      <footer className="bg-earth py-12 sm:py-16 px-4 sm:px-6">
+      {/* Section 7: Footer -- stays dark in both modes */}
+      <footer className="landing-footer py-12 sm:py-16 px-4 sm:px-6" style={{ backgroundColor: "#2C1810" }}>
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
             {/* Brand column */}
             <div>
               <div className="flex items-center gap-2.5 mb-4">
-                <KeystoneIcon size={24} className="text-sand" />
+                <KeystoneIcon size={24} className="text-[#D4A574]" />
                 <span
-                  className="text-[16px] text-warm tracking-tight"
+                  className="text-[16px] text-[#F5E6D3] tracking-tight"
                   style={{ fontFamily: "var(--font-heading)" }}
                 >
                   KEYSTONE
                 </span>
               </div>
-              <p className="text-[13px] text-sand/60 leading-relaxed">
+              <p className="text-[13px] text-[#D4A574]/60 leading-relaxed">
                 From first idea to final key. The construction management platform
                 for owner-builders worldwide.
               </p>
@@ -670,22 +675,22 @@ export default function LandingPage() {
 
             {/* Product links */}
             <div>
-              <h4 className="text-[12px] uppercase tracking-[2px] text-sand/40 font-medium mb-4">
+              <h4 className="text-[12px] uppercase tracking-[2px] text-[#D4A574]/40 font-medium mb-4">
                 Product
               </h4>
               <ul className="space-y-2.5">
                 <li>
-                  <a href="#how-it-works" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                  <a href="#how-it-works" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
                     Features
                   </a>
                 </li>
                 <li>
-                  <a href="#pricing" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                  <a href="#pricing" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
                     Pricing
                   </a>
                 </li>
                 <li>
-                  <Link href="/learn" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                  <Link href="/learn" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
                     Learning center
                   </Link>
                 </li>
@@ -694,17 +699,17 @@ export default function LandingPage() {
 
             {/* Support links */}
             <div>
-              <h4 className="text-[12px] uppercase tracking-[2px] text-sand/40 font-medium mb-4">
+              <h4 className="text-[12px] uppercase tracking-[2px] text-[#D4A574]/40 font-medium mb-4">
                 Support
               </h4>
               <ul className="space-y-2.5">
                 <li>
-                  <Link href="/learn" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                  <Link href="/learn" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
                     Documentation
                   </Link>
                 </li>
                 <li>
-                  <a href="mailto:support@keystone.build" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                  <a href="mailto:support@keystone.build" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
                     Contact
                   </a>
                 </li>
@@ -713,17 +718,17 @@ export default function LandingPage() {
 
             {/* Legal links */}
             <div>
-              <h4 className="text-[12px] uppercase tracking-[2px] text-sand/40 font-medium mb-4">
+              <h4 className="text-[12px] uppercase tracking-[2px] text-[#D4A574]/40 font-medium mb-4">
                 Legal
               </h4>
               <ul className="space-y-2.5">
                 <li>
-                  <span className="text-[13px] text-sand/40 cursor-default">
+                  <span className="text-[13px] text-[#D4A574]/40 cursor-default">
                     Privacy policy (coming soon)
                   </span>
                 </li>
                 <li>
-                  <span className="text-[13px] text-sand/40 cursor-default">
+                  <span className="text-[13px] text-[#D4A574]/40 cursor-default">
                     Terms of service (coming soon)
                   </span>
                 </li>
@@ -731,10 +736,10 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="border-t border-sand/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="border-t border-[#D4A574]/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <KeystoneIcon size={16} className="text-sand/40" />
-              <span className="text-[12px] text-sand/40">
+              <KeystoneIcon size={16} className="text-[#D4A574]/40" />
+              <span className="text-[12px] text-[#D4A574]/40">
                 2026 Keystone. All rights reserved.
               </span>
             </div>

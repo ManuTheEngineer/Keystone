@@ -448,11 +448,11 @@ export function VaultClient() {
               </p>
               <div className="flex items-center gap-3">
                 <Link
-                  href="/deal-analyzer"
+                  href="/new-project"
                   className="inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium rounded-xl bg-earth text-warm hover:bg-earth-light transition-colors"
                 >
                   <TrendingUp size={16} />
-                  Deal Analyzer
+                  Evaluate a Deal
                 </Link>
                 <Link
                   href="/new-project"

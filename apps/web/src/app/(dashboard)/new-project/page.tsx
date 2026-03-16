@@ -5,145 +5,423 @@ import { useRouter } from "next/navigation";
 import { useTopbar } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { createProject, type Market, type BuildPurpose, type PropertyType } from "@/lib/services/project-service";
-import { Home, Building2, TrendingUp, Info } from "lucide-react";
+import {
+  Home,
+  Building2,
+  TrendingUp,
+  Info,
+  MapPin,
+  Landmark,
+  CreditCard,
+  ChevronDown,
+  ChevronUp,
+  Check,
+  AlertTriangle,
+  BookOpen,
+  Shield,
+} from "lucide-react";
 import { LearnTooltip } from "@/components/ui/LearnTooltip";
 import {
   getMarketData,
   getCostBenchmarks,
+  formatCurrency,
   formatCurrencyCompact,
   PHASE_ORDER,
 } from "@keystone/market-data";
-import type { Market as MarketType } from "@keystone/market-data";
+import type { Market as MarketType, CurrencyConfig } from "@keystone/market-data";
 
-interface WizardOption {
-  id: string;
-  title: string;
-  description: string;
-  icon?: React.ReactNode;
-  tooltipTerm?: string;
-  tooltipExplanation?: string;
-  tooltipWhy?: string;
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type BuildGoal = "sell" | "rent" | "occupy" | "";
+type SizeCategory = "compact" | "standard" | "large" | "estate" | "custom";
+type LandOption = "known" | "estimate" | "";
+type FinancingType = "construction_loan" | "cash" | "fha_203k" | "diaspora" | "tontine" | "phased_cash" | "";
+
+interface WizardState {
+  goal: BuildGoal;
+  market: MarketType | "";
+  city: string;
+  propertyType: PropertyType | "";
+  sizeCategory: SizeCategory;
+  customSize: number;
+  landOption: LandOption;
+  landPrice: number;
+  financingType: FinancingType;
+  downPaymentPct: number;
+  loanRate: number;
+  timelineMonths: number;
+  targetSalePrice: number;
+  monthlyRent: number;
+  projectName: string;
 }
 
-const PURPOSE_OPTIONS: WizardOption[] = [
-  {
-    id: "occupy",
-    title: "Build to occupy",
-    description: "A home for you and your family to live in",
-    icon: <Home size={18} />,
-    tooltipTerm: "Build to Occupy",
-    tooltipExplanation: "Building to live in yourself. This affects your loan options (owner-occupied rates are lower) and tax treatment (homestead exemption).",
-    tooltipWhy: "Owner-occupied homes qualify for better interest rates, lower down payments, and property tax reductions in most US states.",
-  },
-  {
-    id: "rent",
-    title: "Build to rent",
-    description: "Investment property generating rental income",
-    icon: <Building2 size={18} />,
-    tooltipTerm: "Build to Rent",
-    tooltipExplanation: "Building as an investment property. Lenders require higher down payments (25%+) but you can deduct expenses. Rental yield analysis becomes important.",
-    tooltipWhy: "Rental properties are evaluated differently by lenders. Your expected rental income can help you qualify, but you need more cash upfront.",
-  },
-  {
-    id: "sell",
-    title: "Build to sell",
-    description: "Spec home built for resale profit",
-    icon: <TrendingUp size={18} />,
-    tooltipTerm: "Build to Sell (Spec Home)",
-    tooltipExplanation: "A speculative home built without a specific buyer. You profit from the difference between construction cost and sale price.",
-    tooltipWhy: "Spec building is higher risk since you must fund the entire build and carry costs until the sale closes. Market timing matters.",
-  },
+interface ScoreFactor {
+  label: string;
+  points: number;
+  maxPoints: number;
+  positive: boolean;
+  explanation: string;
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const INITIAL_STATE: WizardState = {
+  goal: "",
+  market: "",
+  city: "",
+  propertyType: "",
+  sizeCategory: "standard",
+  customSize: 0,
+  landOption: "",
+  landPrice: 0,
+  financingType: "",
+  downPaymentPct: 20,
+  loanRate: 8,
+  timelineMonths: 12,
+  targetSalePrice: 0,
+  monthlyRent: 0,
+  projectName: "",
+};
+
+const STEP_COUNT = 10;
+
+const STEP_LABELS = [
+  "Goal",
+  "Market",
+  "Location",
+  "Type",
+  "Size",
+  "Land",
+  "Financing",
+  "Financials",
+  "Score",
+  "Name",
 ];
 
-const MARKET_OPTIONS: WizardOption[] = [
-  {
-    id: "usa",
-    title: "United States",
-    description: "Wood-frame construction, institutional lending, IRC building codes",
-    tooltipTerm: "US Construction Market",
-    tooltipExplanation: "Wood-frame construction with institutional lending. Building codes (IRC/IBC) are strictly enforced. Licensed, insured trades are required for most work.",
-    tooltipWhy: "The US market has structured financing (construction loans convert to mortgages), mandatory inspections at each stage, and established contractor licensing.",
-  },
-  {
-    id: "togo",
-    title: "Togo",
-    description: "Reinforced concrete block, CFA zone, titre foncier system",
-    tooltipTerm: "Togo Construction Market",
-    tooltipExplanation: "Reinforced concrete block and poteau-poutre (post-and-beam) construction. Land ownership verified through the titre foncier system. Costs in CFA francs.",
-    tooltipWhy: "Construction in Togo is typically self-funded in phases. You build as cash is available. The titre foncier process can take months, so start early.",
-  },
-  {
-    id: "ghana",
-    title: "Ghana",
-    description: "Concrete block, cedi currency, Lands Commission registration",
-    tooltipTerm: "Ghana Construction Market",
-    tooltipExplanation: "Concrete block construction with Lands Commission registration for property titles. Costs in Ghanaian cedis.",
-    tooltipWhy: "Ghana has a more formalized building permit process than some West African neighbors. Land registration through the Lands Commission provides legal protection.",
-  },
-  {
-    id: "benin",
-    title: "Benin",
-    description: "Concrete block, CFA zone, ANDF land registry",
-    tooltipTerm: "Benin Construction Market",
-    tooltipExplanation: "Concrete block construction similar to Togo. Land registered through the ANDF (Agence Nationale du Domaine et du Foncier). Costs in CFA francs.",
-    tooltipWhy: "Benin shares the CFA currency zone with Togo, so cost benchmarks are similar. The ANDF land registry is the formal path to secure ownership.",
-  },
-];
-
-const PROPERTY_OPTIONS: WizardOption[] = [
-  { id: "sfh", title: "Single-family home", description: "One dwelling unit on one lot" },
-  { id: "duplex", title: "Duplex", description: "Two dwelling units in one structure" },
-  { id: "triplex", title: "Triplex", description: "Three dwelling units" },
-  { id: "fourplex", title: "Fourplex", description: "Four dwelling units" },
-  { id: "apartment", title: "Apartment building", description: "Five or more units" },
-];
-
-const SIZE_OPTIONS: WizardOption[] = [
-  { id: "small", title: "Under 1,500 sf / 140 m2", description: "Compact, efficient layout" },
-  { id: "medium", title: "1,500 - 2,500 sf / 140 - 230 m2", description: "Mid-size family home" },
-  { id: "large", title: "2,500 - 4,000 sf / 230 - 370 m2", description: "Larger family home" },
-  { id: "xlarge", title: "Over 4,000 sf / 370 m2", description: "Estate or multi-family" },
-];
-
-const STEPS = [
-  { title: "What are you building for?", subtitle: "This determines your financing options, tax treatment, and design priorities.", options: PURPOSE_OPTIONS },
-  { title: "Where are you building?", subtitle: "Sets your cost benchmarks, regulations, templates, and construction method.", options: MARKET_OPTIONS },
-  { title: "What type of property?", subtitle: "Defines your floor plan options and structural requirements.", options: PROPERTY_OPTIONS },
-  { title: "What size are you planning?", subtitle: "Helps us estimate budget ranges and timelines for your market.", options: SIZE_OPTIONS },
-];
-
-const MARKET_MAP: Record<string, Market> = { usa: "USA", togo: "TOGO", ghana: "GHANA", benin: "BENIN" };
+const MARKET_MAP: Record<string, Market> = { USA: "USA", TOGO: "TOGO", GHANA: "GHANA", BENIN: "BENIN" };
 const PURPOSE_MAP: Record<string, BuildPurpose> = { occupy: "OCCUPY", rent: "RENT", sell: "SELL" };
-const PROPERTY_MAP: Record<string, PropertyType> = { sfh: "SFH", duplex: "DUPLEX", triplex: "TRIPLEX", fourplex: "FOURPLEX", apartment: "APARTMENT" };
 
-const SIZE_SQFT_USA: Record<string, number> = { small: 1200, medium: 2000, large: 3200, xlarge: 4500 };
-const SIZE_SQM_TOGO: Record<string, number> = { small: 110, medium: 185, large: 300, xlarge: 420 };
+// ---------------------------------------------------------------------------
+// Market / cost helpers
+// ---------------------------------------------------------------------------
+
+function getSizeUnit(market: MarketType | ""): "sqft" | "sqm" {
+  return market === "USA" ? "sqft" : "sqm";
+}
+
+function getCurrencyForMarket(market: MarketType | ""): CurrencyConfig {
+  if (!market) {
+    return { code: "USD", symbol: "$", locale: "en-US", decimals: 2, groupSeparator: ",", position: "prefix" as const };
+  }
+  return getMarketData(market).currency;
+}
+
+function getSizePresets(unit: "sqft" | "sqm") {
+  if (unit === "sqft") {
+    return {
+      compact: { min: 800, max: 1200, typical: 1000, label: "Under 1,200 sqft" },
+      standard: { min: 1200, max: 2000, typical: 1600, label: "1,200 to 2,000 sqft" },
+      large: { min: 2000, max: 3200, typical: 2600, label: "2,000 to 3,200 sqft" },
+      estate: { min: 3200, max: 5000, typical: 4000, label: "3,200+ sqft" },
+    };
+  }
+  return {
+    compact: { min: 75, max: 110, typical: 90, label: "Under 110 sqm" },
+    standard: { min: 110, max: 185, typical: 150, label: "110 to 185 sqm" },
+    large: { min: 185, max: 300, typical: 240, label: "185 to 300 sqm" },
+    estate: { min: 300, max: 500, typical: 380, label: "300+ sqm" },
+  };
+}
+
+function getBuildingSize(state: WizardState): number {
+  if (state.sizeCategory === "custom") return state.customSize;
+  if (!state.market) return 0;
+  const unit = getSizeUnit(state.market);
+  const presets = getSizePresets(unit);
+  return presets[state.sizeCategory as keyof typeof presets]?.typical ?? 0;
+}
+
+function getMarketCostRange(market: MarketType): { low: number; mid: number; high: number } {
+  const benchmarks = getCostBenchmarks(market);
+  return {
+    low: benchmarks.reduce((sum, b) => sum + b.lowRange, 0),
+    mid: benchmarks.reduce((sum, b) => sum + b.midRange, 0),
+    high: benchmarks.reduce((sum, b) => sum + b.highRange, 0),
+  };
+}
+
+function getConstructionCost(state: WizardState): number {
+  if (!state.market) return 0;
+  const size = getBuildingSize(state);
+  if (size <= 0) return 0;
+  const costs = getMarketCostRange(state.market as MarketType);
+  return Math.round(costs.mid * size);
+}
+
+function getLandCost(state: WizardState): number {
+  if (state.landOption === "known") return state.landPrice;
+  return Math.round(getConstructionCost(state) * 0.25);
+}
+
+function getSoftCosts(constructionCost: number): number {
+  return Math.round(constructionCost * 0.15);
+}
+
+function getFinancingCosts(state: WizardState, landCost: number, constructionCost: number): number {
+  if (state.financingType === "cash" || state.financingType === "phased_cash") return 0;
+  const totalBasis = landCost + constructionCost;
+  const loanPortion = totalBasis * (1 - state.downPaymentPct / 100);
+  return Math.round(loanPortion * (state.loanRate / 100) * (state.timelineMonths / 12));
+}
+
+function getContingency(constructionCost: number): number {
+  return Math.round(constructionCost * 0.15);
+}
+
+function getTotalProjectCost(state: WizardState) {
+  const construction = getConstructionCost(state);
+  const land = getLandCost(state);
+  const soft = getSoftCosts(construction);
+  const financing = getFinancingCosts(state, land, construction);
+  const contingency = getContingency(construction);
+  const total = land + construction + soft + financing + contingency;
+  return { land, construction, soft, financing, contingency, total };
+}
+
+function getEstimatedSaleValue(state: WizardState): number {
+  const costs = getTotalProjectCost(state);
+  return Math.round(costs.total * 1.20);
+}
+
+function getEstimatedMonthlyRent(state: WizardState): number {
+  if (!state.market) return 0;
+  const size = getBuildingSize(state);
+  if (state.market === "USA") return Math.round(size * 1.0);
+  return Math.round(size * 2000);
+}
+
+// ---------------------------------------------------------------------------
+// Deal scoring
+// ---------------------------------------------------------------------------
+
+function calculateDealScore(state: WizardState): { score: number; factors: ScoreFactor[]; risks: string[]; verdict: string; verdictLevel: "strong" | "decent" | "risky" } {
+  const costs = getTotalProjectCost(state);
+  const factors: ScoreFactor[] = [];
+  const risks: string[] = [];
+  const currency = getCurrencyForMarket(state.market);
+
+  // 1. Profit / cap rate / savings (25 points)
+  if (state.goal === "sell") {
+    const salePrice = state.targetSalePrice > 0 ? state.targetSalePrice : getEstimatedSaleValue(state);
+    const profit = salePrice - costs.total;
+    const margin = costs.total > 0 ? (profit / costs.total) * 100 : 0;
+    if (margin > 20) {
+      factors.push({ label: "Profit margin above 20%", points: 25, maxPoints: 25, positive: true, explanation: `Estimated margin of ${margin.toFixed(1)}%. This provides a healthy buffer.` });
+    } else if (margin > 15) {
+      factors.push({ label: "Profit margin 15 to 20%", points: 18, maxPoints: 25, positive: true, explanation: `Margin of ${margin.toFixed(1)}% is solid but leaves limited room for surprises.` });
+    } else if (margin > 10) {
+      factors.push({ label: "Profit margin 10 to 15%", points: 8, maxPoints: 25, positive: false, explanation: `A ${margin.toFixed(1)}% margin is thin. Cost overruns could eliminate profit.` });
+      risks.push("Thin profit margin leaves little room for cost overruns.");
+    } else {
+      factors.push({ label: "Profit margin below 10%", points: 0, maxPoints: 25, positive: false, explanation: `At ${margin.toFixed(1)}%, this deal barely breaks even.` });
+      risks.push("Margin below 10% means even a small delay creates a loss.");
+    }
+  } else if (state.goal === "rent") {
+    const monthlyRent = state.monthlyRent > 0 ? state.monthlyRent : getEstimatedMonthlyRent(state);
+    const annualRent = monthlyRent * 12;
+    const capRate = costs.total > 0 ? (annualRent / costs.total) * 100 : 0;
+    if (capRate > 8) {
+      factors.push({ label: "Cap rate above 8%", points: 25, maxPoints: 25, positive: true, explanation: `A ${capRate.toFixed(1)}% cap rate is excellent.` });
+    } else if (capRate > 5) {
+      factors.push({ label: "Cap rate 5 to 8%", points: 15, maxPoints: 25, positive: true, explanation: `A ${capRate.toFixed(1)}% cap rate is reasonable.` });
+    } else {
+      factors.push({ label: "Cap rate below 5%", points: 0, maxPoints: 25, positive: false, explanation: `At ${capRate.toFixed(1)}%, rental income is low relative to cost.` });
+      risks.push("Low cap rate means the property may not cash flow positively.");
+    }
+  } else {
+    const savings = costs.total * 0.2;
+    factors.push({ label: "Savings versus buying existing", points: 20, maxPoints: 25, positive: true, explanation: `Building could save approximately ${formatCurrencyCompact(savings, currency)} compared to buying existing.` });
+  }
+
+  // 2. Construction cost efficiency (15 points)
+  if (state.market) {
+    const costRange = getMarketCostRange(state.market as MarketType);
+    const size = getBuildingSize(state);
+    const actualPerUnit = size > 0 ? getConstructionCost(state) / size : 0;
+    if (actualPerUnit <= costRange.mid) {
+      factors.push({ label: "Construction cost at or below average", points: 15, maxPoints: 15, positive: true, explanation: "Estimated cost is within the typical range for this market." });
+    } else if (actualPerUnit <= costRange.high) {
+      factors.push({ label: "Construction cost above average", points: 8, maxPoints: 15, positive: false, explanation: "Costs above the market midpoint. Consider value engineering." });
+    } else {
+      factors.push({ label: "Construction cost well above range", points: 0, maxPoints: 15, positive: false, explanation: "Costs exceed typical market rates. Get competitive bids." });
+      risks.push("Construction costs above market averages reduce margin.");
+    }
+  }
+
+  // 3. Land cost ratio (15 points)
+  if (costs.land > 0 && costs.total > 0) {
+    const landRatio = (costs.land / costs.total) * 100;
+    if (landRatio <= 25) {
+      factors.push({ label: "Land cost under 25% of total", points: 15, maxPoints: 15, positive: true, explanation: `Land is ${landRatio.toFixed(0)}% of total. Healthy ratio.` });
+    } else if (landRatio <= 35) {
+      factors.push({ label: "Land cost 25 to 35% of total", points: 10, maxPoints: 15, positive: true, explanation: `Land at ${landRatio.toFixed(0)}% is within range but higher side.` });
+    } else {
+      factors.push({ label: "Land cost above 35%", points: 0, maxPoints: 15, positive: false, explanation: `At ${landRatio.toFixed(0)}%, land eats into construction budget.` });
+      risks.push("Land cost exceeds 35% of total project cost.");
+    }
+  }
+
+  // 4. Timeline (15 points)
+  if (state.timelineMonths <= 12) {
+    factors.push({ label: "Timeline under 12 months", points: 15, maxPoints: 15, positive: true, explanation: "Shorter timeline reduces carrying costs." });
+  } else if (state.timelineMonths <= 18) {
+    factors.push({ label: "Timeline 12 to 18 months", points: 10, maxPoints: 15, positive: true, explanation: "Reasonable but adds to carrying costs." });
+  } else {
+    factors.push({ label: "Timeline over 18 months", points: 0, maxPoints: 15, positive: false, explanation: "Extended timelines significantly increase costs and risk." });
+    risks.push("Build timeline over 18 months increases carrying costs.");
+  }
+
+  // 5. Financing (15 points)
+  if (state.financingType === "cash" || state.financingType === "phased_cash") {
+    factors.push({ label: "Cash financing", points: 15, maxPoints: 15, positive: true, explanation: "No interest costs. Full control." });
+  } else if (state.downPaymentPct >= 20) {
+    factors.push({ label: "Down payment 20%+", points: 12, maxPoints: 15, positive: true, explanation: "Good equity cushion and better loan terms." });
+  } else if (state.downPaymentPct >= 10) {
+    factors.push({ label: "Down payment 10 to 20%", points: 8, maxPoints: 15, positive: false, explanation: "Lower equity increases loan cost." });
+  } else {
+    factors.push({ label: "Down payment under 10%", points: 3, maxPoints: 15, positive: false, explanation: "Minimal equity buffer." });
+    risks.push("Low down payment means minimal equity buffer.");
+  }
+
+  // 6. Market demand (15 points)
+  factors.push({ label: "Market demand (estimated)", points: 12, maxPoints: 15, positive: true, explanation: "Based on current market conditions." });
+
+  risks.push("Construction costs could exceed estimates by 10 to 20%. Your contingency budget is your safety net.");
+
+  const score = factors.reduce((sum, f) => sum + f.points, 0);
+  let verdict: string;
+  let verdictLevel: "strong" | "decent" | "risky";
+
+  if (score >= 70) {
+    verdict = "Strong deal. The numbers support moving forward with planning.";
+    verdictLevel = "strong";
+  } else if (score >= 50) {
+    verdict = "Decent deal with some risk factors. Review the areas that scored low.";
+    verdictLevel = "decent";
+  } else {
+    verdict = "This deal carries significant risk. Consider adjusting your assumptions.";
+    verdictLevel = "risky";
+  }
+
+  return { score, factors, risks, verdict, verdictLevel };
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function ExpandableDetail({ label, children }: { label: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-t border-border/40 pt-2 mt-2">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-[11px] text-clay font-medium hover:text-earth transition-colors"
+      >
+        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        {label}
+      </button>
+      {open && (
+        <div className="mt-2 text-[12px] text-muted leading-relaxed animate-fade-in">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MentorTip({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex gap-3 bg-warm/50 border border-sand/40 rounded-xl p-4 mt-4">
+      <BookOpen size={18} className="text-clay shrink-0 mt-0.5" />
+      <p className="text-[12px] text-foreground leading-relaxed">{children}</p>
+    </div>
+  );
+}
+
+// Donut chart for cost breakdown
+function CostDonut({ segments, size = 160 }: { segments: { label: string; value: number; color: string }[]; size?: number }) {
+  const total = segments.reduce((s, seg) => s + seg.value, 0);
+  if (total === 0) return null;
+  const r = size / 2 - 12;
+  const circumference = 2 * Math.PI * r;
+  let cumulative = 0;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto">
+      {segments.map((seg, i) => {
+        const pct = seg.value / total;
+        const dashLen = circumference * pct;
+        const dashOffset = circumference * cumulative;
+        cumulative += pct;
+        return (
+          <circle
+            key={i}
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke={seg.color}
+            strokeWidth={20}
+            strokeDasharray={`${dashLen} ${circumference - dashLen}`}
+            strokeDashoffset={-dashOffset}
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+            className="transition-all duration-500"
+          />
+        );
+      })}
+      <text x="50%" y="50%" textAnchor="middle" dy="-4" className="fill-current text-earth text-[11px]" style={{ fontFamily: "var(--font-mono)" }}>
+        Total
+      </text>
+      <text x="50%" y="50%" textAnchor="middle" dy="14" className="fill-current text-earth text-[14px] font-semibold" style={{ fontFamily: "var(--font-mono)" }}>
+        100%
+      </text>
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 
 export default function NewProjectPage() {
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [selections, setSelections] = useState<Record<number, string>>({});
-  const [projectName, setProjectName] = useState("");
+  const [state, setState] = useState<WizardState>(INITIAL_STATE);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     setTopbar("New project", "Setup wizard", "info");
   }, [setTopbar]);
 
-  const currentStep = step < STEPS.length ? STEPS[step] : undefined;
-  const isLastStep = step === STEPS.length;
-  const canProceed = step < STEPS.length ? !!selections[step] : projectName.trim().length > 0;
+  function update<K extends keyof WizardState>(key: K, value: WizardState[K]) {
+    setState((prev) => ({ ...prev, [key]: value }));
+  }
 
-  // Derive market data when a market is selected
-  const selectedMarketKey = selections[1] ? (MARKET_MAP[selections[1]] as MarketType) : null;
   const marketData = useMemo(() => {
-    if (!selectedMarketKey) return null;
-    return getMarketData(selectedMarketKey);
-  }, [selectedMarketKey]);
+    if (!state.market) return null;
+    return getMarketData(state.market as MarketType);
+  }, [state.market]);
 
-  // Compute total weeks from market phase durations (sum of mid values)
+  const currency = useMemo(() => getCurrencyForMarket(state.market), [state.market]);
+  const sizeUnit = useMemo(() => getSizeUnit(state.market), [state.market]);
+
   const totalWeeksFromMarket = useMemo(() => {
     if (!marketData) return 0;
     return marketData.phases.reduce(
@@ -152,70 +430,90 @@ export default function NewProjectPage() {
     );
   }, [marketData]);
 
-  // Compute estimated budget range based on market + size selection
-  const budgetEstimate = useMemo(() => {
-    if (!selectedMarketKey || !selections[3]) return null;
-    const benchmarks = getCostBenchmarks(selectedMarketKey);
-    const totalMidPerUnit = benchmarks.reduce((sum, b) => sum + b.midRange, 0);
-    const totalLowPerUnit = benchmarks.reduce((sum, b) => sum + b.lowRange, 0);
-    const totalHighPerUnit = benchmarks.reduce((sum, b) => sum + b.highRange, 0);
+  const costs = useMemo(() => getTotalProjectCost(state), [state]);
+  const dealResult = useMemo(() => calculateDealScore(state), [state]);
 
-    const isUSA = selectedMarketKey === "USA";
-    const sizeMap = isUSA ? SIZE_SQFT_USA : SIZE_SQM_TOGO;
-    const sizeValue = sizeMap[selections[3]] ?? sizeMap.medium;
-    const unit = isUSA ? "sqft" : "sqm";
+  // Revenue projections
+  const revenueProjection = useMemo(() => {
+    if (state.goal === "sell") {
+      const salePrice = state.targetSalePrice > 0 ? state.targetSalePrice : getEstimatedSaleValue(state);
+      const profit = salePrice - costs.total;
+      return { label: "Projected sale price", value: salePrice, secondary: `Profit: ${formatCurrencyCompact(profit, currency)}` };
+    } else if (state.goal === "rent") {
+      const monthlyRent = state.monthlyRent > 0 ? state.monthlyRent : getEstimatedMonthlyRent(state);
+      const annualRent = monthlyRent * 12;
+      const capRate = costs.total > 0 ? (annualRent / costs.total) * 100 : 0;
+      return { label: "Monthly rental income", value: monthlyRent, secondary: `Cap rate: ${capRate.toFixed(1)}%` };
+    }
+    return null;
+  }, [state, costs, currency]);
 
-    return {
-      low: Math.round(totalLowPerUnit * sizeValue),
-      mid: Math.round(totalMidPerUnit * sizeValue),
-      high: Math.round(totalHighPerUnit * sizeValue),
-      sizeValue,
-      unit,
-    };
-  }, [selectedMarketKey, selections]);
-
-  function handleSelect(id: string) {
-    setSelections((prev) => ({ ...prev, [step]: id }));
+  // Step validation
+  function canProceed(): boolean {
+    switch (step) {
+      case 0: return state.goal !== "";
+      case 1: return state.market !== "";
+      case 2: return state.city.trim().length > 0;
+      case 3: return state.propertyType !== "";
+      case 4: return state.sizeCategory === "custom" ? state.customSize > 0 : true;
+      case 5: return state.landOption !== "";
+      case 6: return state.financingType !== "";
+      case 7: return true; // financials review
+      case 8: return true; // score review
+      case 9: return state.projectName.trim().length > 0;
+      default: return false;
+    }
   }
 
-  async function handleNext() {
-    if (step < STEPS.length) {
+  async function handleCreate() {
+    if (!user || creating) return;
+    setCreating(true);
+    try {
+      const market = state.market as Market;
+      const purpose = PURPOSE_MAP[state.goal] ?? "OCCUPY";
+      const propertyType = state.propertyType as PropertyType;
+      const curr = currency.code;
+
+      const sizeMap: Record<string, string> = { compact: "small", standard: "medium", large: "large", estate: "xlarge", custom: "custom" };
+
+      const projectId = await createProject({
+        userId: user.uid,
+        name: state.projectName.trim(),
+        market,
+        purpose,
+        propertyType,
+        sizeRange: sizeMap[state.sizeCategory] ?? "medium",
+        city: state.city.trim(),
+        region: state.city.trim(),
+        financingType: state.financingType,
+        landCost: getLandCost(state),
+        dealScore: dealResult.score,
+        currentPhase: 0,
+        completedPhases: 0,
+        phaseName: "Phase 0: Define",
+        progress: 0,
+        status: "ACTIVE",
+        totalBudget: costs.total,
+        totalSpent: 0,
+        currency: curr,
+        currentWeek: 0,
+        totalWeeks: totalWeeksFromMarket,
+        openItems: 0,
+        subPhase: "Getting started",
+        details: `${propertyType} / ${market} / ${state.city.trim()}`,
+      });
+      router.push(`/project/${projectId}/overview`);
+    } catch (err) {
+      console.error("Failed to create project:", err);
+      setCreating(false);
+    }
+  }
+
+  function handleNext() {
+    if (step < STEP_COUNT - 1) {
       setStep(step + 1);
     } else {
-      if (!user || creating) return;
-      setCreating(true);
-      try {
-        const market = MARKET_MAP[selections[1]] ?? "USA";
-        const purpose = PURPOSE_MAP[selections[0]] ?? "OCCUPY";
-        const propertyType = PROPERTY_MAP[selections[2]] ?? "SFH";
-        const currency = marketData ? marketData.currency.code : "USD";
-
-        const projectId = await createProject({
-          userId: user.uid,
-          name: projectName.trim(),
-          market,
-          purpose,
-          propertyType,
-          sizeRange: selections[3] ?? "medium",
-          currentPhase: 0,
-          completedPhases: 0,
-          phaseName: "Phase 0: Define",
-          progress: 0,
-          status: "ACTIVE",
-          totalBudget: 0,
-          totalSpent: 0,
-          currency,
-          currentWeek: 0,
-          totalWeeks: totalWeeksFromMarket,
-          openItems: 0,
-          subPhase: "Getting started",
-          details: `${propertyType} / ${market}`,
-        });
-        router.push(`/project/${projectId}/overview`);
-      } catch (err) {
-        console.error("Failed to create project:", err);
-        setCreating(false);
-      }
+      handleCreate();
     }
   }
 
@@ -224,160 +522,701 @@ export default function NewProjectPage() {
     else router.push("/dashboard");
   }
 
-  return (
-    <div className="max-w-lg mx-auto py-12 text-center animate-fade-in">
-      {/* Step indicator */}
-      <div className="flex gap-2 justify-center mb-8">
-        {[...STEPS, { title: "Name" }].map((s, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-data font-medium transition-all ${
-                i === step ? "bg-earth text-warm" : i < step ? "bg-emerald-500 text-white" : "bg-surface-alt text-muted"
+  // Donut chart segments
+  const donutSegments = useMemo(() => [
+    { label: "Land", value: costs.land, color: "#8B4513" },
+    { label: "Construction", value: costs.construction, color: "#2C1810" },
+    { label: "Soft costs", value: costs.soft, color: "#D4A574" },
+    { label: "Financing", value: costs.financing, color: "#1B4965" },
+    { label: "Contingency", value: costs.contingency, color: "#BC6C25" },
+  ], [costs]);
+
+  // ---------------------------------------------------------------------------
+  // Step renderers
+  // ---------------------------------------------------------------------------
+
+  function renderStep() {
+    switch (step) {
+      case 0: return renderGoalStep();
+      case 1: return renderMarketStep();
+      case 2: return renderLocationStep();
+      case 3: return renderPropertyStep();
+      case 4: return renderSizeStep();
+      case 5: return renderLandStep();
+      case 6: return renderFinancingStep();
+      case 7: return renderFinancialsStep();
+      case 8: return renderScoreStep();
+      case 9: return renderNameStep();
+      default: return null;
+    }
+  }
+
+  function renderGoalStep() {
+    const options = [
+      { id: "sell" as const, title: "Build to sell", description: "Construct a property to sell at a profit. Higher risk, higher potential returns. Best for experienced investors or those willing to learn the development process.", icon: <TrendingUp size={18} />, tooltip: "Spec building is higher risk since you fund the entire build and carry costs until the sale closes." },
+      { id: "rent" as const, title: "Build to rent", description: "Build an investment property that generates ongoing rental income. Moderate risk, steady cash flow. Best for long-term wealth building and passive income seekers.", icon: <Building2 size={18} />, tooltip: "Rental properties require higher down payments (25%+) but generate recurring income. Lenders evaluate these differently." },
+      { id: "occupy" as const, title: "Build to occupy", description: "Build a home for you and your family. Lower financial risk, personal fulfillment. Best for first-time builders who want exactly the home they envision.", icon: <Home size={18} />, tooltip: "Owner-occupied homes qualify for better interest rates, lower down payments, and property tax reductions." },
+    ];
+
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="What is your goal?" subtitle="This determines your financing options, tax treatment, and how we evaluate the deal." />
+        <div className="space-y-3 text-left animate-stagger">
+          {options.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => update("goal", opt.id)}
+              className={`w-full p-5 rounded-xl border text-left transition-all card-hover ${
+                state.goal === opt.id
+                  ? "border-emerald-500 border-2 bg-emerald-50/30 shadow-sm"
+                  : "border-border bg-surface hover:border-sand"
               }`}
             >
+              <div className="flex items-start gap-3">
+                <span className={`mt-0.5 ${state.goal === opt.id ? "text-emerald-600" : "text-muted"}`}>{opt.icon}</span>
+                <div className="flex-1">
+                  <h5 className="text-[14px] font-semibold text-earth">{opt.title}</h5>
+                  <p className="text-[12px] text-muted mt-1 leading-relaxed">{opt.description}</p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function renderMarketStep() {
+    const markets = [
+      { id: "USA" as MarketType, title: "United States", desc: "Wood-frame construction, institutional lending, IRC building codes", snap: "Construction loans convert to mortgages. Licensed trades required." },
+      { id: "TOGO" as MarketType, title: "Togo", desc: "Reinforced concrete block, CFA zone, titre foncier system", snap: "Self-funded in phases. Titre foncier process can take months." },
+      { id: "GHANA" as MarketType, title: "Ghana", desc: "Concrete block, cedi currency, Lands Commission registration", snap: "More formalized permit process. Land registration through Lands Commission." },
+      { id: "BENIN" as MarketType, title: "Benin", desc: "Concrete block, CFA zone, ANDF land registry", snap: "CFA currency zone shared with Togo. ANDF provides formal land ownership." },
+    ];
+
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="Where are you building?" subtitle="Sets your cost benchmarks, regulations, templates, and construction method." />
+        <div className="space-y-3 text-left animate-stagger">
+          {markets.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => update("market", m.id)}
+              className={`w-full p-5 rounded-xl border text-left transition-all card-hover ${
+                state.market === m.id
+                  ? "border-emerald-500 border-2 bg-emerald-50/30 shadow-sm"
+                  : "border-border bg-surface hover:border-sand"
+              }`}
+            >
+              <h5 className="text-[14px] font-semibold text-earth">{m.title}</h5>
+              <p className="text-[11px] text-muted mt-0.5">{m.desc}</p>
+            </button>
+          ))}
+        </div>
+
+        {state.market && marketData && (
+          <div className="mt-4 p-4 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 text-left">
+            <div className="flex items-center gap-2 mb-2">
+              <Info size={14} className="text-emerald-700 shrink-0" />
+              <span className="text-[12px] font-semibold text-emerald-800">Market snapshot</span>
+            </div>
+            <div className="space-y-1 text-[11px] text-emerald-800">
+              <div className="flex justify-between">
+                <span className="text-muted">Construction method</span>
+                <span className="font-medium">{marketData.phases[0]?.constructionMethod ?? "N/A"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">Currency</span>
+                <span className="font-medium">{marketData.currency.code} ({marketData.currency.symbol})</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">Typical timeline</span>
+                <span className="font-medium">
+                  {marketData.phases.reduce((s, p) => s + p.typicalDurationWeeks.min, 0)}
+                  {" to "}
+                  {marketData.phases.reduce((s, p) => s + p.typicalDurationWeeks.max, 0)}
+                  {" weeks"}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderLocationStep() {
+    const placeholder = state.market === "USA"
+      ? "Enter your city or zip code (e.g., Houston TX, 77001)"
+      : state.market === "TOGO"
+      ? "Enter your city or quartier (e.g., Lome, Avepozo, Kpalime)"
+      : state.market === "GHANA"
+      ? "Enter your city or area (e.g., Accra, Tema, Kumasi)"
+      : "Enter your city or area";
+
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="What city or area?" subtitle="Location affects your costs, regulations, and market demand." />
+        <div className="text-left">
+          <div className="flex items-center gap-2 mb-3">
+            <MapPin size={16} className="text-clay" />
+            <label className="text-[13px] font-medium text-earth">City or region</label>
+          </div>
+          <input
+            type="text"
+            value={state.city}
+            onChange={(e) => update("city", e.target.value)}
+            placeholder={placeholder}
+            className="w-full px-4 py-3 text-[14px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+          />
+          <MentorTip>
+            {state.market === "USA"
+              ? "Construction in downtown Houston costs 20 to 30% more than suburbs. Location also determines which building codes and inspectors apply to your project."
+              : "In Lome, construction costs vary significantly between central quartiers and peripheral areas like Avepozo or Baguida. Land near the coast tends to be more expensive."
+            }
+          </MentorTip>
+        </div>
+      </div>
+    );
+  }
+
+  function renderPropertyStep() {
+    const types: { id: PropertyType; title: string; desc: string; complexity: number; beginner: boolean }[] = [
+      { id: "SFH", title: "Single-family home", desc: "One dwelling unit on one lot", complexity: 1, beginner: true },
+      { id: "DUPLEX", title: "Duplex", desc: "Two dwelling units in one structure", complexity: 2, beginner: true },
+      { id: "TRIPLEX", title: "Triplex", desc: "Three dwelling units", complexity: 3, beginner: false },
+      { id: "FOURPLEX", title: "Fourplex", desc: "Four dwelling units", complexity: 3, beginner: false },
+      { id: "APARTMENT", title: "Apartment building", desc: "Five or more units", complexity: 5, beginner: false },
+    ];
+
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="What type of property?" subtitle="Defines your floor plan options, structural requirements, and complexity." />
+        <div className="space-y-3 text-left animate-stagger">
+          {types.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => update("propertyType", t.id)}
+              className={`w-full p-4 rounded-xl border text-left transition-all card-hover ${
+                state.propertyType === t.id
+                  ? "border-emerald-500 border-2 bg-emerald-50/30 shadow-sm"
+                  : "border-border bg-surface hover:border-sand"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h5 className="text-[14px] font-semibold text-earth">{t.title}</h5>
+                  <p className="text-[11px] text-muted mt-0.5">{t.desc}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {t.beginner && (
+                    <span className="text-[9px] font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                      Beginner friendly
+                    </span>
+                  )}
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <div key={n} className={`w-1.5 h-3 rounded-sm ${n <= t.complexity ? "bg-clay" : "bg-border"}`} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function renderSizeStep() {
+    if (!state.market) return null;
+    const presets = getSizePresets(sizeUnit);
+    const presetEntries = Object.entries(presets) as [string, { min: number; max: number; typical: number; label: string }][];
+
+    const constructionCostNow = getConstructionCost(state);
+
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="How big?" subtitle="Size presets give you instant cost estimates. You can also enter a custom size." />
+        <div className="space-y-3 text-left animate-stagger">
+          {presetEntries.map(([key, preset]) => {
+            const isSelected = state.sizeCategory === key;
+            const tempState = { ...state, sizeCategory: key as SizeCategory };
+            const estCost = getConstructionCost(tempState);
+            return (
+              <button
+                key={key}
+                onClick={() => { update("sizeCategory", key as SizeCategory); }}
+                className={`w-full p-4 rounded-xl border text-left transition-all card-hover ${
+                  isSelected
+                    ? "border-emerald-500 border-2 bg-emerald-50/30 shadow-sm"
+                    : "border-border bg-surface hover:border-sand"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h5 className="text-[14px] font-semibold text-earth">{preset.label}</h5>
+                    <p className="text-[11px] text-muted">Typical: {preset.typical.toLocaleString()} {sizeUnit}</p>
+                  </div>
+                  <span className="text-[13px] font-data font-medium text-clay">
+                    {formatCurrencyCompact(estCost, currency)}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+
+          {/* Custom size */}
+          <button
+            onClick={() => update("sizeCategory", "custom")}
+            className={`w-full p-4 rounded-xl border text-left transition-all card-hover ${
+              state.sizeCategory === "custom"
+                ? "border-emerald-500 border-2 bg-emerald-50/30 shadow-sm"
+                : "border-border bg-surface hover:border-sand"
+            }`}
+          >
+            <h5 className="text-[14px] font-semibold text-earth">Custom size</h5>
+            <p className="text-[11px] text-muted">Enter your exact {sizeUnit === "sqft" ? "square footage" : "square meters"}</p>
+          </button>
+
+          {state.sizeCategory === "custom" && (
+            <div className="mt-2">
+              <input
+                type="number"
+                value={state.customSize || ""}
+                onChange={(e) => update("customSize", Number(e.target.value))}
+                placeholder={`Enter size in ${sizeUnit}`}
+                className="w-full px-4 py-3 text-[14px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+              />
+            </div>
+          )}
+        </div>
+
+        {constructionCostNow > 0 && (
+          <div className="mt-4 p-4 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 text-left">
+            <div className="flex items-center gap-2 mb-1">
+              <Info size={14} className="text-emerald-700 shrink-0" />
+              <span className="text-[12px] font-semibold text-emerald-800">Estimated construction cost</span>
+            </div>
+            <span className="text-[16px] font-data font-semibold text-emerald-800">
+              {formatCurrency(constructionCostNow, currency)}
+            </span>
+            <p className="text-[10px] text-emerald-600 mt-1">
+              Based on market benchmarks for {getBuildingSize(state).toLocaleString()} {sizeUnit}. Actual costs vary by location and finishes.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderLandStep() {
+    const estimatedLand = Math.round(getConstructionCost(state) * 0.25);
+
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="What about land?" subtitle="Land is often the biggest variable. If you already own land, enter what you paid. Otherwise we will estimate." />
+        <div className="space-y-3 text-left animate-stagger">
+          <button
+            onClick={() => update("landOption", "known")}
+            className={`w-full p-5 rounded-xl border text-left transition-all card-hover ${
+              state.landOption === "known"
+                ? "border-emerald-500 border-2 bg-emerald-50/30 shadow-sm"
+                : "border-border bg-surface hover:border-sand"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Landmark size={18} className={state.landOption === "known" ? "text-emerald-600" : "text-muted"} />
+              <div>
+                <h5 className="text-[14px] font-semibold text-earth">I have land (or a price)</h5>
+                <p className="text-[11px] text-muted">Enter the purchase price or appraised value</p>
+              </div>
+            </div>
+          </button>
+
+          {state.landOption === "known" && (
+            <div className="pl-10">
+              <label className="text-[12px] text-muted mb-1 block">Land price ({currency.code})</label>
+              <input
+                type="number"
+                value={state.landPrice || ""}
+                onChange={(e) => update("landPrice", Number(e.target.value))}
+                placeholder="Enter land cost"
+                className="w-full px-4 py-3 text-[14px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+              />
+            </div>
+          )}
+
+          <button
+            onClick={() => update("landOption", "estimate")}
+            className={`w-full p-5 rounded-xl border text-left transition-all card-hover ${
+              state.landOption === "estimate"
+                ? "border-emerald-500 border-2 bg-emerald-50/30 shadow-sm"
+                : "border-border bg-surface hover:border-sand"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <MapPin size={18} className={state.landOption === "estimate" ? "text-emerald-600" : "text-muted"} />
+              <div>
+                <h5 className="text-[14px] font-semibold text-earth">I am still looking</h5>
+                <p className="text-[11px] text-muted">
+                  We will estimate land at 25% of construction cost ({formatCurrencyCompact(estimatedLand, currency)})
+                </p>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        <MentorTip>
+          {state.market === "USA"
+            ? "Before buying land, verify zoning allows your intended use, check for easements, confirm utility connections are available, and get a soil test for foundation design."
+            : "In West Africa, always verify land ownership through the formal title system (titre foncier in Togo, Lands Commission in Ghana, ANDF in Benin). Customary land claims can create disputes."
+          }
+        </MentorTip>
+      </div>
+    );
+  }
+
+  function renderFinancingStep() {
+    const isUSA = state.market === "USA";
+    const options: { id: FinancingType; title: string; desc: string; available: boolean }[] = isUSA
+      ? [
+          { id: "construction_loan", title: "Construction loan", desc: "Bank finances the build, converts to mortgage at completion. Requires 20%+ down, good credit.", available: true },
+          { id: "fha_203k", title: "FHA 203(k) renovation loan", desc: "Government-backed loan for purchase and renovation. Lower down payment (3.5%).", available: true },
+          { id: "cash", title: "Cash", desc: "Pay for everything out of pocket. No interest costs, full control, fastest closings.", available: true },
+        ]
+      : [
+          { id: "phased_cash", title: "Phased cash (build as you go)", desc: "The most common approach in West Africa. Build each phase as funds become available.", available: true },
+          { id: "diaspora", title: "Diaspora funding", desc: "Sending money from abroad to fund construction. Requires trusted local oversight.", available: true },
+          { id: "tontine", title: "Tontine / savings group", desc: "Community rotating savings fund. Members take turns receiving the pot.", available: true },
+          { id: "cash", title: "Full cash upfront", desc: "Pay the entire cost before construction begins.", available: true },
+        ];
+
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="How will you pay?" subtitle="Your financing method affects total cost, timeline, and risk." />
+        <div className="space-y-3 text-left animate-stagger">
+          {options.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => update("financingType", opt.id)}
+              className={`w-full p-4 rounded-xl border text-left transition-all card-hover ${
+                state.financingType === opt.id
+                  ? "border-emerald-500 border-2 bg-emerald-50/30 shadow-sm"
+                  : "border-border bg-surface hover:border-sand"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <CreditCard size={16} className={state.financingType === opt.id ? "text-emerald-600" : "text-muted"} />
+                <div>
+                  <h5 className="text-[14px] font-semibold text-earth">{opt.title}</h5>
+                  <p className="text-[11px] text-muted mt-0.5">{opt.desc}</p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Loan parameters for construction loan / FHA */}
+        {(state.financingType === "construction_loan" || state.financingType === "fha_203k") && (
+          <div className="mt-4 p-4 rounded-[var(--radius)] border border-border bg-surface text-left space-y-3">
+            <h5 className="text-[13px] font-semibold text-earth">Loan parameters</h5>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] text-muted block mb-1">Down payment %</label>
+                <input
+                  type="number"
+                  value={state.downPaymentPct}
+                  onChange={(e) => update("downPaymentPct", Number(e.target.value))}
+                  className="w-full px-3 py-2 text-[13px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-muted block mb-1">Interest rate %</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={state.loanRate}
+                  onChange={(e) => update("loanRate", Number(e.target.value))}
+                  className="w-full px-3 py-2 text-[13px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-[11px] text-muted block mb-1">Build timeline (months)</label>
+              <input
+                type="number"
+                value={state.timelineMonths}
+                onChange={(e) => update("timelineMonths", Number(e.target.value))}
+                className="w-full px-3 py-2 text-[13px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderFinancialsStep() {
+    const costRows = [
+      { label: "Land", value: costs.land, pct: costs.total > 0 ? (costs.land / costs.total) * 100 : 0, color: "#8B4513", detail: state.landOption === "known" ? "Your entered land price." : "Estimated at 25% of construction cost." },
+      { label: "Construction", value: costs.construction, pct: costs.total > 0 ? (costs.construction / costs.total) * 100 : 0, color: "#2C1810", detail: `Based on ${getBuildingSize(state).toLocaleString()} ${sizeUnit} at market mid-range cost per ${sizeUnit}.` },
+      { label: "Soft costs (permits, design, fees)", value: costs.soft, pct: costs.total > 0 ? (costs.soft / costs.total) * 100 : 0, color: "#D4A574", detail: "Estimated at 15% of construction cost. Includes architectural design, permits, engineering, and inspections." },
+      { label: "Financing costs", value: costs.financing, pct: costs.total > 0 ? (costs.financing / costs.total) * 100 : 0, color: "#1B4965", detail: state.financingType === "cash" || state.financingType === "phased_cash" ? "No financing costs with cash payment." : `Based on ${state.downPaymentPct}% down at ${state.loanRate}% over ${state.timelineMonths} months.` },
+      { label: "Contingency (15%)", value: costs.contingency, pct: costs.total > 0 ? (costs.contingency / costs.total) * 100 : 0, color: "#BC6C25", detail: "A 15% contingency protects against cost overruns. This is the industry standard safety buffer." },
+    ];
+
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="Your project financials" subtitle="Full cost breakdown with revenue projections based on your goal." />
+
+        <div className="text-left">
+          {/* Donut chart */}
+          <div className="mb-6">
+            <CostDonut segments={donutSegments} />
+            <div className="flex flex-wrap justify-center gap-3 mt-3">
+              {donutSegments.map((seg) => (
+                <div key={seg.label} className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: seg.color }} />
+                  <span className="text-[10px] text-muted">{seg.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cost rows */}
+          <div className="space-y-2 mb-6">
+            {costRows.map((row) => (
+              <div key={row.label} className="p-3 rounded-lg border border-border/50 bg-surface">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: row.color }} />
+                    <span className="text-[13px] text-earth">{row.label}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[13px] font-data font-semibold text-earth">{formatCurrency(row.value, currency)}</span>
+                    <span className="text-[10px] text-muted ml-2">{row.pct.toFixed(0)}%</span>
+                  </div>
+                </div>
+                <ExpandableDetail label="How we calculated this">
+                  {row.detail}
+                </ExpandableDetail>
+              </div>
+            ))}
+          </div>
+
+          {/* Total */}
+          <div className="p-4 rounded-xl border-2 border-earth bg-warm/50">
+            <div className="flex items-center justify-between">
+              <span className="text-[15px] font-semibold text-earth">Total project cost</span>
+              <span className="text-[18px] font-data font-bold text-earth">{formatCurrency(costs.total, currency)}</span>
+            </div>
+          </div>
+
+          {/* Revenue projection */}
+          {revenueProjection && (
+            <div className="mt-4 p-4 rounded-xl border border-emerald-300 bg-emerald-50">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-semibold text-emerald-800">{revenueProjection.label}</span>
+                <span className="text-[16px] font-data font-bold text-emerald-800">
+                  {formatCurrency(revenueProjection.value, currency)}
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-700 mt-1">{revenueProjection.secondary}</p>
+            </div>
+          )}
+
+          {/* Override inputs for sale price or rent */}
+          {state.goal === "sell" && (
+            <div className="mt-3">
+              <label className="text-[11px] text-muted block mb-1">Override target sale price ({currency.code})</label>
+              <input
+                type="number"
+                value={state.targetSalePrice || ""}
+                onChange={(e) => update("targetSalePrice", Number(e.target.value))}
+                placeholder={`Default: ${formatCurrencyCompact(getEstimatedSaleValue(state), currency)}`}
+                className="w-full px-3 py-2 text-[13px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+          )}
+          {state.goal === "rent" && (
+            <div className="mt-3">
+              <label className="text-[11px] text-muted block mb-1">Override monthly rent ({currency.code})</label>
+              <input
+                type="number"
+                value={state.monthlyRent || ""}
+                onChange={(e) => update("monthlyRent", Number(e.target.value))}
+                placeholder={`Default: ${formatCurrencyCompact(getEstimatedMonthlyRent(state), currency)}`}
+                className="w-full px-3 py-2 text-[13px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderScoreStep() {
+    const { score, factors, risks, verdict, verdictLevel } = dealResult;
+    const scoreColor = verdictLevel === "strong" ? "text-emerald-600" : verdictLevel === "decent" ? "text-warning" : "text-danger";
+    const scoreBg = verdictLevel === "strong" ? "bg-emerald-50 border-emerald-300" : verdictLevel === "decent" ? "bg-warning-bg border-warning" : "bg-danger-bg border-danger";
+
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="Deal score" subtitle="We evaluated your project across six factors. Here is how it stacks up." />
+
+        <div className="text-left">
+          {/* Score circle */}
+          <div className="flex flex-col items-center mb-6">
+            <div className={`w-24 h-24 rounded-full border-4 ${scoreBg} flex items-center justify-center`}>
+              <span className={`text-[32px] font-data font-bold ${scoreColor}`}>{score}</span>
+            </div>
+            <span className="text-[11px] text-muted mt-2">out of 100</span>
+          </div>
+
+          {/* Verdict */}
+          <div className={`p-4 rounded-xl border ${scoreBg} mb-6`}>
+            <div className="flex items-start gap-2">
+              <Shield size={16} className={`${scoreColor} mt-0.5 shrink-0`} />
+              <p className="text-[13px] text-earth leading-relaxed">{verdict}</p>
+            </div>
+          </div>
+
+          {/* Factor breakdown */}
+          <div className="space-y-2 mb-6">
+            {factors.map((f, i) => (
+              <div key={i} className="p-3 rounded-lg border border-border/50 bg-surface">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    {f.positive ? (
+                      <Check size={14} className="text-emerald-600" />
+                    ) : (
+                      <AlertTriangle size={14} className="text-warning" />
+                    )}
+                    <span className="text-[12px] font-medium text-earth">{f.label}</span>
+                  </div>
+                  <span className="text-[11px] font-data text-muted">{f.points}/{f.maxPoints}</span>
+                </div>
+                <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${f.positive ? "bg-emerald-500" : "bg-warning"}`}
+                    style={{ width: `${(f.points / f.maxPoints) * 100}%` }}
+                  />
+                </div>
+                <ExpandableDetail label="Details">
+                  {f.explanation}
+                </ExpandableDetail>
+              </div>
+            ))}
+          </div>
+
+          {/* Risks */}
+          {risks.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-[12px] font-semibold text-earth mb-2">Risk factors</h4>
+              <ul className="space-y-1.5">
+                {risks.map((r, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[12px] text-muted">
+                    <AlertTriangle size={12} className="text-warning shrink-0 mt-0.5" />
+                    {r}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* CTA based on score */}
+          {score >= 50 ? (
+            <div className="p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-center">
+              <p className="text-[13px] text-emerald-800">This looks like a viable project. Let us set it up.</p>
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl border border-warning bg-warning-bg text-center">
+              <p className="text-[13px] text-earth">The numbers need work. You can go back and adjust your assumptions, or continue anyway.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderNameStep() {
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="Name your project" subtitle="Give it a name you will recognize. You can change this later." />
+        <div className="text-left">
+          <input
+            type="text"
+            value={state.projectName}
+            onChange={(e) => update("projectName", e.target.value)}
+            placeholder="e.g. Robinson residence, Lome villa, Houston duplex"
+            className="w-full px-4 py-3 text-[14px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+          />
+          <p className="text-[10px] text-muted mt-2">
+            Tip: Use the property address, family name, or location for easy identification.
+          </p>
+
+          {/* Summary */}
+          <div className="mt-6 p-4 rounded-xl border border-border bg-surface space-y-2">
+            <h4 className="text-[13px] font-semibold text-earth mb-3">Project summary</h4>
+            <SummaryRow label="Goal" value={state.goal === "sell" ? "Build to sell" : state.goal === "rent" ? "Build to rent" : "Build to occupy"} />
+            <SummaryRow label="Market" value={state.market as string} />
+            <SummaryRow label="Location" value={state.city} />
+            <SummaryRow label="Property type" value={state.propertyType as string} />
+            <SummaryRow label="Size" value={`${getBuildingSize(state).toLocaleString()} ${sizeUnit}`} />
+            <SummaryRow label="Total budget" value={formatCurrency(costs.total, currency)} />
+            <SummaryRow label="Financing" value={state.financingType.replace(/_/g, " ")} />
+            <SummaryRow label="Deal score" value={`${dealResult.score}/100`} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
+  return (
+    <div className="max-w-xl mx-auto py-8 animate-fade-in">
+      {/* Step indicator */}
+      <div className="flex gap-1 justify-center mb-8 flex-wrap">
+        {STEP_LABELS.map((label, i) => (
+          <div key={i} className="flex items-center gap-1">
+            <button
+              onClick={() => { if (i < step) setStep(i); }}
+              disabled={i > step}
+              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-data font-medium transition-all ${
+                i === step
+                  ? "bg-earth text-warm"
+                  : i < step
+                  ? "bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600"
+                  : "bg-surface-alt text-muted cursor-default"
+              }`}
+              title={label}
+            >
               {i < step ? (
-                <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="10" height="8" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               ) : (
                 i + 1
               )}
-            </div>
-            {i < STEPS.length && (
-              <div className={`w-8 h-[2px] ${i < step ? "bg-emerald-500" : "bg-border"}`} />
+            </button>
+            {i < STEP_LABELS.length - 1 && (
+              <div className={`w-4 h-[2px] ${i < step ? "bg-emerald-500" : "bg-border"}`} />
             )}
           </div>
         ))}
       </div>
 
-      {step < STEPS.length ? (
-        <div key={step} className="animate-fade-in">
-          <h3 style={{ fontFamily: "var(--font-heading)" }} className="text-2xl text-earth mb-2">{currentStep!.title}</h3>
-          <p className="text-[13px] text-muted mb-8">{currentStep!.subtitle}</p>
+      {/* Step title label */}
+      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-clay/60 text-center mb-1">
+        Step {step + 1} of {STEP_COUNT}
+      </p>
 
-          <div className="space-y-3 text-left animate-stagger">
-            {currentStep!.options.map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => handleSelect(opt.id)}
-                className={`
-                  w-full p-5 rounded-xl border text-left transition-all card-hover
-                  ${
-                    selections[step] === opt.id
-                      ? "border-emerald-500 border-2 bg-emerald-50/30 shadow-sm"
-                      : "border-border bg-surface hover:border-sand"
-                  }
-                `}
-              >
-                <div className="flex items-center gap-3">
-                  {opt.icon && (
-                    <span className={`${selections[step] === opt.id ? "text-emerald-600" : "text-muted"}`}>
-                      {opt.icon}
-                    </span>
-                  )}
-                  <div className="flex-1">
-                    {opt.tooltipTerm ? (
-                      <LearnTooltip
-                        term={opt.tooltipTerm}
-                        explanation={opt.tooltipExplanation!}
-                        whyItMatters={opt.tooltipWhy}
-                      >
-                        <h5 className="text-[14px] font-semibold text-earth">{opt.title}</h5>
-                      </LearnTooltip>
-                    ) : (
-                      <h5 className="text-[14px] font-semibold text-earth">{opt.title}</h5>
-                    )}
-                    <p className="text-[11px] text-muted mt-0.5">{opt.description}</p>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Market preview card — shown after step 2 (market) is selected, on step 2 */}
-          {step === 1 && marketData && (
-            <div className="mt-4 p-4 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 text-left">
-              <div className="flex items-center gap-2 mb-2">
-                <Info size={14} className="text-emerald-700 shrink-0" />
-                <span className="text-[12px] font-semibold text-emerald-800">Market preview</span>
-              </div>
-              <div className="space-y-1 text-[11px] text-emerald-800">
-                <div className="flex justify-between">
-                  <span className="text-muted">Construction method</span>
-                  <span className="font-medium">{marketData.phases[0]?.constructionMethod ?? "N/A"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted">Currency</span>
-                  <span className="font-medium">{marketData.currency.code} ({marketData.currency.symbol})</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted">Estimated total timeline</span>
-                  <span className="font-medium">
-                    {marketData.phases.reduce((s, p) => s + p.typicalDurationWeeks.min, 0)}
-                    {" - "}
-                    {marketData.phases.reduce((s, p) => s + p.typicalDurationWeeks.max, 0)}
-                    {" weeks"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Budget estimate card — shown on step 4 (size) after selection */}
-          {step === 3 && budgetEstimate && marketData && (
-            <div className="mt-4 p-4 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 text-left">
-              <div className="flex items-center gap-2 mb-2">
-                <Info size={14} className="text-emerald-700 shrink-0" />
-                <span className="text-[12px] font-semibold text-emerald-800">Estimated budget range</span>
-              </div>
-              <div className="space-y-1 text-[11px] text-emerald-800">
-                <div className="flex justify-between">
-                  <span className="text-muted">Size</span>
-                  <span className="font-medium font-data">
-                    {budgetEstimate.sizeValue.toLocaleString()} {budgetEstimate.unit}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted">Low estimate</span>
-                  <span className="font-medium font-data">
-                    {formatCurrencyCompact(budgetEstimate.low, marketData.currency)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted">Mid estimate</span>
-                  <span className="font-semibold font-data">
-                    {formatCurrencyCompact(budgetEstimate.mid, marketData.currency)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted">High estimate</span>
-                  <span className="font-medium font-data">
-                    {formatCurrencyCompact(budgetEstimate.high, marketData.currency)}
-                  </span>
-                </div>
-              </div>
-              <p className="text-[10px] text-emerald-600 mt-2">
-                Based on market cost benchmarks. Actual costs vary by location, materials, and finishes.
-              </p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div key="name" className="animate-fade-in">
-          <h3 className="text-xl font-semibold text-earth mb-1">Name your project</h3>
-          <p className="text-[13px] text-muted mb-6">
-            Give it a name you will recognize. You can change this later.
-          </p>
-          <input
-            type="text"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            placeholder="e.g. Robinson residence"
-            className="w-full px-4 py-3 text-[14px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-          />
-          <p className="text-[10px] text-muted mt-2 text-left">
-            Tip: Use a descriptive name like the property address, family name, or location.
-          </p>
-        </div>
-      )}
+      {/* Step content */}
+      <div className="text-center">
+        {renderStep()}
+      </div>
 
       {/* Nav buttons */}
       <div className="flex justify-center gap-2 mt-8">
@@ -389,12 +1228,34 @@ export default function NewProjectPage() {
         </button>
         <button
           onClick={handleNext}
-          disabled={!canProceed}
-          className="px-6 py-2.5 text-[13px] rounded-[var(--radius)] bg-earth text-warm hover:bg-earth-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={!canProceed()}
+          className="px-6 py-2.5 text-[13px] rounded-[var(--radius)] btn-earth hover:bg-earth-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {isLastStep ? (creating ? "Creating..." : "Create project") : "Next"}
+          {step === STEP_COUNT - 1 ? (creating ? "Creating..." : "Create project") : "Next"}
         </button>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Helper components
+// ---------------------------------------------------------------------------
+
+function StepHeading({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="mb-6">
+      <h3 style={{ fontFamily: "var(--font-heading)" }} className="text-2xl text-earth mb-2">{title}</h3>
+      <p className="text-[13px] text-muted">{subtitle}</p>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between text-[12px]">
+      <span className="text-muted">{label}</span>
+      <span className="font-medium text-earth">{value}</span>
     </div>
   );
 }

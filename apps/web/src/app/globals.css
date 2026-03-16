@@ -633,3 +633,46 @@ html.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
   background-color: var(--color-surface) !important;
   border-color: var(--color-border) !important;
 }
+
+/* ── Dark mode: body base ── */
+html.dark body {
+  background-color: #1A1412;
+  color: #E8DDD0;
+}
+
+/* ── Dark mode: topographic pattern reduced opacity ── */
+html.dark .bg-topo {
+  opacity: 0.3 !important;
+}
+
+/* ── Dark mode: landing page nav scrolled state ── */
+html.dark .bg-surface\/95 {
+  background-color: rgba(35, 30, 26, 0.95) !important;
+}
+
+/* ── Dark mode: landing footer stays dark ── */
+html.dark .landing-footer {
+  background-color: #1A0F0A !important;
+}
+
+/* ── Dark mode: link colors ── */
+html.dark a.link-clay,
+html.dark .text-clay a {
+  color: #C4956A;
+}
+
+/* ── Dark mode: outline/border buttons on landing ── */
+html.dark .border-earth {
+  border-color: var(--color-earth) !important;
+}
+
+/* ── Dark mode: auth page form inputs inherit from base html.dark input rule ── */
+
+/* ── Dark mode: ensure btn-earth stays consistently dark ── */
+html.dark .btn-earth {
+  background-color: #2C1810 !important;
+  color: #F5E6D3 !important;
+}
+html.dark .btn-earth:hover {
+  background-color: #3D2215 !important;
+}

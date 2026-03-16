@@ -24,6 +24,11 @@ export interface ProjectData {
   purpose: BuildPurpose;
   propertyType: PropertyType;
   sizeRange: string;
+  city?: string;
+  region?: string;
+  financingType?: string;
+  landCost?: number;
+  dealScore?: number;
   currentPhase: number;
   completedPhases: number;
   phaseName: string;

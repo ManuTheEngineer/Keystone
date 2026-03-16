@@ -706,7 +706,7 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg mb-6">
             <Link
-              href="/deal-analyzer"
+              href="/new-project"
               className="bg-surface border border-border rounded-xl p-6 text-left card-hover group block"
             >
               <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-4">
@@ -716,10 +716,10 @@ export default function DashboardPage() {
                 className="text-[16px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                Analyze Your First Deal
+                Evaluate a Deal
               </div>
               <p className="text-[12px] text-muted leading-relaxed">
-                Evaluate a property opportunity with market-specific cost benchmarks and financial modeling.
+                Analyze a property opportunity with market-specific cost benchmarks and financial modeling, then create your project.
               </p>
             </Link>
 
@@ -1016,15 +1016,15 @@ export default function DashboardPage() {
               </Link>
 
               <Link
-                href="/deal-analyzer"
+                href="/new-project"
                 className="flex items-center gap-3 bg-surface border border-border/60 rounded-xl px-4 py-3 card-hover"
               >
                 <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
                   <TrendingUp size={18} className="text-clay" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[13px] font-semibold text-earth">Analyze a Deal</div>
-                  <div className="text-[11px] text-muted">Evaluate a property opportunity</div>
+                  <div className="text-[13px] font-semibold text-earth">Evaluate a Deal</div>
+                  <div className="text-[11px] text-muted">Analyze and start a new project</div>
                 </div>
               </Link>
 

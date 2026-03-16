@@ -56,7 +56,7 @@ const DEFINE_STEPS_USA: PhaseStep[] = [
     whyItMatters:
       "Most first-time builders underestimate costs by 30 to 50 percent. Running the numbers early prevents you from committing to a project you cannot finish. An incomplete building is worth less than the land it sits on.",
     actionType: "in-app",
-    inAppRoute: "/deal-analyzer",
+    inAppRoute: "/new-project",
     estimatedTime: "1 hour",
     order: 2,
   },
@@ -129,7 +129,7 @@ const DEFINE_STEPS_WA: PhaseStep[] = [
     whyItMatters:
       "Exchange rate swings can change your effective budget by 10 to 20 percent overnight. Setting your budget in both CFA and USD helps you understand your true exposure. Many diaspora projects stall because the builder did not account for this.",
     actionType: "in-app",
-    inAppRoute: "/deal-analyzer",
+    inAppRoute: "/new-project",
     estimatedTime: "1 hour",
     order: 2,
   },
@@ -183,7 +183,7 @@ const FINANCE_STEPS_USA: PhaseStep[] = [
     whyItMatters:
       "Lenders want to see that you have skin in the game. Most construction loans require 20 to 25 percent down. Knowing your exact capital position tells you the maximum project size you can realistically pursue.",
     actionType: "in-app",
-    inAppRoute: "/deal-analyzer",
+    inAppRoute: "/new-project",
     estimatedTime: "2 hours",
     order: 0,
   },
@@ -256,7 +256,7 @@ const FINANCE_STEPS_WA: PhaseStep[] = [
     whyItMatters:
       "In West Africa, most residential construction is self-funded in phases. You build what you can afford, then pause until you save more. Knowing your exact capital determines which phases you can complete now and which must wait.",
     actionType: "in-app",
-    inAppRoute: "/deal-analyzer",
+    inAppRoute: "/new-project",
     estimatedTime: "2 hours",
     order: 0,
   },
