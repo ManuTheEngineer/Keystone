@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { sendAIMessage, getAIUsage, type AIMessage, type AIUsage } from "@/lib/services/ai-service";
+import { sendAIMessage, type AIMessage } from "@/lib/services/ai-service";
 import { subscribeToProject, type ProjectData } from "@/lib/services/project-service";
 import {
   getMarketData,
@@ -133,7 +133,6 @@ export function AIAssistantClient() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [mode, setMode] = useState<Mode>("general");
-  const [usage, setUsage] = useState<AIUsage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -153,10 +152,6 @@ export function AIAssistantClient() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // Fetch usage on mount
-  useEffect(() => {
-    getAIUsage().then(setUsage).catch(() => {});
-  }, []);
 
   /* ---------- derived ---------- */
 
@@ -222,7 +217,6 @@ export function AIAssistantClient() {
     try {
       const result = await sendAIMessage(newMessages, projectContext, mode);
       setMessages([...newMessages, { role: "assistant", content: result.message }]);
-      setUsage(result.usage);
     } catch (err: any) {
       const errMsg: string = err?.message ?? "";
 
@@ -232,7 +226,7 @@ export function AIAssistantClient() {
           {
             role: "assistant",
             content:
-              "The AI assistant is not yet configured. To enable it:\n\n1. Deploy a Cloud Function or API endpoint that proxies calls to the Anthropic API\n2. Set NEXT_PUBLIC_AI_ENDPOINT in your environment variables\n\nIn the meantime, you can find construction guidance in the Learn section.",
+              "The AI assistant is not yet configured. To enable it, add your CLAUDE_API_KEY as an environment variable in your Vercel project settings and redeploy.\n\nIn the meantime, you can find construction guidance in the Learn section.",
           },
         ]);
       } else if (errMsg.startsWith("RATE_LIMITED:")) {
@@ -274,7 +268,7 @@ export function AIAssistantClient() {
         title="AI Assistant"
         projectName={project?.name}
         projectId={projectId}
-        subtitle={usage ? `${usage.used}/${usage.limit} queries today` : undefined}
+        subtitle="Ask anything about your project"
       />
 
       {/* Mode selector */}
