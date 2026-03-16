@@ -27,6 +27,7 @@ import {
   Globe,
   ChevronLeft,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface NavItem {
   id: string;
@@ -275,6 +276,7 @@ export function Sidebar({
                   <p className="text-[12px] text-warm truncate">{userName}</p>
                   <p className="text-[10px] text-sand/35">{planLabel}</p>
                 </div>
+                <ThemeToggle />
                 {onSignOut && (
                   <button
                     onClick={onSignOut}
