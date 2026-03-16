@@ -45,7 +45,6 @@ import {
   getEducationForPhase,
   getTradesForPhase,
   getTemplatesForPhase,
-  formatCurrency,
   formatCurrencyCompact,
   PHASE_ORDER,
 } from "@keystone/market-data";
@@ -55,14 +54,11 @@ import {
   ClipboardList,
   DollarSign,
   FileText,
-  Plus,
   CalendarCheck,
   Users,
-  CheckCircle2,
   ShieldCheck,
   Home,
   TrendingUp,
-  AlertTriangle,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------

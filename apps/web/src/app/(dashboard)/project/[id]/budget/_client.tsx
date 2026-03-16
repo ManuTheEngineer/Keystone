@@ -14,8 +14,27 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCard } from "@/components/ui/StatCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 import { CostRangeBar } from "@/components/ui/CostRangeBar";
-import { Plus, Download } from "lucide-react";
+import { BudgetDonutChart } from "@/components/charts";
+import {
+  Plus,
+  Download,
+  ChevronDown,
+  ChevronUp,
+  SquareStack,
+  Layers,
+  LayoutGrid,
+  Droplets,
+  Zap,
+  Wind,
+  Paintbrush,
+  Home,
+  Shield,
+  Receipt,
+  Hammer,
+  Package,
+} from "lucide-react";
 import {
   getMarketData,
   getCostBenchmarks,
@@ -23,6 +42,50 @@ import {
   formatCurrencyCompact,
 } from "@keystone/market-data";
 import type { Market, PropertyType, CostBenchmark } from "@keystone/market-data";
+
+// ---------------------------------------------------------------------------
+// Category icon mapping
+// ---------------------------------------------------------------------------
+
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  "site prep": SquareStack,
+  "site work": SquareStack,
+  "foundation": Layers,
+  "framing": LayoutGrid,
+  "plumbing": Droplets,
+  "rough-in": Droplets,
+  "electrical": Zap,
+  "hvac": Wind,
+  "insulation": Package,
+  "insulation/drywall": Package,
+  "interior finishes": Paintbrush,
+  "interior": Paintbrush,
+  "exterior": Home,
+  "envelope": Shield,
+  "roofing": Home,
+  "permits": Receipt,
+  "permits/fees": Receipt,
+  "contingency": Shield,
+};
+
+function getCategoryIcon(category: string): React.ElementType {
+  const lower = category.toLowerCase();
+  for (const [key, icon] of Object.entries(CATEGORY_ICONS)) {
+    if (lower.includes(key)) return icon;
+  }
+  return Hammer;
+}
+
+function getStatusInfo(item: BudgetItemData): { label: string; variant: "success" | "danger" | "info" | "warning" } {
+  if (item.status === "over") return { label: "Over budget", variant: "danger" };
+  if (item.status === "on-track") return { label: "On track", variant: "success" };
+  if (item.status === "under") return { label: "Under budget", variant: "info" };
+  return { label: "Not started", variant: "warning" };
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 
 export function BudgetClient() {
   const params = useParams();
@@ -32,6 +95,7 @@ export function BudgetClient() {
   const [items, setItems] = useState<BudgetItemData[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [showBenchmarks, setShowBenchmarks] = useState(false);
+  const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const [estimated, setEstimated] = useState("");
   const [actual, setActual] = useState("");
@@ -64,9 +128,17 @@ export function BudgetClient() {
   const fmtCompact = (amount: number) => formatCurrencyCompact(amount, marketData.currency);
 
   const remaining = project.totalBudget - project.totalSpent;
-  const variance = project.totalBudget > 0
-    ? (((project.totalSpent - project.totalBudget) / project.totalBudget) * 100).toFixed(1)
-    : "0";
+  const varianceNum = project.totalBudget > 0
+    ? ((project.totalSpent - project.totalBudget) / project.totalBudget) * 100
+    : 0;
+  const variance = varianceNum.toFixed(1);
+  const budgetUtilization = project.totalBudget > 0
+    ? Math.round((project.totalSpent / project.totalBudget) * 100)
+    : 0;
+  const utilizationColor =
+    budgetUtilization > 95 ? "var(--color-danger)" :
+    budgetUtilization > 80 ? "var(--color-warning)" :
+    "var(--color-success)";
 
   function findBenchmark(cat: string): CostBenchmark | undefined {
     return benchmarks.find(
@@ -119,30 +191,60 @@ export function BudgetClient() {
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
-        <StatCard value={fmtCompact(project.totalBudget)} label="Total budget" />
-        <StatCard value={fmtCompact(project.totalSpent)} label="Spent to date" />
-        <StatCard value={fmtCompact(remaining)} label="Remaining" />
-        <StatCard value={`${variance}%`} label="Variance" />
-      </div>
-
-      <div className="mb-4">
-        <div className="flex justify-between text-[9px] text-muted mb-1">
-          <span>Budget utilization</span>
-          <span className="font-data">{project.totalBudget > 0 ? Math.round((project.totalSpent / project.totalBudget) * 100) : 0}%</span>
-        </div>
-        <ProgressBar
-          value={project.totalBudget > 0 ? Math.round((project.totalSpent / project.totalBudget) * 100) : 0}
-          color={project.totalSpent > project.totalBudget * 0.9 ? "var(--color-danger)" : "var(--color-success)"}
+      {/* ================================================================= */}
+      {/* TOP SECTION: Visual summary                                       */}
+      {/* ================================================================= */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        {/* Budget donut chart */}
+        <BudgetDonutChart
+          items={items.map((b) => ({
+            category: b.category,
+            amount: b.estimated,
+          }))}
+          total={project.totalBudget}
+          currency={marketData.currency}
         />
+
+        {/* Stat cards */}
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard value={fmtCompact(project.totalBudget)} label="Total budget" />
+            <StatCard value={fmtCompact(project.totalSpent)} label="Spent to date" />
+            <StatCard value={fmtCompact(remaining)} label="Remaining" />
+            <StatCard
+              value={`${variance}%`}
+              label="Variance"
+              valueClassName={varianceNum > 0 ? "text-danger" : varianceNum < -5 ? "text-info" : ""}
+            />
+          </div>
+
+          {/* Budget utilization bar */}
+          <Card padding="md">
+            <div className="flex justify-between text-[10px] text-muted mb-1.5">
+              <span>Budget utilization</span>
+              <span className="font-data">{budgetUtilization}%</span>
+            </div>
+            <ProgressBar value={budgetUtilization} color={utilizationColor} height={6} />
+            <div className="flex justify-between text-[9px] mt-1.5">
+              <span className="text-muted">
+                {budgetUtilization <= 80 ? "Healthy" : budgetUtilization <= 95 ? "Watch" : "Critical"}
+              </span>
+              <span className="text-muted font-data">{fmtCompact(project.totalSpent)} / {fmtCompact(project.totalBudget)}</span>
+            </div>
+          </Card>
+        </div>
       </div>
 
-      {/* Market benchmarks toggle */}
+      {/* ================================================================= */}
+      {/* MIDDLE SECTION: Category cards                                    */}
+      {/* ================================================================= */}
+
+      {/* Market benchmarks prompt (when no items) */}
       {items.length === 0 && benchmarks.length > 0 && (
         <Card padding="md" className="mb-4 text-center">
           <p className="text-[12px] text-earth font-medium mb-1">Start with market benchmarks?</p>
           <p className="text-[11px] text-muted mb-3">
-            Pre-fill your budget with typical {market === "USA" ? "per-sqft" : "per-sqm"} cost ranges for {market === "USA" ? "US" : "Togo"} residential construction.
+            Pre-fill your budget with typical {market === "USA" ? "per-sqft" : "per-sqm"} cost ranges for {market === "USA" ? "US" : "Togolese"} residential construction.
           </p>
           <button
             onClick={handleLoadBenchmarks}
@@ -155,9 +257,10 @@ export function BudgetClient() {
         </Card>
       )}
 
-      <div className="flex items-center justify-between mb-2">
-        <SectionLabel>Budget line items</SectionLabel>
-        <div className="flex items-center gap-2">
+      {/* Controls bar */}
+      <div className="flex items-center justify-between mb-3">
+        <SectionLabel>Budget Categories</SectionLabel>
+        <div className="flex items-center gap-3">
           {items.length > 0 && benchmarks.length > 0 && (
             <button
               onClick={() => setShowBenchmarks((p) => !p)}
@@ -166,15 +269,25 @@ export function BudgetClient() {
               {showBenchmarks ? "Hide ranges" : "Show typical ranges"}
             </button>
           )}
-          <span
+          {items.length > 0 && (
+            <button
+              onClick={handleLoadBenchmarks}
+              disabled={loadingBenchmarks}
+              className="text-[10px] text-info hover:underline cursor-pointer disabled:opacity-40"
+            >
+              {loadingBenchmarks ? "Loading..." : "Load benchmarks"}
+            </button>
+          )}
+          <button
             className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
             onClick={() => setShowForm(true)}
           >
             <Plus size={12} /> Add item
-          </span>
+          </button>
         </div>
       </div>
 
+      {/* Add item form */}
       {showForm && (
         <Card padding="md" className="mb-3">
           <div className="space-y-3">
@@ -229,62 +342,200 @@ export function BudgetClient() {
         </Card>
       )}
 
+      {/* Category cards grid */}
       {items.length === 0 && !showForm ? (
-        <Card padding="md" className="text-center">
+        <Card padding="md" className="text-center mb-24">
           <p className="text-[12px] text-muted">No budget items yet. Add line items or load market benchmarks to get started.</p>
         </Card>
       ) : (
-        <Card padding="sm">
-          {items.map((item, i) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-24">
+          {items.map((item) => {
             const benchmark = findBenchmark(item.category);
-            const statusColor = item.status === "over" ? "text-danger" : item.status === "on-track" ? "text-success" : "text-muted";
+            const statusInfo = getStatusInfo(item);
+            const IconComponent = getCategoryIcon(item.category);
+            const isExpanded = expandedItem === item.id;
+            const itemProgress = item.estimated > 0
+              ? Math.min(Math.round((item.actual / item.estimated) * 100), 150)
+              : 0;
+            const progressColor =
+              item.actual > item.estimated ? "var(--color-danger)" :
+              item.actual > item.estimated * 0.8 ? "var(--color-warning)" :
+              "var(--color-success)";
 
             return (
-              <div
+              <Card
                 key={item.id}
-                className={`py-2.5 ${i < items.length - 1 ? "border-b border-border" : ""}`}
+                padding="sm"
+                className="cursor-pointer hover:shadow-sm transition-shadow"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-medium text-earth">{item.category}</span>
-                  <span className={`text-[10px] font-medium ${statusColor}`}>
-                    {item.status === "over" ? "Over budget" : item.status === "on-track" ? "On track" : item.status === "under" ? "Under budget" : "Not started"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4 mt-1 text-[11px] font-data">
-                  <span className="text-muted">Est: {fmt(item.estimated)}</span>
-                  <span className="text-earth">Actual: {fmt(item.actual)}</span>
-                  {item.actual > 0 && (
-                    <span className={item.actual > item.estimated ? "text-danger" : "text-success"}>
-                      {item.actual > item.estimated ? "+" : ""}{fmt(item.actual - item.estimated)}
-                    </span>
+                <div
+                  onClick={() => setExpandedItem(isExpanded ? null : item.id ?? null)}
+                >
+                  {/* Header row */}
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className="w-8 h-8 rounded-[var(--radius)] bg-warm flex items-center justify-center shrink-0">
+                      <IconComponent size={16} className="text-clay" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[12px] font-medium text-earth">{item.category}</span>
+                        <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Estimated vs Actual */}
+                  <div className="flex items-center justify-between text-[11px] font-data mb-1.5">
+                    <span className="text-muted">Est: {fmt(item.estimated)}</span>
+                    <span className="text-earth">Actual: {fmt(item.actual)}</span>
+                  </div>
+
+                  {/* Mini progress bar */}
+                  <ProgressBar
+                    value={Math.min(itemProgress, 100)}
+                    color={progressColor}
+                    height={3}
+                  />
+                  <div className="flex justify-between text-[9px] mt-1">
+                    <span className="text-muted font-data">{Math.min(itemProgress, 100)}%</span>
+                    {item.actual > 0 && (
+                      <span className={item.actual > item.estimated ? "text-danger font-data" : "text-success font-data"}>
+                        {item.actual > item.estimated ? "+" : ""}{fmt(item.actual - item.estimated)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Benchmark range indicator */}
+                  {benchmark && !isExpanded && (
+                    <div className="mt-2 flex items-center gap-2 text-[9px] text-muted">
+                      <span>Market range:</span>
+                      <span className="font-data">{fmtCompact(benchmark.lowRange)} - {fmtCompact(benchmark.highRange)}</span>
+                      {item.estimated > 0 && item.estimated >= benchmark.lowRange && item.estimated <= benchmark.highRange && (
+                        <span className="text-success">Within range</span>
+                      )}
+                      {item.estimated > 0 && item.estimated > benchmark.highRange && (
+                        <span className="text-danger">Above range</span>
+                      )}
+                      {item.estimated > 0 && item.estimated < benchmark.lowRange && (
+                        <span className="text-info">Below range</span>
+                      )}
+                    </div>
                   )}
+
+                  {/* Expand chevron */}
+                  <div className="flex justify-center mt-1">
+                    {isExpanded ? (
+                      <ChevronUp size={14} className="text-muted" />
+                    ) : (
+                      <ChevronDown size={14} className="text-muted" />
+                    )}
+                  </div>
                 </div>
-                {showBenchmarks && benchmark && (
-                  <div className="mt-2">
-                    <CostRangeBar
-                      low={benchmark.lowRange}
-                      mid={benchmark.midRange}
-                      high={benchmark.highRange}
-                      actual={item.estimated > 0 ? item.estimated : undefined}
-                      currency={marketData.currency}
-                    />
-                    <p className="text-[9px] text-muted mt-0.5">{benchmark.notes}</p>
+
+                {/* Expanded details */}
+                {isExpanded && (
+                  <div className="mt-2 pt-2 border-t border-border">
+                    {/* Cost range bar */}
+                    {showBenchmarks && benchmark && (
+                      <div className="mb-3">
+                        <CostRangeBar
+                          low={benchmark.lowRange}
+                          mid={benchmark.midRange}
+                          high={benchmark.highRange}
+                          actual={item.estimated > 0 ? item.estimated : undefined}
+                          currency={marketData.currency}
+                        />
+                        <p className="text-[9px] text-muted mt-0.5">{benchmark.notes}</p>
+                      </div>
+                    )}
+
+                    {/* Detailed breakdown */}
+                    <div className="space-y-1.5 text-[11px]">
+                      <div className="flex justify-between">
+                        <span className="text-muted">Estimated</span>
+                        <span className="font-data text-earth">{fmt(item.estimated)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted">Actual spent</span>
+                        <span className="font-data text-earth">{fmt(item.actual)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted">Variance</span>
+                        <span className={`font-data ${item.actual > item.estimated ? "text-danger" : "text-success"}`}>
+                          {item.actual > item.estimated ? "+" : ""}{fmt(item.actual - item.estimated)}
+                        </span>
+                      </div>
+                      {benchmark && (
+                        <>
+                          <div className="border-t border-border pt-1.5 mt-1.5">
+                            <div className="flex justify-between">
+                              <span className="text-muted">Market low</span>
+                              <span className="font-data text-muted">{fmt(benchmark.lowRange)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted">Market mid</span>
+                              <span className="font-data text-muted">{fmt(benchmark.midRange)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted">Market high</span>
+                              <span className="font-data text-muted">{fmt(benchmark.highRange)}</span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })}
-        </Card>
+        </div>
       )}
 
-      <div className="mt-4 p-4 rounded-[var(--radius)] bg-emerald-50 border border-emerald-200 text-[12px] text-emerald-800 leading-relaxed">
+      {/* ================================================================= */}
+      {/* Education callout                                                 */}
+      {/* ================================================================= */}
+      <div className="mb-24 p-4 rounded-[var(--radius)] bg-emerald-50 border border-emerald-200 text-[12px] text-emerald-800 leading-relaxed">
         <p className="font-semibold mb-1">Understanding your budget</p>
         <p>
           Every financial calculation should be auditable. The estimated column shows your planned cost,
           the actual column shows what you have spent. Toggle &quot;Show typical ranges&quot; to see how your
           estimates compare to market benchmarks for {market === "USA" ? "US" : "Togolese"} residential construction.
-          The low-mid-high range bar shows where your estimate falls relative to typical costs{market === "USA" ? " per square foot" : " per square meter"}.
+          Each category card shows a progress bar comparing actual spend against estimates. Click a card
+          to see detailed variance and market benchmark comparisons.
         </p>
+      </div>
+
+      {/* ================================================================= */}
+      {/* FLOATING STICKY BAR                                               */}
+      {/* ================================================================= */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-earth border-t border-earth-light">
+        <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div>
+              <p className="text-[9px] text-warm/60 uppercase tracking-wider">Total Budget</p>
+              <p className="font-data text-sm text-warm font-medium">{fmtCompact(project.totalBudget)}</p>
+            </div>
+            <div>
+              <p className="text-[9px] text-warm/60 uppercase tracking-wider">Spent</p>
+              <p className="font-data text-sm text-warm font-medium">{fmtCompact(project.totalSpent)}</p>
+            </div>
+            <div>
+              <p className="text-[9px] text-warm/60 uppercase tracking-wider">Remaining</p>
+              <p className={`font-data text-sm font-medium ${remaining >= 0 ? "text-warm" : "text-danger"}`}>
+                {fmtCompact(remaining)}
+              </p>
+            </div>
+          </div>
+          <div>
+            <p className="text-[9px] text-warm/60 uppercase tracking-wider">Contingency</p>
+            <p className="font-data text-sm text-warm font-medium">
+              {project.totalBudget > 0
+                ? `${Math.round(((project.totalBudget - project.totalSpent) / project.totalBudget) * 100)}%`
+                : "--"}
+            </p>
+          </div>
+        </div>
       </div>
     </>
   );

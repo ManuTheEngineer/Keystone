@@ -456,6 +456,49 @@ export async function updatePunchListItem(
   await update(ref(db, `punchListItems/${projectId}/${itemId}`), data);
 }
 
+// --- Materials ---
+
+export interface MaterialData {
+  id?: string;
+  projectId: string;
+  name: string;
+  quantityOrdered: number;
+  quantityDelivered: number;
+  unitPrice: number;
+  supplier?: string;
+  status: "ordered" | "partial" | "delivered" | "verified";
+  createdAt: string;
+}
+
+export async function addMaterial(data: Omit<MaterialData, "id" | "createdAt">): Promise<string> {
+  const materialRef = push(ref(db, `materials/${data.projectId}`));
+  await set(materialRef, { ...data, createdAt: new Date().toISOString() });
+  return materialRef.key!;
+}
+
+export function subscribeToMaterials(
+  projectId: string,
+  callback: (materials: MaterialData[]) => void
+): Unsubscribe {
+  return onValue(ref(db, `materials/${projectId}`), (snapshot) => {
+    const materials: MaterialData[] = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        materials.push({ id: child.key!, ...child.val() });
+      });
+    }
+    callback(materials);
+  });
+}
+
+export async function updateMaterial(
+  projectId: string,
+  materialId: string,
+  data: Partial<MaterialData>
+): Promise<void> {
+  await update(ref(db, `materials/${projectId}/${materialId}`), data);
+}
+
 // --- Seed demo data ---
 
 export async function seedDemoProject(userId: string): Promise<string> {

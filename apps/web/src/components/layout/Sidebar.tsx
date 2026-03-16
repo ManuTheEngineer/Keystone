@@ -18,6 +18,7 @@ import {
   ClipboardCheck,
   ListChecks,
   HelpCircle,
+  Eye,
   X,
   LogOut,
   Globe,
@@ -48,6 +49,7 @@ const projectNav: NavItem[] = [
   { id: "inspections", label: "Inspections", icon: <ClipboardCheck size={16} /> },
   { id: "punch-list", label: "Punch list", icon: <ListChecks size={16} /> },
   { id: "ai-assistant", label: "AI assistant", icon: <HelpCircle size={16} /> },
+  { id: "monitor", label: "Monitor", icon: <Eye size={16} /> },
 ];
 
 interface SidebarProps {
