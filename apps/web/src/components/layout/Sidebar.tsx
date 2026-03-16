@@ -48,7 +48,6 @@ const mainNav = makeNav([
   { id: "dashboard", label: "Dashboard", Icon: LayoutGrid },
   { id: "new-project", label: "New project", Icon: Plus },
   { id: "learn", label: "Learn", Icon: BookOpen },
-  { id: "settings", label: "Settings", Icon: Settings },
 ]);
 
 const projectNav = makeNav([
@@ -243,31 +242,51 @@ export function Sidebar({
           </button>
         </div>
 
-        {/* User footer */}
+        {/* Settings + User footer */}
         <div
-          className={`px-3 py-3.5 flex items-center ${collapsed ? "justify-center" : "gap-2.5 px-5"}`}
+          className="mt-auto"
           style={{ borderTop: "1px solid transparent", borderImage: "linear-gradient(90deg, transparent, rgba(212,165,116,0.15), transparent) 1" }}
         >
-          <div className="w-8 h-8 rounded-full bg-sand/15 flex items-center justify-center text-[11px] font-semibold text-sand flex-shrink-0">
-            {initials}
+          {/* Settings link */}
+          <button
+            onClick={() => { onNavigate("settings"); onClose(); }}
+            className={`
+              w-full flex items-center gap-2.5 px-5 py-2 text-[13px]
+              border-l-[3px] rounded-r-sm transition-all duration-150
+              ${activeSection === "settings"
+                ? "opacity-100 bg-emerald-500/8 border-l-emerald-500 text-warm"
+                : "opacity-50 border-l-transparent text-sand hover:opacity-80 hover:bg-sand/5 hover:border-l-[2px] hover:border-l-sand/30"
+              }
+              ${collapsed ? "justify-center px-0" : ""}
+            `}
+          >
+            <Settings size={18} />
+            {!collapsed && "Settings"}
+          </button>
+
+          {/* User profile */}
+          <div className={`px-3 py-3 flex items-center ${collapsed ? "justify-center" : "gap-2.5 px-5"}`}>
+            <div className="w-8 h-8 rounded-full bg-sand/15 flex items-center justify-center text-[11px] font-semibold text-sand flex-shrink-0">
+              {initials}
+            </div>
+            {!collapsed && (
+              <>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] text-warm truncate">{userName}</p>
+                  <p className="text-[10px] text-sand/35">{planLabel}</p>
+                </div>
+                {onSignOut && (
+                  <button
+                    onClick={onSignOut}
+                    className="p-1.5 rounded text-sand/40 hover:text-sand/80 transition-colors"
+                    title="Sign out"
+                  >
+                    <LogOut size={14} />
+                  </button>
+                )}
+              </>
+            )}
           </div>
-          {!collapsed && (
-            <>
-              <div className="flex-1 min-w-0">
-                <p className="text-[12px] text-warm truncate">{userName}</p>
-                <p className="text-[10px] text-sand/35">{planLabel}</p>
-              </div>
-              {onSignOut && (
-                <button
-                  onClick={onSignOut}
-                  className="p-1.5 rounded text-sand/40 hover:text-sand/80 transition-colors"
-                  title="Sign out"
-                >
-                  <LogOut size={14} />
-                </button>
-              )}
-            </>
-          )}
         </div>
       </aside>
     </>

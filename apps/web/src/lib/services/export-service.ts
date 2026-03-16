@@ -61,47 +61,38 @@ function downloadFile(content: string, filename: string, mimeType: string): void
 // Print window helper using DOM manipulation (no document.write)
 // ---------------------------------------------------------------------------
 
-function openPrintWindow(htmlContent: string, title: string): void {
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) return;
+function openPrintWindow(htmlContent: string, _title: string): void {
+  // Use a hidden iframe to avoid popup blockers
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "none";
+  document.body.appendChild(iframe);
 
-  const doc = printWindow.document;
+  const doc = iframe.contentDocument;
+  if (!doc) {
+    document.body.removeChild(iframe);
+    // Fallback: download as HTML file
+    downloadFile(htmlContent, `${_title}.html`, "text/html");
+    return;
+  }
+
   doc.open();
-
-  // Build the document using DOM APIs
-  const doctype = doc.implementation.createDocumentType("html", "", "");
-  if (doc.doctype) {
-    doc.replaceChild(doctype, doc.doctype);
-  }
-
-  doc.title = title;
-
-  // Parse the HTML content safely by setting innerHTML on the root
-  const parser = new DOMParser();
-  const parsed = parser.parseFromString(htmlContent, "text/html");
-
-  // Clear and rebuild head
-  while (doc.head.firstChild) {
-    doc.head.removeChild(doc.head.firstChild);
-  }
-  Array.from(parsed.head.childNodes).forEach((node) => {
-    doc.head.appendChild(doc.importNode(node, true));
-  });
-
-  // Clear and rebuild body
-  while (doc.body.firstChild) {
-    doc.body.removeChild(doc.body.firstChild);
-  }
-  Array.from(parsed.body.childNodes).forEach((node) => {
-    doc.body.appendChild(doc.importNode(node, true));
-  });
-
+  doc.write(htmlContent);
   doc.close();
 
-  // Trigger print after a brief delay for rendering
+  // Wait for content to render then print
   setTimeout(() => {
-    printWindow.print();
+    iframe.contentWindow?.print();
+    // Clean up after print dialog closes
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 1000);
   }, 500);
+
 }
 
 // ---------------------------------------------------------------------------
