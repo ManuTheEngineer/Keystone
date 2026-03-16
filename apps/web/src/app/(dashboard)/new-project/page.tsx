@@ -658,6 +658,10 @@ export default function NewProjectPage() {
             </button>
           ))}
         </div>
+
+        <MentorTip>
+          Your goal shapes everything. Building to sell requires tighter cost control for profit margins. Building to rent means optimizing for long-term cash flow. Building to occupy lets you prioritize what matters most to you.
+        </MentorTip>
       </div>
     );
   }
@@ -717,6 +721,10 @@ export default function NewProjectPage() {
             </div>
           </div>
         )}
+
+        <MentorTip>
+          Each market has fundamentally different construction methods, costs, and regulations. USA uses wood-frame construction with institutional lending. West Africa uses reinforced concrete with cash-based phased funding.
+        </MentorTip>
       </div>
     );
   }
@@ -909,6 +917,10 @@ export default function NewProjectPage() {
             </button>
           ))}
         </div>
+
+        <MentorTip>
+          Start simple. A single-family home is the most forgiving for first-time builders. Multi-unit properties multiply complexity — every unit needs its own kitchen, bathroom, and utility connections.
+        </MentorTip>
       </div>
     );
   }
@@ -989,8 +1001,18 @@ export default function NewProjectPage() {
             <p className="text-[10px] text-emerald-600 mt-1">
               Based on market benchmarks for {getBuildingSize(state).toLocaleString()} {sizeUnit}{locationData ? `, adjusted for ${locationData.city} (${locationData.costIndex.toFixed(2)}x cost index)` : ""}. Actual costs vary by finishes and site conditions.
             </p>
+            {getBuildingSize(state) > 0 && (
+              <p className="text-[11px] text-muted mt-1">
+                That is approximately {formatCurrencyCompact(constructionCostNow / getBuildingSize(state), currency)} per {sizeUnit === "sqm" ? "sqm" : "sqft"} —{" "}
+                {locationData?.costIndex && locationData.costIndex > 1.1 ? "above average for the broader market" : locationData?.costIndex && locationData.costIndex < 0.9 ? "below average for the broader market" : "within the typical range"}
+              </p>
+            )}
           </div>
         )}
+
+        <MentorTip>
+          Bigger is not always better. Every extra square foot adds cost to build, heat, cool, and maintain. Choose the size that matches your budget and goals — you can always expand later.
+        </MentorTip>
       </div>
     );
   }
@@ -1141,6 +1163,13 @@ export default function NewProjectPage() {
             </div>
           </div>
         )}
+
+        <MentorTip>
+          {isUSA
+            ? "A construction loan typically requires 20-25% down and converts to a mortgage when building is complete. Your debt-to-income ratio (DTI) — the percentage of your monthly income going to debt payments — must usually be below 43% to qualify."
+            : "Phased cash funding means you build as money is available. This avoids interest costs but extends your timeline. Budget carefully — running out of funds mid-construction is the most expensive mistake."
+          }
+        </MentorTip>
       </div>
     );
   }
@@ -1193,6 +1222,15 @@ export default function NewProjectPage() {
                     <span className="text-[10px] text-muted ml-2">{row.pct.toFixed(0)}%</span>
                   </div>
                 </div>
+                {row.label === "Soft costs (permits, design, fees)" && (
+                  <p className="text-[10px] text-muted mt-0.5">Architectural design, engineering, permits, survey, and professional inspections.</p>
+                )}
+                {row.label === "Contingency (15%)" && (
+                  <p className="text-[10px] text-muted mt-0.5">A safety buffer for unexpected costs. Industry standard is 10-20%. Never build without one.</p>
+                )}
+                {row.label === "Financing costs" && row.value > 0 && (
+                  <p className="text-[10px] text-muted mt-0.5">Interest and fees paid to your lender during construction. Cash buyers pay zero here.</p>
+                )}
                 <ExpandableDetail label="How we calculated this">
                   {row.detail}
                 </ExpandableDetail>
@@ -1207,6 +1245,23 @@ export default function NewProjectPage() {
               <span className="text-[18px] font-data font-bold text-earth">{formatCurrency(costs.total, currency)}</span>
             </div>
           </div>
+
+          {/* What this means summary */}
+          {costs.total > 0 && (
+            <div className="mt-3 p-3 rounded-xl bg-warm/30 border border-sand/20">
+              <p className="text-[12px] text-earth leading-relaxed">
+                <span className="font-semibold">In plain terms:</span> You will need approximately {formatCurrencyCompact(costs.total, currency)} to complete this build.
+                {costs.land > 0 && ` About ${Math.round((costs.land / costs.total) * 100)}% goes to land.`}
+                {` Construction is the biggest cost at ${Math.round((costs.construction / costs.total) * 100)}%.`}
+                {costs.financing > 0 && ` Financing adds ${Math.round((costs.financing / costs.total) * 100)}% to your total.`}
+                {` Your ${Math.round((costs.contingency / costs.total) * 100)}% contingency of ${formatCurrencyCompact(costs.contingency, currency)} protects against surprises.`}
+              </p>
+            </div>
+          )}
+
+          <MentorTip>
+            These estimates use conservative market averages. Actual costs depend on your specific site, materials chosen, and local labor rates. The 15% contingency is your safety buffer — never skip it.
+          </MentorTip>
 
           {/* Revenue projection */}
           {revenueProjection && (
@@ -1330,6 +1385,10 @@ export default function NewProjectPage() {
               <p className="text-[13px] text-earth">The numbers need work. You can go back and adjust your assumptions, or continue anyway.</p>
             </div>
           )}
+
+          <MentorTip>
+            A score above 70 means the numbers are solid. Between 50-70, proceed with caution and review the weak areas. Below 50, consider adjusting your assumptions before committing real money.
+          </MentorTip>
         </div>
       </div>
     );
