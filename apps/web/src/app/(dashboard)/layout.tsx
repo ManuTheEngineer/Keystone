@@ -12,6 +12,7 @@ import { signOut } from "@/lib/services/auth-service";
 import { subscribeToUserProjects, subscribeToPunchListItems, subscribeToTasks, type ProjectData } from "@/lib/services/project-service";
 import { LocaleContext } from "@/lib/hooks/use-locale";
 import { getLocaleForMarket } from "@/lib/i18n";
+import { AIMentor } from "@/components/ui/AIMentor";
 
 interface DashboardContextValue {
   setTopbar: (title: string, badge?: string, badgeVariant?: "success" | "warning" | "info" | "danger") => void;
@@ -128,6 +129,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <main className="flex-1 p-5 overflow-y-auto">
               {children}
             </main>
+            <AIMentor
+              page={activeSection}
+              project={currentProject ?? undefined}
+            />
           </div>
         </div>
         </LocaleContext.Provider>
@@ -139,6 +144,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 function getActiveSectionFromPath(pathname: string): string {
   if (pathname === "/" || pathname === "/dashboard") return "dashboard";
   if (pathname.includes("/new-project")) return "new-project";
+  if (pathname.includes("/deal-analyzer")) return "deal-analyzer";
   if (pathname.includes("/learn")) return "learn";
   if (pathname.includes("/settings")) return "settings";
   if (pathname.includes("/overview")) return "overview";
@@ -178,6 +184,7 @@ function sectionToRoute(section: string, currentProjectId: string | null): strin
   };
   if (projectRoutes[section]) return projectRoutes[section];
   if (section === "new-project") return "/new-project";
+  if (section === "deal-analyzer") return "/deal-analyzer";
   if (section === "learn") return "/learn";
   if (section === "settings") return "/settings";
   return "/dashboard";
