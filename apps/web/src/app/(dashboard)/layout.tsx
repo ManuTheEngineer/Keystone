@@ -232,7 +232,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             projectMarket={currentProject?.market}
             badges={{ "punch-list": punchListCount, "overview": openTaskCount > 5 ? openTaskCount : 0 }}
           />
-          <div className={`${sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[240px]"} transition-all duration-300 flex flex-col min-h-screen`}>
+          <div className={`${sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[240px]"} transition-all duration-300 flex flex-col min-h-screen min-w-0`}>
             <Topbar
               title={topbarState.title}
               badge={topbarState.badge || undefined}
@@ -248,7 +248,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 You are offline. Changes will sync when connection is restored.
               </div>
             )}
-            <main className="flex-1 p-5 overflow-y-auto">
+            <main className="flex-1 p-5 overflow-y-auto min-w-0">
               {children}
             </main>
             <AIMentor

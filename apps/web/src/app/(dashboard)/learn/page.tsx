@@ -698,48 +698,19 @@ function DesktopJourneyMap({
   activePhase: ProjectPhase;
   onSelectPhase: (phase: ProjectPhase) => void;
 }) {
-  // Layout: two rows with a connecting path
-  // Row 1: DEFINE -> FINANCE -> LAND -> DESIGN -> APPROVE
-  // Row 2: ASSEMBLE -> BUILD -> VERIFY -> OPERATE (reversed visually to create the snake path)
-  const row1 = PHASE_ORDER.slice(0, 5);
-  const row2 = PHASE_ORDER.slice(5);
-
   return (
-    <div className="p-6 rounded-xl bg-surface border border-border">
-      {/* Row 1 */}
-      <div className="flex items-center justify-between mb-2">
-        {row1.map((phase, i) => (
-          <div key={phase} className="flex items-center">
+    <div className="px-6 py-5 rounded-xl bg-surface border border-border">
+      <div className="flex items-center justify-between">
+        {PHASE_ORDER.map((phase, i) => (
+          <div key={phase} className="flex items-center flex-1 last:flex-none">
             <PhaseNode
               phase={phase}
               isRead={readPhases.has(phase)}
               isActive={activePhase === phase}
               onClick={() => onSelectPhase(phase)}
             />
-            {i < row1.length - 1 && (
-              <div className="flex-1 min-w-8 h-px mx-2 border-t-2 border-dashed border-sand" />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Connector from row 1 to row 2 */}
-      <div className="flex justify-end pr-[42px] mb-2">
-        <div className="w-px h-8 border-l-2 border-dashed border-sand" />
-      </div>
-
-      {/* Row 2 */}
-      <div className="flex items-center gap-0 pl-[6%]">
-        {row2.map((phase, i) => (
-          <div key={phase} className="flex items-center">
-            <PhaseNode
-              phase={phase}
-              isRead={readPhases.has(phase)}
-              isActive={activePhase === phase}
-              onClick={() => onSelectPhase(phase)}
-            />
-            {i < row2.length - 1 && (
-              <div className="flex-1 min-w-8 h-px mx-2 border-t-2 border-dashed border-sand" />
+            {i < PHASE_ORDER.length - 1 && (
+              <div className="flex-1 min-w-4 h-px mx-1.5 border-t-2 border-dashed border-sand" />
             )}
           </div>
         ))}

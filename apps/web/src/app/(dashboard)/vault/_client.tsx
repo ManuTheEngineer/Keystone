@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useTopbar } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -106,10 +106,30 @@ interface KebabMenuProps {
 
 function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete }: KebabMenuProps) {
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 180;
+      const menuHeight = 220; // approximate height
+      let top = rect.bottom + 4;
+      let left = rect.right - menuWidth;
+      // If menu would go below viewport, open upward
+      if (top + menuHeight > window.innerHeight) {
+        top = rect.top - menuHeight - 4;
+      }
+      // Keep within left edge
+      if (left < 8) left = 8;
+      setMenuPos({ top, left });
+    }
+  }, [open]);
 
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -126,7 +146,10 @@ function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete }: Keba
             className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-full mt-1 w-[180px] bg-surface border border-border rounded-lg shadow-lg z-50 py-1">
+          <div
+            className="fixed w-[180px] bg-surface border border-border rounded-lg shadow-lg z-50 py-1"
+            style={{ top: menuPos.top, left: menuPos.left }}
+          >
             {/* Priority options */}
             <div className="px-3 py-1.5 text-[10px] uppercase tracking-[0.1em] text-muted font-medium">
               Set priority

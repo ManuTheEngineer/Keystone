@@ -133,6 +133,8 @@ function ProjectKebabMenu({
   const [deleteNameInput, setDeleteNameInput] = useState("");
   const [deleting, setDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
   // Click-outside listener
   useEffect(() => {
@@ -149,9 +151,26 @@ function ProjectKebabMenu({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
+  // Calculate fixed position when menu opens
+  useEffect(() => {
+    if (open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 220;
+      const menuHeight = 280;
+      let top = rect.bottom + 4;
+      let left = rect.right - menuWidth;
+      if (top + menuHeight > window.innerHeight) {
+        top = rect.top - menuHeight - 4;
+      }
+      if (left < 8) left = 8;
+      setMenuPos({ top, left });
+    }
+  }, [open]);
+
   return (
     <div className="relative" ref={menuRef}>
       <button
+        ref={buttonRef}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -166,7 +185,10 @@ function ProjectKebabMenu({
         <MoreVertical size={16} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-[220px] bg-surface border border-border rounded-lg shadow-lg z-50 py-1">
+        <div
+          className="fixed w-[220px] bg-surface border border-border rounded-lg shadow-lg z-50 py-1"
+          style={{ top: menuPos.top, left: menuPos.left }}
+        >
           {/* View project */}
           <a
             href={`/project/${project.id}/overview`}
