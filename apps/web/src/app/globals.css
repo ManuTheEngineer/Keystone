@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* === Mobile stability: prevent zoom, bounce, overscroll === */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
 @theme inline {
   /* === Brand Core === */
   --color-earth: #2C1810;

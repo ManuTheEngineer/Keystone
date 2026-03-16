@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Monitor } from "lucide-react";
+
+type ThemeMode = "light" | "dark" | "system";
 
 // Dark mode: ALL CSS variables that need to change.
-// Status colors are LIGHTER so they are readable on dark backgrounds.
-// Earth/clay/sand INVERT (dark bg needs light text).
-// Emerald shades become translucent for dark backgrounds.
 const DARK_VARS: Record<string, string> = {
   // Core backgrounds
   "--color-background": "#1A1412",
@@ -79,54 +78,78 @@ const DARK_VARS: Record<string, string> = {
 
 export { DARK_VARS };
 
+function resolveIsDark(mode: ThemeMode): boolean {
+  if (mode === "dark") return true;
+  if (mode === "light") return false;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+export function applyTheme(isDark: boolean) {
+  const root = document.documentElement;
+  if (isDark) {
+    root.classList.add("dark");
+    root.classList.remove("light");
+    Object.entries(DARK_VARS).forEach(([key, value]) => {
+      root.style.setProperty(key, value);
+    });
+    document.body.style.backgroundColor = "#1A1412";
+    document.body.style.color = "#E8DDD0";
+  } else {
+    root.classList.remove("dark");
+    root.classList.add("light");
+    Object.keys(DARK_VARS).forEach((key) => {
+      root.style.removeProperty(key);
+    });
+    document.body.style.backgroundColor = "";
+    document.body.style.color = "";
+  }
+}
+
 export function ThemeToggle() {
-  const [dark, setDark] = useState(false);
+  const [mode, setMode] = useState<ThemeMode>("system");
 
   useEffect(() => {
-    const stored = localStorage.getItem("keystone-theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const shouldBeDark = stored === "dark" || (stored !== "light" && prefersDark);
-    setDark(shouldBeDark);
-    applyTheme(shouldBeDark);
+    const stored = localStorage.getItem("keystone-theme") as ThemeMode | null;
+    const initial: ThemeMode = stored === "light" || stored === "dark" ? stored : "system";
+    setMode(initial);
+    applyTheme(resolveIsDark(initial));
   }, []);
 
-  function applyTheme(isDark: boolean) {
-    const root = document.documentElement;
-    if (isDark) {
-      root.classList.add("dark");
-      root.classList.remove("light");
-      Object.entries(DARK_VARS).forEach(([key, value]) => {
-        root.style.setProperty(key, value);
-      });
-      // Also override body bg directly for immediate effect
-      document.body.style.backgroundColor = "#1A1412";
-      document.body.style.color = "#E8DDD0";
-    } else {
-      root.classList.remove("dark");
-      root.classList.add("light");
-      Object.keys(DARK_VARS).forEach((key) => {
-        root.style.removeProperty(key);
-      });
-      document.body.style.backgroundColor = "";
-      document.body.style.color = "";
+  // Listen for system preference changes when in system mode
+  useEffect(() => {
+    if (mode !== "system") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    function onChange() {
+      applyTheme(mq.matches);
     }
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [mode]);
+
+  function cycle() {
+    const order: ThemeMode[] = ["light", "dark", "system"];
+    const next = order[(order.indexOf(mode) + 1) % order.length];
+    setMode(next);
+    localStorage.setItem("keystone-theme", next);
+    applyTheme(resolveIsDark(next));
   }
 
-  function toggle() {
-    const newDark = !dark;
-    setDark(newDark);
-    localStorage.setItem("keystone-theme", newDark ? "dark" : "light");
-    applyTheme(newDark);
-  }
+  const labels: Record<ThemeMode, string> = {
+    light: "Light mode (click for dark)",
+    dark: "Dark mode (click for system)",
+    system: "System theme (click for light)",
+  };
 
   return (
     <button
-      onClick={toggle}
+      onClick={cycle}
       className="p-1.5 rounded-lg transition-colors"
       style={{ color: "var(--color-sand)" }}
-      title={dark ? "Switch to light mode" : "Switch to dark mode"}
+      title={labels[mode]}
     >
-      {dark ? <Sun size={16} /> : <Moon size={16} />}
+      {mode === "light" && <Sun size={16} />}
+      {mode === "dark" && <Moon size={16} />}
+      {mode === "system" && <Monitor size={16} />}
     </button>
   );
 }
