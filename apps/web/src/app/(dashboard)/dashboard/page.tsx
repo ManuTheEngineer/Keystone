@@ -35,8 +35,6 @@ import {
   TrendingUp,
   FolderOpen,
   ArrowRight,
-  Sun,
-  Sunset,
   AlertTriangle,
   Clock,
   CheckCircle2,
@@ -44,6 +42,8 @@ import {
   DollarSign,
   Calendar,
   ClipboardCheck,
+  Download,
+  Lightbulb,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -287,7 +287,6 @@ function activityDotColor(type: ActivityItem["type"]): string {
 /* ------------------------------------------------------------------ */
 
 function getKeyMetric(project: ProjectData): { label: string; value: string; variant: "danger" | "warning" | "info" | "success" } {
-  // Budget overrun
   if (project.totalBudget > 0 && project.totalSpent > project.totalBudget * 0.95) {
     const overPct = Math.round(((project.totalSpent - project.totalBudget) / project.totalBudget) * 100);
     if (overPct > 0) {
@@ -296,7 +295,6 @@ function getKeyMetric(project: ProjectData): { label: string; value: string; var
     return { label: "Budget at limit", value: "95%+ spent", variant: "danger" };
   }
 
-  // Behind schedule
   if (project.totalWeeks > 0 && project.currentWeek > 0) {
     const expectedProgress = (project.currentWeek / project.totalWeeks) * 100;
     const behind = expectedProgress - project.progress;
@@ -306,12 +304,10 @@ function getKeyMetric(project: ProjectData): { label: string; value: string; var
     }
   }
 
-  // Open items
   if (project.openItems > 5) {
     return { label: "Open items", value: String(project.openItems), variant: "warning" };
   }
 
-  // Default: progress
   return { label: "Progress", value: `${project.progress}%`, variant: "success" };
 }
 
@@ -319,23 +315,55 @@ function getKeyMetric(project: ProjectData): { label: string; value: string; var
 /*  Next action suggestion                                            */
 /* ------------------------------------------------------------------ */
 
-function getNextAction(project: ProjectData): string {
-  if (project.currentPhase === 0) return "Define your project scope and requirements";
-  if (project.currentPhase === 1) return "Secure financing and set your budget";
-  if (project.currentPhase === 2) return "Complete land acquisition and title verification";
-  if (project.currentPhase === 3) return "Finalize architectural plans and specifications";
-  if (project.currentPhase === 4) return "Submit permit applications and get approvals";
-  if (project.currentPhase === 5) return "Hire contractors and assemble your build team";
+function getNextAction(project: ProjectData): { text: string; href: string } {
+  const id = project.id ?? "";
+  if (project.currentPhase === 0) return { text: "Define your project scope and requirements", href: `/project/${id}/overview` };
+  if (project.currentPhase === 1) return { text: "Secure financing and set your budget", href: `/project/${id}/budget` };
+  if (project.currentPhase === 2) return { text: "Complete land acquisition and title verification", href: `/project/${id}/documents` };
+  if (project.currentPhase === 3) return { text: "Finalize architectural plans and specifications", href: `/project/${id}/documents` };
+  if (project.currentPhase === 4) return { text: "Submit permit applications and get approvals", href: `/project/${id}/documents` };
+  if (project.currentPhase === 5) return { text: "Hire contractors and assemble your build team", href: `/project/${id}/team` };
   if (project.currentPhase === 6) {
-    if (project.progress < 30) return "Foundation and framing in progress";
-    if (project.progress < 50) return "Schedule rough-in inspections";
-    if (project.progress < 70) return "Complete mechanical systems and insulation";
-    if (project.progress < 90) return "Interior and exterior finishes underway";
-    return "Prepare for final inspection and walkthrough";
+    if (project.progress < 30) return { text: "Foundation and framing in progress", href: `/project/${id}/daily-log` };
+    if (project.progress < 50) return { text: "Schedule rough-in inspections", href: `/project/${id}/inspections` };
+    if (project.progress < 70) return { text: "Complete mechanical systems and insulation", href: `/project/${id}/daily-log` };
+    if (project.progress < 90) return { text: "Interior and exterior finishes underway", href: `/project/${id}/daily-log` };
+    return { text: "Prepare for final inspection and walkthrough", href: `/project/${id}/inspections` };
   }
-  if (project.currentPhase === 7) return "Complete final inspections and punch list";
-  if (project.currentPhase === 8) return "Manage property operations and maintenance";
-  return "Review project status";
+  if (project.currentPhase === 7) return { text: "Complete final inspections and punch list", href: `/project/${id}/punch-list` };
+  if (project.currentPhase === 8) return { text: "Manage property operations and maintenance", href: `/project/${id}/overview` };
+  return { text: "Review project status", href: `/project/${id}/overview` };
+}
+
+/* ------------------------------------------------------------------ */
+/*  AI Mentor tip based on project state                              */
+/* ------------------------------------------------------------------ */
+
+function getMentorTip(project: ProjectData | null): string {
+  if (!project) return "Start by creating your first project. Keystone will guide you through every phase of the build.";
+  const phase = project.currentPhase;
+  if (phase === 0) return "Take your time in the Define phase. A clear scope prevents costly changes later. Write down your must-haves versus nice-to-haves before setting a budget.";
+  if (phase === 1) return "Most first-time builders underestimate costs by 15-25%. Build a contingency of at least 15% into your budget from the start.";
+  if (phase === 2) return "Never skip a title search or boundary survey. Land disputes are the number one cause of construction project delays in both the US and West Africa.";
+  if (phase === 3) return "Review your plans with at least two contractors before finalizing. Their feedback on buildability can save you thousands in change orders.";
+  if (phase === 4) return "Permit timelines vary widely. Submit early and follow up weekly. A delayed permit delays everything downstream.";
+  if (phase === 5) return "Get at least three bids for every major trade. Check references and visit active job sites before signing contracts.";
+  if (phase === 6) {
+    if (project.progress < 50) return "Daily logs and progress photos are your best protection against disputes. Document everything, even when progress seems slow.";
+    return "You are past the halfway mark. Now is the time to review your punch list strategy and plan for final inspections.";
+  }
+  if (phase === 7) return "Do not rush the verification phase. Every punch list item resolved now prevents a callback after move-in.";
+  if (phase === 8) return "Track your actual costs against your original budget. This data becomes invaluable if you build again or advise others.";
+  return "Keep your project data up to date. Accurate records make every decision easier.";
+}
+
+/* ------------------------------------------------------------------ */
+/*  Market dot color for portfolio thumbnails                         */
+/* ------------------------------------------------------------------ */
+
+function marketDotColor(market: string): string {
+  if (market === "USA") return "bg-[var(--color-accent-usa)]";
+  return "bg-[var(--color-accent-wa)]";
 }
 
 /* ------------------------------------------------------------------ */
@@ -416,7 +444,7 @@ export default function DashboardPage() {
     });
   }, [projects]);
 
-  // Top 3 priority projects
+  // Top 3 priority projects (active only)
   const priorityProjects = useMemo(() => {
     return sortedProjects.filter((p) => p.status === "ACTIVE").slice(0, 3);
   }, [sortedProjects]);
@@ -516,10 +544,10 @@ export default function DashboardPage() {
     // Sort by urgency
     const urgencyOrder = { red: 0, yellow: 1, blue: 2 };
     items.sort((a, b) => urgencyOrder[a.urgency] - urgencyOrder[b.urgency]);
-    return items.slice(0, 8);
+    return items.slice(0, 6);
   }, [priorityProjects, projectTasks, projectPunchList]);
 
-  // Subscribe to recent activity across all projects
+  // Subscribe to recent activity across projects
   useEffect(() => {
     if (!user || projects.length === 0) {
       setActivities([]);
@@ -538,7 +566,6 @@ export default function DashboardPage() {
       setActivities(sorted.slice(0, 5));
     }
 
-    // Only subscribe to activity for priority projects to keep it lightweight
     const projectsToTrack = sortedProjects.slice(0, 5);
 
     for (const proj of projectsToTrack) {
@@ -555,7 +582,7 @@ export default function DashboardPage() {
             allActivities.set(`log-${pid}-${log.id}`, {
               id: `log-${pid}-${log.id}`,
               type: "daily-log",
-              text: `Daily log: Day ${log.day} -- ${log.weather}`,
+              text: `Daily log: Day ${log.day}`,
               projectName: pName,
               projectId: pid,
               timestamp: log.createdAt || log.date,
@@ -627,8 +654,7 @@ export default function DashboardPage() {
   const stats = useMemo(() => {
     const activeProjects = projects.filter((p) => p.status === "ACTIVE");
     const totalInvested = projects.reduce((sum, p) => sum + (p.totalSpent || 0), 0);
-    const openItems = projects.reduce((sum, p) => sum + (p.openItems || 0), 0);
-    return { activeCount: activeProjects.length, totalInvested, openItems };
+    return { activeCount: activeProjects.length, totalInvested };
   }, [projects]);
 
   const handlePriorityChange = useCallback(async (projectId: string, priority: number | null) => {
@@ -649,325 +675,426 @@ export default function DashboardPage() {
     ? getMarketData((projects[0]?.market as Market) ?? "USA").currency
     : USD_CONFIG;
 
-  return (
-    <>
-      {/* Onboarding tour */}
-      {showTour && tourChecked && (
-        <OnboardingTour onComplete={handleTourComplete} />
-      )}
+  // Mentor tip based on highest priority project
+  const mentorTip = useMemo(() => {
+    return getMentorTip(priorityProjects[0] ?? null);
+  }, [priorityProjects]);
 
-      {/* Greeting + Quick Stats */}
-      <div className="mb-6 animate-fade-in">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h1
-              className="text-[26px] text-earth leading-tight flex items-center gap-2"
-              style={{ fontFamily: "var(--font-heading)" }}
-            >
-              {new Date().getHours() < 17 ? <Sun size={22} className="text-clay" /> : <Sunset size={22} className="text-clay" />}
-              {getGreeting()}, {firstName}
-            </h1>
-            <p className="text-[13px] text-muted mt-1">{getFormattedDate()}</p>
-          </div>
-        </div>
+  /* ================================================================ */
+  /*  EMPTY STATE: no projects                                        */
+  /* ================================================================ */
 
-        {/* Mini stat cards */}
-        {hasProjects && (
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-gradient-to-br from-surface to-surface-alt/30 border border-border rounded-xl p-3 text-center">
-              <div className="font-data text-xl font-semibold text-earth tabular-nums">
-                {stats.activeCount}
-              </div>
-              <div className="text-[10px] text-muted uppercase tracking-[0.12em] mt-0.5 font-medium">
-                Active projects
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-surface to-surface-alt/30 border border-border rounded-xl p-3 text-center">
-              <div className="font-data text-xl font-semibold text-earth tabular-nums">
-                {formatCurrencyCompact(stats.totalInvested, primaryCurrency)}
-              </div>
-              <div className="text-[10px] text-muted uppercase tracking-[0.12em] mt-0.5 font-medium">
-                Total invested
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-surface to-surface-alt/30 border border-border rounded-xl p-3 text-center">
-              <div className="font-data text-xl font-semibold text-earth tabular-nums">
-                {stats.openItems}
-              </div>
-              <div className="text-[10px] text-muted uppercase tracking-[0.12em] mt-0.5 font-medium">
-                Open items
-              </div>
-            </div>
-          </div>
+  if (!hasProjects) {
+    return (
+      <>
+        {showTour && tourChecked && (
+          <OnboardingTour onComplete={handleTourComplete} />
         )}
-      </div>
 
-      {/* Empty state */}
-      {!hasProjects ? (
-        <div className="flex flex-col items-center justify-center text-center max-w-md mx-auto py-12">
+        <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-16 animate-fade-in">
           <KeystoneHouseIllustration />
-          <h2
-            className="text-[24px] text-earth mb-2"
+          <h1
+            className="text-[28px] text-earth mb-3 leading-tight"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            Your first project starts here
-          </h2>
-          <p className="text-[14px] text-muted mb-6 leading-relaxed">
-            Keystone guides you through every phase of building, from initial
-            planning to moving in.
+            Your development journey starts here
+          </h1>
+          <p className="text-[14px] text-muted mb-8 leading-relaxed max-w-md">
+            Keystone guides you through every phase of building a property, from
+            initial concept through financing, construction, and operations.
           </p>
-          <Link
-            href="/new-project"
-            className="inline-flex items-center gap-2 py-4 px-8 text-[15px] font-medium rounded-xl bg-earth text-warm hover:bg-earth-light transition-colors"
-          >
-            Create your first project
-          </Link>
-          <p className="text-[13px] text-muted mt-4">
-            Or{" "}
-            <Link href="/learn" className="text-clay hover:underline">
-              explore the Learn section first
-            </Link>
-          </p>
-        </div>
-      ) : (
-        <>
-          {/* Section 1: Priority Projects (max 3) */}
-          <SectionLabel>Priority projects</SectionLabel>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 animate-stagger">
-            {priorityProjects.map((p) => {
-              const marketData = getMarketData(p.market as Market);
-              const isWestAfrica = ["TOGO", "GHANA", "BENIN"].includes(p.market);
-              const topBorderColor = isWestAfrica
-                ? "border-t-[var(--color-accent-wa)]"
-                : "border-t-[var(--color-accent-usa)]";
-              const keyMetric = getKeyMetric(p);
-              const nextAction = getNextAction(p);
 
-              return (
-                <div
-                  key={p.id}
-                  className={`bg-surface rounded-xl shadow-[var(--shadow-sm)] p-5 border border-border border-t-[3px] ${topBorderColor} card-hover flex flex-col`}
-                >
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <h3
-                        className="text-[15px] text-earth truncate"
-                        style={{ fontFamily: "var(--font-heading)" }}
-                      >
-                        {p.name}
-                      </h3>
-                      <MarketBadge market={p.market as Market} />
-                    </div>
-                    <Badge
-                      variant={p.currentPhase >= 5 ? "warning" : "info"}
-                      className="rounded-full shrink-0 ml-2"
-                    >
-                      {p.phaseName}
-                    </Badge>
-                  </div>
-
-                  {/* Priority selector */}
-                  <div className="mb-3">
-                    <PrioritySelector
-                      priority={p.priority}
-                      onChange={(priority) => {
-                        if (p.id) handlePriorityChange(p.id, priority);
-                      }}
-                    />
-                  </div>
-
-                  {/* Progress ring + key metric */}
-                  <div className="flex items-center gap-4 mb-3">
-                    <ProgressRing progress={p.progress} size={48} />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        {keyMetric.variant === "danger" && <AlertTriangle size={12} className="text-danger" />}
-                        {keyMetric.variant === "warning" && <Clock size={12} className="text-warning" />}
-                        {keyMetric.variant === "success" && <CheckCircle2 size={12} className="text-success" />}
-                        <span className="text-[11px] text-muted">{keyMetric.label}</span>
-                      </div>
-                      <span className={`font-data text-[16px] font-semibold ${
-                        keyMetric.variant === "danger" ? "text-danger" :
-                        keyMetric.variant === "warning" ? "text-warning" :
-                        "text-earth"
-                      }`}>
-                        {keyMetric.value}
-                      </span>
-                      <div className="text-[11px] text-muted mt-1">
-                        Budget: {formatCurrencyCompact(p.totalBudget, marketData.currency)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Next action */}
-                  <div className="bg-warm/30 rounded-lg px-3 py-2 mb-3 flex-1">
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-clay/60 font-medium mb-0.5">
-                      Next action
-                    </p>
-                    <p className="text-[12px] text-earth leading-snug">
-                      {nextAction}
-                    </p>
-                  </div>
-
-                  {/* View project link */}
-                  <Link
-                    href={`/project/${p.id}/overview`}
-                    className="inline-flex items-center gap-1 text-[12px] font-medium text-clay hover:text-earth transition-colors self-end"
-                  >
-                    View project
-                    <ArrowRight size={12} />
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* View all projects link */}
-          {projects.length > 3 && (
-            <div className="flex justify-center mb-6">
-              <Link
-                href="/vault"
-                className="inline-flex items-center gap-1.5 text-[13px] font-medium text-clay hover:text-earth transition-colors"
-              >
-                View all {projects.length} projects
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-          )}
-
-          {/* Section 2: Action Items */}
-          <SectionLabel>Action items</SectionLabel>
-          {actionItems.length === 0 ? (
-            <Card className="mb-6">
-              <div className="flex items-center gap-3 py-2">
-                <CheckCircle2 size={18} className="text-success" />
-                <p className="text-[13px] text-muted">
-                  No urgent action items. Your projects are on track.
-                </p>
-              </div>
-            </Card>
-          ) : (
-            <div className="space-y-1 mb-6 animate-stagger">
-              {actionItems.map((item) => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-alt transition-colors"
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full shrink-0 ${urgencyDotColor(item.urgency)}`}
-                  />
-                  <div className="flex items-center gap-2 min-w-0">
-                    {item.type === "budget" && <DollarSign size={13} className="text-muted shrink-0" />}
-                    {item.type === "task" && <ListChecks size={13} className="text-muted shrink-0" />}
-                    {item.type === "punch" && <AlertTriangle size={13} className="text-muted shrink-0" />}
-                    {item.type === "inspection" && <ClipboardCheck size={13} className="text-muted shrink-0" />}
-                    {item.type === "milestone" && <Calendar size={13} className="text-muted shrink-0" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] text-earth leading-snug truncate">
-                      {item.description}
-                    </p>
-                  </div>
-                  <span className="text-[10px] text-muted shrink-0">
-                    {item.projectName}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          {/* Section 3: Quick Actions */}
-          <SectionLabel>Quick actions</SectionLabel>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6 animate-stagger">
-            <Link
-              href="/new-project"
-              className="bg-surface border border-border rounded-xl p-4 text-left card-hover group block"
-            >
-              <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center mb-3">
-                <Plus size={20} className="text-clay" />
-              </div>
-              <div className="text-[13px] font-semibold text-earth">New project</div>
-              <div className="text-[11px] text-muted mt-0.5">Start a new build</div>
-            </Link>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg mb-6">
             <Link
               href="/deal-analyzer"
-              className="bg-surface border border-border rounded-xl p-4 text-left card-hover group block"
+              className="bg-surface border border-border rounded-xl p-6 text-left card-hover group block"
             >
-              <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center mb-3">
-                <TrendingUp size={20} className="text-clay" />
+              <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-4">
+                <TrendingUp size={24} className="text-clay" />
               </div>
-              <div className="text-[13px] font-semibold text-earth">Deal Analyzer</div>
-              <div className="text-[11px] text-muted mt-0.5">Evaluate an opportunity</div>
+              <div
+                className="text-[16px] text-earth mb-1"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                Analyze Your First Deal
+              </div>
+              <p className="text-[12px] text-muted leading-relaxed">
+                Evaluate a property opportunity with market-specific cost benchmarks and financial modeling.
+              </p>
             </Link>
 
             <Link
               href="/learn"
-              className="bg-surface border border-border rounded-xl p-4 text-left card-hover group block"
+              className="bg-surface border border-border rounded-xl p-6 text-left card-hover group block"
             >
-              <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center mb-3">
-                <BookOpen size={20} className="text-clay" />
+              <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-4">
+                <BookOpen size={24} className="text-clay" />
               </div>
-              <div className="text-[13px] font-semibold text-earth">Learn</div>
-              <div className="text-[11px] text-muted mt-0.5">Construction knowledge</div>
-            </Link>
-
-            <Link
-              href="/vault"
-              className="bg-surface border border-border rounded-xl p-4 text-left card-hover group block"
-            >
-              <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center mb-3">
-                <FolderOpen size={20} className="text-clay" />
+              <div
+                className="text-[16px] text-earth mb-1"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                Learn the Fundamentals
               </div>
-              <div className="text-[13px] font-semibold text-earth">View Portfolio</div>
-              <div className="text-[11px] text-muted mt-0.5">All your projects</div>
+              <p className="text-[12px] text-muted leading-relaxed">
+                Master construction basics, financing strategies, and market-specific building practices.
+              </p>
             </Link>
           </div>
 
-          {/* Section 4: Activity Feed (compact) */}
-          <SectionLabel>Recent activity</SectionLabel>
-          {activities.length === 0 ? (
-            <Card>
+          <p className="text-[13px] text-muted">
+            Or{" "}
+            <Link href="/new-project" className="text-clay hover:underline font-medium">
+              create a project directly
+            </Link>
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  /* ================================================================ */
+  /*  MAIN DASHBOARD: split left/right layout                         */
+  /* ================================================================ */
+
+  return (
+    <>
+      {showTour && tourChecked && (
+        <OnboardingTour onComplete={handleTourComplete} />
+      )}
+
+      <div className="animate-fade-in flex flex-col lg:flex-row gap-0 min-h-0">
+
+        {/* -------------------------------------------------------- */}
+        {/*  LEFT SIDE (60%): Command Center                         */}
+        {/* -------------------------------------------------------- */}
+        <div className="flex-1 lg:w-[60%] lg:pr-6 lg:border-r lg:border-border/40">
+
+          {/* Greeting bar */}
+          <div className="mb-6">
+            <h1
+              className="text-[24px] text-earth leading-tight"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
+              {getGreeting()}, {firstName}
+            </h1>
+            <p className="text-[13px] text-muted mt-1">{getFormattedDate()}</p>
+          </div>
+
+          {/* Active Projects */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <SectionLabel>Active Projects</SectionLabel>
+              <Badge variant="emerald" className="rounded-full ml-1">
+                {stats.activeCount}
+              </Badge>
+            </div>
+
+            <div className="space-y-3 animate-stagger">
+              {priorityProjects.map((p) => {
+                const marketData = getMarketData(p.market as Market);
+                const keyMetric = getKeyMetric(p);
+                const nextAction = getNextAction(p);
+
+                return (
+                  <div
+                    key={p.id}
+                    className="bg-surface border border-border/60 rounded-xl shadow-[0_1px_3px_rgba(44,24,16,0.04)] p-4 card-hover flex items-center gap-4"
+                  >
+                    {/* Left: progress ring */}
+                    <div className="shrink-0">
+                      <ProgressRing progress={p.progress} size={48} />
+                    </div>
+
+                    {/* Middle: project info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3
+                          className="text-[16px] text-earth truncate"
+                          style={{ fontFamily: "var(--font-heading)" }}
+                        >
+                          {p.name}
+                        </h3>
+                        <MarketBadge market={p.market as Market} />
+                        <Badge
+                          variant={p.currentPhase >= 5 ? "warning" : "info"}
+                          className="rounded-full"
+                        >
+                          {p.phaseName}
+                        </Badge>
+                      </div>
+
+                      {/* Key metric */}
+                      <div className="flex items-center gap-1.5 mb-1">
+                        {keyMetric.variant === "danger" && <AlertTriangle size={12} className="text-danger shrink-0" />}
+                        {keyMetric.variant === "warning" && <Clock size={12} className="text-warning shrink-0" />}
+                        {keyMetric.variant === "success" && <CheckCircle2 size={12} className="text-success shrink-0" />}
+                        <span className={`font-data text-[13px] font-semibold ${
+                          keyMetric.variant === "danger" ? "text-danger" :
+                          keyMetric.variant === "warning" ? "text-warning" :
+                          "text-earth"
+                        }`}>
+                          {keyMetric.value}
+                        </span>
+                        <span className="text-[11px] text-muted">{keyMetric.label}</span>
+                      </div>
+
+                      {/* Next action */}
+                      <Link
+                        href={nextAction.href}
+                        className="text-[12px] text-clay hover:text-earth transition-colors leading-snug inline-flex items-center gap-1"
+                      >
+                        {nextAction.text}
+                        <ArrowRight size={10} className="shrink-0" />
+                      </Link>
+                    </div>
+
+                    {/* Right: priority selector */}
+                    <div className="shrink-0">
+                      <PrioritySelector
+                        priority={p.priority}
+                        onChange={(priority) => {
+                          if (p.id) handlePriorityChange(p.id, priority);
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {projects.length > 3 && (
+              <div className="mt-3">
+                <Link
+                  href="/vault"
+                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-clay hover:text-earth transition-colors"
+                >
+                  View all {projects.length} projects
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Action Items */}
+          <div className="mb-6">
+            <SectionLabel>Needs Your Attention</SectionLabel>
+            {actionItems.length === 0 ? (
+              <Card className="mb-0">
+                <div className="flex items-center gap-3 py-1">
+                  <CheckCircle2 size={18} className="text-success shrink-0" />
+                  <p className="text-[13px] text-muted">
+                    Everything is on track. Keep building.
+                  </p>
+                </div>
+              </Card>
+            ) : (
+              <div className="space-y-1 animate-stagger">
+                {actionItems.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-alt transition-colors"
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full shrink-0 ${urgencyDotColor(item.urgency)}`}
+                    />
+                    <div className="flex items-center gap-2 min-w-0 shrink-0">
+                      {item.type === "budget" && <DollarSign size={13} className="text-muted shrink-0" />}
+                      {item.type === "task" && <ListChecks size={13} className="text-muted shrink-0" />}
+                      {item.type === "punch" && <AlertTriangle size={13} className="text-muted shrink-0" />}
+                      {item.type === "inspection" && <ClipboardCheck size={13} className="text-muted shrink-0" />}
+                      {item.type === "milestone" && <Calendar size={13} className="text-muted shrink-0" />}
+                    </div>
+                    <span className="text-[10px] text-clay font-medium shrink-0">
+                      {item.projectName}
+                    </span>
+                    <p className="text-[12px] text-earth leading-snug truncate flex-1">
+                      {item.description}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* AI Mentor Tip */}
+          <div className="mb-6 lg:mb-0">
+            <Card padding="sm" className="bg-warm/20 border-sand/40">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-warm flex items-center justify-center shrink-0 mt-0.5">
+                  <Lightbulb size={16} className="text-clay" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-clay/60 font-semibold mb-1">
+                    Mentor Tip
+                  </p>
+                  <p className="text-[13px] text-earth leading-relaxed">
+                    {mentorTip}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* -------------------------------------------------------- */}
+        {/*  RIGHT SIDE (40%): Quick access panel                    */}
+        {/* -------------------------------------------------------- */}
+        <div className="lg:w-[40%] lg:pl-6 bg-surface-alt/30 lg:bg-transparent rounded-xl lg:rounded-none p-4 lg:p-0">
+
+          {/* Portfolio Folder */}
+          <div className="mb-6">
+            <Link
+              href="/vault"
+              className="block bg-surface border border-border/60 rounded-xl shadow-[0_1px_3px_rgba(44,24,16,0.04)] p-5 card-hover"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
+                  <FolderOpen size={22} className="text-clay" />
+                </div>
+                <div>
+                  <h2
+                    className="text-[16px] text-earth"
+                    style={{ fontFamily: "var(--font-heading)" }}
+                  >
+                    My Portfolio
+                  </h2>
+                  <p className="text-[12px] text-muted">
+                    <span className="font-data font-semibold">{projects.length}</span>
+                    {" "}project{projects.length !== 1 ? "s" : ""}
+                    {stats.totalInvested > 0 && (
+                      <>
+                        {" / "}
+                        <span className="font-data font-semibold">
+                          {formatCurrencyCompact(stats.totalInvested, primaryCurrency)}
+                        </span>
+                        {" "}invested
+                      </>
+                    )}
+                  </p>
+                </div>
+                <ArrowRight size={16} className="text-muted ml-auto" />
+              </div>
+
+              {/* Mini project thumbnails */}
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-border/40">
+                {sortedProjects.slice(0, 8).map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center gap-1.5 text-[11px] text-muted"
+                    title={p.name}
+                  >
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${marketDotColor(p.market)}`} />
+                    <span className="truncate max-w-[80px]">{p.name}</span>
+                  </div>
+                ))}
+                {sortedProjects.length > 8 && (
+                  <span className="text-[11px] text-muted">
+                    +{sortedProjects.length - 8} more
+                  </span>
+                )}
+              </div>
+            </Link>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mb-6">
+            <SectionLabel>Quick Actions</SectionLabel>
+            <div className="space-y-2 animate-stagger">
+              <Link
+                href="/new-project"
+                className="flex items-center gap-3 bg-surface border border-border/60 rounded-xl px-4 py-3 card-hover"
+              >
+                <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
+                  <Plus size={18} className="text-clay" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[13px] font-semibold text-earth">New Project</div>
+                  <div className="text-[11px] text-muted">Start a new build from scratch</div>
+                </div>
+              </Link>
+
+              <Link
+                href="/deal-analyzer"
+                className="flex items-center gap-3 bg-surface border border-border/60 rounded-xl px-4 py-3 card-hover"
+              >
+                <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
+                  <TrendingUp size={18} className="text-clay" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[13px] font-semibold text-earth">Analyze a Deal</div>
+                  <div className="text-[11px] text-muted">Evaluate a property opportunity</div>
+                </div>
+              </Link>
+
+              <Link
+                href="/learn"
+                className="flex items-center gap-3 bg-surface border border-border/60 rounded-xl px-4 py-3 card-hover"
+              >
+                <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
+                  <BookOpen size={18} className="text-clay" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[13px] font-semibold text-earth">Learn</div>
+                  <div className="text-[11px] text-muted">Construction knowledge base</div>
+                </div>
+              </Link>
+
+              <Link
+                href="/vault"
+                className="flex items-center gap-3 bg-surface border border-border/60 rounded-xl px-4 py-3 card-hover"
+              >
+                <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
+                  <Download size={18} className="text-clay" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[13px] font-semibold text-earth">Export Reports</div>
+                  <div className="text-[11px] text-muted">Download project summaries</div>
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div>
+            <SectionLabel>Recent Activity</SectionLabel>
+            {activities.length === 0 ? (
               <p className="text-[12px] text-muted text-center py-4">
                 No recent activity across your projects.
               </p>
-            </Card>
-          ) : (
-            <div className="space-y-0.5 animate-stagger">
-              {activities.map((activity) => (
-                <Link
-                  key={activity.id}
-                  href={
-                    activity.type === "daily-log"
-                      ? `/project/${activity.projectId}/daily-log`
-                      : activity.type === "photo-uploaded"
-                      ? `/project/${activity.projectId}/photos`
-                      : `/project/${activity.projectId}/overview`
-                  }
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-alt transition-colors"
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${activityDotColor(activity.type)}`}
-                  />
-                  <p className="text-[12px] text-earth leading-snug truncate flex-1">
-                    {activity.text}
-                  </p>
-                  <span className="text-[10px] text-muted shrink-0">
-                    {activity.projectName}
-                  </span>
-                  {activity.timestamp && (
-                    <span className="text-[10px] font-data text-muted/60 shrink-0">
-                      {formatRelativeTime(activity.timestamp)}
-                    </span>
-                  )}
-                </Link>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+            ) : (
+              <div className="space-y-0.5 animate-stagger">
+                {activities.map((activity) => (
+                  <Link
+                    key={activity.id}
+                    href={
+                      activity.type === "daily-log"
+                        ? `/project/${activity.projectId}/daily-log`
+                        : activity.type === "photo-uploaded"
+                        ? `/project/${activity.projectId}/photos`
+                        : `/project/${activity.projectId}/overview`
+                    }
+                    className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-surface-alt/60 transition-colors"
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${activityDotColor(activity.type)}`}
+                    />
+                    <p className="text-[12px] text-earth leading-snug truncate flex-1">
+                      {activity.text}
+                    </p>
+                    {activity.timestamp && (
+                      <span className="text-[10px] font-data text-muted/60 shrink-0">
+                        {formatRelativeTime(activity.timestamp)}
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </>
   );
 }
