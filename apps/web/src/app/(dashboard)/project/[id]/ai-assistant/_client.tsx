@@ -16,6 +16,7 @@ import {
 import type { Market, ProjectPhase } from "@keystone/market-data";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Send, Loader2, AlertTriangle, Zap } from "lucide-react";
+import { VoiceNote } from "@/components/ui/VoiceNote";
 
 /* ------------------------------------------------------------------ */
 /*  Mode definitions                                                   */
@@ -367,7 +368,7 @@ export function AIAssistantClient() {
       </div>
 
       {/* Input */}
-      <div className="flex gap-2 pt-3 border-t border-border">
+      <div className="flex items-center gap-2 pt-3 border-t border-border">
         <input
           type="text"
           value={input}
@@ -376,6 +377,10 @@ export function AIAssistantClient() {
           placeholder={`Ask about ${mode === "general" ? "your project" : mode}...`}
           className="flex-1 px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
           disabled={sending}
+        />
+        <VoiceNote
+          onTranscript={(text) => setInput(text)}
+          placeholder="Tap to ask by voice"
         />
         <button
           onClick={handleSend}

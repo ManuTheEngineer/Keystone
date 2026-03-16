@@ -6,6 +6,7 @@ import { useTopbar } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { createProject, type Market, type BuildPurpose, type PropertyType } from "@/lib/services/project-service";
 import { Home, Building2, TrendingUp, Info } from "lucide-react";
+import { LearnTooltip } from "@/components/ui/LearnTooltip";
 import {
   getMarketData,
   getCostBenchmarks,
@@ -19,6 +20,9 @@ interface WizardOption {
   title: string;
   description: string;
   icon?: React.ReactNode;
+  tooltipTerm?: string;
+  tooltipExplanation?: string;
+  tooltipWhy?: string;
 }
 
 const PURPOSE_OPTIONS: WizardOption[] = [
@@ -27,18 +31,27 @@ const PURPOSE_OPTIONS: WizardOption[] = [
     title: "Build to occupy",
     description: "A home for you and your family to live in",
     icon: <Home size={18} />,
+    tooltipTerm: "Build to Occupy",
+    tooltipExplanation: "Building to live in yourself. This affects your loan options (owner-occupied rates are lower) and tax treatment (homestead exemption).",
+    tooltipWhy: "Owner-occupied homes qualify for better interest rates, lower down payments, and property tax reductions in most US states.",
   },
   {
     id: "rent",
     title: "Build to rent",
     description: "Investment property generating rental income",
     icon: <Building2 size={18} />,
+    tooltipTerm: "Build to Rent",
+    tooltipExplanation: "Building as an investment property. Lenders require higher down payments (25%+) but you can deduct expenses. Rental yield analysis becomes important.",
+    tooltipWhy: "Rental properties are evaluated differently by lenders. Your expected rental income can help you qualify, but you need more cash upfront.",
   },
   {
     id: "sell",
     title: "Build to sell",
     description: "Spec home built for resale profit",
     icon: <TrendingUp size={18} />,
+    tooltipTerm: "Build to Sell (Spec Home)",
+    tooltipExplanation: "A speculative home built without a specific buyer. You profit from the difference between construction cost and sale price.",
+    tooltipWhy: "Spec building is higher risk since you must fund the entire build and carry costs until the sale closes. Market timing matters.",
   },
 ];
 
@@ -47,21 +60,33 @@ const MARKET_OPTIONS: WizardOption[] = [
     id: "usa",
     title: "United States",
     description: "Wood-frame construction, institutional lending, IRC building codes",
+    tooltipTerm: "US Construction Market",
+    tooltipExplanation: "Wood-frame construction with institutional lending. Building codes (IRC/IBC) are strictly enforced. Licensed, insured trades are required for most work.",
+    tooltipWhy: "The US market has structured financing (construction loans convert to mortgages), mandatory inspections at each stage, and established contractor licensing.",
   },
   {
     id: "togo",
     title: "Togo",
     description: "Reinforced concrete block, CFA zone, titre foncier system",
+    tooltipTerm: "Togo Construction Market",
+    tooltipExplanation: "Reinforced concrete block and poteau-poutre (post-and-beam) construction. Land ownership verified through the titre foncier system. Costs in CFA francs.",
+    tooltipWhy: "Construction in Togo is typically self-funded in phases. You build as cash is available. The titre foncier process can take months, so start early.",
   },
   {
     id: "ghana",
     title: "Ghana",
     description: "Concrete block, cedi currency, Lands Commission registration",
+    tooltipTerm: "Ghana Construction Market",
+    tooltipExplanation: "Concrete block construction with Lands Commission registration for property titles. Costs in Ghanaian cedis.",
+    tooltipWhy: "Ghana has a more formalized building permit process than some West African neighbors. Land registration through the Lands Commission provides legal protection.",
   },
   {
     id: "benin",
     title: "Benin",
     description: "Concrete block, CFA zone, ANDF land registry",
+    tooltipTerm: "Benin Construction Market",
+    tooltipExplanation: "Concrete block construction similar to Togo. Land registered through the ANDF (Agence Nationale du Domaine et du Foncier). Costs in CFA francs.",
+    tooltipWhy: "Benin shares the CFA currency zone with Togo, so cost benchmarks are similar. The ANDF land registry is the formal path to secure ownership.",
   },
 ];
 
@@ -248,8 +273,18 @@ export default function NewProjectPage() {
                       {opt.icon}
                     </span>
                   )}
-                  <div>
-                    <h5 className="text-[14px] font-semibold text-earth">{opt.title}</h5>
+                  <div className="flex-1">
+                    {opt.tooltipTerm ? (
+                      <LearnTooltip
+                        term={opt.tooltipTerm}
+                        explanation={opt.tooltipExplanation!}
+                        whyItMatters={opt.tooltipWhy}
+                      >
+                        <h5 className="text-[14px] font-semibold text-earth">{opt.title}</h5>
+                      </LearnTooltip>
+                    ) : (
+                      <h5 className="text-[14px] font-semibold text-earth">{opt.title}</h5>
+                    )}
                     <p className="text-[11px] text-muted mt-0.5">{opt.description}</p>
                   </div>
                 </div>

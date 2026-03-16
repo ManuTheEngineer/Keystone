@@ -45,6 +45,7 @@ import {
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AIInsight } from "@/components/ui/AIInsight";
+import { LearnTooltip } from "@/components/ui/LearnTooltip";
 import { generateBudgetInsights } from "@/lib/insights";
 import {
   getMarketData,
@@ -283,11 +284,22 @@ export function BudgetClient() {
             <StatCard value={fmtCompact(project.totalBudget)} label="Total budget" />
             <StatCard value={fmtCompact(project.totalSpent)} label="Spent to date" />
             <StatCard value={fmtCompact(remaining)} label="Remaining" />
-            <StatCard
-              value={`${variance}%`}
-              label="Variance"
-              valueClassName={varianceNum > 0 ? "text-danger" : varianceNum < -5 ? "text-info" : ""}
-            />
+            <div>
+              <StatCard
+                value={`${variance}%`}
+                label="Variance"
+                valueClassName={varianceNum > 0 ? "text-danger" : varianceNum < -5 ? "text-info" : ""}
+              />
+              <div className="mt-1 px-1">
+                <LearnTooltip
+                  term="Variance"
+                  explanation="The difference between what you planned to spend and what you actually spent. Negative variance means under budget. Positive means over budget."
+                  whyItMatters="Tracking variance early lets you catch overspending before it becomes a crisis. A variance over 10% on any category is a warning sign."
+                >
+                  <span className="text-[9px] text-muted">What is this?</span>
+                </LearnTooltip>
+              </div>
+            </div>
           </div>
 
           {/* Budget utilization bar */}
@@ -699,7 +711,13 @@ export function BudgetClient() {
             </div>
           </div>
           <div>
-            <p className="text-[8px] sm:text-[9px] text-warm/60 uppercase tracking-wider">Contingency left</p>
+            <LearnTooltip
+              term="Contingency"
+              explanation="A reserve fund for unexpected costs. Construction projects almost always encounter surprises. Industry standard is 10-15% of total budget. First-time builders should lean toward 15-20%."
+              whyItMatters="Without contingency, a single surprise (bad soil, material price spike, design change) can stall your entire project. This fund keeps you building."
+            >
+              <p className="text-[8px] sm:text-[9px] text-warm/60 uppercase tracking-wider">Contingency left</p>
+            </LearnTooltip>
             <p className="font-data text-xs sm:text-sm text-warm font-medium">
               {(() => {
                 const contingencyItem = items.find(i => i.category.toLowerCase().includes("contingency"));

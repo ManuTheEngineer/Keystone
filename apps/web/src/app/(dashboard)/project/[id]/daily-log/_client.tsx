@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Plus, ClipboardList, Pencil, Trash2 } from "lucide-react";
+import { VoiceNote } from "@/components/ui/VoiceNote";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTopbar } from "../../../layout";
@@ -222,7 +223,10 @@ export function DailyLogClient() {
               />
             </div>
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">Content</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] text-muted font-medium">Content</label>
+                <span className="text-[10px] text-muted">Or use voice</span>
+              </div>
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
@@ -230,6 +234,12 @@ export function DailyLogClient() {
                 rows={3}
                 className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full resize-none"
               />
+              <div className="mt-2">
+                <VoiceNote
+                  onTranscript={(text) => setContent((prev) => prev ? prev + " " + text : text)}
+                  placeholder="Tap to dictate your daily log entry"
+                />
+              </div>
             </div>
             <div className="flex items-center gap-2 justify-end">
               <button

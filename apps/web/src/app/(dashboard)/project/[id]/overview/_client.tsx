@@ -76,9 +76,13 @@ import {
   Plus,
   X,
   AlertTriangle,
+  ArrowRight,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
 import { PhaseAdvancement } from "@/components/ui/PhaseAdvancement";
+import { ProcessGuide } from "@/components/ui/ProcessGuide";
+import { LearnTooltip } from "@/components/ui/LearnTooltip";
+import { getNextActions, type NextAction } from "@/lib/next-actions";
 import type { ExportData } from "@/lib/services/export-service";
 
 // ---------------------------------------------------------------------------
@@ -275,6 +279,13 @@ export function OverviewClient() {
         </div>
       )}
 
+      {/* Process guide - shown for phases 0-4 */}
+      {phase <= 4 && (
+        <div className="mb-4">
+          <ProcessGuide market={market} currentPhase={phase} />
+        </div>
+      )}
+
       {/* Stat cards - always shown */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 mb-5">
         <StatCard value={`${project.progress}%`} label="Progress" />
@@ -297,6 +308,51 @@ export function OverviewClient() {
             {topInsights.map((insight, i) => (
               <AIInsight key={i} type={insight.type} title={insight.title} content={insight.content} action={insight.action} />
             ))}
+          </div>
+        );
+      })()}
+
+      {/* What should I do next? */}
+      {(() => {
+        const nextActions = getNextActions(
+          project,
+          budgetItems,
+          contacts,
+          tasks,
+          documents,
+          dailyLogs,
+          photos,
+          punchListItems,
+          projectId
+        );
+        if (nextActions.length === 0) return null;
+        return (
+          <div className="mb-5">
+            <SectionLabel>What should I do next?</SectionLabel>
+            <div className="space-y-2">
+              {nextActions.slice(0, 4).map((action, i) => (
+                <Link
+                  key={i}
+                  href={action.href}
+                  className="flex items-start gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface hover:bg-warm transition-colors group"
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                      action.priority === "high"
+                        ? "bg-danger"
+                        : action.priority === "medium"
+                        ? "bg-warning"
+                        : "bg-info"
+                    }`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-medium text-earth">{action.title}</p>
+                    <p className="text-[11px] text-muted leading-relaxed mt-0.5">{action.description}</p>
+                  </div>
+                  <ArrowRight size={14} className="text-muted shrink-0 mt-1 group-hover:text-earth transition-colors" />
+                </Link>
+              ))}
+            </div>
           </div>
         );
       })()}
@@ -371,9 +427,21 @@ export function OverviewClient() {
                   {market === "USA" ? "Loan Qualification Quick-Check" : "Savings Tracker"}
                 </p>
                 <p className="text-[11px] text-muted leading-relaxed">
-                  {market === "USA"
-                    ? "Most construction loans require 20-25% down and a debt-to-income ratio below 43%. Set your budget and financing details to see estimated qualification."
-                    : "Building in phases with cash is the most common approach. Track your savings milestones and plan each construction phase around your funding availability."}
+                  {market === "USA" ? (
+                    <>
+                      Most construction loans require 20-25% down and a{" "}
+                      <LearnTooltip
+                        term="DTI (Debt-to-Income Ratio)"
+                        explanation="Your total monthly debts divided by your gross monthly income. Lenders typically require this to be below 43% for construction loans."
+                        whyItMatters="If your DTI is too high, you will not qualify for a construction loan. Paying down existing debts before applying can improve your ratio."
+                      >
+                        <span className="underline decoration-dotted cursor-help">debt-to-income ratio</span>
+                      </LearnTooltip>{" "}
+                      below 43%. Set your budget and financing details to see estimated qualification.
+                    </>
+                  ) : (
+                    "Building in phases with cash is the most common approach. Track your savings milestones and plan each construction phase around your funding availability."
+                  )}
                 </p>
               </div>
             </div>
