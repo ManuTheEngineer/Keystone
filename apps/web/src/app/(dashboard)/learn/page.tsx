@@ -71,6 +71,185 @@ const PHASE_COST_PCT: Record<ProjectPhase, string> = {
   OPERATE: "2 - 5%",
 };
 
+// ─── Quiz Data ───────────────────────────────────────────────────────────────
+
+interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+const PHASE_QUIZZES: Record<ProjectPhase, QuizQuestion[]> = {
+  DEFINE: [
+    {
+      question: "What should you determine BEFORE setting a budget?",
+      options: [
+        "Your build purpose (occupy, rent, or sell)",
+        "The color of your front door",
+        "Which contractor to hire",
+      ],
+      correctIndex: 0,
+      explanation:
+        "Your build purpose affects financing, design, material quality, and exit strategy.",
+    },
+    {
+      question: "Why is location research important before buying land?",
+      options: [
+        "To find the cheapest lot",
+        "Because costs, regulations, and demand vary dramatically by area",
+        "To impress your friends",
+      ],
+      correctIndex: 1,
+      explanation:
+        "Location determines building codes, permit requirements, material costs, labor availability, and resale potential.",
+    },
+  ],
+  FINANCE: [
+    {
+      question: "What DTI ratio do most construction lenders require?",
+      options: ["Below 25%", "Below 43%", "Below 75%"],
+      correctIndex: 1,
+      explanation:
+        "Most conventional construction loans require a back-end DTI below 43%.",
+    },
+    {
+      question: "What is the typical down payment for a construction loan?",
+      options: ["3.5%", "10%", "20-25%"],
+      correctIndex: 2,
+      explanation:
+        "Construction loans are riskier for lenders, so they typically require 20-25% down.",
+    },
+  ],
+  LAND: [
+    {
+      question: "What document proves legal land ownership in Togo?",
+      options: ["Acte de vente", "Titre foncier", "Receipt from seller"],
+      correctIndex: 1,
+      explanation:
+        "Only the titre foncier is legally conclusive proof of ownership.",
+    },
+    {
+      question: "What should you do BEFORE buying land in the USA?",
+      options: [
+        "Start building immediately",
+        "Get a survey, title search, and soil test",
+        "Pick your paint colors",
+      ],
+      correctIndex: 1,
+      explanation:
+        "A survey confirms boundaries, a title search ensures no liens or disputes, and a soil test reveals whether the ground can support your foundation.",
+    },
+  ],
+  DESIGN: [
+    {
+      question:
+        "What is the purpose of structural engineering in construction?",
+      options: [
+        "To make the house look nice",
+        "To ensure the building can safely support all loads",
+        "To choose furniture",
+      ],
+      correctIndex: 1,
+      explanation:
+        "Structural engineering calculates load paths and ensures the building withstands gravity, wind, and seismic forces safely.",
+    },
+  ],
+  APPROVE: [
+    {
+      question: "What happens if you build without a permit?",
+      options: [
+        "Nothing, permits are optional",
+        "You may face fines, forced demolition, or inability to sell",
+        "You save money",
+      ],
+      correctIndex: 1,
+      explanation:
+        "Building without permits can result in stop-work orders, fines, forced demolition, insurance denial, and problems selling or refinancing the property.",
+    },
+  ],
+  ASSEMBLE: [
+    {
+      question: "How many bids should you get for each major trade?",
+      options: ["1 is enough", "At least 3", "As many as possible, 10+"],
+      correctIndex: 1,
+      explanation:
+        "Three bids give you a reliable price range and help you identify outliers. More than five often leads to diminishing returns.",
+    },
+  ],
+  BUILD: [
+    {
+      question: "Why are daily logs important during construction?",
+      options: [
+        "To keep busy",
+        "They serve as legal documentation and track progress",
+        "The bank requires them",
+      ],
+      correctIndex: 1,
+      explanation:
+        "Daily logs create a contemporaneous record of work performed, weather, crew, and issues. They are critical evidence in disputes and useful for tracking progress.",
+    },
+    {
+      question: "When should you take photos during construction?",
+      options: [
+        "Only when work is finished",
+        "Before every concrete pour and before every inspection",
+        "Once a month",
+      ],
+      correctIndex: 1,
+      explanation:
+        "Photos before pours and inspections document what is hidden inside walls and under concrete. Once covered, this work cannot be visually verified.",
+    },
+  ],
+  VERIFY: [
+    {
+      question: "What is a punch list?",
+      options: [
+        "A to-do list for the next project",
+        "A list of defects to fix before final acceptance",
+        "A list of contractors",
+      ],
+      correctIndex: 1,
+      explanation:
+        "A punch list documents all incomplete or defective work items that must be corrected before the owner accepts the project and releases final payment.",
+    },
+  ],
+  OPERATE: [
+    {
+      question: "What warranties should you track after construction?",
+      options: [
+        "None, the builder is done",
+        "1-year general, 2-year mechanical, 10-year structural",
+        "Only appliance warranties",
+      ],
+      correctIndex: 1,
+      explanation:
+        "Most new construction carries tiered warranties: 1 year for general workmanship, 2 years for mechanical systems (plumbing, electrical, HVAC), and 10 years for structural defects.",
+    },
+  ],
+};
+
+const QUIZ_STORAGE_KEY = "keystone-learn-quiz-progress";
+
+function getQuizPassedPhases(): Set<ProjectPhase> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const stored = localStorage.getItem(QUIZ_STORAGE_KEY);
+    if (stored) return new Set(JSON.parse(stored) as ProjectPhase[]);
+  } catch {
+    // ignore
+  }
+  return new Set();
+}
+
+function saveQuizPassedPhases(set: Set<ProjectPhase>) {
+  try {
+    localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify([...set]));
+  } catch {
+    // ignore
+  }
+}
+
 // ─── LocalStorage helpers ─────────────────────────────────────────────────────
 
 function getReadPhases(): Set<ProjectPhase> {
@@ -710,6 +889,150 @@ function QuickStatsCard({ phaseDef }: { phaseDef: PhaseDefinition }) {
   );
 }
 
+// ─── Comprehension Quiz ──────────────────────────────────────────────────────
+
+function PhaseQuiz({
+  phase,
+  quizPassed,
+  onPass,
+}: {
+  phase: ProjectPhase;
+  quizPassed: boolean;
+  onPass: () => void;
+}) {
+  const questions = PHASE_QUIZZES[phase];
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
+  const [checkedAnswers, setCheckedAnswers] = useState<Record<number, boolean>>({});
+
+  // Reset state when phase changes
+  useEffect(() => {
+    setSelectedAnswers({});
+    setCheckedAnswers({});
+  }, [phase]);
+
+  if (!questions || questions.length === 0) return null;
+
+  const allCorrect = questions.every(
+    (_, i) => checkedAnswers[i] === true && selectedAnswers[i] === questions[i].correctIndex
+  );
+
+  // Check if quiz just became all-correct and notify parent
+  useEffect(() => {
+    if (allCorrect && !quizPassed) {
+      onPass();
+    }
+  }, [allCorrect, quizPassed, onPass]);
+
+  return (
+    <div className="p-5 rounded-xl bg-surface border border-border">
+      <h3
+        className="text-[16px] text-earth mb-1 flex items-center gap-2"
+        style={{ fontFamily: "var(--font-heading)" }}
+      >
+        <ShieldCheck size={16} className="text-emerald-600" />
+        Test Your Knowledge
+      </h3>
+      <p className="text-[11px] text-muted mb-4">
+        Answer all questions correctly to complete this phase.
+      </p>
+
+      <div className="space-y-5">
+        {questions.map((q, qi) => {
+          const isChecked = checkedAnswers[qi] !== undefined;
+          const selectedIdx = selectedAnswers[qi];
+          const isCorrect = isChecked && selectedIdx === q.correctIndex;
+
+          return (
+            <div key={qi} className="p-4 rounded-lg bg-warm/30 border border-sand/30">
+              <p className="text-[13px] text-earth font-medium mb-3">
+                {qi + 1}. {q.question}
+              </p>
+              <div className="space-y-2 mb-3">
+                {q.options.map((option, oi) => {
+                  let optionClasses =
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] transition-colors cursor-pointer border ";
+
+                  if (isChecked) {
+                    if (oi === q.correctIndex) {
+                      optionClasses +=
+                        "border-success bg-emerald-50 text-emerald-800";
+                    } else if (oi === selectedIdx && oi !== q.correctIndex) {
+                      optionClasses += "border-danger bg-danger/5 text-danger";
+                    } else {
+                      optionClasses +=
+                        "border-border bg-surface text-muted opacity-60";
+                    }
+                  } else if (oi === selectedIdx) {
+                    optionClasses +=
+                      "border-clay bg-warm text-earth font-medium";
+                  } else {
+                    optionClasses +=
+                      "border-border bg-surface text-earth hover:bg-warm/50";
+                  }
+
+                  return (
+                    <label key={oi} className={optionClasses}>
+                      <input
+                        type="radio"
+                        name={`quiz-${phase}-${qi}`}
+                        checked={selectedIdx === oi}
+                        onChange={() => {
+                          if (!isChecked) {
+                            setSelectedAnswers((prev) => ({
+                              ...prev,
+                              [qi]: oi,
+                            }));
+                          }
+                        }}
+                        disabled={isChecked}
+                        className="accent-clay w-3.5 h-3.5"
+                      />
+                      <span>{option}</span>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {!isChecked && selectedIdx !== undefined && (
+                <button
+                  onClick={() =>
+                    setCheckedAnswers((prev) => ({ ...prev, [qi]: true }))
+                  }
+                  className="px-4 py-1.5 text-[12px] font-medium rounded-lg bg-earth text-warm hover:bg-earth-light transition-colors"
+                >
+                  Check answer
+                </button>
+              )}
+
+              {isChecked && (
+                <div
+                  className={`p-3 rounded-lg text-[12px] leading-relaxed mt-2 ${
+                    isCorrect
+                      ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
+                      : "bg-danger/5 border border-danger/20 text-danger"
+                  }`}
+                >
+                  {isCorrect ? "Correct. " : "Incorrect. "}
+                  {q.explanation}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {quizPassed && (
+        <div className="mt-4 flex items-center gap-2 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+          <CheckCircle size={16} className="text-success" />
+          <p className="text-[12px] text-emerald-800 font-medium">
+            Quiz passed. This phase is complete.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function LearnPage() {
@@ -717,7 +1040,9 @@ export default function LearnPage() {
   const [activePhase, setActivePhase] = useState<ProjectPhase>("DEFINE");
   const [searchQuery, setSearchQuery] = useState("");
   const [readPhases, setReadPhases] = useState<Set<ProjectPhase>>(new Set());
+  const [quizPassedPhases, setQuizPassedPhases] = useState<Set<ProjectPhase>>(new Set());
   const [tabTransition, setTabTransition] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
   const readTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -729,6 +1054,7 @@ export default function LearnPage() {
 
   useEffect(() => {
     setReadPhases(getReadPhases());
+    setQuizPassedPhases(getQuizPassedPhases());
   }, []);
 
   // Mark phase as read after 5 seconds
@@ -764,6 +1090,16 @@ export default function LearnPage() {
     }
   }, []);
 
+  const handleQuizPass = useCallback((phase: ProjectPhase) => {
+    setQuizPassedPhases((prev) => {
+      if (prev.has(phase)) return prev;
+      const next = new Set(prev);
+      next.add(phase);
+      saveQuizPassedPhases(next);
+      return next;
+    });
+  }, []);
+
   // Current module data
   const currentModule = marketData.education[activePhase];
   const currentPhaseDef = marketData.phases.find((p) => p.phase === activePhase);
@@ -785,9 +1121,15 @@ export default function LearnPage() {
     });
   }, [searchQuery, marketData]);
 
-  const readCount = readPhases.size;
+  // A phase is "completed" when it has been both read AND quiz passed
+  const completedPhases = useMemo(() => {
+    return PHASE_ORDER.filter(
+      (phase) => readPhases.has(phase) && quizPassedPhases.has(phase)
+    );
+  }, [readPhases, quizPassedPhases]);
+  const completedCount = completedPhases.length;
   const totalCount = PHASE_ORDER.length;
-  const progressPct = Math.round((readCount / totalCount) * 100);
+  const progressPct = Math.round((completedCount / totalCount) * 100);
 
   return (
     <div className="page-container">
@@ -808,7 +1150,7 @@ export default function LearnPage() {
           <div className="flex-1 max-w-sm">
             <div className="flex items-center justify-between mb-1.5">
               <p className="text-[12px] text-foreground font-medium">
-                You have completed {readCount} of {totalCount} phases
+                {completedCount} of {totalCount} phases completed (read + quiz passed)
               </p>
               <span className="text-[11px] font-data text-muted">{progressPct}%</span>
             </div>
@@ -822,71 +1164,11 @@ export default function LearnPage() {
               />
             </div>
           </div>
-          {readCount === totalCount && (
+          {completedCount === totalCount && (
             <Badge variant="success">All phases complete</Badge>
           )}
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted opacity-50"
-          />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search all phases and topics..."
-            className="input-base pl-9 pr-9"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted opacity-50 hover:opacity-80 transition-opacity"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        {/* Search Results */}
-        {searchResults !== null && (
-          <div className="mt-4 p-4 rounded-xl bg-surface border border-border">
-            {searchResults.length === 0 ? (
-              <p className="text-[13px] text-muted">No phases match your search.</p>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-[12px] text-muted mb-2">
-                  Found in {searchResults.length} phase{searchResults.length !== 1 ? "s" : ""}:
-                </p>
-                {searchResults.map((phase) => (
-                  <button
-                    key={phase}
-                    onClick={() => handleSelectPhase(phase)}
-                    className="flex items-center gap-3 w-full text-left p-2.5 rounded-lg hover:bg-warm transition-colors"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-warm flex items-center justify-center">
-                      {(() => {
-                        const Icon = PHASE_ICONS[phase];
-                        return <Icon size={14} className="text-clay" />;
-                      })()}
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-medium text-earth">
-                        {PHASE_NAMES[phase]}: {marketData.education[phase].title}
-                      </p>
-                      <p className="text-[11px] text-muted line-clamp-1">
-                        {marketData.education[phase].summary}
-                      </p>
-                    </div>
-                    <ArrowRight size={14} className="text-muted ml-auto shrink-0" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* ── Phase Journey Map ───────────────────────────────────────────── */}
@@ -896,11 +1178,12 @@ export default function LearnPage() {
         onSelectPhase={handleSelectPhase}
       />
 
-      {/* ── Phase Tabs ──────────────────────────────────────────────────── */}
+      {/* ── Phase Tabs + Search (inline) ────────────────────────────────── */}
       <div className="mb-6 overflow-x-auto scrollbar-hide" ref={contentRef}>
-        <div className="flex border-b border-border min-w-max">
+        <div className="flex items-center border-b border-border min-w-max gap-0">
           {PHASE_ORDER.map((phase) => {
             const isActive = phase === activePhase;
+            const isCompleted = readPhases.has(phase) && quizPassedPhases.has(phase);
             return (
               <button
                 key={phase}
@@ -914,7 +1197,7 @@ export default function LearnPage() {
                 `}
               >
                 <span className="flex items-center gap-1.5">
-                  {readPhases.has(phase) && (
+                  {isCompleted && (
                     <CheckCircle size={11} className="text-success" />
                   )}
                   {PHASE_NAMES[phase]}
@@ -925,8 +1208,74 @@ export default function LearnPage() {
               </button>
             );
           })}
+          {/* Inline search */}
+          <div className="ml-auto pl-3 shrink-0 relative">
+            <Search
+              size={13}
+              className="absolute left-5 top-1/2 -translate-y-1/2 text-muted opacity-50"
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              placeholder="Search topics..."
+              className="pl-7 pr-6 py-2 text-[11px] rounded-lg border border-border bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-clay/40 transition-all"
+              style={{
+                width: searchFocused || searchQuery ? "300px" : "200px",
+                maxWidth: "300px",
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted opacity-50 hover:opacity-80 transition-opacity"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Search Results */}
+      {searchResults !== null && (
+        <div className="mb-6 p-4 rounded-xl bg-surface border border-border">
+          {searchResults.length === 0 ? (
+            <p className="text-[13px] text-muted">No phases match your search.</p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-[12px] text-muted mb-2">
+                Found in {searchResults.length} phase{searchResults.length !== 1 ? "s" : ""}:
+              </p>
+              {searchResults.map((phase) => (
+                <button
+                  key={phase}
+                  onClick={() => handleSelectPhase(phase)}
+                  className="flex items-center gap-3 w-full text-left p-2.5 rounded-lg hover:bg-warm transition-colors"
+                >
+                  <div className="w-7 h-7 rounded-full bg-warm flex items-center justify-center">
+                    {(() => {
+                      const Icon = PHASE_ICONS[phase];
+                      return <Icon size={14} className="text-clay" />;
+                    })()}
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-medium text-earth">
+                      {PHASE_NAMES[phase]}: {marketData.education[phase].title}
+                    </p>
+                    <p className="text-[11px] text-muted line-clamp-1">
+                      {marketData.education[phase].summary}
+                    </p>
+                  </div>
+                  <ArrowRight size={14} className="text-muted ml-auto shrink-0" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Module Content ──────────────────────────────────────────────── */}
       <div
@@ -1057,6 +1406,13 @@ export default function LearnPage() {
 
             {/* Build phase special: Construction Sequence */}
             {activePhase === "BUILD" && <ConstructionSequence />}
+
+            {/* Comprehension Quiz */}
+            <PhaseQuiz
+              phase={activePhase}
+              quizPassed={quizPassedPhases.has(activePhase)}
+              onPass={() => handleQuizPass(activePhase)}
+            />
 
             {/* Disclaimer */}
             <p className="text-[11px] text-muted italic py-2">

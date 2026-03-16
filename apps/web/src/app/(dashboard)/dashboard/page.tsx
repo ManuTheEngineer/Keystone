@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useTopbar, useDashboard } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -18,6 +18,7 @@ import {
   subscribeToPunchListItems,
   seedDemoProject,
   updateProjectPriority,
+  deleteProject,
   type ProjectData,
   type TaskData,
   type PunchListItemData,
@@ -44,6 +45,10 @@ import {
   ClipboardCheck,
   Download,
   Lightbulb,
+  MoreVertical,
+  Eye,
+  Trash2,
+  ChevronRight,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -91,48 +96,185 @@ function ProgressRing({ progress, size = 48 }: { progress: number; size?: number
 }
 
 /* ------------------------------------------------------------------ */
-/*  Priority selector                                                 */
+/*  Priority indicator                                                */
 /* ------------------------------------------------------------------ */
 
-function PrioritySelector({
-  priority,
-  onChange,
-}: {
-  priority: number | undefined;
-  onChange: (p: number | null) => void;
-}) {
-  const levels = [1, 2, 3] as const;
-  const labels: Record<number, string> = { 1: "High", 2: "Medium", 3: "Low" };
+function PriorityIndicator({ priority }: { priority: number | undefined }) {
+  if (!priority) return null;
+  const labels: Record<number, string> = { 1: "High", 2: "Med", 3: "Low" };
   const colors: Record<number, string> = {
     1: "bg-danger text-white",
     2: "bg-warning text-white",
     3: "bg-blue-500 text-white",
   };
-  const inactiveColors: Record<number, string> = {
-    1: "bg-danger/10 text-danger hover:bg-danger/20",
-    2: "bg-warning/10 text-warning hover:bg-warning/20",
-    3: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
-  };
+  return (
+    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${colors[priority] ?? "bg-muted text-white"}`}>
+      P{priority} {labels[priority] ?? ""}
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Project kebab menu                                                */
+/* ------------------------------------------------------------------ */
+
+function ProjectKebabMenu({
+  project,
+  onSetPriority,
+  onDelete,
+}: {
+  project: ProjectData;
+  onSetPriority: (p: number | null) => void;
+  onDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [showPrioritySub, setShowPrioritySub] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteNameInput, setDeleteNameInput] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Click-outside listener
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setShowPrioritySub(false);
+        setShowDeleteConfirm(false);
+        setDeleteNameInput("");
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
 
   return (
-    <div className="flex items-center gap-1">
-      {levels.map((level) => (
-        <button
-          key={level}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onChange(priority === level ? null : level);
-          }}
-          className={`
-            text-[9px] font-bold px-1.5 py-0.5 rounded-full transition-colors
-            ${priority === level ? colors[level] : inactiveColors[level]}
-          `}
-          title={`Priority: ${labels[level]}`}
-        >
-          {level}
-        </button>
-      ))}
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen(!open);
+          setShowPrioritySub(false);
+          setShowDeleteConfirm(false);
+          setDeleteNameInput("");
+        }}
+        className="p-1 rounded text-muted hover:text-earth hover:bg-warm transition-colors"
+        aria-label="Project actions"
+      >
+        <MoreVertical size={16} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-[220px] bg-surface border border-border rounded-lg shadow-lg z-50 py-1">
+          {/* View project */}
+          <a
+            href={`/project/${project.id}/overview`}
+            onClick={() => setOpen(false)}
+            className="w-full text-left px-3 py-2 text-[12px] text-earth hover:bg-warm/50 transition-colors flex items-center gap-2"
+          >
+            <Eye size={13} />
+            View project
+          </a>
+
+          <div className="h-px bg-border my-1" />
+
+          {/* Set priority */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowPrioritySub(!showPrioritySub);
+              setShowDeleteConfirm(false);
+            }}
+            className="w-full text-left px-3 py-2 text-[12px] text-earth hover:bg-warm/50 transition-colors flex items-center justify-between"
+          >
+            <span>Set priority</span>
+            <ChevronRight size={12} className="text-muted" />
+          </button>
+          {showPrioritySub && (
+            <div className="px-2 pb-1">
+              {[1, 2, 3].map((level) => {
+                const priorityLabels: Record<number, string> = { 1: "High", 2: "Medium", 3: "Low" };
+                const isActive = project.priority === level;
+                return (
+                  <button
+                    key={level}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSetPriority(isActive ? null : level);
+                      setOpen(false);
+                      setShowPrioritySub(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-[12px] rounded hover:bg-warm/50 transition-colors flex items-center gap-2 ${isActive ? "text-earth font-medium" : "text-muted"}`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${level === 1 ? "bg-danger" : level === 2 ? "bg-warning" : "bg-blue-500"}`} />
+                    {priorityLabels[level]}
+                    {isActive && <span className="ml-auto text-[10px] text-clay">(active)</span>}
+                  </button>
+                );
+              })}
+              {project.priority && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSetPriority(null);
+                    setOpen(false);
+                    setShowPrioritySub(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-[12px] rounded hover:bg-warm/50 transition-colors text-muted"
+                >
+                  Clear priority
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="h-px bg-border my-1" />
+
+          {/* Delete project */}
+          {!showDeleteConfirm ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDeleteConfirm(true);
+                setShowPrioritySub(false);
+              }}
+              className="w-full text-left px-3 py-2 text-[12px] text-danger hover:bg-danger/5 transition-colors flex items-center gap-2"
+            >
+              <Trash2 size={13} />
+              Delete project
+            </button>
+          ) : (
+            <div className="px-3 py-2">
+              <p className="text-[11px] text-muted mb-1.5">
+                Type <strong className="text-earth">{project.name}</strong> to confirm deletion.
+              </p>
+              <input
+                type="text"
+                value={deleteNameInput}
+                onChange={(e) => setDeleteNameInput(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                placeholder={project.name}
+                className="w-full px-2 py-1.5 text-[11px] border border-border rounded bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:border-danger mb-1.5"
+              />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (deleteNameInput === project.name) {
+                    setDeleting(true);
+                    onDelete();
+                    setOpen(false);
+                  }
+                }}
+                disabled={deleteNameInput !== project.name || deleting}
+                className="w-full px-2 py-1.5 text-[11px] font-medium rounded bg-danger text-white hover:bg-danger/90 transition-colors disabled:opacity-40"
+              >
+                {deleting ? "Deleting..." : "Confirm delete"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -666,6 +808,15 @@ export default function DashboardPage() {
     }
   }, [user]);
 
+  const handleDeleteProject = useCallback(async (projectId: string) => {
+    if (!user) return;
+    try {
+      await deleteProject(user.uid, projectId);
+    } catch {
+      // Silently fail
+    }
+  }, [user]);
+
   const userName = profile?.name ?? user?.displayName ?? "there";
   const firstName = getFirstName(userName);
   const hasProjects = projects.length > 0;
@@ -867,12 +1018,16 @@ export default function DashboardPage() {
                       </Link>
                     </div>
 
-                    {/* Right: priority selector */}
-                    <div className="shrink-0">
-                      <PrioritySelector
-                        priority={p.priority}
-                        onChange={(priority) => {
+                    {/* Right: kebab menu + priority indicator */}
+                    <div className="shrink-0 flex items-center gap-2">
+                      <PriorityIndicator priority={p.priority} />
+                      <ProjectKebabMenu
+                        project={p}
+                        onSetPriority={(priority) => {
                           if (p.id) handlePriorityChange(p.id, priority);
+                        }}
+                        onDelete={() => {
+                          if (p.id) handleDeleteProject(p.id);
                         }}
                       />
                     </div>

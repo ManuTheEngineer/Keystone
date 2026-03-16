@@ -17,11 +17,6 @@ import { ref, update, remove } from "firebase/database";
 import { db } from "@/lib/firebase";
 import { useTopbar } from "../layout";
 import {
-  subscribeToUserProjects,
-  deleteProject,
-  type ProjectData,
-} from "@/lib/services/project-service";
-import {
   User,
   Shield,
   CreditCard,
@@ -29,7 +24,6 @@ import {
   ChevronDown,
   AlertTriangle,
   Check,
-  Trash2,
 } from "lucide-react";
 
 const TIMEZONES = [
@@ -115,12 +109,6 @@ export function SettingsClient() {
   const [deleteError, setDeleteError] = useState("");
 
   // Data management state
-  const [projects, setProjects] = useState<ProjectData[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState("");
-  const [showDeleteProjectConfirm, setShowDeleteProjectConfirm] = useState(false);
-  const [deleteProjectNameConfirm, setDeleteProjectNameConfirm] = useState("");
-  const [deletingProject, setDeletingProject] = useState(false);
-  const [deleteProjectError, setDeleteProjectError] = useState("");
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState("");
   const [resetting, setResetting] = useState(false);
@@ -129,13 +117,6 @@ export function SettingsClient() {
   useEffect(() => {
     setTopbar("Parameters");
   }, [setTopbar]);
-
-  // Subscribe to user projects for data management
-  useEffect(() => {
-    if (!user) return;
-    const unsub = subscribeToUserProjects(user.uid, setProjects);
-    return unsub;
-  }, [user]);
 
   // Update form state when profile loads asynchronously
   useEffect(() => {
@@ -223,24 +204,6 @@ export function SettingsClient() {
         setDeleteError("Account deletion failed. Please try again.");
       }
       setDeleting(false);
-    }
-  }
-
-  async function handleDeleteSelectedProject() {
-    if (!user || !selectedProjectId) return;
-    const selectedProject = projects.find((p) => p.id === selectedProjectId);
-    if (!selectedProject || deleteProjectNameConfirm !== selectedProject.name) return;
-    setDeletingProject(true);
-    setDeleteProjectError("");
-    try {
-      await deleteProject(user.uid, selectedProjectId);
-      setSelectedProjectId("");
-      setShowDeleteProjectConfirm(false);
-      setDeleteProjectNameConfirm("");
-    } catch {
-      setDeleteProjectError("Failed to delete project. Please try again.");
-    } finally {
-      setDeletingProject(false);
     }
   }
 
@@ -545,97 +508,7 @@ export function SettingsClient() {
       {/* ================================================================= */}
       <SectionLabel>Data Management</SectionLabel>
       <Card padding="md" className="mb-5">
-        {/* Delete a Project */}
         <div className="mb-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
-              <Trash2 size={20} className="text-clay" />
-            </div>
-            <div>
-              <p className="text-[13px] font-medium text-earth">Delete a Project</p>
-              <p className="text-[11px] text-muted">
-                Permanently remove a specific project and all its data (budget, contacts, logs, photos, documents, tasks).
-              </p>
-            </div>
-          </div>
-
-          {projects.length === 0 ? (
-            <p className="text-[11px] text-muted">No projects found.</p>
-          ) : (
-            <div className="space-y-2">
-              <select
-                value={selectedProjectId}
-                onChange={(e) => {
-                  setSelectedProjectId(e.target.value);
-                  setShowDeleteProjectConfirm(false);
-                  setDeleteProjectNameConfirm("");
-                  setDeleteProjectError("");
-                }}
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
-              >
-                <option value="">Select a project</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-
-              {selectedProjectId && !showDeleteProjectConfirm && (
-                <button
-                  onClick={() => setShowDeleteProjectConfirm(true)}
-                  className="px-4 py-2 text-[12px] border border-danger text-danger rounded-[var(--radius)] hover:bg-danger/5 transition-colors"
-                >
-                  Delete selected project
-                </button>
-              )}
-
-              {showDeleteProjectConfirm && selectedProjectId && (() => {
-                const selectedProject = projects.find((p) => p.id === selectedProjectId);
-                return selectedProject ? (
-                  <div className="p-3 border border-danger rounded-[var(--radius)] bg-danger/5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle size={16} className="text-danger" />
-                      <p className="text-[12px] font-medium text-danger">Confirm project deletion</p>
-                    </div>
-                    <p className="text-[11px] text-muted mb-2">
-                      Are you sure you want to delete <strong className="text-earth">{selectedProject.name}</strong>? This cannot be undone. Type the project name to confirm.
-                    </p>
-                    {deleteProjectError && (
-                      <p className="text-[11px] text-danger mb-2">{deleteProjectError}</p>
-                    )}
-                    <input
-                      type="text"
-                      value={deleteProjectNameConfirm}
-                      onChange={(e) => setDeleteProjectNameConfirm(e.target.value)}
-                      placeholder={`Type "${selectedProject.name}" to confirm`}
-                      className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-danger w-full mb-2"
-                    />
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleDeleteSelectedProject}
-                        disabled={deleteProjectNameConfirm !== selectedProject.name || deletingProject}
-                        className="px-4 py-2 text-[12px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors disabled:opacity-40"
-                      >
-                        {deletingProject ? "Deleting..." : "Delete project"}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowDeleteProjectConfirm(false);
-                          setDeleteProjectNameConfirm("");
-                          setDeleteProjectError("");
-                        }}
-                        className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-            </div>
-          )}
-        </div>
-
-        <div className="border-t border-border pt-5 mb-6">
           {/* Reset All Data */}
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
