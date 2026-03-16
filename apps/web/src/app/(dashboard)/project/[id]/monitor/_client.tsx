@@ -318,7 +318,7 @@ function WeeklySummary({ logs, photos, budgetItems, project }: WeeklySummaryProp
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
         {summaryItems.map((item, i) => (
           <div key={i} className="flex items-center gap-2 bg-surface rounded-[var(--radius)] p-2.5 border border-border">
             <div className="text-clay/60">{item.icon}</div>
@@ -682,11 +682,11 @@ export function MonitorClient() {
       </Card>
 
       {/* Main content: Photo feed + Milestone tracker */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="md:col-span-3">
           <PhotoFeed photos={photos} projectId={projectId} />
         </div>
-        <div className="lg:col-span-2">
+        <div className="md:col-span-2">
           <MilestonePaymentTracker
             milestones={milestones}
             photos={photos}
@@ -705,7 +705,7 @@ export function MonitorClient() {
       />
 
       {/* Activity log + Material tracker */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ActivityLog logs={logs} photos={photos} />
         <MaterialTracker materials={materials} projectId={projectId} />
       </div>

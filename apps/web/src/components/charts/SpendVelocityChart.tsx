@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import type { CurrencyConfig } from "@keystone/market-data";
 import { formatCurrency, formatCurrencyCompact } from "@keystone/market-data";
+import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 
 interface SpendVelocityChartProps {
   planned: { week: number; amount: number }[];
@@ -45,6 +46,8 @@ function CustomTooltip({
 }
 
 export function SpendVelocityChart({ planned, actual, currency }: SpendVelocityChartProps) {
+  const isMobile = useIsMobile();
+
   if ((!planned || planned.length === 0) && (!actual || actual.length === 0)) {
     return (
       <div className="bg-surface border border-border rounded-[var(--radius)] p-4">
@@ -71,22 +74,23 @@ export function SpendVelocityChart({ planned, actual, currency }: SpendVelocityC
   return (
     <div className="bg-surface border border-border rounded-[var(--radius)] p-4">
       <h3 className="text-sm font-medium text-earth mb-3">Spend Velocity</h3>
-      <div className="h-64">
+      <div className="chart-container" style={{ height: isMobile ? 200 : 256 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={merged} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <XAxis
               dataKey="week"
-              tick={{ fontSize: 11, fill: "#6A6A6A" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A" }}
               tickLine={false}
               axisLine={{ stroke: "#D4A574", strokeWidth: 1 }}
               tickFormatter={(v) => `W${v}`}
             />
             <YAxis
-              tick={{ fontSize: 11, fill: "#6A6A6A", fontFamily: "var(--font-data, monospace)" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A", fontFamily: "var(--font-data, monospace)" }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => formatCurrencyCompact(v, currency)}
-              width={60}
+              width={isMobile ? 40 : 60}
+              hide={isMobile}
             />
             <Tooltip content={<CustomTooltip currency={currency} />} />
             <Area
@@ -113,8 +117,8 @@ export function SpendVelocityChart({ planned, actual, currency }: SpendVelocityC
             <Legend
               verticalAlign="top"
               align="right"
-              iconSize={10}
-              wrapperStyle={{ fontSize: "11px", color: "#6A6A6A" }}
+              iconSize={isMobile ? 8 : 10}
+              wrapperStyle={{ fontSize: isMobile ? "9px" : "11px", color: "#6A6A6A" }}
             />
           </AreaChart>
         </ResponsiveContainer>

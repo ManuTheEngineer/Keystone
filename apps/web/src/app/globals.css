@@ -182,6 +182,27 @@ h1, h2, h3 {
 }
 
 /* === Topographic background pattern === */
+/* Touch-friendly scrolling */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-touch::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile-safe chart container */
+.chart-container {
+  min-height: 180px;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .chart-container {
+    min-height: 250px;
+  }
+}
+
 .bg-topo {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Cg fill='none' stroke='%23D4A574' stroke-width='0.8' opacity='0.05'%3E%3Cellipse cx='300' cy='300' rx='280' ry='180'/%3E%3Cellipse cx='300' cy='300' rx='240' ry='150'/%3E%3Cellipse cx='300' cy='300' rx='200' ry='120'/%3E%3Cellipse cx='300' cy='300' rx='160' ry='90'/%3E%3Cellipse cx='300' cy='300' rx='120' ry='65'/%3E%3Cellipse cx='300' cy='300' rx='80' ry='40'/%3E%3Cellipse cx='150' cy='200' rx='120' ry='80' transform='rotate(-15 150 200)'/%3E%3Cellipse cx='150' cy='200' rx='80' ry='50' transform='rotate(-15 150 200)'/%3E%3Cellipse cx='450' cy='400' rx='130' ry='85' transform='rotate(20 450 400)'/%3E%3Cellipse cx='450' cy='400' rx='90' ry='55' transform='rotate(20 450 400)'/%3E%3Cellipse cx='200' cy='450' rx='100' ry='60' transform='rotate(-10 200 450)'/%3E%3Cellipse cx='400' cy='150' rx='110' ry='70' transform='rotate(12 400 150)'/%3E%3Cellipse cx='400' cy='150' rx='70' ry='40' transform='rotate(12 400 150)'/%3E%3C/g%3E%3C/svg%3E");
   background-size: 600px 600px;

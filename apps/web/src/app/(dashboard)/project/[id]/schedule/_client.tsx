@@ -95,7 +95,7 @@ function PhaseCard({
         ${isCurrent ? "border-emerald-500 border-2 shadow-sm" : ""}
         ${isUpcoming ? "bg-surface border-border opacity-60" : ""}
         ${!isCurrent && !isCompleted ? "border-border" : ""}
-        ${isExpanded ? "w-[320px]" : "w-[180px]"}
+        ${isExpanded ? "w-[calc(100vw-3rem)] sm:w-[320px]" : "w-[140px] sm:w-[180px]"}
       `}
     >
       {/* Header */}
@@ -259,7 +259,7 @@ export function ScheduleClient() {
       <div className="relative">
         <div
           ref={scrollContainerRef}
-          className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-sand/30"
+          className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-sand/30 scroll-touch"
         >
           {phases.map((phaseDef, i) => {
             const phaseKey = PHASE_ORDER[i];

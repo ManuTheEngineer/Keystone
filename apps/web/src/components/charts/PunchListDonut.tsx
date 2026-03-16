@@ -1,6 +1,7 @@
 "use client";
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 
 interface PunchListDonutProps {
   open: number;
@@ -33,6 +34,7 @@ function CustomTooltip({
 }
 
 export function PunchListDonut({ open, inProgress, resolved }: PunchListDonutProps) {
+  const isMobile = useIsMobile();
   const total = open + inProgress + resolved;
 
   if (total === 0) {
@@ -55,15 +57,15 @@ export function PunchListDonut({ open, inProgress, resolved }: PunchListDonutPro
   return (
     <div className="bg-surface border border-border rounded-[var(--radius)] p-4">
       <h3 className="text-sm font-medium text-earth mb-3">Punch List</h3>
-      <div className="h-44">
+      <div className="chart-container" style={{ height: isMobile ? 160 : 176 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius="55%"
-              outerRadius="80%"
+              innerRadius={isMobile ? "45%" : "55%"}
+              outerRadius={isMobile ? "70%" : "80%"}
               dataKey="value"
               stroke="none"
             >

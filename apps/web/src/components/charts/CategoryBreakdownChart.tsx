@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import type { CurrencyConfig } from "@keystone/market-data";
 import { formatCurrency, formatCurrencyCompact } from "@keystone/market-data";
+import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 
 interface CategoryBreakdownItem {
   category: string;
@@ -51,6 +52,8 @@ function CustomTooltip({
 }
 
 export function CategoryBreakdownChart({ items, currency }: CategoryBreakdownChartProps) {
+  const isMobile = useIsMobile();
+
   if (!items || items.length === 0) {
     return (
       <div className="bg-surface border border-border rounded-[var(--radius)] p-4">
@@ -62,7 +65,16 @@ export function CategoryBreakdownChart({ items, currency }: CategoryBreakdownCha
     );
   }
 
-  const chartHeight = Math.max(200, items.length * 48 + 40);
+  const barHeight = isMobile ? 36 : 48;
+  const chartHeight = Math.max(isMobile ? 180 : 200, items.length * barHeight + 40);
+
+  // Truncate category names on mobile
+  const displayItems = isMobile
+    ? items.map((item) => ({
+        ...item,
+        category: item.category.length > 12 ? item.category.slice(0, 12) + "..." : item.category,
+      }))
+    : items;
 
   return (
     <div className="bg-surface border border-border rounded-[var(--radius)] p-4">
@@ -70,15 +82,15 @@ export function CategoryBreakdownChart({ items, currency }: CategoryBreakdownCha
       <div style={{ height: chartHeight }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={items}
+            data={displayItems}
             layout="vertical"
             margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
             barGap={2}
-            barSize={14}
+            barSize={isMobile ? 10 : 14}
           >
             <XAxis
               type="number"
-              tick={{ fontSize: 11, fill: "#6A6A6A", fontFamily: "var(--font-data, monospace)" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A", fontFamily: "var(--font-data, monospace)" }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => formatCurrencyCompact(v, currency)}
@@ -86,10 +98,10 @@ export function CategoryBreakdownChart({ items, currency }: CategoryBreakdownCha
             <YAxis
               type="category"
               dataKey="category"
-              tick={{ fontSize: 11, fill: "#6A6A6A" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A" }}
               tickLine={false}
               axisLine={false}
-              width={100}
+              width={isMobile ? 70 : 100}
             />
             <Tooltip content={<CustomTooltip currency={currency} />} />
             <Bar dataKey="estimated" fill="#D4A574" radius={[0, 3, 3, 0]} name="Estimated" />
@@ -104,8 +116,8 @@ export function CategoryBreakdownChart({ items, currency }: CategoryBreakdownCha
             <Legend
               verticalAlign="top"
               align="right"
-              iconSize={10}
-              wrapperStyle={{ fontSize: "11px", color: "#6A6A6A" }}
+              iconSize={isMobile ? 8 : 10}
+              wrapperStyle={{ fontSize: isMobile ? "9px" : "11px", color: "#6A6A6A" }}
             />
           </BarChart>
         </ResponsiveContainer>

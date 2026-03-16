@@ -3,6 +3,7 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import type { CurrencyConfig } from "@keystone/market-data";
 import { formatCurrency } from "@keystone/market-data";
+import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 
 const CATEGORY_COLORS = [
   "#2C1810", // earth
@@ -49,6 +50,8 @@ function CustomTooltip({
 }
 
 export function BudgetDonutChart({ items, total, currency }: BudgetDonutChartProps) {
+  const isMobile = useIsMobile();
+
   if (!items || items.length === 0) {
     return (
       <div className="bg-surface border border-border rounded-[var(--radius)] p-4">
@@ -68,15 +71,15 @@ export function BudgetDonutChart({ items, total, currency }: BudgetDonutChartPro
   return (
     <div className="bg-surface border border-border rounded-[var(--radius)] p-4">
       <h3 className="text-sm font-medium text-earth mb-3">Budget Breakdown</h3>
-      <div className="h-64">
+      <div className="chart-container" style={{ height: isMobile ? 200 : 256 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="45%"
-              innerRadius="55%"
-              outerRadius="80%"
+              innerRadius={isMobile ? "45%" : "55%"}
+              outerRadius={isMobile ? "70%" : "80%"}
               dataKey="amount"
               nameKey="category"
               stroke="none"
@@ -92,7 +95,7 @@ export function BudgetDonutChart({ items, total, currency }: BudgetDonutChartPro
               textAnchor="middle"
               dominantBaseline="central"
               className="fill-earth"
-              style={{ fontSize: "14px", fontFamily: "var(--font-data, monospace)", fontWeight: 600 }}
+              style={{ fontSize: isMobile ? "11px" : "14px", fontFamily: "var(--font-data, monospace)", fontWeight: 600 }}
             >
               {formatCurrency(total, currency)}
             </text>
@@ -102,7 +105,7 @@ export function BudgetDonutChart({ items, total, currency }: BudgetDonutChartPro
               textAnchor="middle"
               dominantBaseline="central"
               className="fill-muted"
-              style={{ fontSize: "10px" }}
+              style={{ fontSize: isMobile ? "8px" : "10px" }}
             >
               Total Budget
             </text>

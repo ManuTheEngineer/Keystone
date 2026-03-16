@@ -575,7 +575,7 @@ export function OverviewClient() {
           {photos.length > 0 && (
             <div className="mb-4">
               <SectionLabel>Recent Photos</SectionLabel>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {photos.slice(0, 4).map((photo) => (
                   <div
                     key={photo.id}
@@ -604,7 +604,7 @@ export function OverviewClient() {
           )}
 
           {/* Quick action buttons */}
-          <div className="grid grid-cols-3 gap-2 mb-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-5">
             <Link
               href={`/project/${projectId}/daily-log`}
               className="flex flex-col items-center gap-1.5 py-3 bg-surface border border-border rounded-[var(--radius)] hover:bg-warm transition-colors"

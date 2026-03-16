@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 
 interface ProgressSCurveProps {
   planned: { week: number; pct: number }[];
@@ -40,6 +41,8 @@ function CustomTooltip({
 }
 
 export function ProgressSCurve({ planned, actual, currentWeek }: ProgressSCurveProps) {
+  const isMobile = useIsMobile();
+
   if ((!planned || planned.length === 0) && (!actual || actual.length === 0)) {
     return (
       <div className="bg-surface border border-border rounded-[var(--radius)] p-4">
@@ -66,23 +69,24 @@ export function ProgressSCurve({ planned, actual, currentWeek }: ProgressSCurveP
   return (
     <div className="bg-surface border border-border rounded-[var(--radius)] p-4">
       <h3 className="text-sm font-medium text-earth mb-3">Progress S-Curve</h3>
-      <div className="h-64">
+      <div className="chart-container" style={{ height: isMobile ? 200 : 256 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={merged} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <XAxis
               dataKey="week"
-              tick={{ fontSize: 11, fill: "#6A6A6A" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A" }}
               tickLine={false}
               axisLine={{ stroke: "#D4A574", strokeWidth: 1 }}
               tickFormatter={(v) => `W${v}`}
             />
             <YAxis
               domain={[0, 100]}
-              tick={{ fontSize: 11, fill: "#6A6A6A", fontFamily: "var(--font-data, monospace)" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A", fontFamily: "var(--font-data, monospace)" }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v}%`}
-              width={45}
+              width={isMobile ? 30 : 45}
+              hide={isMobile}
             />
             <Tooltip content={<CustomTooltip />} />
             <ReferenceLine
@@ -119,8 +123,8 @@ export function ProgressSCurve({ planned, actual, currentWeek }: ProgressSCurveP
             <Legend
               verticalAlign="top"
               align="right"
-              iconSize={10}
-              wrapperStyle={{ fontSize: "11px", color: "#6A6A6A" }}
+              iconSize={isMobile ? 8 : 10}
+              wrapperStyle={{ fontSize: isMobile ? "9px" : "11px", color: "#6A6A6A" }}
             />
           </LineChart>
         </ResponsiveContainer>

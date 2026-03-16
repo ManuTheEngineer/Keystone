@@ -17,12 +17,15 @@ import {
   GraduationCap,
   Check,
   ArrowRight,
+  Menu,
+  X,
 } from "lucide-react";
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [navScrolled, setNavScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,7 +64,7 @@ export default function LandingPage() {
             : "bg-transparent"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <KeystoneIcon size={28} className="text-earth" />
             <span
@@ -71,10 +74,12 @@ export default function LandingPage() {
               KEYSTONE
             </span>
           </div>
-          <div className="flex items-center gap-6">
+
+          {/* Desktop nav */}
+          <div className="hidden sm:flex items-center gap-6">
             <Link
               href="/learn"
-              className="hidden sm:inline text-[14px] text-muted hover:text-earth transition-colors"
+              className="text-[14px] text-muted hover:text-earth transition-colors"
             >
               Learn
             </Link>
@@ -91,7 +96,45 @@ export default function LandingPage() {
               Start free
             </Link>
           </div>
+
+          {/* Mobile hamburger */}
+          <button
+            className="sm:hidden p-2 text-earth"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
+
+        {/* Mobile slide-out panel */}
+        {mobileMenuOpen && (
+          <div className="sm:hidden bg-white border-t border-border shadow-lg animate-fade-in">
+            <div className="px-4 py-4 space-y-3">
+              <Link
+                href="/learn"
+                className="block text-[14px] text-muted hover:text-earth py-2 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Learn
+              </Link>
+              <Link
+                href="/login"
+                className="block text-[14px] text-muted hover:text-earth py-2 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/register"
+                className="block w-full text-center px-5 py-3 text-[14px] font-medium rounded-full bg-earth text-warm hover:bg-earth-light transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Start free
+              </Link>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Section 2: Hero */}
@@ -102,10 +145,10 @@ export default function LandingPage() {
       >
         {/* Topographic background pattern */}
         <div className="absolute inset-0 bg-topo opacity-100 pointer-events-none" />
-        <div className="relative max-w-7xl mx-auto px-6 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 items-center">
-            {/* Left content - 60% */}
-            <div className="lg:col-span-3 animate-fade-in">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12 items-center">
+            {/* Left content - 60% (shown first on mobile) */}
+            <div className="lg:col-span-3 animate-fade-in order-1">
               <h1
                 className="text-[40px] sm:text-[48px] leading-[1.1] text-earth mb-6"
                 style={{ fontFamily: "var(--font-heading)" }}
@@ -135,8 +178,8 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right illustration - 40% */}
-            <div className="lg:col-span-2 flex justify-center">
+            {/* Right illustration - 40% (shown second on mobile) */}
+            <div className="lg:col-span-2 flex justify-center order-2">
               <svg
                 viewBox="0 0 400 360"
                 fill="none"
@@ -198,7 +241,7 @@ export default function LandingPage() {
       </section>
 
       {/* Section 3: How It Works */}
-      <section id="how-it-works" className="py-24 px-6">
+      <section id="how-it-works" className="py-16 sm:py-24 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <h2
             className="text-[28px] sm:text-[32px] text-earth text-center mb-16"
@@ -206,7 +249,7 @@ export default function LandingPage() {
           >
             Three steps to your new home
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             <div className="bg-white rounded-xl p-8 shadow-[var(--shadow-sm)] card-hover">
               <span
                 className="block text-[48px] text-clay/30 font-bold mb-4"
@@ -277,7 +320,7 @@ export default function LandingPage() {
       </section>
 
       {/* Section 4: Features Grid */}
-      <section className="py-24 px-6 bg-white">
+      <section className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
         <div className="max-w-7xl mx-auto">
           <h2
             className="text-[28px] sm:text-[32px] text-earth text-center mb-16"
@@ -285,7 +328,7 @@ export default function LandingPage() {
           >
             Everything you need to build
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[
               {
                 icon: Globe,
@@ -347,7 +390,7 @@ export default function LandingPage() {
       </section>
 
       {/* Section 5: Diaspora Section */}
-      <section className="py-24 px-6 bg-warm">
+      <section className="py-16 sm:py-24 px-4 sm:px-6 bg-warm">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -427,7 +470,7 @@ export default function LandingPage() {
       </section>
 
       {/* Section 6: Pricing */}
-      <section className="py-24 px-6">
+      <section className="py-16 sm:py-24 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <h2
             className="text-[28px] sm:text-[32px] text-earth text-center mb-4"
@@ -438,7 +481,7 @@ export default function LandingPage() {
           <p className="text-[16px] text-muted text-center mb-16 max-w-xl mx-auto">
             Start free and upgrade as your projects grow.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* Foundation */}
             <div className="bg-white rounded-xl p-6 border border-border card-hover">
               <h3
@@ -605,7 +648,7 @@ export default function LandingPage() {
       </section>
 
       {/* Section 7: Footer */}
-      <footer className="bg-earth py-16 px-6">
+      <footer className="bg-earth py-12 sm:py-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
             {/* Brand column */}

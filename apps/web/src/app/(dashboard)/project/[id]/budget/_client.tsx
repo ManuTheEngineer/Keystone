@@ -510,26 +510,26 @@ export function BudgetClient() {
       {/* FLOATING STICKY BAR                                               */}
       {/* ================================================================= */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-earth border-t border-earth-light">
-        <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-3 sm:gap-6">
             <div>
-              <p className="text-[9px] text-warm/60 uppercase tracking-wider">Total Budget</p>
-              <p className="font-data text-sm text-warm font-medium">{fmtCompact(project.totalBudget)}</p>
+              <p className="text-[8px] sm:text-[9px] text-warm/60 uppercase tracking-wider">Budget</p>
+              <p className="font-data text-xs sm:text-sm text-warm font-medium">{fmtCompact(project.totalBudget)}</p>
             </div>
             <div>
-              <p className="text-[9px] text-warm/60 uppercase tracking-wider">Spent</p>
-              <p className="font-data text-sm text-warm font-medium">{fmtCompact(project.totalSpent)}</p>
+              <p className="text-[8px] sm:text-[9px] text-warm/60 uppercase tracking-wider">Spent</p>
+              <p className="font-data text-xs sm:text-sm text-warm font-medium">{fmtCompact(project.totalSpent)}</p>
             </div>
             <div>
-              <p className="text-[9px] text-warm/60 uppercase tracking-wider">Remaining</p>
-              <p className={`font-data text-sm font-medium ${remaining >= 0 ? "text-warm" : "text-danger"}`}>
+              <p className="text-[8px] sm:text-[9px] text-warm/60 uppercase tracking-wider">Left</p>
+              <p className={`font-data text-xs sm:text-sm font-medium ${remaining >= 0 ? "text-warm" : "text-danger"}`}>
                 {fmtCompact(remaining)}
               </p>
             </div>
           </div>
           <div>
-            <p className="text-[9px] text-warm/60 uppercase tracking-wider">Contingency</p>
-            <p className="font-data text-sm text-warm font-medium">
+            <p className="text-[8px] sm:text-[9px] text-warm/60 uppercase tracking-wider">Conting.</p>
+            <p className="font-data text-xs sm:text-sm text-warm font-medium">
               {project.totalBudget > 0
                 ? `${Math.round(((project.totalBudget - project.totalSpent) / project.totalBudget) * 100)}%`
                 : "--"}

@@ -1,5 +1,7 @@
 "use client";
 
+import { useIsMobile } from "@/lib/hooks/use-is-mobile";
+
 interface MilestoneItem {
   name: string;
   status: "completed" | "current" | "upcoming";
@@ -29,6 +31,8 @@ const STATUS_STYLES = {
 };
 
 export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
+  const isMobile = useIsMobile();
+
   if (!milestones || milestones.length === 0) {
     return (
       <div className="bg-surface border border-border rounded-[var(--radius)] p-4">
@@ -40,19 +44,21 @@ export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
     );
   }
 
-  const dotSize = 14;
-  const padding = 32;
-  const lineY = 40;
+  const dotSize = isMobile ? 10 : 14;
+  const padding = isMobile ? 20 : 32;
+  const lineY = isMobile ? 32 : 40;
+  const itemSpacing = isMobile ? 80 : 120;
+  const itemWidth = isMobile ? 64 : 100;
 
   return (
     <div className="bg-surface border border-border rounded-[var(--radius)] p-4">
       <h3 className="text-sm font-medium text-earth mb-3">Milestone Timeline</h3>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto scroll-touch">
         <div
           className="relative"
           style={{
-            minWidth: milestones.length * 120 + padding * 2,
-            height: 100,
+            minWidth: milestones.length * itemSpacing + padding * 2,
+            height: isMobile ? 80 : 100,
           }}
         >
           {/* Connecting line */}
@@ -81,11 +87,14 @@ export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
           >
             {milestones.map((milestone, index) => {
               const style = STATUS_STYLES[milestone.status];
+              const displayName = isMobile && milestone.name.length > 15
+                ? milestone.name.slice(0, 15) + "..."
+                : milestone.name;
               return (
                 <div
                   key={index}
                   className="flex flex-col items-center"
-                  style={{ width: 100 }}
+                  style={{ width: itemWidth }}
                 >
                   {/* Payment % label */}
                   <div className="h-5 flex items-end justify-center mb-1">
@@ -127,9 +136,9 @@ export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
                   {/* Name */}
                   <span
                     className={`text-[10px] text-center mt-1.5 leading-tight ${style.textColor}`}
-                    style={{ maxWidth: 90 }}
+                    style={{ maxWidth: itemWidth - 10 }}
                   >
-                    {milestone.name}
+                    {displayName}
                   </span>
                 </div>
               );
