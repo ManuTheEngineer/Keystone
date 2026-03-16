@@ -188,7 +188,7 @@ function generateActualProgress(progress: number, currentWeek: number): { week: 
 export function OverviewClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const router = useRouter();
   const projectId = params.id as string;
 
@@ -1375,6 +1375,8 @@ export function OverviewClient() {
             materials,
           }}
           onClose={() => setShowExportModal(false)}
+          userPlan={profile?.plan}
+          userRole={profile?.role}
         />
       )}
 

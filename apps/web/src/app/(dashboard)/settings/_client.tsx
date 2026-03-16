@@ -24,7 +24,20 @@ import {
   ChevronDown,
   AlertTriangle,
   Check,
+  Gift,
+  Copy,
+  Trash2,
+  Crown,
 } from "lucide-react";
+import { PLAN_CONFIG, formatPrice, getAnnualSavings, type PlanTier, type BillingInterval } from "@/lib/stripe-config";
+import { useToast } from "@/components/ui/Toast";
+import {
+  generateTrialCode,
+  redeemTrialCode,
+  subscribeToTrialCodes,
+  revokeTrialCode,
+  type TrialCode,
+} from "@/lib/services/trial-service";
 
 const TIMEZONES = [
   "UTC",
@@ -45,40 +58,27 @@ const CURRENCIES = [
   { code: "GHS", label: "GHS (GH\u20B5)" },
 ];
 
-const PLAN_FEATURES: Record<string, string[]> = {
-  FOUNDATION: [
-    "1 active project",
-    "10 AI queries per day",
-    "Basic budget tracking",
-    "Daily log",
-    "Photo uploads (50 max)",
-  ],
-  BUILDER: [
-    "3 active projects",
-    "50 AI queries per day",
-    "Full budget with benchmarks",
-    "Document generation",
-    "Photo uploads (500 max)",
-    "Export to PDF/CSV",
-  ],
-  DEVELOPER: [
-    "Unlimited projects",
-    "Unlimited AI queries",
-    "Advanced financial modeling",
-    "All document templates",
-    "Unlimited photos",
-    "Priority support",
-    "Team collaboration",
-  ],
-  ENTERPRISE: [
-    "Everything in Developer",
-    "Custom integrations",
-    "Dedicated account manager",
-    "SLA guarantees",
-    "SSO authentication",
-    "Audit logging",
-  ],
-};
+const FOUNDATION_FEATURES = [
+  "1 active project",
+  "10 AI queries per day",
+  "Basic budget tracking",
+  "Daily log",
+  "Photo uploads (50 max)",
+];
+
+const TIER_ORDER: PlanTier[] = ["FOUNDATION", "BUILDER", "DEVELOPER", "ENTERPRISE"];
+
+const DURATION_OPTIONS = [
+  { value: 48, label: "48 hours" },
+  { value: 72, label: "3 days" },
+  { value: 168, label: "7 days" },
+];
+
+const MAX_USES_OPTIONS = [
+  { value: 1, label: "1" },
+  { value: 5, label: "5" },
+  { value: 0, label: "Unlimited" },
+];
 
 export function SettingsClient() {
   const { user, profile } = useAuth();
@@ -107,6 +107,26 @@ export function SettingsClient() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+
+  // Plan/billing state
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
+  const [upgradingTier, setUpgradingTier] = useState<PlanTier | null>(null);
+  const [managingPortal, setManagingPortal] = useState(false);
+
+  // Trial code generation state (admin)
+  const [trialTier, setTrialTier] = useState<"BUILDER" | "DEVELOPER">("BUILDER");
+  const [trialDuration, setTrialDuration] = useState(48);
+  const [trialMaxUses, setTrialMaxUses] = useState(1);
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState("");
+  const [trialCodes, setTrialCodes] = useState<TrialCode[]>([]);
+  const [revokingCode, setRevokingCode] = useState<string | null>(null);
+
+  // Trial code redemption state (non-admin)
+  const [redeemCode, setRedeemCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
+
+  const { showToast } = useToast();
 
   // Data management state
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -241,7 +261,115 @@ export function SettingsClient() {
     URL.revokeObjectURL(url);
   }
 
+  // Subscribe to trial codes if admin
+  useEffect(() => {
+    if (profile?.role !== "admin") return;
+    const unsub = subscribeToTrialCodes(setTrialCodes);
+    return unsub;
+  }, [profile?.role]);
+
+  async function handleUpgrade(tier: PlanTier) {
+    if (tier === "FOUNDATION") return;
+    setUpgradingTier(tier);
+    try {
+      const config = PLAN_CONFIG[tier as Exclude<PlanTier, "FOUNDATION">];
+      const priceId = billingInterval === "monthly" ? config.monthlyPriceId : config.annualPriceId;
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId, tier, interval: billingInterval }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        showToast("Failed to start checkout. Please try again.", "error");
+      }
+    } catch {
+      showToast("Failed to start checkout. Please try again.", "error");
+    } finally {
+      setUpgradingTier(null);
+    }
+  }
+
+  async function handleManageSubscription() {
+    setManagingPortal(true);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        showToast("Failed to open billing portal.", "error");
+      }
+    } catch {
+      showToast("Failed to open billing portal.", "error");
+    } finally {
+      setManagingPortal(false);
+    }
+  }
+
+  async function handleGenerateTrialCode() {
+    if (!user) return;
+    setGeneratingCode(true);
+    try {
+      const code = await generateTrialCode(user.uid, trialTier, trialDuration, trialMaxUses);
+      setGeneratedCode(code);
+      showToast("Trial code generated successfully.", "success");
+    } catch {
+      showToast("Failed to generate trial code.", "error");
+    } finally {
+      setGeneratingCode(false);
+    }
+  }
+
+  async function handleRevokeTrialCode(code: string) {
+    setRevokingCode(code);
+    try {
+      await revokeTrialCode(code);
+      showToast("Trial code revoked.", "success");
+    } catch {
+      showToast("Failed to revoke code.", "error");
+    } finally {
+      setRevokingCode(null);
+    }
+  }
+
+  async function handleRedeemTrialCode() {
+    if (!user || !redeemCode.trim()) return;
+    setRedeeming(true);
+    try {
+      const result = await redeemTrialCode(user.uid, redeemCode.trim().toUpperCase());
+      if (result.success) {
+        const expiry = result.expiresAt ? new Date(result.expiresAt).toLocaleDateString() : "";
+        showToast(`Trial activated: ${result.tier} tier until ${expiry}`, "success");
+        setRedeemCode("");
+      } else {
+        showToast(result.error ?? "Failed to redeem code.", "error");
+      }
+    } catch {
+      showToast("Failed to redeem code. Please try again.", "error");
+    } finally {
+      setRedeeming(false);
+    }
+  }
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast("Copied to clipboard.", "success");
+    });
+  }
+
+  function getTrialCodeStatus(code: TrialCode): "active" | "expired" | "revoked" {
+    if (code.revokedAt) return "revoked";
+    if (new Date(code.expiresAt) < new Date()) return "expired";
+    return "active";
+  }
+
   const currentPlan = profile?.plan ?? "FOUNDATION";
+  const isAdmin = profile?.role === "admin";
+  const hasActiveSubscription = profile?.subscriptionStatus === "active";
+  const isTrialing = profile?.subscriptionStatus === "trialing";
 
   return (
     <div className="animate-stagger">
@@ -428,33 +556,109 @@ export function SettingsClient() {
           <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
             <CreditCard size={20} className="text-clay" />
           </div>
-          <div>
-            <p className="text-[13px] font-medium text-earth">
-              Current plan: {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()}
-            </p>
-            <p className="text-[11px] text-muted">Compare plans and features</p>
+          <div className="flex items-center gap-2">
+            <div>
+              <p className="text-[13px] font-medium text-earth">
+                Current plan: {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()}
+              </p>
+              <p className="text-[11px] text-muted">Compare plans and features</p>
+            </div>
+            {isAdmin && (
+              <span className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-clay/10 text-clay rounded-full">
+                Enterprise (Admin)
+              </span>
+            )}
+            {isTrialing && (
+              <span className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-warning/10 text-warning rounded-full">
+                Trial: {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()} — expires {profile?.trialExpiresAt ? new Date(profile.trialExpiresAt).toLocaleDateString() : ""}
+              </span>
+            )}
           </div>
         </div>
 
-        <p className="text-[11px] text-muted leading-relaxed mb-3">
+        <p className="text-[11px] text-muted leading-relaxed mb-4">
           Your current plan determines how many projects you can manage and how many AI queries you can make per day. Most individual builders start with Foundation and upgrade to Builder when they start their second project.
         </p>
 
+        {/* Billing interval toggle */}
+        {!isAdmin && (
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <button
+              onClick={() => setBillingInterval("monthly")}
+              className={`px-3 py-1.5 text-[11px] font-medium rounded-full transition-colors ${
+                billingInterval === "monthly"
+                  ? "bg-earth text-warm"
+                  : "bg-surface-alt text-muted hover:text-earth"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingInterval("annual")}
+              className={`px-3 py-1.5 text-[11px] font-medium rounded-full transition-colors flex items-center gap-1.5 ${
+                billingInterval === "annual"
+                  ? "bg-earth text-warm"
+                  : "bg-surface-alt text-muted hover:text-earth"
+              }`}
+            >
+              Annual
+              <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-success text-white rounded-full">
+                Save 20%
+              </span>
+            </button>
+          </div>
+        )}
+
+        {/* Tier cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {Object.entries(PLAN_FEATURES).map(([plan, features]) => {
-            const isCurrentPlan = plan === currentPlan;
-            const planName = plan.charAt(0) + plan.slice(1).toLowerCase();
+          {TIER_ORDER.map((tier) => {
+            const isCurrent = tier === currentPlan;
+            const isFoundation = tier === "FOUNDATION";
+            const tierName = tier.charAt(0) + tier.slice(1).toLowerCase();
+            const features = isFoundation ? FOUNDATION_FEATURES : PLAN_CONFIG[tier as Exclude<PlanTier, "FOUNDATION">].features;
+            const config = isFoundation ? null : PLAN_CONFIG[tier as Exclude<PlanTier, "FOUNDATION">];
+            const price = config
+              ? billingInterval === "monthly"
+                ? formatPrice(config.monthlyPrice)
+                : formatPrice(config.annualPrice)
+              : "Free";
+            const priceLabel = config
+              ? billingInterval === "monthly" ? "/mo" : "/yr"
+              : "";
+            const isDeveloper = tier === "DEVELOPER";
+
             return (
               <div
-                key={plan}
-                className={`p-3 rounded-[var(--radius)] border ${
-                  isCurrentPlan
-                    ? "border-emerald-300 bg-emerald-50"
+                key={tier}
+                className={`relative p-4 rounded-2xl border transition-shadow ${
+                  isCurrent
+                    ? "border-success/40 bg-success/5 shadow-sm"
+                    : isDeveloper
+                    ? "border-clay/30 bg-surface shadow-sm"
                     : "border-border bg-surface"
                 }`}
               >
-                <p className="text-[12px] font-semibold text-earth mb-2">{planName}</p>
-                <ul className="space-y-1.5 mb-3">
+                {isDeveloper && !isCurrent && (
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                    <span className="px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-clay text-warm rounded-full flex items-center gap-1">
+                      <Crown size={10} /> Most popular
+                    </span>
+                  </div>
+                )}
+
+                <p className="text-[13px] font-semibold text-earth mb-1">{tierName}</p>
+                <p className="text-[18px] font-bold text-earth mb-3">
+                  {price}
+                  {priceLabel && <span className="text-[11px] font-normal text-muted">{priceLabel}</span>}
+                </p>
+
+                {config && billingInterval === "annual" && (
+                  <p className="text-[10px] text-success font-medium mb-2">
+                    Save {formatPrice(getAnnualSavings(tier as Exclude<PlanTier, "FOUNDATION">))} per year
+                  </p>
+                )}
+
+                <ul className="space-y-1.5 mb-4">
                   {features.map((f, i) => (
                     <li key={i} className="flex items-start gap-1.5 text-[10px] text-muted">
                       <Check size={10} className="text-success mt-0.5 shrink-0" />
@@ -462,18 +666,233 @@ export function SettingsClient() {
                     </li>
                   ))}
                 </ul>
-                {isCurrentPlan ? (
-                  <span className="inline-block px-3 py-1 text-[10px] font-medium text-emerald-700 bg-emerald-100 rounded-full">
+
+                {isCurrent ? (
+                  <span className="inline-block w-full text-center px-3 py-1.5 text-[10px] font-medium text-success bg-success/10 rounded-full">
                     Current plan
                   </span>
+                ) : isAdmin ? (
+                  <span className="inline-block w-full text-center px-3 py-1.5 text-[10px] text-muted">
+                    Admin access
+                  </span>
+                ) : isFoundation ? (
+                  <span className="inline-block w-full text-center px-3 py-1.5 text-[10px] text-muted">
+                    Free tier
+                  </span>
                 ) : (
-                  <span className="text-[11px] text-muted">Upgrades coming soon</span>
+                  <button
+                    onClick={() => handleUpgrade(tier)}
+                    disabled={upgradingTier === tier}
+                    className={`w-full px-3 py-1.5 text-[11px] font-medium rounded-full transition-colors disabled:opacity-40 ${
+                      isDeveloper
+                        ? "bg-clay text-warm hover:bg-clay/90"
+                        : "bg-earth text-warm hover:bg-earth-light"
+                    }`}
+                  >
+                    {upgradingTier === tier ? "Redirecting..." : "Upgrade"}
+                  </button>
                 )}
               </div>
             );
           })}
         </div>
+
+        {/* Manage subscription button for active subscribers */}
+        {hasActiveSubscription && !isAdmin && (
+          <div className="mt-4 pt-3 border-t border-border">
+            <button
+              onClick={handleManageSubscription}
+              disabled={managingPortal}
+              className="px-4 py-2 text-[12px] border border-border text-earth rounded-[var(--radius)] hover:bg-surface-alt transition-colors disabled:opacity-40"
+            >
+              {managingPortal ? "Opening portal..." : "Manage Subscription"}
+            </button>
+          </div>
+        )}
       </Card>
+
+      {/* ================================================================= */}
+      {/* Trial Code Redemption (non-admin users)                            */}
+      {/* ================================================================= */}
+      {!isAdmin && (
+        <>
+          <SectionLabel>Trial Code</SectionLabel>
+          <Card padding="md" className="mb-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
+                <Gift size={20} className="text-clay" />
+              </div>
+              <div>
+                <p className="text-[13px] font-medium text-earth">Have a trial code?</p>
+                <p className="text-[11px] text-muted">Enter a code to unlock a temporary plan upgrade</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={redeemCode}
+                onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                placeholder="e.g. KEY-48H-BUI-XXXX"
+                className="flex-1 px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-clay font-mono tracking-wider input-focus"
+              />
+              <button
+                onClick={handleRedeemTrialCode}
+                disabled={redeeming || !redeemCode.trim()}
+                className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 shrink-0"
+              >
+                {redeeming ? "Redeeming..." : "Redeem"}
+              </button>
+            </div>
+          </Card>
+        </>
+      )}
+
+      {/* ================================================================= */}
+      {/* Admin Trial Code Management                                        */}
+      {/* ================================================================= */}
+      {isAdmin && (
+        <>
+          <SectionLabel>
+            <span className="flex items-center gap-2">
+              Trial Codes
+              <span className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-clay/10 text-clay rounded-full">
+                Admin
+              </span>
+            </span>
+          </SectionLabel>
+          <Card padding="md" className="mb-5">
+            {/* Generate Trial Code */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
+                <Gift size={20} className="text-clay" />
+              </div>
+              <div>
+                <p className="text-[13px] font-medium text-earth">Generate Trial Code</p>
+                <p className="text-[11px] text-muted">Create codes to give users temporary plan access</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+              <div>
+                <label className="block text-[11px] text-muted font-medium mb-1">Tier</label>
+                <select
+                  value={trialTier}
+                  onChange={(e) => setTrialTier(e.target.value as "BUILDER" | "DEVELOPER")}
+                  className="w-full px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay"
+                >
+                  <option value="BUILDER">Builder</option>
+                  <option value="DEVELOPER">Developer</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] text-muted font-medium mb-1">Duration</label>
+                <select
+                  value={trialDuration}
+                  onChange={(e) => setTrialDuration(Number(e.target.value))}
+                  className="w-full px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay"
+                >
+                  {DURATION_OPTIONS.map((d) => (
+                    <option key={d.value} value={d.value}>{d.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] text-muted font-medium mb-1">Max uses</label>
+                <select
+                  value={trialMaxUses}
+                  onChange={(e) => setTrialMaxUses(Number(e.target.value))}
+                  className="w-full px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay"
+                >
+                  {MAX_USES_OPTIONS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleGenerateTrialCode}
+              disabled={generatingCode}
+              className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 mb-3"
+            >
+              {generatingCode ? "Generating..." : "Generate Code"}
+            </button>
+
+            {generatedCode && (
+              <div className="flex items-center gap-2 p-3 rounded-[var(--radius)] bg-success/5 border border-success/20 mb-4">
+                <span className="text-[13px] font-mono font-semibold text-earth tracking-wider">{generatedCode}</span>
+                <button
+                  onClick={() => copyToClipboard(generatedCode)}
+                  className="p-1.5 rounded-[var(--radius)] hover:bg-surface-alt transition-colors text-muted hover:text-earth"
+                  title="Copy code"
+                >
+                  <Copy size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* Active Codes Table */}
+            {trialCodes.length > 0 && (
+              <div className="border-t border-border pt-4 mt-2">
+                <p className="text-[12px] font-semibold text-earth mb-3">Active Codes</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 pr-3 text-muted font-medium">Code</th>
+                        <th className="text-left py-2 pr-3 text-muted font-medium">Tier</th>
+                        <th className="text-left py-2 pr-3 text-muted font-medium">Duration</th>
+                        <th className="text-left py-2 pr-3 text-muted font-medium">Uses</th>
+                        <th className="text-left py-2 pr-3 text-muted font-medium">Expires</th>
+                        <th className="text-left py-2 pr-3 text-muted font-medium">Status</th>
+                        <th className="text-right py-2 text-muted font-medium"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {trialCodes.map((tc) => {
+                        const status = getTrialCodeStatus(tc);
+                        return (
+                          <tr key={tc.code} className="border-b border-border/50">
+                            <td className="py-2 pr-3 font-mono tracking-wider text-earth">{tc.code}</td>
+                            <td className="py-2 pr-3 text-muted">{tc.tier.charAt(0) + tc.tier.slice(1).toLowerCase()}</td>
+                            <td className="py-2 pr-3 text-muted">{tc.durationHours}h</td>
+                            <td className="py-2 pr-3 text-muted">{tc.usedCount}/{tc.maxUses === 0 ? "Unlimited" : tc.maxUses}</td>
+                            <td className="py-2 pr-3 text-muted">{new Date(tc.expiresAt).toLocaleDateString()}</td>
+                            <td className="py-2 pr-3">
+                              <span className={`inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded-full ${
+                                status === "active"
+                                  ? "bg-success/10 text-success"
+                                  : status === "expired"
+                                  ? "bg-muted/10 text-muted"
+                                  : "bg-danger/10 text-danger"
+                              }`}>
+                                {status}
+                              </span>
+                            </td>
+                            <td className="py-2 text-right">
+                              {status === "active" && (
+                                <button
+                                  onClick={() => handleRevokeTrialCode(tc.code)}
+                                  disabled={revokingCode === tc.code}
+                                  className="p-1 rounded-[var(--radius)] hover:bg-danger/5 text-muted hover:text-danger transition-colors disabled:opacity-40"
+                                  title="Revoke code"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </Card>
+        </>
+      )}
 
       {/* ================================================================= */}
       {/* Data Section                                                       */}

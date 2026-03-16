@@ -13,6 +13,7 @@
   "dependencies": {
     "@keystone/core": "*",
     "@keystone/market-data": "*",
+    "@stripe/stripe-js": "^8.10.0",
     "@tanstack/react-query": "^5.90.21",
     "firebase": "^12.10.0",
     "lucide-react": "^0.577.0",
@@ -21,6 +22,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.8.0",
+    "stripe": "^20.4.1",
     "zustand": "^5.0.11"
   },
   "devDependencies": {

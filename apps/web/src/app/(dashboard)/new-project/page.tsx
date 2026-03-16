@@ -4,7 +4,9 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTopbar } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { createProject, type Market, type BuildPurpose, type PropertyType } from "@/lib/services/project-service";
+import { createProject, getUserProjects, type Market, type BuildPurpose, type PropertyType } from "@/lib/services/project-service";
+import { getPlanLimits } from "@/lib/stripe-config";
+import type { PlanTier } from "@/lib/stripe-config";
 import {
   Home,
   Building2,
@@ -431,11 +433,19 @@ function CostDonut({ segments, size = 160 }: { segments: { label: string; value:
 
 export default function NewProjectPage() {
   const { setTopbar } = useTopbar();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [state, setState] = useState<WizardState>(INITIAL_STATE);
   const [creating, setCreating] = useState(false);
+  const [projectCount, setProjectCount] = useState(0);
+  const [planError, setPlanError] = useState("");
+
+  // Fetch existing project count for plan limit enforcement
+  useEffect(() => {
+    if (!user) return;
+    getUserProjects(user.uid).then((projects) => setProjectCount(projects.length)).catch(() => {});
+  }, [user]);
 
   useEffect(() => {
     setTopbar("New project", "Setup wizard", "info");
@@ -516,6 +526,19 @@ export default function NewProjectPage() {
 
   async function handleCreate() {
     if (!user || creating) return;
+    setPlanError("");
+
+    // Check project limit (admin bypasses)
+    if (profile?.role !== "admin") {
+      const limits = getPlanLimits((profile?.plan as PlanTier) ?? "FOUNDATION");
+      if (limits.projects !== Infinity && projectCount >= limits.projects) {
+        setPlanError(
+          `Your ${profile?.plan ?? "Foundation"} plan allows ${limits.projects} project${limits.projects === 1 ? "" : "s"}. Upgrade your plan to create more.`
+        );
+        return;
+      }
+    }
+
     setCreating(true);
     try {
       const market = state.market as Market;
@@ -1385,6 +1408,14 @@ export default function NewProjectPage() {
       <div className="text-center">
         {renderStep()}
       </div>
+
+      {/* Plan limit error */}
+      {planError && (
+        <div className="flex items-start gap-2 p-3 rounded-[var(--radius)] bg-danger-bg border border-danger/20 mt-4">
+          <AlertTriangle size={16} className="text-danger shrink-0 mt-0.5" />
+          <p className="text-[12px] text-danger leading-relaxed">{planError}</p>
+        </div>
+      )}
 
       {/* Nav buttons */}
       <div className="flex justify-center gap-2 mt-8">

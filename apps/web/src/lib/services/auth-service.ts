@@ -18,6 +18,13 @@ export interface UserProfile {
   locale: string;
   currency: string;
   plan: "FOUNDATION" | "BUILDER" | "DEVELOPER" | "ENTERPRISE";
+  role?: "admin" | "user";
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  subscriptionStatus?: "active" | "past_due" | "canceled" | "trialing";
+  billingInterval?: "monthly" | "annual";
+  trialExpiresAt?: string;
+  trialCodeUsed?: string;
   createdAt: string;
 }
 

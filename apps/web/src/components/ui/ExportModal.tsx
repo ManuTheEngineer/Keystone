@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import type { ProjectData } from "@/lib/services/project-service";
 import type { ExportData } from "@/lib/services/export-service";
+import { getPlanLimits } from "@/lib/stripe-config";
+import type { PlanTier } from "@/lib/stripe-config";
 import {
   exportProjectPDF,
   exportBudgetCSV,
@@ -31,6 +33,8 @@ interface ExportModalProps {
   project: ProjectData;
   data: ExportData;
   onClose: () => void;
+  userPlan?: string;
+  userRole?: string;
 }
 
 interface ExportOption {
@@ -42,10 +46,20 @@ interface ExportOption {
   action: () => void;
 }
 
-export function ExportModal({ project, data, onClose }: ExportModalProps) {
+export function ExportModal({ project, data, onClose, userPlan, userRole }: ExportModalProps) {
   const [loading, setLoading] = useState<string | null>(null);
+  const [exportError, setExportError] = useState("");
 
   async function handleExport(id: string, action: () => void) {
+    // Check export permission (admin bypasses)
+    if (userRole !== "admin" && userPlan) {
+      const limits = getPlanLimits(userPlan as PlanTier);
+      if (!limits.export) {
+        setExportError("Export requires a Builder plan or higher.");
+        return;
+      }
+    }
+    setExportError("");
     setLoading(id);
     try {
       // Small delay to show the loading state before the browser
@@ -176,6 +190,13 @@ export function ExportModal({ project, data, onClose }: ExportModalProps) {
             <X size={18} />
           </button>
         </div>
+
+        {/* Plan limit error */}
+        {exportError && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-danger-bg border border-danger/20 mb-4">
+            <p className="text-[12px] text-danger leading-relaxed">{exportError}</p>
+          </div>
+        )}
 
         {/* Export option cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -15,6 +15,9 @@ import {
   type BudgetItemData,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
+import { getPlanLimits } from "@/lib/stripe-config";
+import type { PlanTier } from "@/lib/stripe-config";
 import { generateDocument } from "@/lib/services/document-generator";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -89,7 +92,8 @@ function DocumentTemplateCard({
 export function DocumentsClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { showToast } = useToast();
   const projectId = params.id as string;
 
   const [docs, setDocs] = useState<DocumentData[]>([]);
@@ -162,8 +166,16 @@ export function DocumentsClient() {
 
   // Step 1: User clicks "Use" on a template -> show fill form
   const handleUseTemplate = useCallback((template: DocumentTemplate) => {
+    // Check document generation permission (admin bypasses)
+    if (profile?.role !== "admin") {
+      const limits = getPlanLimits((profile?.plan as PlanTier) ?? "FOUNDATION");
+      if (!limits.docGen) {
+        showToast("Document generation requires a Builder plan or higher.", "error");
+        return;
+      }
+    }
     setSelectedTemplate(template);
-  }, []);
+  }, [profile, showToast]);
 
   // Step 2: User fills form and clicks "Generate" -> generate HTML and show preview
   const handleGenerate = useCallback(

@@ -11,6 +11,8 @@ import {
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
+import { getPlanLimits } from "@/lib/stripe-config";
+import type { PlanTier } from "@/lib/stripe-config";
 import { uploadProjectPhoto } from "@/lib/services/photo-upload-service";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
@@ -26,7 +28,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 export function PhotosClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { showToast } = useToast();
   const projectId = params.id as string;
 
@@ -146,6 +148,19 @@ export function PhotosClient() {
 
   async function handleUploadSubmit() {
     if (selectedFiles.length === 0 || !user) return;
+
+    // Check photo limit (admin bypasses)
+    if (profile?.role !== "admin") {
+      const limits = getPlanLimits((profile?.plan as PlanTier) ?? "FOUNDATION");
+      if (limits.photos !== Infinity && photos.length + selectedFiles.length > limits.photos) {
+        showToast(
+          `Photo limit reached. Your plan allows ${limits.photos} photos. Upgrade to add more.`,
+          "error"
+        );
+        return;
+      }
+    }
+
     setUploading(true);
     try {
       for (const file of selectedFiles) {
