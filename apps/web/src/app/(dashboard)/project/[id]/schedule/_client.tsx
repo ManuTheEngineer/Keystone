@@ -18,6 +18,7 @@ import {
   PHASE_NAMES,
 } from "@keystone/market-data";
 import type { Market, ProjectPhase, PhaseDefinition } from "@keystone/market-data";
+import { PageHeader } from "@/components/ui/PageHeader";
 import {
   Check,
   Circle,
@@ -242,6 +243,13 @@ export function ScheduleClient() {
 
   return (
     <div className="space-y-4">
+      <PageHeader
+        title="Schedule"
+        projectName={project.name}
+        projectId={projectId}
+        subtitle="Construction timeline"
+      />
+
       {/* Construction method badge + total timeline */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

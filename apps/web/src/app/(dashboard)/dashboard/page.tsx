@@ -5,10 +5,17 @@ import Link from "next/link";
 import { useTopbar, useDashboard } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
+  ref as dbRef,
+  get as dbGet,
+  set as dbSet,
+} from "firebase/database";
+import { db } from "@/lib/firebase";
+import {
   subscribeToUserProjects,
   subscribeToDailyLogs,
   subscribeToTasks,
   subscribeToPhotos,
+  seedDemoProject,
   type ProjectData,
   type DailyLogData,
   type TaskData,
@@ -19,6 +26,7 @@ import { Badge } from "@/components/ui/Badge";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
 import { MarketBadge } from "@/components/ui/MarketBadge";
+import { OnboardingTour } from "@/components/ui/OnboardingTour";
 import { getMarketData, formatCurrencyCompact } from "@keystone/market-data";
 import type { Market } from "@keystone/market-data";
 import {
@@ -242,12 +250,56 @@ export default function DashboardPage() {
   const { user, profile } = useAuth();
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [showTour, setShowTour] = useState(false);
+  const [tourChecked, setTourChecked] = useState(false);
 
-  // Subscribe to projects
+  // Check if onboarding tour should be shown
   useEffect(() => {
     if (!user) return;
-    const unsubscribe = subscribeToUserProjects(user.uid, (data: ProjectData[]) => {
+    const checkTour = async () => {
+      try {
+        const tourRef = dbRef(db, `users/${user.uid}/profile/tourCompleted`);
+        const snap = await dbGet(tourRef);
+        if (!snap.exists()) {
+          setShowTour(true);
+        }
+      } catch {
+        // If check fails, skip the tour
+      }
+      setTourChecked(true);
+    };
+    checkTour();
+  }, [user]);
+
+  const handleTourComplete = async () => {
+    setShowTour(false);
+    if (user) {
+      try {
+        await dbSet(dbRef(db, `users/${user.uid}/profile/tourCompleted`), true);
+      } catch {
+        // Silently fail
+      }
+    }
+  };
+
+  // Subscribe to projects and auto-seed demo for new users
+  useEffect(() => {
+    if (!user) return;
+    const unsubscribe = subscribeToUserProjects(user.uid, async (data: ProjectData[]) => {
       setProjects(data);
+      // Auto-seed demo project for new users
+      if (data.length === 0) {
+        const profileRef = dbRef(db, `users/${user.uid}/profile/demoSeeded`);
+        const snap = await dbGet(profileRef);
+        if (!snap.exists()) {
+          try {
+            await seedDemoProject(user.uid);
+            await dbSet(profileRef, true);
+          } catch {
+            // If seeding fails, do not block the user
+          }
+        }
+      }
     });
     return unsubscribe;
   }, [user]);
@@ -382,6 +434,11 @@ export default function DashboardPage() {
 
   return (
     <>
+      {/* ---- Onboarding tour ---- */}
+      {showTour && tourChecked && (
+        <OnboardingTour onComplete={handleTourComplete} />
+      )}
+
       {/* ---- Greeting bar ---- */}
       <div className="flex items-start justify-between mb-6">
         <div>
@@ -469,6 +526,11 @@ export default function DashboardPage() {
                         {p.name}
                       </h3>
                       <MarketBadge market={p.market as Market} />
+                      {p.isDemo && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Sample Project
+                        </span>
+                      )}
                     </div>
                     <Badge
                       variant={p.currentPhase >= 5 ? "warning" : "info"}

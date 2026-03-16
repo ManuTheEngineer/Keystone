@@ -37,6 +37,7 @@ import {
   Package,
   DollarSign,
 } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
   getMarketData,
@@ -197,6 +198,13 @@ export function BudgetClient() {
 
   return (
     <>
+      <PageHeader
+        title="Budget"
+        projectName={project.name}
+        projectId={projectId}
+        action={{ label: "Add item", onClick: () => setShowForm(true), icon: <Plus size={14} /> }}
+      />
+
       {/* ================================================================= */}
       {/* TOP SECTION: Visual summary                                       */}
       {/* ================================================================= */}

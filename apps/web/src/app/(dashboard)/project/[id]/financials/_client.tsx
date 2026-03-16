@@ -31,6 +31,7 @@ import {
   PHASE_ORDER,
 } from "@keystone/market-data";
 import type { Market } from "@keystone/market-data";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -93,6 +94,9 @@ export function FinancialsClient() {
 
   // Phased funding state (West Africa)
   const [phaseFunding, setPhaseFunding] = useState<Record<string, number>>({});
+
+  // Tab switcher state
+  const [activeTab, setActiveTab] = useState<string>("overview");
 
   // ---------------------------------------------------------------------------
   // Subscriptions
@@ -257,25 +261,60 @@ export function FinancialsClient() {
   // Render
   // ---------------------------------------------------------------------------
 
+  const financialTabs = [
+    { key: "overview", label: "Overview" },
+    ...(isUSA ? [{ key: "loan", label: "Loan Calc" }] : []),
+    ...(isRent ? [{ key: "rental", label: "Rental Yield" }] : []),
+    ...(isUSA ? [{ key: "draw", label: "Draw Schedule" }] : []),
+    ...(isWA ? [{ key: "phased", label: "Phased Funding" }] : []),
+    ...(isWA ? [{ key: "currency", label: "Currency" }] : []),
+  ];
+
   return (
     <>
-      {/* ── Top stat cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
-        <StatCard value={fmtCompact(project.totalBudget)} label="Total budget" />
-        <StatCard value={fmtCompact(project.totalSpent)} label="Total spent" />
-        <StatCard
-          value={fmtCompact(remaining)}
-          label="Remaining"
-          valueClassName={remaining < 0 ? "text-danger" : ""}
-        />
-        <StatCard
-          value={fmtCompact(contingencyResult.contingencyAmount)}
-          label={`Contingency (${formatPercent(contingencyResult.adjustedPct)})`}
-        />
+      <PageHeader
+        title="Financials"
+        projectName={project.name}
+        projectId={projectId}
+        subtitle="Calculators and projections"
+      />
+
+      {/* Tab switcher */}
+      <div className="flex gap-1.5 mb-5 overflow-x-auto pb-1">
+        {financialTabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-3.5 py-1.5 text-[11px] rounded-full whitespace-nowrap transition-colors ${
+              activeTab === tab.key
+                ? "bg-earth text-warm font-medium"
+                : "bg-surface border border-border text-muted hover:border-border-dark hover:text-earth"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* ── Budget vs Actuals ── */}
-      <SectionLabel>Budget vs actuals</SectionLabel>
+      {/* ── Top stat cards ── */}
+      {activeTab === "overview" && (
+        <>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+          <StatCard value={fmtCompact(project.totalBudget)} label="Total budget" />
+          <StatCard value={fmtCompact(project.totalSpent)} label="Total spent" />
+          <StatCard
+            value={fmtCompact(remaining)}
+            label="Remaining"
+            valueClassName={remaining < 0 ? "text-danger" : ""}
+          />
+          <StatCard
+            value={fmtCompact(contingencyResult.contingencyAmount)}
+            label={`Contingency (${formatPercent(contingencyResult.adjustedPct)})`}
+          />
+        </div>
+
+        {/* ── Budget vs Actuals ── */}
+        <SectionLabel>Budget vs actuals</SectionLabel>
       <Card padding="sm" className="mb-5">
         {items.length === 0 ? (
           <p className="text-[12px] text-muted py-3 text-center">
@@ -378,9 +417,11 @@ export function FinancialsClient() {
         )}
         <FormulaToggle formula={contingencyResult.formula} />
       </Card>
+        </>
+      )}
 
       {/* ── USA: Loan Qualification Calculator ── */}
-      {isUSA && (
+      {activeTab === "loan" && isUSA && (
         <>
           <SectionLabel>Loan qualification calculator</SectionLabel>
           <Card padding="md" className="mb-5">
@@ -539,7 +580,7 @@ export function FinancialsClient() {
       )}
 
       {/* ── USA: Draw Schedule ── */}
-      {isUSA && drawResult && (
+      {activeTab === "draw" && isUSA && drawResult && (
         <>
           <SectionLabel>Draw schedule</SectionLabel>
           <Card padding="md" className="mb-5">
@@ -585,7 +626,7 @@ export function FinancialsClient() {
       )}
 
       {/* ── West Africa: Phased Funding Tracker ── */}
-      {isWA && (
+      {activeTab === "phased" && isWA && (
         <>
           <SectionLabel>Phased funding tracker</SectionLabel>
           <Card padding="md" className="mb-5">
@@ -661,7 +702,7 @@ export function FinancialsClient() {
       )}
 
       {/* ── West Africa: Currency Converter ── */}
-      {isWA && (
+      {activeTab === "currency" && isWA && (
         <>
           <SectionLabel>Currency converter</SectionLabel>
           <Card padding="md" className="mb-5">
@@ -720,7 +761,7 @@ export function FinancialsClient() {
       )}
 
       {/* ── Rental Yield Calculator (RENT purpose, any market) ── */}
-      {isRent && (
+      {activeTab === "rental" && isRent && (
         <>
           <SectionLabel>Rental yield calculator</SectionLabel>
           <Card padding="md" className="mb-5">

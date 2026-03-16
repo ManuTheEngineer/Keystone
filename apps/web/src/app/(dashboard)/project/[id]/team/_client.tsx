@@ -11,8 +11,10 @@ import {
   type ProjectData,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Plus, Phone, Mail, Wrench, AlertCircle, Users } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getTradesForPhase, PHASE_ORDER, PHASE_NAMES } from "@keystone/market-data";
@@ -23,6 +25,13 @@ const COLORS = [
   { bg: "var(--color-success-bg)", text: "var(--color-success)" },
   { bg: "var(--color-warning-bg)", text: "var(--color-warning)" },
   { bg: "var(--color-danger-bg)", text: "var(--color-danger)" },
+];
+
+const BORDER_COLORS = [
+  "border-l-[var(--color-info)]",
+  "border-l-[var(--color-success)]",
+  "border-l-[var(--color-warning)]",
+  "border-l-[#8B4513]",
 ];
 
 function TradeRequirementList({

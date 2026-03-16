@@ -50,6 +50,7 @@ import {
   PHASE_ORDER,
 } from "@keystone/market-data";
 import type { Market, ProjectPhase } from "@keystone/market-data";
+import { PageHeader } from "@/components/ui/PageHeader";
 import {
   Camera,
   ClipboardList,
@@ -178,6 +179,13 @@ export function OverviewClient() {
 
   return (
     <>
+      <PageHeader
+        title="Overview"
+        projectName={project.name}
+        projectId={projectId}
+        subtitle={phaseDef ? phaseDef.name : currentPhaseKey}
+      />
+
       {/* Phase tracker - always shown */}
       <PhaseTracker currentPhase={project.currentPhase} completedPhases={project.completedPhases} />
 
