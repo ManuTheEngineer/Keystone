@@ -14,18 +14,18 @@ interface MilestoneTimelineProps {
 
 const STATUS_STYLES = {
   completed: {
-    fill: "#2D6A4F",
-    stroke: "#2D6A4F",
+    fill: "var(--color-success)",
+    stroke: "var(--color-success)",
     textColor: "text-success",
   },
   current: {
-    fill: "#059669",
-    stroke: "#059669",
+    fill: "var(--color-accent)",
+    stroke: "var(--color-accent)",
     textColor: "text-emerald-600",
   },
   upcoming: {
     fill: "transparent",
-    stroke: "#6A6A6A",
+    stroke: "var(--color-muted)",
     textColor: "text-muted",
   },
 };
@@ -71,7 +71,7 @@ export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
               y1={lineY}
               x2={`calc(100% - ${padding}px)`}
               y2={lineY}
-              stroke="#D4A574"
+              stroke="var(--color-sand)"
               strokeWidth={2}
             />
           </svg>
@@ -126,7 +126,7 @@ export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
                       <span
                         className="absolute inset-0 rounded-full animate-ping"
                         style={{
-                          backgroundColor: "#059669",
+                          backgroundColor: "var(--color-accent)",
                           opacity: 0.3,
                         }}
                       />

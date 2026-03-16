@@ -6,9 +6,9 @@ interface RiskIndicatorProps {
 }
 
 function getColorForScore(score: number): string {
-  if (score <= 30) return "#2D6A4F";   // success / low risk
-  if (score <= 60) return "#BC6C25";   // warning / medium risk
-  return "#9B2226";                    // danger / high risk
+  if (score <= 30) return "var(--color-success)";
+  if (score <= 60) return "var(--color-warning)";
+  return "var(--color-danger)";
 }
 
 function getRiskLevel(score: number): string {
@@ -64,7 +64,7 @@ export function RiskIndicator({ score, label }: RiskIndicatorProps) {
           <path
             d={bgArc}
             fill="none"
-            stroke="#F5F0E8"
+            stroke="var(--color-surface-alt)"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
           />
@@ -99,7 +99,7 @@ export function RiskIndicator({ score, label }: RiskIndicatorProps) {
             y={cy + 16}
             textAnchor="middle"
             dominantBaseline="central"
-            fill="#6A6A6A"
+            fill="var(--color-muted)"
             style={{ fontSize: "11px" }}
           >
             {riskLevel}

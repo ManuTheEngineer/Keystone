@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
-import { subscribeToProject, type ProjectData } from "@/lib/services/project-service";
+import {
+  subscribeToProject,
+  subscribeToAllMilestoneProgress,
+  toggleMilestoneProgress,
+  type ProjectData,
+} from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { PhaseEducationCard } from "@/components/ui/PhaseEducationCard";
@@ -56,6 +61,8 @@ interface PhaseCardProps {
   currentPhaseIndex: number;
   isExpanded: boolean;
   onToggle: () => void;
+  milestoneProgress: boolean[];
+  onToggleMilestone: (milestoneIndex: number, completed: boolean) => void;
 }
 
 function PhaseCard({
@@ -66,17 +73,17 @@ function PhaseCard({
   currentPhaseIndex,
   isExpanded,
   onToggle,
+  milestoneProgress,
+  onToggleMilestone,
 }: PhaseCardProps) {
   const isCompleted = index < currentPhaseIndex;
   const isCurrent = index === currentPhaseIndex;
   const isUpcoming = index > currentPhaseIndex;
 
-  const completedMilestones = isCompleted
-    ? phaseDef.milestones.length
-    : isCurrent
-    ? Math.floor(phaseDef.milestones.length * 0.6)
-    : 0;
   const totalMilestones = phaseDef.milestones.length;
+  const completedMilestones = isCompleted
+    ? totalMilestones
+    : milestoneProgress.filter(Boolean).length;
   const progressPct = totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
 
   const cardRef = useRef<HTMLDivElement>(null);
@@ -116,7 +123,7 @@ function PhaseCard({
         </div>
 
         <h3 className={`text-[13px] font-semibold ${
-          isCompleted ? "text-success" : isCurrent ? "text-emerald-700" : "text-slate"
+          isCompleted ? "text-success" : isCurrent ? "text-emerald-700" : "text-foreground"
         }`}>
           {phaseDef.name}
         </h3>
@@ -149,7 +156,7 @@ function PhaseCard({
       {isExpanded && (
         <div className="px-3 pb-3 border-t border-border pt-2 space-y-1.5 animate-expand">
           {phaseDef.milestones.map((m, mi) => {
-            const milestoneComplete = mi < completedMilestones;
+            const milestoneComplete = isCompleted || (milestoneProgress[mi] ?? false);
             return (
               <div
                 key={mi}
@@ -157,12 +164,23 @@ function PhaseCard({
                   mi < phaseDef.milestones.length - 1 ? "border-b border-border/50" : ""
                 }`}
               >
-                {milestoneComplete ? (
-                  <Check size={11} className="text-success mt-0.5 shrink-0" />
-                ) : (
-                  <Circle size={11} className="text-muted/40 mt-0.5 shrink-0" />
-                )}
-                <span className={`flex-1 ${milestoneComplete ? "text-muted line-through" : "text-slate"}`}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isCompleted) {
+                      onToggleMilestone(mi, !milestoneComplete);
+                    }
+                  }}
+                  className={`shrink-0 mt-0.5 ${isCompleted ? "cursor-default" : "cursor-pointer hover:scale-110 transition-transform"}`}
+                  disabled={isCompleted}
+                >
+                  {milestoneComplete ? (
+                    <Check size={11} className="text-success" />
+                  ) : (
+                    <Circle size={11} className="text-muted/40" />
+                  )}
+                </button>
+                <span className={`flex-1 ${milestoneComplete ? "text-muted line-through" : "text-foreground"}`}>
                   {m.name}
                 </span>
                 <div className="flex items-center gap-1 shrink-0">
@@ -194,12 +212,16 @@ export function ScheduleClient() {
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
+  const [allMilestoneProgress, setAllMilestoneProgress] = useState<Record<string, boolean[]>>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) return;
-    const unsub = subscribeToProject(user.uid, projectId, setProject);
-    return unsub;
+    const unsubs = [
+      subscribeToProject(user.uid, projectId, setProject),
+      subscribeToAllMilestoneProgress(user.uid, projectId, setAllMilestoneProgress),
+    ];
+    return () => unsubs.forEach((u) => u());
   }, [user, projectId]);
 
   useEffect(() => {
@@ -207,6 +229,14 @@ export function ScheduleClient() {
       setTopbar("Schedule", `Week ${project.currentWeek} of ${project.totalWeeks}`, "info");
     }
   }, [project, setTopbar]);
+
+  const handleToggleMilestone = useCallback(
+    async (phaseKey: string, milestoneIndex: number, completed: boolean, totalMilestones: number) => {
+      if (!user) return;
+      await toggleMilestoneProgress(user.uid, projectId, phaseKey, milestoneIndex, completed, totalMilestones);
+    },
+    [user, projectId]
+  );
 
   if (!project) return <p className="text-muted text-sm">Loading...</p>;
 
@@ -226,14 +256,18 @@ export function ScheduleClient() {
   // Construction method label
   const constructionMethod = phases[0]?.constructionMethod ?? "Standard construction";
 
-  // Milestone timeline data for current phase
+  // Milestone timeline data for current phase using real progress
   const currentPhaseDef = getPhaseDefinition(market, currentPhaseKey);
+  const currentPhaseProgress = allMilestoneProgress[currentPhaseKey] ?? [];
   const milestoneTimelineData = currentPhaseDef
     ? currentPhaseDef.milestones.map((m, i) => {
-        const completedCount = Math.floor(currentPhaseDef.milestones.length * 0.6);
+        const isComplete = currentPhaseProgress[i] ?? false;
+        const firstIncomplete = currentPhaseDef.milestones.findIndex(
+          (_, idx) => !(currentPhaseProgress[idx] ?? false)
+        );
         return {
           name: m.name,
-          status: (i < completedCount ? "completed" : i === completedCount ? "current" : "upcoming") as "completed" | "current" | "upcoming",
+          status: (isComplete ? "completed" : i === firstIncomplete ? "current" : "upcoming") as "completed" | "current" | "upcoming",
           paymentPct: m.paymentPct,
         };
       })
@@ -258,7 +292,7 @@ export function ScheduleClient() {
           </Badge>
           <span className="text-[12px] text-muted">{constructionMethod}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-[12px] text-slate">
+        <div className="flex items-center gap-1.5 text-[12px] text-foreground">
           <Clock size={13} className="text-muted" />
           <span className="font-data">
             Est. {totalMinWeeks}-{totalMaxWeeks} weeks
@@ -266,7 +300,7 @@ export function ScheduleClient() {
         </div>
       </div>
 
-      {/* Phase cards timeline — horizontal scroll */}
+      {/* Phase cards timeline -- horizontal scroll */}
       <div className="relative">
         <div
           ref={scrollContainerRef}
@@ -274,6 +308,7 @@ export function ScheduleClient() {
         >
           {phases.map((phaseDef, i) => {
             const phaseKey = PHASE_ORDER[i];
+            const phaseProgress = allMilestoneProgress[phaseKey] ?? [];
             return (
               <PhaseCard
                 key={phaseKey}
@@ -285,6 +320,10 @@ export function ScheduleClient() {
                 isExpanded={effectiveExpanded === phaseKey}
                 onToggle={() =>
                   setExpandedPhase(effectiveExpanded === phaseKey ? null : phaseKey)
+                }
+                milestoneProgress={phaseProgress}
+                onToggleMilestone={(mi, completed) =>
+                  handleToggleMilestone(phaseKey, mi, completed, phaseDef.milestones.length)
                 }
               />
             );
@@ -310,9 +349,11 @@ export function ScheduleClient() {
           <Card padding="sm">
             <div className="space-y-0">
               {currentPhaseDef.milestones.map((m, i) => {
-                const completedCount = Math.floor(currentPhaseDef.milestones.length * 0.6);
-                const isComplete = i < completedCount;
-                const isActive = i === completedCount;
+                const isComplete = currentPhaseProgress[i] ?? false;
+                const firstIncomplete = currentPhaseDef.milestones.findIndex(
+                  (_, idx) => !(currentPhaseProgress[idx] ?? false)
+                );
+                const isActive = i === firstIncomplete;
 
                 return (
                   <div
@@ -321,18 +362,25 @@ export function ScheduleClient() {
                       i < currentPhaseDef.milestones.length - 1 ? "border-b border-border" : ""
                     } ${isActive ? "bg-emerald-50/50 rounded" : ""}`}
                   >
-                    {isComplete ? (
-                      <Check size={13} className="text-success shrink-0" />
-                    ) : isActive ? (
-                      <span className="relative flex h-3 w-3 shrink-0">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
-                      </span>
-                    ) : (
-                      <Circle size={13} className="text-muted/30 shrink-0" />
-                    )}
+                    <button
+                      onClick={() =>
+                        handleToggleMilestone(currentPhaseKey, i, !isComplete, currentPhaseDef.milestones.length)
+                      }
+                      className="shrink-0 cursor-pointer hover:scale-110 transition-transform"
+                    >
+                      {isComplete ? (
+                        <Check size={13} className="text-success" />
+                      ) : isActive ? (
+                        <span className="relative flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                        </span>
+                      ) : (
+                        <Circle size={13} className="text-muted/30" />
+                      )}
+                    </button>
 
-                    <span className={`flex-1 ${isComplete ? "text-muted line-through" : "text-slate"}`}>
+                    <span className={`flex-1 ${isComplete ? "text-muted line-through" : "text-foreground"}`}>
                       {m.name}
                     </span>
 
@@ -360,12 +408,19 @@ export function ScheduleClient() {
 
         const expandedIndex = PHASE_ORDER.indexOf(effectiveExpanded as ProjectPhase);
         const isCompletedPhase = expandedIndex < currentPhaseIndex;
+        const expandedProgress = allMilestoneProgress[effectiveExpanded] ?? [];
 
-        const expandedMilestoneData = expandedPhaseDef.milestones.map((m, i) => ({
-          name: m.name,
-          status: (isCompletedPhase ? "completed" : "upcoming") as "completed" | "current" | "upcoming",
-          paymentPct: m.paymentPct,
-        }));
+        const expandedMilestoneData = expandedPhaseDef.milestones.map((m, i) => {
+          const isComplete = isCompletedPhase || (expandedProgress[i] ?? false);
+          const firstIncomplete = isCompletedPhase
+            ? -1
+            : expandedPhaseDef.milestones.findIndex((_, idx) => !(expandedProgress[idx] ?? false));
+          return {
+            name: m.name,
+            status: (isComplete ? "completed" : i === firstIncomplete ? "current" : "upcoming") as "completed" | "current" | "upcoming",
+            paymentPct: m.paymentPct,
+          };
+        });
 
         return (
           <div className="space-y-3">
@@ -377,29 +432,47 @@ export function ScheduleClient() {
 
             <Card padding="sm">
               <div className="space-y-0">
-                {expandedPhaseDef.milestones.map((m, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-center gap-2.5 py-2 px-2 text-[12px] ${
-                      i < expandedPhaseDef.milestones.length - 1 ? "border-b border-border" : ""
-                    }`}
-                  >
-                    {isCompletedPhase ? (
-                      <Check size={13} className="text-success shrink-0" />
-                    ) : (
-                      <Circle size={13} className="text-muted/30 shrink-0" />
-                    )}
-                    <span className={`flex-1 ${isCompletedPhase ? "text-muted" : "text-slate"}`}>
-                      {m.name}
-                    </span>
-                    {m.requiresInspection && <Badge variant="warning">Inspection</Badge>}
-                    {m.requiresPayment && m.paymentPct != null && (
-                      <span className="text-[10px] font-data text-info bg-info-bg px-2 py-0.5 rounded-full">
-                        {m.paymentPct}% draw
+                {expandedPhaseDef.milestones.map((m, i) => {
+                  const isComplete = isCompletedPhase || (expandedProgress[i] ?? false);
+                  return (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-2.5 py-2 px-2 text-[12px] ${
+                        i < expandedPhaseDef.milestones.length - 1 ? "border-b border-border" : ""
+                      }`}
+                    >
+                      <button
+                        onClick={() => {
+                          if (!isCompletedPhase) {
+                            handleToggleMilestone(
+                              effectiveExpanded,
+                              i,
+                              !isComplete,
+                              expandedPhaseDef.milestones.length
+                            );
+                          }
+                        }}
+                        className={`shrink-0 ${isCompletedPhase ? "cursor-default" : "cursor-pointer hover:scale-110 transition-transform"}`}
+                        disabled={isCompletedPhase}
+                      >
+                        {isComplete ? (
+                          <Check size={13} className="text-success" />
+                        ) : (
+                          <Circle size={13} className="text-muted/30" />
+                        )}
+                      </button>
+                      <span className={`flex-1 ${isComplete ? "text-muted" : "text-foreground"}`}>
+                        {m.name}
                       </span>
-                    )}
-                  </div>
-                ))}
+                      {m.requiresInspection && <Badge variant="warning">Inspection</Badge>}
+                      {m.requiresPayment && m.paymentPct != null && (
+                        <span className="text-[10px] font-data text-info bg-info-bg px-2 py-0.5 rounded-full">
+                          {m.paymentPct}% draw
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </Card>
 
@@ -423,6 +496,7 @@ export function ScheduleClient() {
             : "US wood-frame"}{" "}
           construction. The active phase pulses with an emerald indicator. Click any phase
           to expand and see its milestones, inspection requirements, and payment draws.
+          Click the checkbox next to a milestone to mark it complete.
           Duration ranges indicate typical min-max weeks. Your actual timeline may vary
           based on weather, contractor availability, and funding.
         </p>

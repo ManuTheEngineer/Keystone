@@ -9,6 +9,9 @@ import {
   subscribeToDailyLogs,
   subscribeToBudgetItems,
   subscribeToMaterials,
+  subscribeToContacts,
+  subscribeToTasks,
+  subscribeToPunchListItems,
   addMaterial,
   updateMaterial,
   type ProjectData,
@@ -16,6 +19,9 @@ import {
   type DailyLogData,
   type BudgetItemData,
   type MaterialData,
+  type ContactData,
+  type TaskData,
+  type PunchListItemData,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -30,6 +36,7 @@ import {
 } from "@keystone/market-data";
 import type { Market, ProjectPhase, MilestoneDefinition } from "@keystone/market-data";
 import { usePWA } from "@/lib/hooks/use-pwa";
+import { openPresentation, type PresentationData } from "@/lib/services/presentation-service";
 import {
   Eye,
   MapPin,
@@ -64,6 +71,7 @@ interface PhotoFeedProps {
 
 function PhotoFeed({ photos, projectId }: PhotoFeedProps) {
   const [dateFilter, setDateFilter] = useState<"all" | "week" | "month">("all");
+  const [photoRequestSent, setPhotoRequestSent] = useState(false);
 
   const now = new Date();
   const filtered = photos.filter((p) => {
@@ -108,10 +116,19 @@ function PhotoFeed({ photos, projectId }: PhotoFeedProps) {
               key={photo.id}
               className="group relative rounded-[var(--radius)] overflow-hidden border border-border bg-surface-alt aspect-square cursor-pointer hover:border-sand transition-colors"
             >
-              {/* Placeholder thumbnail */}
-              <div className="absolute inset-0 flex items-center justify-center bg-warm/30">
-                <Image size={20} className="text-muted/40" />
-              </div>
+              {/* Photo thumbnail or placeholder */}
+              {photo.fileUrl ? (
+                <img
+                  src={photo.fileUrl}
+                  alt={photo.caption || "Construction photo"}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-warm/30">
+                  <Image size={20} className="text-muted/40" />
+                </div>
+              )}
 
               {/* Overlay */}
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-earth/80 to-transparent p-2 pt-6">
@@ -149,9 +166,16 @@ function PhotoFeed({ photos, projectId }: PhotoFeedProps) {
         </p>
       )}
 
-      <button className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius)] border border-dashed border-sand/40 text-[11px] text-muted hover:border-sand hover:text-earth transition-colors">
+      <button
+        onClick={() => {
+          setPhotoRequestSent(true);
+          setTimeout(() => setPhotoRequestSent(false), 3000);
+        }}
+        disabled={photoRequestSent}
+        className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius)] border border-dashed border-sand/40 text-[11px] text-muted hover:border-sand hover:text-earth transition-colors disabled:opacity-60"
+      >
         <Send size={12} />
-        Request photo update
+        {photoRequestSent ? "Photo update request sent" : "Request photo update"}
       </button>
     </Card>
   );
@@ -237,7 +261,7 @@ function MilestonePaymentTracker({ milestones, photos, totalBudget, currency }: 
                   }`}
                 >
                   {statusIcon(status)}
-                  <span className="flex-1 text-slate truncate">{m.name}</span>
+                  <span className="flex-1 text-foreground truncate">{m.name}</span>
                   <span className="text-[10px] font-data text-muted shrink-0">
                     {m.paymentPct}%
                   </span>
@@ -397,7 +421,7 @@ function ActivityLog({ logs, photos }: ActivityLogProps) {
             >
               <div className="mt-0.5 shrink-0">{typeIcon(entry.type)}</div>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] text-slate leading-relaxed">{entry.description}</p>
+                <p className="text-[11px] text-foreground leading-relaxed">{entry.description}</p>
                 <p className="text-[9px] text-muted mt-0.5">{entry.timestamp}</p>
               </div>
             </div>
@@ -496,41 +520,41 @@ function MaterialTracker({ materials, projectId, userId }: MaterialTrackerProps)
               placeholder="Material name"
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
-              className="col-span-2 text-[11px] px-2.5 py-1.5 rounded border border-border bg-surface text-slate placeholder:text-muted/50 focus:outline-none focus:border-clay"
+              className="col-span-2 text-[11px] px-2.5 py-1.5 rounded border border-border bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:border-clay"
             />
             <input
               type="number"
               placeholder="Qty ordered"
               value={formQtyOrdered}
               onChange={(e) => setFormQtyOrdered(e.target.value)}
-              className="text-[11px] px-2.5 py-1.5 rounded border border-border bg-surface text-slate placeholder:text-muted/50 focus:outline-none focus:border-clay"
+              className="text-[11px] px-2.5 py-1.5 rounded border border-border bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:border-clay"
             />
             <input
               type="number"
               placeholder="Qty delivered"
               value={formQtyDelivered}
               onChange={(e) => setFormQtyDelivered(e.target.value)}
-              className="text-[11px] px-2.5 py-1.5 rounded border border-border bg-surface text-slate placeholder:text-muted/50 focus:outline-none focus:border-clay"
+              className="text-[11px] px-2.5 py-1.5 rounded border border-border bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:border-clay"
             />
             <input
               type="number"
               placeholder="Unit price"
               value={formUnitPrice}
               onChange={(e) => setFormUnitPrice(e.target.value)}
-              className="text-[11px] px-2.5 py-1.5 rounded border border-border bg-surface text-slate placeholder:text-muted/50 focus:outline-none focus:border-clay"
+              className="text-[11px] px-2.5 py-1.5 rounded border border-border bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:border-clay"
             />
             <input
               type="text"
               placeholder="Supplier (optional)"
               value={formSupplier}
               onChange={(e) => setFormSupplier(e.target.value)}
-              className="text-[11px] px-2.5 py-1.5 rounded border border-border bg-surface text-slate placeholder:text-muted/50 focus:outline-none focus:border-clay"
+              className="text-[11px] px-2.5 py-1.5 rounded border border-border bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:border-clay"
             />
           </div>
           <select
             value={formStatus}
             onChange={(e) => setFormStatus(e.target.value as MaterialData["status"])}
-            className="w-full text-[11px] px-2.5 py-1.5 rounded border border-border bg-surface text-slate focus:outline-none focus:border-clay"
+            className="w-full text-[11px] px-2.5 py-1.5 rounded border border-border bg-surface text-foreground focus:outline-none focus:border-clay"
           >
             <option value="ordered">Ordered</option>
             <option value="partial">Partially delivered</option>
@@ -574,7 +598,7 @@ function MaterialTracker({ materials, projectId, userId }: MaterialTrackerProps)
                   }`}
                 >
                   <td className="py-2 pr-2">
-                    <span className="text-slate">{m.name}</span>
+                    <span className="text-foreground">{m.name}</span>
                     {m.supplier && (
                       <span className="block text-[9px] text-muted">{m.supplier}</span>
                     )}
@@ -627,6 +651,9 @@ export function MonitorClient() {
   const [logs, setLogs] = useState<DailyLogData[]>([]);
   const [budgetItems, setBudgetItems] = useState<BudgetItemData[]>([]);
   const [materials, setMaterials] = useState<MaterialData[]>([]);
+  const [contacts, setContacts] = useState<ContactData[]>([]);
+  const [tasks, setTasks] = useState<TaskData[]>([]);
+  const [punchListItems, setPunchListItems] = useState<PunchListItemData[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -636,6 +663,9 @@ export function MonitorClient() {
       subscribeToDailyLogs(user.uid, projectId, setLogs),
       subscribeToBudgetItems(user.uid, projectId, setBudgetItems),
       subscribeToMaterials(user.uid, projectId, setMaterials),
+      subscribeToContacts(user.uid, projectId, setContacts),
+      subscribeToTasks(user.uid, projectId, setTasks),
+      subscribeToPunchListItems(user.uid, projectId, setPunchListItems),
     ];
     return () => unsubs.forEach((u) => u());
   }, [user, projectId]);
@@ -685,7 +715,26 @@ export function MonitorClient() {
               {isOnline ? <Wifi size={10} /> : <WifiOff size={10} />}
               {isOnline ? "Online" : "Offline"}
             </div>
-            <button className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-[var(--radius)] bg-earth text-warm hover:bg-earth/90 transition-colors">
+            <button
+              onClick={() => {
+                if (!project) return;
+                const marketData = getMarketData(market);
+                const presData: PresentationData = {
+                  project,
+                  budgetItems,
+                  contacts,
+                  dailyLogs: logs,
+                  tasks,
+                  photos,
+                  punchListItems,
+                  currency: marketData.currency,
+                  marketName: project.market,
+                  constructionMethod: marketData.phases[0]?.constructionMethod ?? "Standard construction",
+                };
+                openPresentation("progress", presData);
+              }}
+              className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-[var(--radius)] bg-earth text-warm hover:bg-earth/90 transition-colors"
+            >
               <FileText size={12} />
               Generate weekly report
             </button>

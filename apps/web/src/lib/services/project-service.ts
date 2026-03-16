@@ -594,6 +594,83 @@ export async function deleteDocument(userId: string, projectId: string, docId: s
   await remove(ref(db, `users/${userId}/projects/${projectId}/documents/${docId}`));
 }
 
+// --- Milestone Progress ---
+
+export async function getMilestoneProgress(userId: string, projectId: string, phase: string): Promise<boolean[]> {
+  const snap = await get(ref(db, `users/${userId}/projects/${projectId}/milestoneProgress/${phase}`));
+  return snap.exists() ? snap.val() : [];
+}
+
+export function subscribeToMilestoneProgress(
+  userId: string,
+  projectId: string,
+  phase: string,
+  callback: (progress: boolean[]) => void
+): Unsubscribe {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/milestoneProgress/${phase}`), (snapshot) => {
+    callback(snapshot.exists() ? snapshot.val() : []);
+  });
+}
+
+export function subscribeToAllMilestoneProgress(
+  userId: string,
+  projectId: string,
+  callback: (progress: Record<string, boolean[]>) => void
+): Unsubscribe {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/milestoneProgress`), (snapshot) => {
+    callback(snapshot.exists() ? snapshot.val() : {});
+  });
+}
+
+export async function toggleMilestoneProgress(
+  userId: string,
+  projectId: string,
+  phase: string,
+  index: number,
+  completed: boolean,
+  totalMilestones: number
+): Promise<void> {
+  const progressRef = ref(db, `users/${userId}/projects/${projectId}/milestoneProgress/${phase}`);
+  const snap = await get(progressRef);
+  const current: boolean[] = snap.exists() ? snap.val() : new Array(totalMilestones).fill(false);
+  current[index] = completed;
+  await set(progressRef, current);
+}
+
+// --- AI Conversations ---
+
+export async function saveConversation(
+  userId: string,
+  projectId: string,
+  messages: { role: string; content: string }[]
+): Promise<void> {
+  await set(ref(db, `users/${userId}/projects/${projectId}/conversations/active`), {
+    messages,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export function subscribeToConversation(
+  userId: string,
+  projectId: string,
+  callback: (messages: { role: string; content: string }[]) => void
+): Unsubscribe {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/conversations/active`), (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.val().messages ?? []);
+    } else {
+      callback([]);
+    }
+  });
+}
+
+export async function clearConversation(
+  userId: string,
+  projectId: string
+): Promise<void> {
+  await remove(ref(db, `users/${userId}/projects/${projectId}/conversations/active`));
+}
+
 // --- Delete Punch List Item ---
 
 export async function deletePunchListItem(userId: string, projectId: string, itemId: string): Promise<void> {

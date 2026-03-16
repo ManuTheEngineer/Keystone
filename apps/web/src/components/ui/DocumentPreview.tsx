@@ -81,7 +81,7 @@ export function DocumentPreview({
         </div>
 
         {/* Document preview area */}
-        <div className="flex-1 overflow-auto bg-[#e8e8e8] p-6 flex justify-center">
+        <div className="flex-1 overflow-auto bg-[#e8e8e8] dark:bg-[#1a1a1a] p-6 flex justify-center">
           <div
             className="w-full max-w-[8.5in] bg-white shadow-lg rounded-sm"
             style={{ minHeight: "11in" }}

@@ -44,9 +44,9 @@ const TYPE_CONFIG = {
     Icon: TrendingUp,
   },
   milestone: {
-    border: "border-l-[#8B4513]",
-    bg: "bg-[#F5E6D3]/40",
-    iconColor: "text-[#8B4513]",
+    border: "border-l-clay",
+    bg: "bg-warm/40",
+    iconColor: "text-clay",
     Icon: Flag,
   },
 };
@@ -58,14 +58,14 @@ export function AIInsight({ type, title, content, action }: AIInsightProps) {
   const actionEl = action?.href ? (
     <a
       href={action.href}
-      className="inline-block mt-2 text-[12px] text-[#8B4513] hover:underline font-medium"
+      className="inline-block mt-2 text-[12px] text-clay hover:underline font-medium"
     >
       {action.label}
     </a>
   ) : action?.onClick ? (
     <button
       onClick={action.onClick}
-      className="mt-2 text-[12px] text-[#8B4513] hover:underline font-medium cursor-pointer"
+      className="mt-2 text-[12px] text-clay hover:underline font-medium cursor-pointer"
     >
       {action.label}
     </button>

@@ -193,7 +193,7 @@ export function DocumentFillForm({
                       value={values[field] ?? ""}
                       onChange={(e) => handleChange(field, e.target.value)}
                       rows={3}
-                      className="w-full px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-slate focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 resize-y"
+                      className="w-full px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-foreground focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 resize-y"
                       placeholder={`Enter ${field.toLowerCase()}...`}
                     />
                   ) : (
@@ -201,7 +201,7 @@ export function DocumentFillForm({
                       type="text"
                       value={values[field] ?? ""}
                       onChange={(e) => handleChange(field, e.target.value)}
-                      className="w-full px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-slate focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
+                      className="w-full px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-foreground focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
                       placeholder={`Enter ${field.toLowerCase()}...`}
                     />
                   )}

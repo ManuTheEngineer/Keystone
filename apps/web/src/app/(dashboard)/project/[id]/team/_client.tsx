@@ -35,7 +35,7 @@ const BORDER_COLORS = [
   "border-l-[var(--color-info)]",
   "border-l-[var(--color-success)]",
   "border-l-[var(--color-warning)]",
-  "border-l-[#8B4513]",
+  "border-l-[var(--color-clay)]",
 ];
 
 function TradeRequirementList({
@@ -431,7 +431,7 @@ export function TeamClient() {
               "var(--color-info)",
               "var(--color-success)",
               "var(--color-warning)",
-              "#8B4513",
+              "var(--color-clay)",
             ][i % 4];
 
             return (

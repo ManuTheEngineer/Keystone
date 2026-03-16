@@ -5,7 +5,13 @@ import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { sendAIMessage, type AIMessage } from "@/lib/services/ai-service";
-import { subscribeToProject, type ProjectData } from "@/lib/services/project-service";
+import {
+  subscribeToProject,
+  subscribeToConversation,
+  saveConversation,
+  clearConversation,
+  type ProjectData,
+} from "@/lib/services/project-service";
 import {
   getMarketData,
   getPhaseDefinition,
@@ -15,7 +21,7 @@ import {
 } from "@keystone/market-data";
 import type { Market, ProjectPhase } from "@keystone/market-data";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Send, Loader2, AlertTriangle, Zap } from "lucide-react";
+import { Send, Loader2, AlertTriangle, Zap, Trash2, RotateCcw } from "lucide-react";
 import { VoiceNote } from "@/components/ui/VoiceNote";
 
 /* ------------------------------------------------------------------ */
@@ -135,15 +141,29 @@ export function AIAssistantClient() {
   const [sending, setSending] = useState(false);
   const [mode, setMode] = useState<Mode>("general");
   const [error, setError] = useState<string | null>(null);
+  const [conversationRestored, setConversationRestored] = useState(false);
+  const [conversationLoaded, setConversationLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   /* ---------- subscriptions ---------- */
 
   useEffect(() => {
     if (!user) return;
-    const unsub = subscribeToProject(user.uid, projectId, setProject);
-    return unsub;
-  }, [user, projectId]);
+    const unsubs = [
+      subscribeToProject(user.uid, projectId, setProject),
+      subscribeToConversation(user.uid, projectId, (saved) => {
+        if (!conversationLoaded) {
+          if (saved.length > 0) {
+            setMessages(saved as AIMessage[]);
+            setConversationRestored(true);
+            setTimeout(() => setConversationRestored(false), 3000);
+          }
+          setConversationLoaded(true);
+        }
+      }),
+    ];
+    return () => unsubs.forEach((u) => u());
+  }, [user, projectId, conversationLoaded]);
 
   useEffect(() => {
     setTopbar("AI assistant", project ? `Context: ${project.name}` : "AI assistant", "info");
@@ -205,6 +225,25 @@ export function AIAssistantClient() {
 
   /* ---------- send handler ---------- */
 
+  const persistMessages = useCallback(
+    (msgs: AIMessage[]) => {
+      if (user && msgs.length > 0) {
+        saveConversation(user.uid, projectId, msgs).catch(() => {
+          // Silently fail; will retry on next message
+        });
+      }
+    },
+    [user, projectId]
+  );
+
+  const handleClearChat = useCallback(async () => {
+    if (!user) return;
+    setMessages([]);
+    await clearConversation(user.uid, projectId).catch(() => {
+      // Silently fail
+    });
+  }, [user, projectId]);
+
   const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || sending) return;
@@ -217,19 +256,23 @@ export function AIAssistantClient() {
 
     try {
       const result = await sendAIMessage(newMessages, projectContext, mode);
-      setMessages([...newMessages, { role: "assistant", content: result.message }]);
+      const finalMessages = [...newMessages, { role: "assistant" as const, content: result.message }];
+      setMessages(finalMessages);
+      persistMessages(finalMessages);
     } catch (err: any) {
       const errMsg: string = err?.message ?? "";
 
       if (errMsg === "AI_NOT_CONFIGURED") {
-        setMessages([
+        const finalMessages: AIMessage[] = [
           ...newMessages,
           {
             role: "assistant",
             content:
               "The AI assistant is not yet configured. To enable it, add your CLAUDE_API_KEY as an environment variable in your Vercel project settings and redeploy.\n\nIn the meantime, you can find construction guidance in the Learn section.",
           },
-        ]);
+        ];
+        setMessages(finalMessages);
+        persistMessages(finalMessages);
       } else if (errMsg.startsWith("RATE_LIMITED:")) {
         const parts = errMsg.split(":");
         const used = parts[1];
@@ -241,18 +284,20 @@ export function AIAssistantClient() {
         setError("You must be signed in to use the AI assistant.");
         setMessages(messages);
       } else {
-        setMessages([
+        const finalMessages: AIMessage[] = [
           ...newMessages,
           {
             role: "assistant",
             content: "Unable to reach the AI service. Please check your connection and try again.",
           },
-        ]);
+        ];
+        setMessages(finalMessages);
+        persistMessages(finalMessages);
       }
     } finally {
       setSending(false);
     }
-  }, [input, sending, messages, projectContext, mode]);
+  }, [input, sending, messages, projectContext, mode, persistMessages]);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -288,6 +333,27 @@ export function AIAssistantClient() {
           </button>
         ))}
       </div>
+
+      {/* Conversation restored indicator */}
+      {conversationRestored && (
+        <div className="flex items-center gap-2 px-3 py-2 mb-2 rounded-lg bg-emerald-50 border border-emerald-200">
+          <RotateCcw size={14} className="text-emerald-600 shrink-0" />
+          <span className="text-[11px] text-emerald-700">Conversation restored from previous session</span>
+        </div>
+      )}
+
+      {/* Clear chat + Error banner row */}
+      {messages.length > 0 && (
+        <div className="flex justify-end mb-1">
+          <button
+            onClick={handleClearChat}
+            className="flex items-center gap-1 text-[10px] text-muted hover:text-danger transition-colors px-2 py-1 rounded"
+          >
+            <Trash2 size={11} />
+            Clear chat
+          </button>
+        </div>
+      )}
 
       {/* Error banner */}
       {error && (

@@ -42,7 +42,7 @@ function CustomTooltip({
   return (
     <div className="bg-surface border border-border rounded-[var(--radius)] p-2.5 shadow-sm">
       <p className="text-xs font-medium text-earth">{entry.category}</p>
-      <p className="font-data text-sm text-slate mt-0.5">
+      <p className="font-data text-sm text-foreground mt-0.5">
         {formatCurrency(entry.amount, currency)}
       </p>
     </div>

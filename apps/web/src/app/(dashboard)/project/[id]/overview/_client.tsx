@@ -15,6 +15,7 @@ import {
   subscribeToDocuments,
   subscribeToInspectionResults,
   subscribeToMaterials,
+  subscribeToAllMilestoneProgress,
   updateTask,
   addTask,
   deleteTask,
@@ -164,6 +165,7 @@ export function OverviewClient() {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [inspectionResults, setInspectionResults] = useState<InspectionResultData[]>([]);
   const [materials, setMaterials] = useState<MaterialData[]>([]);
+  const [allMilestoneProgress, setAllMilestoneProgress] = useState<Record<string, boolean[]>>({});
   const [showExportModal, setShowExportModal] = useState(false);
   const [showPresentationModal, setShowPresentationModal] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
@@ -187,6 +189,7 @@ export function OverviewClient() {
       subscribeToDocuments(user.uid, projectId, setDocuments),
       subscribeToInspectionResults(user.uid, projectId, setInspectionResults),
       subscribeToMaterials(user.uid, projectId, setMaterials),
+      subscribeToAllMilestoneProgress(user.uid, projectId, setAllMilestoneProgress),
     ];
     return () => unsubs.forEach((u) => u());
   }, [user, projectId]);
@@ -870,15 +873,22 @@ export function OverviewClient() {
               <SectionLabel>Milestones</SectionLabel>
               {phaseDef ? (
                 <MilestoneTimeline
-                  milestones={phaseDef.milestones.map((m, i) => ({
-                    name: m.name,
-                    status: i < Math.floor(phaseDef.milestones.length * (project.progress / 100))
-                      ? "completed" as const
-                      : i === Math.floor(phaseDef.milestones.length * (project.progress / 100))
-                      ? "current" as const
-                      : "upcoming" as const,
-                    paymentPct: m.paymentPct,
-                  }))}
+                  milestones={phaseDef.milestones.map((m, i) => {
+                    const phaseProgress = allMilestoneProgress[currentPhaseKey] ?? [];
+                    const isComplete = phaseProgress[i] ?? false;
+                    const firstIncomplete = phaseDef.milestones.findIndex(
+                      (_, idx) => !(phaseProgress[idx] ?? false)
+                    );
+                    return {
+                      name: m.name,
+                      status: isComplete
+                        ? "completed" as const
+                        : i === firstIncomplete
+                        ? "current" as const
+                        : "upcoming" as const,
+                      paymentPct: m.paymentPct,
+                    };
+                  })}
                 />
               ) : (
                 <Card padding="sm">

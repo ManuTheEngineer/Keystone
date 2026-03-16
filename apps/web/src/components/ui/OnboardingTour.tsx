@@ -174,7 +174,7 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
                   ? "bg-earth w-4"
                   : idx < currentStep
                   ? "bg-sand"
-                  : "bg-gray-200"
+                  : "bg-border"
               }`}
               aria-label={`Go to step ${idx + 1}`}
             />
