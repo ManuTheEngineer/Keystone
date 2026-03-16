@@ -234,27 +234,27 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             projectMarket={currentProject?.market}
             badges={{ "punch-list": punchListCount, "overview": openTaskCount > 5 ? openTaskCount : 0 }}
           />
-          <div className={`${sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[240px]"} transition-all duration-300 flex flex-col min-h-screen min-w-0`}>
-            <Topbar
-              title={topbarState.title}
-              badge={topbarState.badge || undefined}
-              badgeVariant={topbarState.badgeVariant}
-              onMenuToggle={() => setSidebarOpen(true)}
-              notifications={notifications}
-              onDismissNotification={handleDismissNotification}
-              onDismissAllNotifications={handleDismissAllNotifications}
-            />
-            {!isOnline && (
-              <div className="mx-5 mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-warning-bg text-warning text-[11px]">
-                <WifiOff size={14} />
-                You are offline. Changes will sync when connection is restored.
-              </div>
-            )}
-            <main className="flex-1 p-3 sm:p-4 overflow-y-auto min-w-0 bg-surface-dim">
-              <div className="bg-background rounded-2xl sm:rounded-3xl p-4 sm:p-5 min-h-full shadow-[var(--shadow-sm)]">
+          <div className={`${sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[240px]"} transition-all duration-300 flex flex-col min-h-screen min-w-0 bg-surface-dim`}>
+            <div className="flex flex-col flex-1 bg-background rounded-t-2xl sm:rounded-t-3xl mt-1 sm:mt-2 shadow-[var(--shadow-sm)] min-w-0 overflow-hidden">
+              <Topbar
+                title={topbarState.title}
+                badge={topbarState.badge || undefined}
+                badgeVariant={topbarState.badgeVariant}
+                onMenuToggle={() => setSidebarOpen(true)}
+                notifications={notifications}
+                onDismissNotification={handleDismissNotification}
+                onDismissAllNotifications={handleDismissAllNotifications}
+              />
+              {!isOnline && (
+                <div className="mx-5 mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-warning-bg text-warning text-[11px]">
+                  <WifiOff size={14} />
+                  You are offline. Changes will sync when connection is restored.
+                </div>
+              )}
+              <main className="flex-1 p-5 overflow-y-auto min-w-0">
                 {children}
-              </div>
-            </main>
+              </main>
+            </div>
             <AIMentor
               page={activeSection}
               project={currentProject ?? undefined}
