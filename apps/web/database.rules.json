@@ -14,7 +14,14 @@
           "locale": { ".validate": "newData.isString()" },
           "createdAt": { ".validate": "newData.isString()" },
           "demoSeeded": { ".validate": "newData.isBoolean()" },
-          "tourCompleted": { ".validate": "newData.isBoolean()" }
+          "tourCompleted": { ".validate": "newData.isBoolean()" },
+          "role": { ".validate": "newData.isString() && (newData.val() === 'admin' || newData.val() === 'user')" },
+          "stripeCustomerId": { ".validate": "newData.isString()" },
+          "stripeSubscriptionId": { ".validate": "newData.isString()" },
+          "subscriptionStatus": { ".validate": "newData.isString()" },
+          "billingInterval": { ".validate": "newData.isString()" },
+          "trialExpiresAt": { ".validate": "newData.isString()" },
+          "trialCodeUsed": { ".validate": "newData.isString()" }
         },
 
         "projects": {
@@ -124,6 +131,14 @@
             "count": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000" }
           }
         }
+      }
+    },
+
+    "trialCodes": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$code": {
+        ".validate": "newData.hasChildren(['code', 'tier', 'durationHours', 'createdBy'])"
       }
     }
   }
