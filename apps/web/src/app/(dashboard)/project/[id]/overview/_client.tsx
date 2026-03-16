@@ -73,12 +73,15 @@ import {
   Home,
   TrendingUp,
   Download,
+  Briefcase,
   Plus,
   X,
   AlertTriangle,
   ArrowRight,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
+import { PresentationModal } from "@/components/ui/PresentationModal";
+import type { PresentationData } from "@/lib/services/presentation-service";
 import { PhaseAdvancement } from "@/components/ui/PhaseAdvancement";
 import { ProcessGuide } from "@/components/ui/ProcessGuide";
 import { LearnTooltip } from "@/components/ui/LearnTooltip";
@@ -162,6 +165,7 @@ export function OverviewClient() {
   const [inspectionResults, setInspectionResults] = useState<InspectionResultData[]>([]);
   const [materials, setMaterials] = useState<MaterialData[]>([]);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showPresentationModal, setShowPresentationModal] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskLabel, setNewTaskLabel] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -263,6 +267,17 @@ export function OverviewClient() {
           icon: <Download size={16} />,
         }}
       />
+
+      {/* Presentations button */}
+      <div className="flex justify-end -mt-4 mb-4">
+        <button
+          onClick={() => setShowPresentationModal(true)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-lg border border-border text-earth hover:bg-warm transition-colors"
+        >
+          <Briefcase size={14} />
+          Presentations
+        </button>
+      </div>
 
       {/* Phase tracker - always shown */}
       <PhaseTracker currentPhase={project.currentPhase} completedPhases={project.completedPhases} />
@@ -1221,6 +1236,25 @@ export function OverviewClient() {
             materials,
           }}
           onClose={() => setShowExportModal(false)}
+        />
+      )}
+
+      {/* Presentation Modal */}
+      {showPresentationModal && (
+        <PresentationModal
+          data={{
+            project,
+            budgetItems,
+            contacts,
+            dailyLogs,
+            tasks,
+            photos,
+            punchListItems,
+            currency: marketData.currency,
+            marketName: project.market,
+            constructionMethod: marketData.phases[0]?.constructionMethod ?? "Standard construction",
+          }}
+          onClose={() => setShowPresentationModal(false)}
         />
       )}
 

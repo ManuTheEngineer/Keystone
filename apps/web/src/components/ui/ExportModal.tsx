@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Database,
   FileBarChart,
+  Briefcase,
   X,
   Loader2,
 } from "lucide-react";
@@ -21,6 +22,10 @@ import {
   exportProjectJSON,
   exportQuickSummary,
 } from "@/lib/services/export-service";
+import { openPresentation } from "@/lib/services/presentation-service";
+import type { PresentationData } from "@/lib/services/presentation-service";
+import { getMarketData } from "@keystone/market-data";
+import type { Market } from "@keystone/market-data";
 
 interface ExportModalProps {
   project: ProjectData;
@@ -53,7 +58,40 @@ export function ExportModal({ project, data, onClose }: ExportModalProps) {
     }
   }
 
+  // Build presentation data from export data
+  const marketData = getMarketData(project.market as Market);
+  const presData: PresentationData = {
+    project,
+    budgetItems: data.budgetItems,
+    contacts: data.contacts,
+    dailyLogs: data.dailyLogs,
+    tasks: data.tasks,
+    photos: data.photos,
+    punchListItems: data.punchListItems,
+    currency: marketData.currency,
+    marketName: project.market,
+    constructionMethod: marketData.phases[0]?.constructionMethod ?? "Standard construction",
+  };
+
   const options: ExportOption[] = [
+    {
+      id: "pres-investor",
+      title: "Investor Briefing (PDF)",
+      description:
+        "10-slide presentation for investors or lenders with financials, risks, and photos",
+      buttonLabel: "Generate Briefing",
+      icon: <Briefcase size={20} className="text-clay" />,
+      action: () => openPresentation("investor", presData),
+    },
+    {
+      id: "pres-team",
+      title: "Team Briefing (PDF)",
+      description:
+        "Weekly team update with tasks, schedule, issues, and next steps",
+      buttonLabel: "Generate Briefing",
+      icon: <Users size={20} className="text-clay" />,
+      action: () => openPresentation("team", presData),
+    },
     {
       id: "pdf-full",
       title: "Full Project Report (PDF)",

@@ -336,6 +336,15 @@ h1, h2, h3 {
   border-color: var(--color-border-dark);
 }
 
+/* Always-dark button (does not invert in dark mode) */
+.btn-earth {
+  background-color: #2C1810 !important;
+  color: #F5E6D3 !important;
+}
+.btn-earth:hover {
+  background-color: #3D2215 !important;
+}
+
 /* Link style */
 .link-clay {
   color: var(--color-clay);
@@ -360,8 +369,13 @@ h1, h2, h3 {
   margin: 1.5rem 0;
 }
 
-/* Dark mode variables */
-.dark {
+/* Dark mode variables - html.dark for higher specificity over @theme */
+html.dark {
+  color-scheme: dark;
+  /* Keep buttons and interactive elements readable */
+  --color-emerald-50: rgba(236, 253, 245, 0.1);
+  --color-emerald-100: rgba(209, 250, 229, 0.15);
+  --color-emerald-200: rgba(167, 243, 208, 0.2);
   --color-background: #1A1412;
   --color-foreground: #E8DDD0;
   --color-surface: #231E1A;

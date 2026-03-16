@@ -153,7 +153,7 @@ export function Sidebar({
 
       <aside
         className={`
-          fixed top-0 left-0 bottom-0 ${sidebarWidth} bg-earth text-sand z-50
+          fixed top-0 left-0 bottom-0 ${sidebarWidth} bg-[#2C1810] text-[#D4A574] z-50
           flex flex-col overflow-y-auto overflow-x-hidden
           transition-all duration-300 ease-out
           lg:translate-x-0
