@@ -239,7 +239,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <AuthGuard>
       <DashboardContext.Provider value={{ setTopbar, projects, currentProjectId }}>
         <LocaleContext.Provider value={locale}>
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-surface-dim">
           <Sidebar
             activeSection={activeSection}
             onNavigate={handleNavigate}
