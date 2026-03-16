@@ -29,6 +29,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [fadeIn, setFadeIn] = useState(true);
 
@@ -150,9 +151,24 @@ export default function RegisterPage() {
                 <p className="text-[11px] text-muted/60 mt-1.5">Minimum 6 characters</p>
               </div>
 
+              <label className="flex items-start gap-2.5 text-[12px] text-muted">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-border accent-emerald-500"
+                />
+                <span>
+                  I agree to the{" "}
+                  <a href="/terms" target="_blank" className="text-clay underline">Terms of Service</a>
+                  {" "}and{" "}
+                  <a href="/privacy" target="_blank" className="text-clay underline">Privacy Policy</a>
+                </span>
+              </label>
+
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !agreedToTerms}
                 className="w-full py-3.5 text-[15px] font-medium rounded-xl btn-earth active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:active:scale-100"
               >
                 {loading ? "Creating account..." : "Create account"}

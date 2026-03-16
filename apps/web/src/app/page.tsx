@@ -562,12 +562,11 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/register"
-                className="block w-full text-center py-3 text-[14px] font-medium rounded-full btn-earth"
+              <span
+                className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-border text-muted cursor-default"
               >
-                Start building
-              </Link>
+                Coming soon
+              </span>
             </div>
 
             {/* Developer */}
@@ -602,12 +601,11 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/register"
-                className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-earth text-earth hover:bg-earth hover:text-warm transition-colors"
+              <span
+                className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-border text-muted cursor-default"
               >
-                Go unlimited
-              </Link>
+                Coming soon
+              </span>
             </div>
 
             {/* Enterprise */}
@@ -641,12 +639,11 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/register"
-                className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-earth text-earth hover:bg-earth hover:text-warm transition-colors"
+              <span
+                className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-border text-muted cursor-default"
               >
                 Contact us
-              </Link>
+              </span>
             </div>
           </div>
         </div>
@@ -723,14 +720,14 @@ export default function LandingPage() {
               </h4>
               <ul className="space-y-2.5">
                 <li>
-                  <span className="text-[13px] text-[#D4A574]/40 cursor-default">
-                    Privacy policy (coming soon)
-                  </span>
+                  <Link href="/privacy" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
+                    Privacy policy
+                  </Link>
                 </li>
                 <li>
-                  <span className="text-[13px] text-[#D4A574]/40 cursor-default">
-                    Terms of service (coming soon)
-                  </span>
+                  <Link href="/terms" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
+                    Terms of service
+                  </Link>
                 </li>
               </ul>
             </div>

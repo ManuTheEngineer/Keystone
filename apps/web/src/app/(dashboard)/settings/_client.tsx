@@ -444,12 +444,7 @@ export function SettingsClient() {
                     Current plan
                   </span>
                 ) : (
-                  <a
-                    href="/#pricing"
-                    className="inline-block px-3 py-1.5 text-[10px] font-medium text-earth border border-border rounded-[var(--radius)] hover:bg-surface-alt transition-colors"
-                  >
-                    Upgrade
-                  </a>
+                  <span className="text-[11px] text-muted">Upgrades coming soon</span>
                 )}
               </div>
             );
