@@ -280,12 +280,12 @@ export function Sidebar({
           </button>
         </div>
 
-        {/* Settings + User footer */}
+        {/* Parameters + User footer */}
         <div
           className="mt-auto"
           style={{ borderTop: "1px solid transparent", borderImage: "linear-gradient(90deg, transparent, rgba(212,165,116,0.15), transparent) 1" }}
         >
-          {/* Settings link */}
+          {/* Parameters link */}
           <button
             onClick={() => { onNavigate("settings"); onClose(); }}
             className={`
@@ -297,9 +297,10 @@ export function Sidebar({
               }
               ${collapsed ? "justify-center px-0" : ""}
             `}
+            title={collapsed ? "Parameters" : undefined}
           >
             <Settings size={18} />
-            {!collapsed && "Settings"}
+            {!collapsed && "Parameters"}
           </button>
 
           {/* User profile */}
