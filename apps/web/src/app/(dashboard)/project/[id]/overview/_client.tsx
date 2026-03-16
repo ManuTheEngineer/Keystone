@@ -287,7 +287,7 @@ export function OverviewClient() {
       )}
 
       {/* Stat cards - always shown */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 mb-5 animate-stagger">
         <StatCard value={`${project.progress}%`} label="Progress" />
         <StatCard
           value={fmtCompact(project.totalSpent)}
@@ -334,7 +334,7 @@ export function OverviewClient() {
                 <Link
                   key={i}
                   href={action.href}
-                  className="flex items-start gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface hover:bg-warm transition-colors group"
+                  className="flex items-start gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface hover:bg-warm transition-colors group card-hover"
                 >
                   <div
                     className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${

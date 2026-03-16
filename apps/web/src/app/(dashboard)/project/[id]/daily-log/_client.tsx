@@ -170,7 +170,7 @@ export function DailyLogClient() {
       <SectionLabel>Recent entries</SectionLabel>
 
       {showForm && (
-        <Card padding="md" className="mb-4">
+        <Card padding="md" className="mb-4 animate-expand">
           <div className="space-y-3">
             {/* Weather preset buttons */}
             <div>
@@ -267,7 +267,7 @@ export function DailyLogClient() {
           action={{ label: "Add first entry", onClick: () => setShowForm(true) }}
         />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 animate-stagger">
           {logs.map((entry, i) => {
             const isEditing = editingLogId === entry.id;
             const isDeleteConfirm = deleteConfirmId === entry.id;
@@ -275,7 +275,7 @@ export function DailyLogClient() {
             return (
               <div
                 key={entry.id}
-                className="p-3 border border-border rounded-[var(--radius)] bg-surface border-l-[3px]"
+                className="p-3 border border-border rounded-[var(--radius)] bg-surface border-l-[3px] hover:shadow-[var(--shadow-sm)] transition-shadow"
                 style={{ borderLeftColor: getWeatherBorderColor(entry.weather) }}
               >
                 <div className="flex gap-3">

@@ -88,7 +88,7 @@ export default function LearnPage() {
         Everything you need to know about building, from financing to final inspection.
       </p>
 
-      <div className="space-y-2">
+      <div className="space-y-2 animate-stagger">
         {LEARN_MODULES.map((mod, i) => {
           const isOpen = openModule === i;
           return (
@@ -115,7 +115,7 @@ export default function LearnPage() {
               </div>
 
               <div
-                className="overflow-hidden transition-all duration-300 ease-in-out"
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "animate-expand" : ""}`}
                 style={{ maxHeight: isOpen ? "2000px" : "0px" }}
               >
                 {LESSON_CONTENT[mod.title] && (

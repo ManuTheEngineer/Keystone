@@ -53,7 +53,7 @@ function DocumentTemplateCard({
 }) {
   const style = TYPE_COLORS[template.type] ?? TYPE_COLORS.DEFAULT;
   return (
-    <div className="flex items-start gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface hover:border-border-dark transition-all">
+    <div className="flex items-start gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface hover:border-border-dark transition-all card-hover">
       <div
         className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${style.bg} ${style.text}`}
       >
@@ -269,7 +269,7 @@ export function DocumentsClient() {
             <button
               key={type}
               onClick={() => setTypeFilter(type)}
-              className={`px-3 py-1 text-[10px] rounded-full whitespace-nowrap transition-colors ${
+              className={`px-3 py-1 text-[10px] rounded-full whitespace-nowrap transition-all duration-150 ${
                 typeFilter === type
                   ? "bg-earth text-warm font-medium"
                   : "bg-surface border border-border text-muted hover:border-border-dark hover:text-earth"
@@ -291,7 +291,7 @@ export function DocumentsClient() {
             </p>
           </Card>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2 animate-stagger">
             {templates.map((template) => (
               <DocumentTemplateCard
                 key={template.id}
@@ -319,7 +319,7 @@ export function DocumentsClient() {
             return (
               <div
                 key={doc.id}
-                className={`flex items-center gap-3 py-2.5 cursor-pointer ${
+                className={`flex items-center gap-3 py-2.5 cursor-pointer hover:bg-warm/50 transition-colors rounded-[var(--radius)] px-1 ${
                   i < docs.length - 1 ? "border-b border-border" : ""
                 }`}
               >

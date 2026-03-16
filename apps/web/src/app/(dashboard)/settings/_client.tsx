@@ -202,7 +202,7 @@ export function SettingsClient() {
   const currentPlan = profile?.plan ?? "FOUNDATION";
 
   return (
-    <>
+    <div className="animate-stagger">
       <PageHeader title="Settings" />
 
       {/* ================================================================= */}
@@ -227,7 +227,7 @@ export function SettingsClient() {
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+              className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full input-focus"
             />
           </div>
 
@@ -272,7 +272,7 @@ export function SettingsClient() {
             <button
               onClick={handleSaveProfile}
               disabled={profileSaving}
-              className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+              className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 btn-hover"
             >
               {profileSaving ? "Saving..." : "Save changes"}
             </button>
@@ -512,6 +512,6 @@ export function SettingsClient() {
           </div>
         </div>
       </Card>
-    </>
+    </div>
   );
 }

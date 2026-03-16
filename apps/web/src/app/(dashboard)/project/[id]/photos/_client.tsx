@@ -388,12 +388,12 @@ export function PhotosClient() {
           description="Upload timestamped site photos to document progress, verify milestones, and build a visual record of your construction."
         />
       )}
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 mb-5">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 mb-5 animate-stagger">
         {filteredPhotos.map((photo, idx) => (
           <div
             key={photo.id}
             onClick={() => setLightboxIndex(idx)}
-            className="aspect-square bg-surface-alt border border-border rounded-[var(--radius)] relative cursor-pointer hover:border-earth hover:shadow-[var(--shadow-sm)] transition-all overflow-hidden group"
+            className="aspect-square bg-surface-alt border border-border rounded-[var(--radius)] relative cursor-pointer hover:border-earth hover:shadow-[var(--shadow-sm)] hover:scale-[1.03] transition-all duration-200 overflow-hidden group"
           >
             {photo.fileUrl ? (
               <img
@@ -441,7 +441,7 @@ export function PhotosClient() {
         ))}
 
         {/* Upload button */}
-        <label className="aspect-square border border-dashed border-border-dark rounded-[var(--radius)] flex flex-col items-center justify-center cursor-pointer hover:border-earth hover:bg-warm/30 transition-colors group">
+        <label className="aspect-square border border-dashed border-border-dark rounded-[var(--radius)] flex flex-col items-center justify-center cursor-pointer hover:border-emerald-400 hover:bg-warm/30 transition-colors group">
           <input
             ref={fileInputRef}
             type="file"

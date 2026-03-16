@@ -58,7 +58,7 @@ function TradeRequirementList({
   }
 
   return (
-    <div className="space-y-1.5 mb-4">
+    <div className="space-y-1.5 mb-4 animate-stagger">
       {trades.map((trade) => {
         const matchedContact = contacts.find(
           (c) =>
@@ -424,7 +424,7 @@ export function TeamClient() {
           action={{ label: "Add contact", onClick: () => setShowForm(true) }}
         />
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 animate-stagger">
           {contacts.map((c, i) => {
             const color = COLORS[i % COLORS.length];
             const isExpanded = expandedContact === c.id;
@@ -439,7 +439,7 @@ export function TeamClient() {
             return (
               <div
                 key={c.id}
-                className="border border-border rounded-[var(--radius)] bg-surface transition-all border-l-[3px]"
+                className="border border-border rounded-[var(--radius)] bg-surface transition-all border-l-[3px] card-hover"
                 style={{ borderLeftColor: borderColor }}
               >
                 {/* Contact summary row */}

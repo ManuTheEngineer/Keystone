@@ -278,7 +278,7 @@ export function AIAssistantClient() {
           <button
             key={m.key}
             onClick={() => setMode(m.key)}
-            className={`px-3 py-1 text-[11px] rounded-full whitespace-nowrap transition-colors ${
+            className={`px-3 py-1 text-[11px] rounded-full whitespace-nowrap transition-all duration-150 ${
               mode === m.key
                 ? "bg-earth text-warm font-medium"
                 : "bg-surface border border-border text-muted hover:border-emerald-400 hover:text-emerald-700"
@@ -314,7 +314,7 @@ export function AIAssistantClient() {
                 <button
                   key={suggestion}
                   onClick={() => setInput(suggestion)}
-                  className="px-3 py-1.5 text-[11px] border border-border rounded-full text-muted hover:border-emerald-400 hover:text-emerald-700 transition-colors"
+                  className="px-3 py-1.5 text-[11px] border border-border rounded-full text-muted hover:border-emerald-400 hover:text-emerald-700 transition-all duration-150 card-hover"
                 >
                   {suggestion}
                 </button>
@@ -326,7 +326,7 @@ export function AIAssistantClient() {
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`flex gap-2 animate-fade-in ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             {msg.role === "assistant" && (
               <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold bg-surface-alt text-clay">
@@ -356,12 +356,17 @@ export function AIAssistantClient() {
         ))}
 
         {sending && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 animate-fade-in">
             <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold bg-surface-alt text-clay">
               K
             </div>
-            <div className="px-3.5 py-2.5 rounded-xl bg-surface border border-border">
-              <Loader2 size={16} className="text-muted animate-spin" />
+            <div className="flex gap-2 items-center px-4 py-3 rounded-xl bg-surface border border-border">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 rounded-full bg-clay animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-2 h-2 rounded-full bg-clay animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-2 h-2 rounded-full bg-clay animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+              <span className="text-[11px] text-muted ml-1">Keystone is thinking...</span>
             </div>
           </div>
         )}

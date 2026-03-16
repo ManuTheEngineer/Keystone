@@ -249,11 +249,11 @@ export default function NewProjectPage() {
       </div>
 
       {step < STEPS.length ? (
-        <>
+        <div key={step} className="animate-fade-in">
           <h3 style={{ fontFamily: "var(--font-heading)" }} className="text-2xl text-earth mb-2">{currentStep.title}</h3>
           <p className="text-[13px] text-muted mb-8">{currentStep.subtitle}</p>
 
-          <div className="space-y-3 text-left">
+          <div className="space-y-3 text-left animate-stagger">
             {currentStep.options.map((opt) => (
               <button
                 key={opt.id}
@@ -359,9 +359,9 @@ export default function NewProjectPage() {
               </p>
             </div>
           )}
-        </>
+        </div>
       ) : (
-        <>
+        <div key="name" className="animate-fade-in">
           <h3 className="text-xl font-semibold text-earth mb-1">Name your project</h3>
           <p className="text-[13px] text-muted mb-6">
             Give it a name you will recognize. You can change this later.
@@ -376,7 +376,7 @@ export default function NewProjectPage() {
           <p className="text-[10px] text-muted mt-2 text-left">
             Tip: Use a descriptive name like the property address, family name, or location.
           </p>
-        </>
+        </div>
       )}
 
       {/* Nav buttons */}

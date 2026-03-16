@@ -183,7 +183,7 @@ export function InspectionsClient() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-3 gap-3 mb-5 animate-stagger">
         <Card padding="sm">
           <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">This phase</p>
           <p className="text-[16px] font-semibold text-earth font-data">

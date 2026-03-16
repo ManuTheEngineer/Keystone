@@ -309,13 +309,13 @@ export function PunchListClient() {
           </Card>
         )
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 animate-stagger">
           {filteredItems.map((item) => (
             <Card key={item.id} padding="sm">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <Badge variant={SEVERITY_BADGE[item.severity]}>{item.severity}</Badge>
+                    <Badge variant={SEVERITY_BADGE[item.severity]}><span className={item.severity === "critical" ? "animate-gentle-pulse" : ""}>{item.severity}</span></Badge>
                     <Badge variant={STATUS_BADGE[item.status]}>{item.status}</Badge>
                     <span className="text-[10px] text-muted font-data">{item.trade}</span>
                   </div>
@@ -347,7 +347,7 @@ export function PunchListClient() {
                         e.target.value as "open" | "in-progress" | "resolved"
                       )
                     }
-                    className="text-[10px] px-2 py-1 border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500"
+                    className="text-[10px] px-2 py-1 border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 transition-all"
                   >
                     <option value="open">Open</option>
                     <option value="in-progress">In progress</option>

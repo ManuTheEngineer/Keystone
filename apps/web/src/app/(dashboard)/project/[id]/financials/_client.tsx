@@ -285,7 +285,7 @@ export function FinancialsClient() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-3.5 py-1.5 text-[11px] rounded-full whitespace-nowrap transition-colors ${
+            className={`px-3.5 py-1.5 text-[11px] rounded-full whitespace-nowrap transition-all duration-150 ${
               activeTab === tab.key
                 ? "bg-earth text-warm font-medium"
                 : "bg-surface border border-border text-muted hover:border-border-dark hover:text-earth"

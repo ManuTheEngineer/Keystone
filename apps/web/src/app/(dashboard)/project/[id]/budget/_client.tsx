@@ -350,7 +350,7 @@ export function BudgetClient() {
           <button
             onClick={handleLoadBenchmarks}
             disabled={loadingBenchmarks}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 btn-hover"
           >
             <Download size={14} />
             {loadingBenchmarks ? "Loading..." : "Load market benchmarks"}
@@ -454,7 +454,7 @@ export function BudgetClient() {
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-24 animate-stagger">
           {items.map((item) => {
             const benchmark = findBenchmark(item.category);
             const statusInfo = getStatusInfo(item);
@@ -472,7 +472,7 @@ export function BudgetClient() {
               <Card
                 key={item.id}
                 padding="sm"
-                className="cursor-pointer hover:shadow-sm transition-shadow"
+                className="cursor-pointer hover:shadow-sm transition-shadow card-hover"
               >
                 <div
                   onClick={() => setExpandedItem(isExpanded ? null : item.id ?? null)}
@@ -692,7 +692,7 @@ export function BudgetClient() {
       {/* ================================================================= */}
       {/* FLOATING STICKY BAR                                               */}
       {/* ================================================================= */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-earth border-t border-earth-light">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-earth/95 backdrop-blur-sm border-t border-earth-light glass">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3 sm:gap-6">
             <div>

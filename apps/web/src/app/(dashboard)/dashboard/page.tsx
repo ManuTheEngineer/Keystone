@@ -48,6 +48,8 @@ import {
   Camera,
   ArrowRight,
   Download,
+  Sun,
+  Sunset,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
 import type { ExportData } from "@/lib/services/export-service";
@@ -510,12 +512,13 @@ export default function DashboardPage() {
       )}
 
       {/* ---- Greeting bar ---- */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-6 animate-fade-in">
         <div>
           <h1
-            className="text-[24px] text-earth leading-tight"
+            className="text-[24px] text-earth leading-tight flex items-center gap-2"
             style={{ fontFamily: "var(--font-heading)" }}
           >
+            {new Date().getHours() < 17 ? <Sun size={22} className="text-clay" /> : <Sunset size={22} className="text-clay" />}
             {getGreeting()}, {firstName}
           </h1>
           <p className="text-[13px] text-muted mt-1">{getFormattedDate()}</p>
@@ -573,7 +576,7 @@ export default function DashboardPage() {
       ) : (
         <>
           <SectionLabel>Your projects</SectionLabel>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 animate-stagger">
             {projects.map((p) => {
               const marketData = getMarketData(p.market as Market);
               const isWestAfrica = ["TOGO", "GHANA", "BENIN"].includes(p.market);
@@ -663,7 +666,7 @@ export default function DashboardPage() {
 
       {/* ---- Quick actions ---- */}
       <SectionLabel>Quick actions</SectionLabel>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6 animate-stagger">
         <Link
           href="/new-project"
           className="bg-white border border-border rounded-xl p-4 text-left card-hover group block"
@@ -738,7 +741,7 @@ export default function DashboardPage() {
           </p>
         </Card>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-1 animate-stagger">
           {activities.map((activity) => (
             <Link
               key={activity.id}

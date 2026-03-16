@@ -92,9 +92,9 @@ function PhaseCard({
       ref={cardRef}
       onClick={onToggle}
       className={`
-        shrink-0 rounded-[var(--radius)] border cursor-pointer transition-all duration-200
+        shrink-0 rounded-[var(--radius)] border cursor-pointer transition-all duration-300
         ${isCompleted ? "bg-success/5 border-success/30" : ""}
-        ${isCurrent ? "border-emerald-500 border-2 shadow-sm" : ""}
+        ${isCurrent ? "border-emerald-500 border-2 shadow-sm shadow-[0_0_15px_rgba(5,150,105,0.15)]" : ""}
         ${isUpcoming ? "bg-surface border-border opacity-60" : ""}
         ${!isCurrent && !isCompleted ? "border-border" : ""}
         ${isExpanded ? "w-[calc(100vw-3rem)] sm:w-[320px]" : "w-[140px] sm:w-[180px]"}
@@ -147,7 +147,7 @@ function PhaseCard({
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className="px-3 pb-3 border-t border-border pt-2 space-y-1.5">
+        <div className="px-3 pb-3 border-t border-border pt-2 space-y-1.5 animate-expand">
           {phaseDef.milestones.map((m, mi) => {
             const milestoneComplete = mi < completedMilestones;
             return (

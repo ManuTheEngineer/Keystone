@@ -102,7 +102,7 @@ function PhotoFeed({ photos, projectId }: PhotoFeedProps) {
           <p className="text-[11px]">No photos for this period</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 animate-stagger">
           {filtered.slice(0, 12).map((photo) => (
             <div
               key={photo.id}
@@ -387,7 +387,7 @@ function ActivityLog({ logs, photos }: ActivityLogProps) {
       {recent.length === 0 ? (
         <p className="text-[11px] text-muted text-center py-4">No activity recorded yet</p>
       ) : (
-        <div className="max-h-[320px] overflow-y-auto space-y-0">
+        <div className="max-h-[320px] overflow-y-auto space-y-0 animate-stagger">
           {recent.map((entry, i) => (
             <div
               key={i}
@@ -569,7 +569,7 @@ function MaterialTracker({ materials, projectId, userId }: MaterialTrackerProps)
               {materials.map((m) => (
                 <tr
                   key={m.id}
-                  className={`border-b border-border last:border-0 ${
+                  className={`border-b border-border last:border-0 hover:bg-warm/30 transition-colors ${
                     hasDiscrepancy(m) ? "bg-danger/5" : ""
                   }`}
                 >
@@ -665,7 +665,7 @@ export function MonitorClient() {
       />
 
       {/* Status bar */}
-      <Card padding="sm">
+      <Card padding="sm" className="glass">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <Eye size={16} className="text-clay" />
