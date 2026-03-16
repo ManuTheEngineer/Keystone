@@ -10,6 +10,7 @@ import {
   type ProjectData,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
 import { uploadProjectPhoto } from "@/lib/services/photo-upload-service";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
@@ -26,6 +27,7 @@ export function PhotosClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const projectId = params.id as string;
 
   const [photos, setPhotos] = useState<PhotoData[]>([]);
@@ -153,8 +155,10 @@ export function PhotosClient() {
           .join(" | ");
         await uploadProjectPhoto(user.uid, projectId, file, phase, caption || undefined);
       }
+      showToast("Photos uploaded successfully", "success");
     } catch (err) {
       console.error("Upload failed:", err);
+      showToast("Failed to upload photos", "error");
     } finally {
       setUploading(false);
       setShowUploadForm(false);

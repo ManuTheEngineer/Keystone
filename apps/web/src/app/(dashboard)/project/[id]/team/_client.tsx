@@ -13,6 +13,7 @@ import {
   type ProjectData,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
@@ -125,6 +126,7 @@ export function TeamClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const projectId = params.id as string;
   const [contacts, setContacts] = useState<ContactData[]>([]);
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -211,6 +213,9 @@ export function TeamClient() {
       setWhatsapp("");
       setRating("5");
       setShowForm(false);
+      showToast("Contact added", "success");
+    } catch {
+      showToast("Failed to add contact", "error");
     } finally {
       setSaving(false);
     }
@@ -245,6 +250,9 @@ export function TeamClient() {
         rating: Number(editRating),
       });
       setEditingContactId(null);
+      showToast("Contact updated", "success");
+    } catch {
+      showToast("Failed to update contact", "error");
     } finally {
       setEditSaving(false);
     }
@@ -252,9 +260,14 @@ export function TeamClient() {
 
   async function handleDeleteContact(contactId: string) {
     if (!user) return;
-    await deleteContact(user.uid, projectId, contactId);
-    setDeleteConfirmId(null);
-    setExpandedContact(null);
+    try {
+      await deleteContact(user.uid, projectId, contactId);
+      setDeleteConfirmId(null);
+      setExpandedContact(null);
+      showToast("Contact deleted", "success");
+    } catch {
+      showToast("Failed to delete contact", "error");
+    }
   }
 
   // Compute trades filled count

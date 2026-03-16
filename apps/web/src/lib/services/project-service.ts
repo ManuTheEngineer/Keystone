@@ -159,6 +159,8 @@ export function subscribeToProject(
     } else {
       callback(null);
     }
+  }, (error) => {
+    console.error("Subscription error (project):", error);
   });
 }
 
@@ -175,6 +177,8 @@ export function subscribeToUserProjects(
       });
     }
     callback(projects);
+  }, (error) => {
+    console.error("Subscription error (user projects):", error);
   });
 }
 
@@ -228,6 +232,8 @@ export function subscribeToBudgetItems(
       });
     }
     callback(items);
+  }, (error) => {
+    console.error("Subscription error (budget items):", error);
   });
 }
 
@@ -261,6 +267,8 @@ export function subscribeToContacts(
       });
     }
     callback(contacts);
+  }, (error) => {
+    console.error("Subscription error (contacts):", error);
   });
 }
 
@@ -285,6 +293,8 @@ export function subscribeToDailyLogs(
       });
     }
     callback(logs.reverse());
+  }, (error) => {
+    console.error("Subscription error (daily logs):", error);
   });
 }
 
@@ -309,6 +319,8 @@ export function subscribeToTasks(
       });
     }
     callback(tasks.sort((a, b) => a.order - b.order));
+  }, (error) => {
+    console.error("Subscription error (tasks):", error);
   });
 }
 
@@ -342,6 +354,8 @@ export function subscribeToDocuments(
       });
     }
     callback(docs);
+  }, (error) => {
+    console.error("Subscription error (documents):", error);
   });
 }
 
@@ -384,6 +398,8 @@ export function subscribeToPhotos(
       });
     }
     callback(photos);
+  }, (error) => {
+    console.error("Subscription error (photos):", error);
   });
 }
 
@@ -421,6 +437,8 @@ export function subscribeToInspectionResults(
       });
     }
     callback(results);
+  }, (error) => {
+    console.error("Subscription error (inspection results):", error);
   });
 }
 
@@ -470,6 +488,8 @@ export function subscribeToPunchListItems(
       });
     }
     callback(items);
+  }, (error) => {
+    console.error("Subscription error (punch list items):", error);
   });
 }
 
@@ -515,6 +535,8 @@ export function subscribeToMaterials(
       });
     }
     callback(materials);
+  }, (error) => {
+    console.error("Subscription error (materials):", error);
   });
 }
 
@@ -562,6 +584,8 @@ export function subscribeToVaultFiles(
     // Sort newest first
     files.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
     callback(files);
+  }, (error) => {
+    console.error("Subscription error (vault files):", error);
   });
 }
 
@@ -632,6 +656,8 @@ export function subscribeToMilestoneProgress(
 ): Unsubscribe {
   return onValue(ref(db, `users/${userId}/projects/${projectId}/milestoneProgress/${phase}`), (snapshot) => {
     callback(snapshot.exists() ? snapshot.val() : []);
+  }, (error) => {
+    console.error("Subscription error (milestone progress):", error);
   });
 }
 
@@ -642,6 +668,8 @@ export function subscribeToAllMilestoneProgress(
 ): Unsubscribe {
   return onValue(ref(db, `users/${userId}/projects/${projectId}/milestoneProgress`), (snapshot) => {
     callback(snapshot.exists() ? snapshot.val() : {});
+  }, (error) => {
+    console.error("Subscription error (all milestone progress):", error);
   });
 }
 
@@ -684,6 +712,8 @@ export function subscribeToConversation(
     } else {
       callback([]);
     }
+  }, (error) => {
+    console.error("Subscription error (conversation):", error);
   });
 }
 
@@ -724,6 +754,8 @@ export function subscribeToPhasedFunding(
 ): Unsubscribe {
   return onValue(ref(db, `users/${userId}/projects/${projectId}/phasedFunding`), (snapshot) => {
     callback(snapshot.exists() ? snapshot.val() : {});
+  }, (error) => {
+    console.error("Subscription error (phased funding):", error);
   });
 }
 
@@ -882,5 +914,7 @@ export function subscribeToPhaseSteps(
 ): Unsubscribe {
   return onValue(ref(db, `users/${userId}/projects/${projectId}/phaseSteps`), (snapshot) => {
     callback(snapshot.exists() ? snapshot.val() : {});
+  }, (error) => {
+    console.error("Subscription error (phase steps):", error);
   });
 }

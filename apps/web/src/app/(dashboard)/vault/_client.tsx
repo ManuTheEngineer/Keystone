@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useTopbar } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
 import {
   subscribeToUserProjects,
   updateProjectPriority,
@@ -238,6 +239,7 @@ type SortOption = "priority" | "recent" | "progress";
 export function VaultClient() {
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [marketFilter, setMarketFilter] = useState<MarketFilter>("all");
@@ -318,38 +320,42 @@ export function VaultClient() {
     if (!user) return;
     try {
       await updateProjectPriority(user.uid, projectId, priority);
+      showToast("Priority updated", "success");
     } catch {
-      console.error("Operation failed");
+      showToast("Failed to update priority", "error");
     }
-  }, [user]);
+  }, [user, showToast]);
 
   const handlePause = useCallback(async (projectId: string) => {
     if (!user) return;
     try {
       await updateProject(user.uid, projectId, { status: "PAUSED" });
+      showToast("Project paused", "success");
     } catch {
-      console.error("Operation failed");
+      showToast("Failed to pause project", "error");
     }
-  }, [user]);
+  }, [user, showToast]);
 
   const handleResume = useCallback(async (projectId: string) => {
     if (!user) return;
     try {
       await updateProject(user.uid, projectId, { status: "ACTIVE" });
+      showToast("Project resumed", "success");
     } catch {
-      console.error("Operation failed");
+      showToast("Failed to resume project", "error");
     }
-  }, [user]);
+  }, [user, showToast]);
 
   const handleDelete = useCallback(async (projectId: string) => {
     if (!user) return;
     try {
       await deleteProject(user.uid, projectId);
+      showToast("Project deleted", "success");
     } catch {
-      console.error("Operation failed");
+      showToast("Failed to delete project", "error");
     }
     setDeleteConfirm(null);
-  }, [user]);
+  }, [user, showToast]);
 
   const primaryCurrency = projects.length > 0
     ? getMarketData((projects[0]?.market as Market) ?? "USA").currency

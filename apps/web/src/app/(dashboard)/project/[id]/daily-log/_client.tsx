@@ -8,6 +8,7 @@ import { Plus, ClipboardList, Pencil, Trash2 } from "lucide-react";
 import { VoiceNote } from "@/components/ui/VoiceNote";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
 import { useTopbar } from "../../../layout";
 import {
   subscribeToDailyLogs,
@@ -43,6 +44,7 @@ export function DailyLogClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const projectId = params.id as string;
   const [logs, setLogs] = useState<DailyLogData[]>([]);
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -117,6 +119,9 @@ export function DailyLogClient() {
       setCrew("1");
       setContent("");
       setShowForm(false);
+      showToast("Daily log entry saved", "success");
+    } catch {
+      showToast("Failed to save daily log entry", "error");
     } finally {
       setSaving(false);
     }
@@ -147,6 +152,9 @@ export function DailyLogClient() {
         crew: Number(editCrew),
       });
       setEditingLogId(null);
+      showToast("Daily log entry updated", "success");
+    } catch {
+      showToast("Failed to update daily log entry", "error");
     } finally {
       setEditSaving(false);
     }
@@ -154,8 +162,13 @@ export function DailyLogClient() {
 
   async function handleDeleteLog(logId: string) {
     if (!user) return;
-    await deleteDailyLog(user.uid, projectId, logId);
-    setDeleteConfirmId(null);
+    try {
+      await deleteDailyLog(user.uid, projectId, logId);
+      setDeleteConfirmId(null);
+      showToast("Daily log entry deleted", "success");
+    } catch {
+      showToast("Failed to delete daily log entry", "error");
+    }
   }
 
   return (

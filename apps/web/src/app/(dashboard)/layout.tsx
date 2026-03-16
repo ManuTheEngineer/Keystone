@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, createContext, useContext, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, createContext, useContext, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
@@ -117,37 +117,39 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [projects]);
 
   // Subscribe to detailed data for top 3 priority projects
+  const collectedRef = useRef<Record<string, { punchList: PunchListItemData[]; tasks: TaskData[]; dailyLogs: DailyLogData[] }>>({});
   useEffect(() => {
     if (!user || priorityProjects.length === 0) {
+      collectedRef.current = {};
       setDetailedData({});
       return;
     }
 
     const unsubs: (() => void)[] = [];
-    const collected: Record<string, { punchList: PunchListItemData[]; tasks: TaskData[]; dailyLogs: DailyLogData[] }> = {};
+    collectedRef.current = {};
 
     for (const project of priorityProjects) {
       const pid = project.id;
       if (!pid) continue;
 
-      collected[pid] = { punchList: [], tasks: [], dailyLogs: [] };
+      collectedRef.current[pid] = { punchList: [], tasks: [], dailyLogs: [] };
 
       unsubs.push(
         subscribeToPunchListItems(user.uid, pid, (items) => {
-          collected[pid] = { ...collected[pid], punchList: items };
-          setDetailedData({ ...collected });
+          collectedRef.current[pid] = { ...collectedRef.current[pid], punchList: items };
+          setDetailedData({ ...collectedRef.current });
         })
       );
       unsubs.push(
         subscribeToTasks(user.uid, pid, (tasks) => {
-          collected[pid] = { ...collected[pid], tasks };
-          setDetailedData({ ...collected });
+          collectedRef.current[pid] = { ...collectedRef.current[pid], tasks };
+          setDetailedData({ ...collectedRef.current });
         })
       );
       unsubs.push(
         subscribeToDailyLogs(user.uid, pid, (logs) => {
-          collected[pid] = { ...collected[pid], dailyLogs: logs };
-          setDetailedData({ ...collected });
+          collectedRef.current[pid] = { ...collectedRef.current[pid], dailyLogs: logs };
+          setDetailedData({ ...collectedRef.current });
         })
       );
     }

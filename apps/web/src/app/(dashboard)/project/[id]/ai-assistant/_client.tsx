@@ -163,7 +163,8 @@ export function AIAssistantClient() {
       }),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [user, projectId, conversationLoaded]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, projectId]);
 
   useEffect(() => {
     setTopbar("AI assistant", project ? `Context: ${project.name}` : "AI assistant", "info");

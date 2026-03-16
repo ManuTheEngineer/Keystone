@@ -259,7 +259,12 @@ export function ScheduleClient() {
     [user, projectId, allMilestoneProgress, project]
   );
 
-  if (!project) return <p className="text-muted text-sm">Loading...</p>;
+  if (!project) return (
+    <div className="flex flex-col items-center justify-center py-24">
+      <div className="w-8 h-8 rounded-full border-2 border-sand border-t-clay animate-spin mb-3" />
+      <p className="text-[12px] text-muted">Loading schedule...</p>
+    </div>
+  );
 
   const market = project.market as Market;
   const marketData = getMarketData(market);

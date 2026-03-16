@@ -14,6 +14,7 @@ import {
   type BudgetItemData,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCard } from "@/components/ui/StatCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -103,6 +104,7 @@ export function BudgetClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [items, setItems] = useState<BudgetItemData[]>([]);
@@ -129,17 +131,33 @@ export function BudgetClient() {
 
   // Sync project totals when budget items change
   const syncRef = useRef(false);
+  const projectRef = useRef(project);
+  projectRef.current = project;
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!user || !project || items.length === 0) return;
-    const newTotal = items.reduce((sum, item) => sum + item.estimated, 0);
-    const newSpent = items.reduce((sum, item) => sum + item.actual, 0);
-    if (newTotal !== project.totalBudget || newSpent !== project.totalSpent) {
-      // Avoid sync on initial load race
-      if (syncRef.current) {
-        updateProject(user.uid, projectId, { totalBudget: newTotal, totalSpent: newSpent });
-      }
+    if (!user || !projectRef.current || items.length === 0) return;
+    // Avoid sync on initial load race
+    if (!syncRef.current) {
+      syncRef.current = true;
+      return;
     }
-    syncRef.current = true;
+    // Debounce to prevent rapid re-fires
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => {
+      const latestProject = projectRef.current;
+      if (!latestProject) return;
+      const newTotal = items.reduce((sum, item) => sum + item.estimated, 0);
+      const newSpent = items.reduce((sum, item) => sum + item.actual, 0);
+      // Only write if values actually differ from what's already on the project
+      if (newTotal !== latestProject.totalBudget || newSpent !== latestProject.totalSpent) {
+        updateProject(user.uid, projectId, { totalBudget: newTotal, totalSpent: newSpent }).catch(() => {
+          showToast("Failed to sync budget totals", "error");
+        });
+      }
+    }, 300);
+    return () => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    };
   }, [items, user, projectId]); // intentionally exclude project to avoid loop
 
   useEffect(() => {
@@ -153,7 +171,12 @@ export function BudgetClient() {
     }
   }, [project, setTopbar]);
 
-  if (!project) return <p className="text-muted text-sm">Loading...</p>;
+  if (!project) return (
+    <div className="flex flex-col items-center justify-center py-24">
+      <div className="w-8 h-8 rounded-full border-2 border-sand border-t-clay animate-spin mb-3" />
+      <p className="text-[12px] text-muted">Loading budget...</p>
+    </div>
+  );
 
   const market = project.market as Market;
   const marketData = getMarketData(market);
@@ -196,6 +219,9 @@ export function BudgetClient() {
       setEstimated("");
       setActual("");
       setShowForm(false);
+      showToast("Budget item added", "success");
+    } catch {
+      showToast("Failed to add budget item", "error");
     } finally {
       setSaving(false);
     }
@@ -219,6 +245,9 @@ export function BudgetClient() {
           });
         }
       }
+      showToast("Benchmarks loaded", "success");
+    } catch {
+      showToast("Failed to load benchmarks", "error");
     } finally {
       setLoadingBenchmarks(false);
     }
@@ -243,6 +272,9 @@ export function BudgetClient() {
         status,
       });
       setEditingItemId(null);
+      showToast("Budget item updated", "success");
+    } catch {
+      showToast("Failed to update budget item", "error");
     } finally {
       setEditSaving(false);
     }
@@ -250,9 +282,14 @@ export function BudgetClient() {
 
   async function handleDeleteItem(itemId: string) {
     if (!user) return;
-    await deleteBudgetItem(user.uid, projectId, itemId);
-    setDeleteConfirmId(null);
-    setExpandedItem(null);
+    try {
+      await deleteBudgetItem(user.uid, projectId, itemId);
+      setDeleteConfirmId(null);
+      setExpandedItem(null);
+      showToast("Budget item deleted", "success");
+    } catch {
+      showToast("Failed to delete budget item", "error");
+    }
   }
 
   return (

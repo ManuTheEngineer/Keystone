@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Plus, Filter, ListChecks, AlertTriangle } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
 import { useTopbar } from "../../../layout";
 import {
   subscribeToProject,
@@ -40,6 +41,7 @@ export function PunchListClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [items, setItems] = useState<PunchListItemData[]>([]);
@@ -122,6 +124,9 @@ export function PunchListClient() {
       setSeverity("major");
       setNotes("");
       setShowForm(false);
+      showToast("Punch list item added", "success");
+    } catch {
+      showToast("Failed to add punch list item", "error");
     } finally {
       setSaving(false);
     }
@@ -132,10 +137,15 @@ export function PunchListClient() {
     newStatus: "open" | "in-progress" | "resolved"
   ) {
     if (!item.id || !user) return;
-    await updatePunchListItem(user.uid, projectId, item.id, {
-      status: newStatus,
-      resolvedAt: newStatus === "resolved" ? new Date().toISOString() : undefined,
-    });
+    try {
+      await updatePunchListItem(user.uid, projectId, item.id, {
+        status: newStatus,
+        resolvedAt: newStatus === "resolved" ? new Date().toISOString() : undefined,
+      });
+      showToast("Status updated", "success");
+    } catch {
+      showToast("Failed to update status", "error");
+    }
   }
 
   return (
