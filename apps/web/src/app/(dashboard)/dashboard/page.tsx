@@ -990,7 +990,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={p.id}
-                    className="bg-surface border border-border/60 rounded-xl shadow-[0_1px_3px_rgba(44,24,16,0.04)] p-4 card-hover flex items-center gap-4"
+                    className="bg-surface border border-border/60 rounded-2xl shadow-[0_1px_3px_rgba(44,24,16,0.04)] p-4 card-hover flex items-center gap-4"
                   >
                     {/* Left: progress ring */}
                     <div className="shrink-0">
@@ -1147,7 +1147,7 @@ export default function DashboardPage() {
           <div className="mb-6">
             <Link
               href="/vault"
-              className="block bg-surface border border-border/60 rounded-xl shadow-[0_1px_3px_rgba(44,24,16,0.04)] p-5 card-hover"
+              className="block bg-surface border border-border/60 rounded-2xl shadow-[0_1px_3px_rgba(44,24,16,0.04)] p-5 card-hover"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
@@ -1204,7 +1204,7 @@ export default function DashboardPage() {
             <div className="space-y-2 animate-stagger">
               <Link
                 href="/new-project"
-                className="flex items-center gap-3 bg-surface border border-border/60 rounded-xl px-4 py-3 card-hover"
+                className="flex items-center gap-3 bg-surface border border-border/60 rounded-2xl px-4 py-3 card-hover"
               >
                 <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
                   <Plus size={18} className="text-clay" />
@@ -1217,7 +1217,7 @@ export default function DashboardPage() {
 
               <Link
                 href="/new-project"
-                className="flex items-center gap-3 bg-surface border border-border/60 rounded-xl px-4 py-3 card-hover"
+                className="flex items-center gap-3 bg-surface border border-border/60 rounded-2xl px-4 py-3 card-hover"
               >
                 <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
                   <TrendingUp size={18} className="text-clay" />
@@ -1230,7 +1230,7 @@ export default function DashboardPage() {
 
               <Link
                 href="/learn"
-                className="flex items-center gap-3 bg-surface border border-border/60 rounded-xl px-4 py-3 card-hover"
+                className="flex items-center gap-3 bg-surface border border-border/60 rounded-2xl px-4 py-3 card-hover"
               >
                 <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
                   <BookOpen size={18} className="text-clay" />
@@ -1243,7 +1243,7 @@ export default function DashboardPage() {
 
               <Link
                 href="/vault"
-                className="flex items-center gap-3 bg-surface border border-border/60 rounded-xl px-4 py-3 card-hover"
+                className="flex items-center gap-3 bg-surface border border-border/60 rounded-2xl px-4 py-3 card-hover"
               >
                 <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
                   <Download size={18} className="text-clay" />

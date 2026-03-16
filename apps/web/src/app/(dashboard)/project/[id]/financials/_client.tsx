@@ -40,6 +40,7 @@ import { Card } from "@/components/ui/Card";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Badge } from "@/components/ui/Badge";
+import { useToast } from "@/components/ui/Toast";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -72,6 +73,7 @@ export function FinancialsClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -97,6 +99,9 @@ export function FinancialsClient() {
 
   // Phased funding state (West Africa)
   const [phaseFunding, setPhaseFunding] = useState<Record<string, number>>({});
+  const [localPhaseFunding, setLocalPhaseFunding] = useState<Record<string, number> | null>(null);
+  const [phaseFundingDirty, setPhaseFundingDirty] = useState(false);
+  const [savingFunding, setSavingFunding] = useState(false);
 
   // Tab switcher state
   const [activeTab, setActiveTab] = useState<string>("overview");
@@ -653,61 +658,99 @@ export function FinancialsClient() {
               Enter funded amounts to see your progress.
             </p>
             <div className="space-y-3">
-              {getPhasedFundingData().map((row) => (
-                <div key={row.phase}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[12px] font-medium text-earth">
-                      {row.name}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-data text-muted">
-                        {fmt(row.funded)} / {fmt(row.estimatedCost)}
+              {getPhasedFundingData().map((row) => {
+                const editFunding = localPhaseFunding ?? phaseFunding;
+                const editedValue = editFunding[row.phase] ?? 0;
+                const editedPct = row.estimatedCost > 0 ? Math.min((editedValue / row.estimatedCost) * 100, 100) : 0;
+                return (
+                  <div key={row.phase}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[12px] font-medium text-earth">
+                        {row.name}
                       </span>
-                      <Badge
-                        variant={
-                          row.pct >= 100
-                            ? "success"
-                            : row.pct > 50
-                            ? "warning"
-                            : "info"
-                        }
-                      >
-                        {Math.round(row.pct)}%
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-data text-muted">
+                          {fmt(editedValue)} / {fmt(row.estimatedCost)}
+                        </span>
+                        <Badge
+                          variant={
+                            editedPct >= 100
+                              ? "success"
+                              : editedPct > 50
+                              ? "warning"
+                              : "info"
+                          }
+                        >
+                          {Math.round(editedPct)}%
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <ProgressBar
-                        value={row.pct}
-                        color={
-                          row.pct >= 100
-                            ? "var(--color-success)"
-                            : "var(--color-warning)"
-                        }
-                        height={4}
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <ProgressBar
+                          value={editedPct}
+                          color={
+                            editedPct >= 100
+                              ? "var(--color-success)"
+                              : "var(--color-warning)"
+                          }
+                          height={4}
+                        />
+                      </div>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={editedValue || ""}
+                        onChange={(e) => {
+                          const newVal = Number(e.target.value) || 0;
+                          setLocalPhaseFunding((prev) => ({
+                            ...(prev ?? phaseFunding),
+                            [row.phase]: newVal,
+                          }));
+                          setPhaseFundingDirty(true);
+                        }}
+                        className="w-24 px-2 py-1 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth font-data focus:outline-none focus:border-emerald-500"
                       />
                     </div>
-                    <input
-                      type="number"
-                      placeholder="0"
-                      value={phaseFunding[row.phase] || ""}
-                      onChange={(e) => {
-                        const newVal = Number(e.target.value) || 0;
-                        setPhaseFunding((prev) => {
-                          const updated = { ...prev, [row.phase]: newVal };
-                          if (user) {
-                            savePhasedFunding(user.uid, projectId, updated);
-                          }
-                          return updated;
-                        });
-                      }}
-                      className="w-24 px-2 py-1 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth font-data focus:outline-none focus:border-emerald-500"
-                    />
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+
+            {phaseFundingDirty && (
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  onClick={async () => {
+                    if (!user || !localPhaseFunding) return;
+                    setSavingFunding(true);
+                    try {
+                      await savePhasedFunding(user.uid, projectId, localPhaseFunding);
+                      setPhaseFundingDirty(false);
+                      setLocalPhaseFunding(null);
+                      showToast("Phased funding saved successfully.", "success");
+                    } catch (err) {
+                      console.error("Failed to save phased funding:", err);
+                      showToast("Failed to save phased funding. Please try again.", "error");
+                    } finally {
+                      setSavingFunding(false);
+                    }
+                  }}
+                  disabled={savingFunding}
+                  className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-50"
+                >
+                  {savingFunding ? "Saving..." : "Save"}
+                </button>
+                <button
+                  onClick={() => {
+                    setLocalPhaseFunding(null);
+                    setPhaseFundingDirty(false);
+                  }}
+                  className="px-4 py-2 text-[12px] text-muted border border-border rounded-[var(--radius)] hover:border-border-dark transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
             <div className="mt-3 p-3 rounded-[var(--radius)] bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 leading-relaxed">
               <p className="font-semibold mb-0.5">Understanding phased funding</p>
               <p>

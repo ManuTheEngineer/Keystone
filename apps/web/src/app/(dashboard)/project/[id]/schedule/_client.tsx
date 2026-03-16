@@ -6,7 +6,9 @@ import { useTopbar } from "../../../layout";
 import {
   subscribeToProject,
   subscribeToAllMilestoneProgress,
+  subscribeToAllMilestoneDates,
   toggleMilestoneProgress,
+  setMilestoneDate,
   type ProjectData,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -32,6 +34,7 @@ import {
   DollarSign,
   Clock,
   ArrowRight,
+  Calendar,
 } from "lucide-react";
 
 // French names for Togo/Benin phases
@@ -51,6 +54,11 @@ function isWestAfrican(market: Market): boolean {
   return market === "TOGO" || market === "GHANA" || market === "BENIN";
 }
 
+function formatDateCompact(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 // --- Phase Card ---
 
 interface PhaseCardProps {
@@ -63,6 +71,8 @@ interface PhaseCardProps {
   onToggle: () => void;
   milestoneProgress: boolean[];
   onToggleMilestone: (milestoneIndex: number, completed: boolean) => void;
+  milestoneDates: Record<number, string>;
+  onDateChange: (milestoneIndex: number, date: string | null) => void;
 }
 
 function PhaseCard({
@@ -75,6 +85,8 @@ function PhaseCard({
   onToggle,
   milestoneProgress,
   onToggleMilestone,
+  milestoneDates,
+  onDateChange,
 }: PhaseCardProps) {
   const isCompleted = index < currentPhaseIndex;
   const isCurrent = index === currentPhaseIndex;
@@ -157,6 +169,7 @@ function PhaseCard({
         <div className="px-3 pb-3 border-t border-border pt-2 space-y-1.5 animate-expand">
           {phaseDef.milestones.map((m, mi) => {
             const milestoneComplete = isCompleted || (milestoneProgress[mi] ?? false);
+            const dateValue = milestoneDates[mi] ?? null;
             return (
               <div
                 key={mi}
@@ -184,6 +197,9 @@ function PhaseCard({
                   {m.name}
                 </span>
                 <div className="flex items-center gap-1 shrink-0">
+                  {dateValue ? (
+                    <span className="text-[8px] font-data text-muted">{formatDateCompact(dateValue)}</span>
+                  ) : null}
                   {m.requiresInspection && (
                     <Shield size={10} className="text-warning" />
                   )}
@@ -213,6 +229,7 @@ export function ScheduleClient() {
   const [project, setProject] = useState<ProjectData | null>(null);
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
   const [allMilestoneProgress, setAllMilestoneProgress] = useState<Record<string, boolean[]>>({});
+  const [allMilestoneDates, setAllMilestoneDates] = useState<Record<string, Record<number, string>>>({});
   const [completionMessage, setCompletionMessage] = useState<string | null>(null);
   const [lastCompletedIndex, setLastCompletedIndex] = useState<number | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -222,6 +239,7 @@ export function ScheduleClient() {
     const unsubs = [
       subscribeToProject(user.uid, projectId, setProject),
       subscribeToAllMilestoneProgress(user.uid, projectId, setAllMilestoneProgress),
+      subscribeToAllMilestoneDates(user.uid, projectId, setAllMilestoneDates),
     ];
     return () => unsubs.forEach((u) => u());
   }, [user, projectId]);
@@ -257,6 +275,14 @@ export function ScheduleClient() {
       }
     },
     [user, projectId, allMilestoneProgress, project]
+  );
+
+  const handleDateChange = useCallback(
+    async (phaseKey: string, milestoneIndex: number, date: string | null) => {
+      if (!user) return;
+      await setMilestoneDate(user.uid, projectId, phaseKey, milestoneIndex, date);
+    },
+    [user, projectId]
   );
 
   if (!project) return (
@@ -351,6 +377,8 @@ export function ScheduleClient() {
                 onToggleMilestone={(mi, completed) =>
                   handleToggleMilestone(phaseKey, mi, completed, phaseDef.milestones.length)
                 }
+                milestoneDates={allMilestoneDates[phaseKey] ?? {}}
+                onDateChange={(mi, date) => handleDateChange(phaseKey, mi, date)}
               />
             );
           })}
@@ -388,6 +416,8 @@ export function ScheduleClient() {
                 );
                 const isActive = i === firstIncomplete;
                 const justCompleted = lastCompletedIndex === i;
+                const currentDates = allMilestoneDates[currentPhaseKey] ?? {};
+                const dateValue = currentDates[i] ?? null;
 
                 return (
                   <div
@@ -417,6 +447,28 @@ export function ScheduleClient() {
                     <span className={`flex-1 ${isComplete ? "text-muted line-through" : "text-foreground"}`}>
                       {m.name}
                     </span>
+
+                    <label className="shrink-0 relative group cursor-pointer">
+                      {dateValue ? (
+                        <span className="text-[10px] font-data text-earth bg-surface-alt border border-border px-1.5 py-0.5 rounded">
+                          {formatDateCompact(dateValue)}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted/50 flex items-center gap-0.5 hover:text-muted transition-colors">
+                          <Calendar size={10} />
+                          Set date
+                        </span>
+                      )}
+                      <input
+                        type="date"
+                        value={dateValue ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value || null;
+                          handleDateChange(currentPhaseKey, i, val);
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      />
+                    </label>
 
                     {m.requiresInspection && (
                       <Badge variant="warning">Inspection</Badge>
@@ -468,6 +520,8 @@ export function ScheduleClient() {
               <div className="space-y-0">
                 {expandedPhaseDef.milestones.map((m, i) => {
                   const isComplete = isCompletedPhase || (expandedProgress[i] ?? false);
+                  const expandedDates = allMilestoneDates[effectiveExpanded] ?? {};
+                  const dateValue = expandedDates[i] ?? null;
                   return (
                     <div
                       key={i}
@@ -498,6 +552,29 @@ export function ScheduleClient() {
                       <span className={`flex-1 ${isComplete ? "text-muted" : "text-foreground"}`}>
                         {m.name}
                       </span>
+
+                      <label className="shrink-0 relative group cursor-pointer">
+                        {dateValue ? (
+                          <span className="text-[10px] font-data text-earth bg-surface-alt border border-border px-1.5 py-0.5 rounded">
+                            {formatDateCompact(dateValue)}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-muted/50 flex items-center gap-0.5 hover:text-muted transition-colors">
+                            <Calendar size={10} />
+                            Set date
+                          </span>
+                        )}
+                        <input
+                          type="date"
+                          value={dateValue ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value || null;
+                            handleDateChange(effectiveExpanded, i, val);
+                          }}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        />
+                      </label>
+
                       {m.requiresInspection && <Badge variant="warning">Inspection</Badge>}
                       {m.requiresPayment && m.paymentPct != null && (
                         <span className="text-[10px] font-data text-info bg-info-bg px-2 py-0.5 rounded-full">

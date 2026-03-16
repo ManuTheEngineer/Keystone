@@ -399,14 +399,14 @@ export function VaultClient() {
         </div>
 
         {/* Status filter */}
-        <div className="flex items-center gap-1 bg-surface border border-border rounded-lg p-0.5">
+        <div className="flex items-center gap-1 bg-surface border border-border rounded-xl p-0.5">
           {(["all", "ACTIVE", "PAUSED", "COMPLETED"] as StatusFilter[]).map((status) => {
             const labels: Record<StatusFilter, string> = { all: "All", ACTIVE: "Active", PAUSED: "Paused", COMPLETED: "Completed" };
             return (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`text-[11px] px-2.5 py-1 rounded-md transition-colors ${
+                className={`text-[11px] px-2.5 py-1 rounded-lg transition-colors ${
                   statusFilter === status
                     ? "bg-earth text-warm font-medium"
                     : "text-muted hover:text-earth"
@@ -419,14 +419,14 @@ export function VaultClient() {
         </div>
 
         {/* Market filter */}
-        <div className="flex items-center gap-1 bg-surface border border-border rounded-lg p-0.5">
+        <div className="flex items-center gap-1 bg-surface border border-border rounded-xl p-0.5">
           {(["all", "USA", "WA"] as MarketFilter[]).map((market) => {
             const labels: Record<MarketFilter, string> = { all: "All", USA: "USA", WA: "West Africa" };
             return (
               <button
                 key={market}
                 onClick={() => setMarketFilter(market)}
-                className={`text-[11px] px-2.5 py-1 rounded-md transition-colors ${
+                className={`text-[11px] px-2.5 py-1 rounded-lg transition-colors ${
                   marketFilter === market
                     ? "bg-earth text-warm font-medium"
                     : "text-muted hover:text-earth"
@@ -439,7 +439,7 @@ export function VaultClient() {
         </div>
 
         {/* Sort */}
-        <div className="flex items-center gap-1 bg-surface border border-border rounded-lg p-0.5">
+        <div className="flex items-center gap-1 bg-surface border border-border rounded-xl p-0.5">
           <ArrowUpDown size={12} className="text-muted ml-2" />
           {(["priority", "recent", "progress"] as SortOption[]).map((sort) => {
             const labels: Record<SortOption, string> = { priority: "Priority", recent: "Recent", progress: "Progress" };
@@ -447,7 +447,7 @@ export function VaultClient() {
               <button
                 key={sort}
                 onClick={() => setSortOption(sort)}
-                className={`text-[11px] px-2.5 py-1 rounded-md transition-colors ${
+                className={`text-[11px] px-2.5 py-1 rounded-lg transition-colors ${
                   sortOption === sort
                     ? "bg-earth text-warm font-medium"
                     : "text-muted hover:text-earth"
@@ -522,7 +522,7 @@ export function VaultClient() {
             return (
               <div
                 key={p.id}
-                className={`bg-surface rounded-xl shadow-[var(--shadow-sm)] p-5 border border-border border-t-[3px] ${topBorderColor} card-hover ${isPaused ? "opacity-70" : ""} ${isCompleted ? "opacity-80" : ""}`}
+                className={`bg-surface rounded-2xl shadow-[var(--shadow-sm)] p-5 border border-border border-t-[3px] ${topBorderColor} card-hover ${isPaused ? "opacity-70" : ""} ${isCompleted ? "opacity-80" : ""}`}
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-2">

@@ -142,7 +142,7 @@ export function Sidebar({
             ${collapsed ? "px-0 justify-center" : "px-5"}
             ${
               isActive
-                ? "border-l-emerald-500 rounded-r-sm bg-[rgba(16,185,129,0.08)] text-[#F5E6D3] opacity-100"
+                ? "border-l-emerald-500 rounded-r-lg bg-[rgba(16,185,129,0.08)] text-[#F5E6D3] opacity-100"
                 : "border-l-transparent text-[#D4A574] opacity-50 hover:opacity-80 hover:bg-[rgba(212,165,116,0.05)] hover:border-l-[rgba(212,165,116,0.3)] hover:border-l-[2px]"
             }
           `}
@@ -290,7 +290,7 @@ export function Sidebar({
             onClick={() => { onNavigate("settings"); onClose(); }}
             className={`
               w-full flex items-center gap-2.5 px-5 py-2 text-[13px]
-              border-l-[3px] rounded-r-sm transition-all duration-150
+              border-l-[3px] rounded-r-lg transition-all duration-150
               ${activeSection === "settings"
                 ? "opacity-100 bg-emerald-500/8 border-l-emerald-500 text-warm"
                 : "opacity-50 border-l-transparent text-sand hover:opacity-80 hover:bg-sand/5 hover:border-l-[2px] hover:border-l-sand/30"

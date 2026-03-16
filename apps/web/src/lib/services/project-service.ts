@@ -688,6 +688,35 @@ export async function toggleMilestoneProgress(
   await set(progressRef, current);
 }
 
+// --- Milestone Dates ---
+
+export async function setMilestoneDate(
+  userId: string,
+  projectId: string,
+  phase: string,
+  milestoneIndex: number,
+  date: string | null
+): Promise<void> {
+  const datesRef = ref(db, `users/${userId}/projects/${projectId}/milestoneDates/${phase}/${milestoneIndex}`);
+  if (date === null) {
+    await remove(datesRef);
+  } else {
+    await set(datesRef, date);
+  }
+}
+
+export function subscribeToAllMilestoneDates(
+  userId: string,
+  projectId: string,
+  callback: (dates: Record<string, Record<number, string>>) => void
+): Unsubscribe {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/milestoneDates`), (snapshot) => {
+    callback(snapshot.exists() ? snapshot.val() : {});
+  }, (error) => {
+    console.error("Subscription error (milestone dates):", error);
+  });
+}
+
 // --- AI Conversations ---
 
 export async function saveConversation(
