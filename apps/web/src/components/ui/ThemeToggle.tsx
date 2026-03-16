@@ -92,7 +92,7 @@ export function applyTheme(isDark: boolean) {
     Object.entries(DARK_VARS).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
-    document.body.style.backgroundColor = "#1E1916";
+    document.body.style.backgroundColor = "#1A1412";
     document.body.style.color = "#E8DDD0";
   } else {
     root.classList.remove("dark");
