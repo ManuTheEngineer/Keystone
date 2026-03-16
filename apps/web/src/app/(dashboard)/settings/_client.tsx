@@ -269,21 +269,24 @@ export function SettingsClient() {
   }, [profile?.role]);
 
   async function handleUpgrade(tier: PlanTier) {
-    if (tier === "FOUNDATION") return;
+    if (tier === "FOUNDATION" || !user) return;
     setUpgradingTier(tier);
     try {
-      const config = PLAN_CONFIG[tier as Exclude<PlanTier, "FOUNDATION">];
-      const priceId = billingInterval === "monthly" ? config.monthlyPriceId : config.annualPriceId;
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, tier, interval: billingInterval }),
+        body: JSON.stringify({
+          userId: user.uid,
+          email: user.email,
+          planTier: tier,
+          billingInterval,
+        }),
       });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
-        showToast("Failed to start checkout. Please try again.", "error");
+        showToast(data.error || "Failed to start checkout. Please try again.", "error");
       }
     } catch {
       showToast("Failed to start checkout. Please try again.", "error");
