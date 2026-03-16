@@ -14,6 +14,7 @@ import {
   type ProjectData,
   type InspectionResultData,
 } from "@/lib/services/project-service";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -152,8 +153,35 @@ export function InspectionsClient() {
     }
   }
 
+  const pendingCount = currentPhaseInspections.length - passedCount;
+
   return (
     <>
+      <PageHeader
+        title="Inspections"
+        projectName={project?.name}
+        projectId={projectId}
+      />
+
+      {/* Summary stat bar */}
+      <div className="flex items-center gap-4 mb-4 px-3 py-2.5 rounded-[var(--radius)] bg-warm border border-sand/30">
+        <div className="flex items-center gap-1.5 text-[11px]">
+          <span className="w-2 h-2 rounded-full bg-success" />
+          <span className="text-earth font-data font-medium">{passedCount}</span>
+          <span className="text-muted">passed</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px]">
+          <span className="w-2 h-2 rounded-full bg-warning" />
+          <span className="text-earth font-data font-medium">{pendingCount}</span>
+          <span className="text-muted">pending</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px]">
+          <span className="w-2 h-2 rounded-full bg-muted" />
+          <span className="text-earth font-data font-medium">{currentPhaseInspections.length}</span>
+          <span className="text-muted">total</span>
+        </div>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         <Card padding="sm">

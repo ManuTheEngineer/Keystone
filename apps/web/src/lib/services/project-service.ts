@@ -504,6 +504,48 @@ export async function updateMaterial(
   await update(ref(db, `users/${userId}/projects/${projectId}/materials/${materialId}`), data);
 }
 
+// --- Vault Files ---
+
+export interface VaultFileData {
+  id?: string;
+  projectId: string;
+  name: string;
+  category: "architecture" | "legal" | "financial" | "photos" | "notes" | "reports" | "other";
+  description?: string;
+  fileUrl: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedAt: string;
+}
+
+export async function addVaultFile(userId: string, data: Omit<VaultFileData, "id">): Promise<string> {
+  const fileRef = push(ref(db, `users/${userId}/projects/${data.projectId}/vault`));
+  await set(fileRef, data);
+  return fileRef.key!;
+}
+
+export function subscribeToVaultFiles(
+  userId: string,
+  projectId: string,
+  callback: (files: VaultFileData[]) => void
+): Unsubscribe {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/vault`), (snapshot) => {
+    const files: VaultFileData[] = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        files.push({ id: child.key!, ...child.val() });
+      });
+    }
+    // Sort newest first
+    files.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+    callback(files);
+  });
+}
+
+export async function deleteVaultFile(userId: string, projectId: string, fileId: string): Promise<void> {
+  await remove(ref(db, `users/${userId}/projects/${projectId}/vault/${fileId}`));
+}
+
 // --- Seed demo data ---
 
 export async function seedDemoProject(userId: string): Promise<string> {

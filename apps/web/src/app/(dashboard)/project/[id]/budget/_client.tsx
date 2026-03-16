@@ -39,6 +39,8 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { AIInsight } from "@/components/ui/AIInsight";
+import { generateBudgetInsights } from "@/lib/insights";
 import {
   getMarketData,
   getCostBenchmarks,
@@ -248,6 +250,23 @@ export function BudgetClient() {
           </Card>
         </div>
       </div>
+
+      {/* ================================================================= */}
+      {/* AI Budget Insights                                                */}
+      {/* ================================================================= */}
+      {items.length > 0 && (() => {
+        const budgetInsights = generateBudgetInsights(project, items);
+        const topInsights = budgetInsights.sort((a, b) => b.priority - a.priority).slice(0, 3);
+        if (topInsights.length === 0) return null;
+        return (
+          <div className="mb-4 space-y-2">
+            <SectionLabel>AI Insights</SectionLabel>
+            {topInsights.map((insight, i) => (
+              <AIInsight key={i} type={insight.type} title={insight.title} content={insight.content} action={insight.action} />
+            ))}
+          </div>
+        );
+      })()}
 
       {/* ================================================================= */}
       {/* MIDDLE SECTION: Category cards                                    */}

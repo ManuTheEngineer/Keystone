@@ -12,6 +12,9 @@ import {
   subscribeToDailyLogs,
   subscribeToPhotos,
   subscribeToPunchListItems,
+  subscribeToDocuments,
+  subscribeToInspectionResults,
+  subscribeToMaterials,
   updateTask,
   type ProjectData,
   type TaskData,
@@ -20,6 +23,9 @@ import {
   type DailyLogData,
   type PhotoData,
   type PunchListItemData,
+  type DocumentData,
+  type InspectionResultData,
+  type MaterialData,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -51,6 +57,8 @@ import {
 } from "@keystone/market-data";
 import type { Market, ProjectPhase } from "@keystone/market-data";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { AIInsight } from "@/components/ui/AIInsight";
+import { generateOverviewInsights } from "@/lib/insights";
 import {
   Camera,
   ClipboardList,
@@ -61,7 +69,10 @@ import {
   ShieldCheck,
   Home,
   TrendingUp,
+  Download,
 } from "lucide-react";
+import { ExportModal } from "@/components/ui/ExportModal";
+import type { ExportData } from "@/lib/services/export-service";
 
 // ---------------------------------------------------------------------------
 // Helpers to generate planned curves from budget / timeline data
@@ -135,6 +146,10 @@ export function OverviewClient() {
   const [dailyLogs, setDailyLogs] = useState<DailyLogData[]>([]);
   const [photos, setPhotos] = useState<PhotoData[]>([]);
   const [punchListItems, setPunchListItems] = useState<PunchListItemData[]>([]);
+  const [documents, setDocuments] = useState<DocumentData[]>([]);
+  const [inspectionResults, setInspectionResults] = useState<InspectionResultData[]>([]);
+  const [materials, setMaterials] = useState<MaterialData[]>([]);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -146,6 +161,9 @@ export function OverviewClient() {
       subscribeToDailyLogs(user.uid, projectId, setDailyLogs),
       subscribeToPhotos(user.uid, projectId, setPhotos),
       subscribeToPunchListItems(user.uid, projectId, setPunchListItems),
+      subscribeToDocuments(user.uid, projectId, setDocuments),
+      subscribeToInspectionResults(user.uid, projectId, setInspectionResults),
+      subscribeToMaterials(user.uid, projectId, setMaterials),
     ];
     return () => unsubs.forEach((u) => u());
   }, [user, projectId]);
@@ -184,6 +202,11 @@ export function OverviewClient() {
         projectName={project.name}
         projectId={projectId}
         subtitle={phaseDef ? phaseDef.name : currentPhaseKey}
+        action={{
+          label: "Export",
+          onClick: () => setShowExportModal(true),
+          icon: <Download size={16} />,
+        }}
       />
 
       {/* Phase tracker - always shown */}
@@ -206,6 +229,21 @@ export function OverviewClient() {
         <StatCard value={`Wk ${project.currentWeek}`} label={`Of est. ${project.totalWeeks}`} />
         <StatCard value={String(project.openItems)} label="Open items" />
       </div>
+
+      {/* AI Insights */}
+      {(() => {
+        const insights = generateOverviewInsights(project, budgetItems, tasks, dailyLogs, contacts);
+        const topInsights = insights.sort((a, b) => b.priority - a.priority).slice(0, 3);
+        if (topInsights.length === 0) return null;
+        return (
+          <div className="mb-5 space-y-2">
+            <SectionLabel>AI Insights</SectionLabel>
+            {topInsights.map((insight, i) => (
+              <AIInsight key={i} type={insight.type} title={insight.title} content={insight.content} action={insight.action} />
+            ))}
+          </div>
+        );
+      })()}
 
       {/* ----------------------------------------------------------------- */}
       {/* PHASE 0-1: Define / Finance — Planning workspace                  */}
@@ -898,6 +936,25 @@ export function OverviewClient() {
           </Card>
         </div>
       </div>
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <ExportModal
+          project={project}
+          data={{
+            budgetItems,
+            contacts,
+            dailyLogs,
+            documents,
+            photos,
+            tasks,
+            inspectionResults,
+            punchListItems,
+            materials,
+          }}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
     </>
   );
 }

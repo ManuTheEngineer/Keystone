@@ -16,6 +16,7 @@ import {
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { generateDocument } from "@/lib/services/document-generator";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { DocumentFillForm } from "@/components/ui/DocumentFillForm";
@@ -96,6 +97,7 @@ export function DocumentsClient() {
   const [contacts, setContacts] = useState<ContactData[]>([]);
   const [budgetItems, setBudgetItems] = useState<BudgetItemData[]>([]);
   const [phaseFilter, setPhaseFilter] = useState<"current" | "all">("current");
+  const [typeFilter, setTypeFilter] = useState<string>("ALL");
 
   // Document generation flow state
   const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate | null>(null);
@@ -146,11 +148,17 @@ export function DocumentsClient() {
   const currentPhaseKey: ProjectPhase = PHASE_ORDER[project?.currentPhase ?? 0];
 
   const templates = useMemo(() => {
+    let result: DocumentTemplate[];
     if (phaseFilter === "current") {
-      return getTemplatesForPhase(market, currentPhaseKey);
+      result = getTemplatesForPhase(market, currentPhaseKey);
+    } else {
+      result = PHASE_ORDER.flatMap((phase) => getTemplatesForPhase(market, phase));
     }
-    return PHASE_ORDER.flatMap((phase) => getTemplatesForPhase(market, phase));
-  }, [market, currentPhaseKey, phaseFilter]);
+    if (typeFilter !== "ALL") {
+      result = result.filter((t) => t.type === typeFilter);
+    }
+    return result;
+  }, [market, currentPhaseKey, phaseFilter, typeFilter]);
 
   // Step 1: User clicks "Use" on a template -> show fill form
   const handleUseTemplate = useCallback((template: DocumentTemplate) => {
@@ -210,6 +218,13 @@ export function DocumentsClient() {
 
   return (
     <>
+      <PageHeader
+        title="Documents"
+        projectName={project?.name}
+        projectId={projectId}
+        subtitle={`${docs.length} document${docs.length !== 1 ? "s" : ""}`}
+      />
+
       {/* Stats row */}
       <div className="flex items-center gap-3 mb-4">
         <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-[var(--radius)] bg-surface">
@@ -246,6 +261,23 @@ export function DocumentsClient() {
               className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
             />
           </div>
+        </div>
+
+        {/* Type filter pills */}
+        <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+          {["ALL", "CONTRACT", "CHECKLIST", "REPORT", "PERMIT", "BID", "LEGAL"].map((type) => (
+            <button
+              key={type}
+              onClick={() => setTypeFilter(type)}
+              className={`px-3 py-1 text-[10px] rounded-full whitespace-nowrap transition-colors ${
+                typeFilter === type
+                  ? "bg-earth text-warm font-medium"
+                  : "bg-surface border border-border text-muted hover:border-border-dark hover:text-earth"
+              }`}
+            >
+              {type === "ALL" ? "All types" : type.charAt(0) + type.slice(1).toLowerCase() + "s"}
+            </button>
+          ))}
         </div>
 
         {templates.length === 0 ? (

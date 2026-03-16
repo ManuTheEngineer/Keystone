@@ -6,7 +6,6 @@
         ".write": "$uid === auth.uid",
 
         "profile": {
-          ".validate": "newData.hasChildren(['name', 'email'])",
           "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
           "email": { ".validate": "newData.isString() && newData.val().length > 0" },
           "plan": { ".validate": "newData.isString() && (newData.val() === 'FOUNDATION' || newData.val() === 'BUILDER' || newData.val() === 'DEVELOPER' || newData.val() === 'ENTERPRISE')" },

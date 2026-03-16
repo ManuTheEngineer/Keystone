@@ -12,14 +12,26 @@ import {
 import { db } from "@/lib/firebase";
 import {
   subscribeToUserProjects,
+  subscribeToBudgetItems,
+  subscribeToContacts,
   subscribeToDailyLogs,
+  subscribeToDocuments,
   subscribeToTasks,
   subscribeToPhotos,
+  subscribeToInspectionResults,
+  subscribeToPunchListItems,
+  subscribeToMaterials,
   seedDemoProject,
   type ProjectData,
+  type BudgetItemData,
+  type ContactData,
   type DailyLogData,
+  type DocumentData,
   type TaskData,
   type PhotoData,
+  type InspectionResultData,
+  type PunchListItemData,
+  type MaterialData,
 } from "@/lib/services/project-service";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Badge } from "@/components/ui/Badge";
@@ -35,7 +47,10 @@ import {
   ClipboardList,
   Camera,
   ArrowRight,
+  Download,
 } from "lucide-react";
+import { ExportModal } from "@/components/ui/ExportModal";
+import type { ExportData } from "@/lib/services/export-service";
 
 /* ------------------------------------------------------------------ */
 /*  Circular progress ring                                            */
@@ -252,6 +267,9 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [showTour, setShowTour] = useState(false);
   const [tourChecked, setTourChecked] = useState(false);
+  const [exportProject, setExportProject] = useState<ProjectData | null>(null);
+  const [exportData, setExportData] = useState<ExportData | null>(null);
+  const [loadingExport, setLoadingExport] = useState<string | null>(null);
 
   // Check if onboarding tour should be shown
   useEffect(() => {
@@ -428,6 +446,58 @@ export default function DashboardPage() {
         })
       : null;
 
+  // Load export data for a specific project and show modal
+  function handleOpenExport(proj: ProjectData) {
+    if (!user || !proj.id) return;
+    setLoadingExport(proj.id);
+    setExportProject(proj);
+
+    const collected: Partial<ExportData> = {};
+    let loaded = 0;
+    const total = 9;
+
+    function checkDone() {
+      loaded++;
+      if (loaded >= total) {
+        setExportData({
+          budgetItems: collected.budgetItems || [],
+          contacts: collected.contacts || [],
+          dailyLogs: collected.dailyLogs || [],
+          documents: collected.documents || [],
+          photos: collected.photos || [],
+          tasks: collected.tasks || [],
+          inspectionResults: collected.inspectionResults || [],
+          punchListItems: collected.punchListItems || [],
+          materials: collected.materials || [],
+        });
+        setLoadingExport(null);
+      }
+    }
+
+    const unsubs = [
+      subscribeToBudgetItems(user.uid, proj.id, (d) => { collected.budgetItems = d; checkDone(); }),
+      subscribeToContacts(user.uid, proj.id, (d) => { collected.contacts = d; checkDone(); }),
+      subscribeToDailyLogs(user.uid, proj.id, (d) => { collected.dailyLogs = d; checkDone(); }),
+      subscribeToDocuments(user.uid, proj.id, (d) => { collected.documents = d; checkDone(); }),
+      subscribeToPhotos(user.uid, proj.id, (d) => { collected.photos = d; checkDone(); }),
+      subscribeToTasks(user.uid, proj.id, (d) => { collected.tasks = d; checkDone(); }),
+      subscribeToInspectionResults(user.uid, proj.id, (d) => { collected.inspectionResults = d; checkDone(); }),
+      subscribeToPunchListItems(user.uid, proj.id, (d) => { collected.punchListItems = d; checkDone(); }),
+      subscribeToMaterials(user.uid, proj.id, (d) => { collected.materials = d; checkDone(); }),
+    ];
+
+    // Clean up subscriptions after data is loaded
+    setTimeout(() => {
+      unsubs.forEach((u) => u());
+    }, 5000);
+  }
+
+  function handleCloseExport() {
+    setExportProject(null);
+    setExportData(null);
+    setLoadingExport(null);
+  }
+
   const userName = profile?.name ?? user?.displayName ?? "there";
   const firstName = getFirstName(userName);
   const hasProjects = projects.length > 0;
@@ -567,7 +637,15 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Footer */}
-                  <div className="flex justify-end">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => handleOpenExport(p)}
+                      disabled={loadingExport === p.id}
+                      className="p-1.5 rounded-lg text-muted hover:text-clay hover:bg-warm transition-colors disabled:opacity-50"
+                      title="Export project data"
+                    >
+                      <Download size={14} />
+                    </button>
                     <Link
                       href={`/project/${p.id}/overview`}
                       className="inline-flex items-center gap-1 text-[12px] font-medium text-clay hover:text-earth transition-colors"
@@ -694,6 +772,15 @@ export default function DashboardPage() {
             </Link>
           ))}
         </div>
+      )}
+
+      {/* Export modal */}
+      {exportProject && exportData && (
+        <ExportModal
+          project={exportProject}
+          data={exportData}
+          onClose={handleCloseExport}
+        />
       )}
     </>
   );

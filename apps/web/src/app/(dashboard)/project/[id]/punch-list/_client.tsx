@@ -14,6 +14,7 @@ import {
   type ProjectData,
   type PunchListItemData,
 } from "@/lib/services/project-service";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -139,6 +140,13 @@ export function PunchListClient() {
 
   return (
     <>
+      <PageHeader
+        title="Punch List"
+        projectName={project?.name}
+        projectId={projectId}
+        action={{ label: "Add item", onClick: () => setShowForm(true), icon: <Plus size={14} /> }}
+      />
+
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-5">
         <Card padding="sm">

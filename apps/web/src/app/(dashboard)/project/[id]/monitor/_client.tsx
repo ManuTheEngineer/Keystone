@@ -18,6 +18,7 @@ import {
   type MaterialData,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Badge } from "@/components/ui/Badge";
@@ -656,6 +657,13 @@ export function MonitorClient() {
 
   return (
     <div className="space-y-4">
+      <PageHeader
+        title="Remote Monitor"
+        projectName={project.name}
+        projectId={projectId}
+        subtitle="Diaspora oversight panel"
+      />
+
       {/* Status bar */}
       <Card padding="sm">
         <div className="flex flex-wrap items-center justify-between gap-2">

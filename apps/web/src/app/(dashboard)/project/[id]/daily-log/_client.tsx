@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Plus, ClipboardList } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -112,18 +113,24 @@ export function DailyLogClient() {
     }
   }
 
+  function getWeatherBorderColor(weather: string): string {
+    const w = weather.toLowerCase();
+    if (w.includes("storm") || w.includes("orage")) return "var(--color-danger)";
+    if (w.includes("rain") || w.includes("pluie")) return "var(--color-info)";
+    if (w.includes("sunny") || w.includes("ensoleille")) return "var(--color-warning)";
+    return "var(--color-muted)";
+  }
+
   return (
     <>
-      <div className="flex items-center justify-between">
-        <SectionLabel>Recent entries</SectionLabel>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors"
-        >
-          <Plus size={14} />
-          Add entry
-        </button>
-      </div>
+      <PageHeader
+        title="Daily Log"
+        projectName={project?.name}
+        projectId={projectId}
+        action={{ label: "Add entry", onClick: () => setShowForm(true), icon: <Plus size={14} /> }}
+      />
+
+      <SectionLabel>Recent entries</SectionLabel>
 
       {showForm && (
         <Card padding="md" className="mb-4">
@@ -214,19 +221,27 @@ export function DailyLogClient() {
           action={{ label: "Add first entry", onClick: () => setShowForm(true) }}
         />
       ) : (
-        <Card padding="sm">
+        <div className="space-y-2">
           {logs.map((entry, i) => (
             <div
               key={entry.id}
-              className={`py-3 ${i < logs.length - 1 ? "border-b border-border" : ""}`}
+              className="flex gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface border-l-[3px]"
+              style={{ borderLeftColor: getWeatherBorderColor(entry.weather) }}
             >
-              <div className="text-[10px] text-muted font-data mb-1">
-                {entry.date} -- Day {entry.day} -- {entry.weather} -- Crew: {entry.crew}
+              {/* Day badge */}
+              <div className="shrink-0 w-10 h-10 rounded-[var(--radius)] bg-warm flex flex-col items-center justify-center">
+                <span className="text-[8px] uppercase tracking-wider text-muted leading-none">Day</span>
+                <span className="text-[14px] font-data font-semibold text-earth leading-tight">{entry.day}</span>
               </div>
-              <div className="text-[12px] text-muted leading-relaxed">{entry.content}</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] text-muted font-data mb-1">
+                  {entry.date} | {entry.weather} | Crew: {entry.crew}
+                </div>
+                <div className="text-[12px] text-muted leading-relaxed">{entry.content}</div>
+              </div>
             </div>
           ))}
-        </Card>
+        </div>
       )}
 
       <div className="mt-4">

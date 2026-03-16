@@ -18,6 +18,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { getMarketData, getPhaseDefinition, PHASE_ORDER, PHASE_NAMES } from "@keystone/market-data";
 import type { Market, ProjectPhase } from "@keystone/market-data";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { ImageIcon, Plus, Loader2, X, ChevronLeft, ChevronRight, MapPin, Calendar, Camera } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -176,6 +177,13 @@ export function PhotosClient() {
 
   return (
     <>
+      <PageHeader
+        title="Photos"
+        projectName={project?.name}
+        projectId={projectId}
+        subtitle={`${photos.length} photo${photos.length !== 1 ? "s" : ""}`}
+      />
+
       {/* Phase photo counts */}
       <SectionLabel>Photos by phase</SectionLabel>
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-5">

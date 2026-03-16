@@ -14,6 +14,7 @@ import {
   PHASE_ORDER,
 } from "@keystone/market-data";
 import type { Market, ProjectPhase } from "@keystone/market-data";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Send, Loader2, AlertTriangle, Zap } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -269,18 +270,12 @@ export function AIAssistantClient() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-130px)]">
-      {/* Top bar: usage + mode selector */}
-      <div className="flex items-center justify-between pb-3 mb-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Zap size={14} className="text-clay" />
-          <span className="text-[12px] font-medium text-earth">AI Assistant</span>
-        </div>
-        {usage && (
-          <span className="text-[11px] text-muted">
-            {usage.used}/{usage.limit} queries today
-          </span>
-        )}
-      </div>
+      <PageHeader
+        title="AI Assistant"
+        projectName={project?.name}
+        projectId={projectId}
+        subtitle={usage ? `${usage.used}/${usage.limit} queries today` : undefined}
+      />
 
       {/* Mode selector */}
       <div className="flex gap-1.5 pb-3 mb-1 overflow-x-auto">

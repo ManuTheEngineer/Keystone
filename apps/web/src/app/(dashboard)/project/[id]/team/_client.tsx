@@ -17,6 +17,8 @@ import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Plus, Phone, Mail, Wrench, AlertCircle, Users } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { AIInsight } from "@/components/ui/AIInsight";
+import { generateTeamInsights } from "@/lib/insights";
 import { getTradesForPhase, PHASE_ORDER, PHASE_NAMES } from "@keystone/market-data";
 import type { Market, ProjectPhase, TradeDefinition } from "@keystone/market-data";
 
@@ -198,8 +200,39 @@ export function TeamClient() {
     }
   }
 
+  // Compute trades filled count
+  const filledTrades = currentPhaseTrades.filter((trade) =>
+    contacts.some(
+      (c) =>
+        c.role?.toLowerCase() === trade.name.toLowerCase() ||
+        c.role?.toLowerCase() === trade.localName?.toLowerCase()
+    )
+  ).length;
+
   return (
     <>
+      <PageHeader
+        title="Team"
+        projectName={project?.name}
+        projectId={projectId}
+        action={{ label: "Add contact", onClick: () => setShowForm(true), icon: <Plus size={14} /> }}
+      />
+
+      {/* Trades filled stat */}
+      {currentPhaseTrades.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-[11px] mb-1.5">
+            <span className="text-muted">{filledTrades} of {currentPhaseTrades.length} trades filled</span>
+            <span className="font-data text-earth">{Math.round((filledTrades / currentPhaseTrades.length) * 100)}%</span>
+          </div>
+          <ProgressBar
+            value={Math.round((filledTrades / currentPhaseTrades.length) * 100)}
+            color="var(--color-success)"
+            height={4}
+          />
+        </div>
+      )}
+
       {/* Trades needed this phase */}
       <div className="mb-2">
         <SectionLabel>
@@ -211,6 +244,21 @@ export function TeamClient() {
         phaseName={PHASE_NAMES[currentPhaseKey]}
         contacts={contacts}
       />
+
+      {/* AI Team Insights */}
+      {project && (() => {
+        const teamInsights = generateTeamInsights(project, contacts, market);
+        const topInsights = teamInsights.sort((a, b) => b.priority - a.priority).slice(0, 3);
+        if (topInsights.length === 0) return null;
+        return (
+          <div className="mb-4 space-y-2">
+            <SectionLabel>AI Insights</SectionLabel>
+            {topInsights.map((insight, i) => (
+              <AIInsight key={i} type={insight.type} title={insight.title} content={insight.content} action={insight.action} />
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Contacts section */}
       <div className="flex items-center justify-between">
@@ -332,7 +380,13 @@ export function TeamClient() {
             return (
               <button
                 key={c.id}
-                className="w-full flex items-center gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface hover:border-border-dark hover:shadow-[var(--shadow-sm)] transition-all text-left"
+                className="w-full flex items-center gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface hover:border-border-dark hover:shadow-[var(--shadow-sm)] transition-all text-left border-l-[3px]"
+                style={{ borderLeftColor: [
+                  "var(--color-info)",
+                  "var(--color-success)",
+                  "var(--color-warning)",
+                  "#8B4513",
+                ][i % 4] }}
               >
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
