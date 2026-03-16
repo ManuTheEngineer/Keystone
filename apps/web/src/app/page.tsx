@@ -527,8 +527,50 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Builder - highlighted */}
-            <div className="bg-surface rounded-xl p-6 border-2 border-emerald-500 relative card-hover">
+            {/* Builder */}
+            <div className="bg-surface rounded-2xl p-6 border border-border card-hover">
+              <h3
+                className="text-[18px] text-earth mb-1"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                Builder
+              </h3>
+              <p className="text-[13px] text-muted mb-4">For active owner-builders</p>
+              <div className="mb-1">
+                <span
+                  className="text-[36px] text-earth"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
+                  $19
+                </span>
+                <span className="text-[14px] text-muted">/mo</span>
+              </div>
+              <p className="text-[11px] text-muted mb-5">or $182/yr (save 20%)</p>
+              <ul className="space-y-2.5 mb-6">
+                {[
+                  "3 active projects",
+                  "50 AI queries per day",
+                  "Document generation",
+                  "PDF/CSV export",
+                  "All market data",
+                  "500 photo uploads",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <Check size={14} className="text-success shrink-0" />
+                    <span className="text-[13px] text-foreground">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/register"
+                className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-earth text-earth hover:bg-earth hover:text-warm transition-colors"
+              >
+                Start building
+              </Link>
+            </div>
+
+            {/* Developer - highlighted */}
+            <div className="bg-surface rounded-2xl p-6 border-2 border-emerald-500 relative card-hover">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-emerald-500 text-white text-[11px] font-medium rounded-full">
                 Most popular
               </div>
@@ -536,64 +578,27 @@ export default function LandingPage() {
                 className="text-[18px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                Builder
-              </h3>
-              <p className="text-[13px] text-muted mb-4">For active builders</p>
-              <div className="mb-6">
-                <span
-                  className="text-[36px] text-earth"
-                  style={{ fontFamily: "var(--font-heading)" }}
-                >
-                  $29
-                </span>
-                <span className="text-[14px] text-muted">/mo</span>
-              </div>
-              <ul className="space-y-2.5 mb-6">
-                {[
-                  "5 projects",
-                  "50 AI queries per day",
-                  "Document generation",
-                  "Contractor management",
-                  "Financial modeling",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-2">
-                    <Check size={14} className="text-success shrink-0" />
-                    <span className="text-[13px] text-foreground">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <span
-                className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-border text-muted cursor-default"
-              >
-                Coming soon
-              </span>
-            </div>
-
-            {/* Developer */}
-            <div className="bg-surface rounded-xl p-6 border border-border card-hover">
-              <h3
-                className="text-[18px] text-earth mb-1"
-                style={{ fontFamily: "var(--font-heading)" }}
-              >
                 Developer
               </h3>
-              <p className="text-[13px] text-muted mb-4">For serious developers</p>
-              <div className="mb-6">
+              <p className="text-[13px] text-muted mb-4">For investors and multi-project builders</p>
+              <div className="mb-1">
                 <span
                   className="text-[36px] text-earth"
                   style={{ fontFamily: "var(--font-heading)" }}
                 >
-                  $79
+                  $49
                 </span>
                 <span className="text-[14px] text-muted">/mo</span>
               </div>
+              <p className="text-[11px] text-muted mb-5">or $470/yr (save 20%)</p>
               <ul className="space-y-2.5 mb-6">
                 {[
                   "Unlimited projects",
                   "Unlimited AI queries",
+                  "Advanced financial modeling",
+                  "All document templates",
+                  "Unlimited photos",
                   "Priority support",
-                  "Advanced analytics",
-                  "Team collaboration",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <Check size={14} className="text-success shrink-0" />
@@ -601,37 +606,41 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <span
-                className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-border text-muted cursor-default"
+              <Link
+                href="/register"
+                className="block w-full text-center py-3 text-[14px] font-medium rounded-full bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
               >
-                Coming soon
-              </span>
+                Start building
+              </Link>
             </div>
 
             {/* Enterprise */}
-            <div className="bg-surface rounded-xl p-6 border border-border card-hover">
+            <div className="bg-surface rounded-2xl p-6 border border-border card-hover">
               <h3
                 className="text-[18px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
                 Enterprise
               </h3>
-              <p className="text-[13px] text-muted mb-4">For organizations</p>
-              <div className="mb-6">
+              <p className="text-[13px] text-muted mb-4">For teams and organizations</p>
+              <div className="mb-1">
                 <span
                   className="text-[36px] text-earth"
                   style={{ fontFamily: "var(--font-heading)" }}
                 >
-                  Custom
+                  $149
                 </span>
+                <span className="text-[14px] text-muted">/mo</span>
               </div>
+              <p className="text-[11px] text-muted mb-5">or $1,430/yr (save 20%)</p>
               <ul className="space-y-2.5 mb-6">
                 {[
                   "Everything in Developer",
-                  "Dedicated support",
-                  "API access",
-                  "Custom integrations",
+                  "Team collaboration",
+                  "SSO authentication",
+                  "Audit logging",
                   "SLA guarantees",
+                  "Dedicated support",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <Check size={14} className="text-success shrink-0" />
@@ -641,7 +650,7 @@ export default function LandingPage() {
               </ul>
               <a
                 href="mailto:support@keystone.build"
-                className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-border text-muted hover:text-earth hover:border-earth transition-colors"
+                className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-earth text-earth hover:bg-earth hover:text-warm transition-colors"
               >
                 Contact us
               </a>
