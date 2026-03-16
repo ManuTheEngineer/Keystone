@@ -296,7 +296,7 @@ export function VaultClient() {
     try {
       await updateProjectPriority(user.uid, projectId, priority);
     } catch {
-      // Silently fail
+      console.error("Operation failed");
     }
   }, [user]);
 
@@ -305,7 +305,7 @@ export function VaultClient() {
     try {
       await updateProject(user.uid, projectId, { status: "PAUSED" });
     } catch {
-      // Silently fail
+      console.error("Operation failed");
     }
   }, [user]);
 
@@ -314,7 +314,7 @@ export function VaultClient() {
     try {
       await updateProject(user.uid, projectId, { status: "ACTIVE" });
     } catch {
-      // Silently fail
+      console.error("Operation failed");
     }
   }, [user]);
 
@@ -323,7 +323,7 @@ export function VaultClient() {
     try {
       await deleteProject(user.uid, projectId);
     } catch {
-      // Silently fail
+      console.error("Operation failed");
     }
     setDeleteConfirm(null);
   }, [user]);

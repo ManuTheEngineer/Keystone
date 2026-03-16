@@ -411,7 +411,14 @@ export default function NewProjectPage() {
   }, [setTopbar]);
 
   function update<K extends keyof WizardState>(key: K, value: WizardState[K]) {
-    setState((prev) => ({ ...prev, [key]: value }));
+    setState((prev) => {
+      const next = { ...prev, [key]: value };
+      // Reset financing type when market changes (financing options differ by market)
+      if (key === "market" && value !== prev.market) {
+        next.financingType = "";
+      }
+      return next;
+    });
   }
 
   const marketData = useMemo(() => {

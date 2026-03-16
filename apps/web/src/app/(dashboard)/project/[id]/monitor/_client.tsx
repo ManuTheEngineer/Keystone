@@ -466,7 +466,7 @@ function MaterialTracker({ materials, projectId, userId }: MaterialTrackerProps)
       resetForm();
       setShowForm(false);
     } catch {
-      // Silently fail; queued for offline sync
+      console.error("Material operation failed");
     } finally {
       setSubmitting(false);
     }

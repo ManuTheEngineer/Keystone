@@ -91,6 +91,7 @@ export function SettingsClient() {
   const [currency, setCurrency] = useState(profile?.currency ?? "USD");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
 
   // Security state
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -124,6 +125,7 @@ export function SettingsClient() {
     if (!user) return;
     setProfileSaving(true);
     setProfileSuccess(false);
+    setProfileMessage("");
     try {
       await updateProfile(user, { displayName });
       await update(ref(db, `users/${user.uid}/profile`), {
@@ -134,7 +136,7 @@ export function SettingsClient() {
       setProfileSuccess(true);
       setTimeout(() => setProfileSuccess(false), 3000);
     } catch {
-      // Profile update failed silently
+      setProfileMessage("Failed to save changes. Please try again.");
     } finally {
       setProfileSaving(false);
     }
@@ -182,11 +184,18 @@ export function SettingsClient() {
     setDeleting(true);
     setDeleteError("");
     try {
-      await remove(ref(db, `users/${user.uid}`));
+      // Delete auth user first (point of no return)
       await deleteUser(user);
+      // Then clean up data
+      await remove(ref(db, `users/${user.uid}`));
       router.push("/");
-    } catch {
-      setDeleteError("Account deletion failed. Please sign out, sign back in, and try again.");
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      if (code === "auth/requires-recent-login") {
+        setDeleteError("For security, please sign out, sign back in, and try again within 5 minutes.");
+      } else {
+        setDeleteError("Account deletion failed. Please try again.");
+      }
       setDeleting(false);
     }
   }
@@ -289,6 +298,9 @@ export function SettingsClient() {
               <span className="flex items-center gap-1 text-[11px] text-success">
                 <Check size={14} /> Saved
               </span>
+            )}
+            {profileMessage && (
+              <span className="text-[11px] text-danger">{profileMessage}</span>
             )}
           </div>
         </div>

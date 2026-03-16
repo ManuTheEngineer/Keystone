@@ -38,6 +38,7 @@ export function useTopbar() {
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [topbarState, setTopbarState] = useState<{ title: string; badge: string; badgeVariant: "success" | "warning" | "info" | "danger" }>({ title: "Dashboard", badge: "", badgeVariant: "info" });
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [punchListCount, setPunchListCount] = useState(0);
@@ -55,6 +56,26 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     const unsub = subscribeToUserProjects(user.uid, setProjects);
     return unsub;
   }, [user]);
+
+  // Sync sidebar collapsed state from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("keystone-sidebar-collapsed");
+    setSidebarCollapsed(stored === "true");
+
+    const handleStorage = () => {
+      setSidebarCollapsed(localStorage.getItem("keystone-sidebar-collapsed") === "true");
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  // Set CSS variable for sidebar width (used by fixed-position elements like budget sticky bar)
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--sidebar-width",
+      sidebarCollapsed ? "60px" : "240px"
+    );
+  }, [sidebarCollapsed]);
 
   const activeSection = getActiveSectionFromPath(pathname);
 
@@ -211,7 +232,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             projectMarket={currentProject?.market}
             badges={{ "punch-list": punchListCount, "overview": openTaskCount > 5 ? openTaskCount : 0 }}
           />
-          <div className="lg:ml-[240px] flex flex-col min-h-screen">
+          <div className={`${sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[240px]"} transition-all duration-300 flex flex-col min-h-screen`}>
             <Topbar
               title={topbarState.title}
               badge={topbarState.badge || undefined}

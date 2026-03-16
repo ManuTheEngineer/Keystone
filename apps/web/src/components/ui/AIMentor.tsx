@@ -448,7 +448,7 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
           <p className="text-[11px] font-semibold text-clay uppercase tracking-[0.1em] mb-1.5">
             {guidance.title}
           </p>
-          <p className="text-[12px] text-slate leading-relaxed">
+          <p className="text-[12px] text-foreground leading-relaxed">
             {guidance.guidance}
           </p>
 
@@ -473,7 +473,7 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-surface-alt/30">
           <button
             onClick={handleDismiss}
-            className="text-[11px] text-muted hover:text-slate transition-colors"
+            className="text-[11px] text-muted hover:text-foreground transition-colors"
           >
             Dismiss
           </button>

@@ -111,6 +111,7 @@ export function Sidebar({
   function handleCollapse(value: boolean) {
     setCollapsed(value);
     localStorage.setItem("keystone-sidebar-collapsed", String(value));
+    window.dispatchEvent(new Event("storage"));
   }
 
   const initials = userName

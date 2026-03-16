@@ -78,12 +78,12 @@ export default function LandingPage() {
 
           {/* Desktop nav */}
           <div className="hidden sm:flex items-center gap-6">
-            <Link
-              href="/learn"
+            <a
+              href="#how-it-works"
               className="text-[14px] text-muted hover:text-earth transition-colors"
             >
               Learn
-            </Link>
+            </a>
             <Link
               href="/login"
               className="text-[14px] text-muted hover:text-earth transition-colors"
@@ -116,13 +116,13 @@ export default function LandingPage() {
         {mobileMenuOpen && (
           <div className="sm:hidden bg-surface border-t border-border shadow-lg animate-fade-in">
             <div className="px-4 py-4 space-y-3">
-              <Link
-                href="/learn"
+              <a
+                href="#how-it-works"
                 className="block text-[14px] text-muted hover:text-earth py-2 transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Learn
-              </Link>
+              </a>
               <Link
                 href="/login"
                 className="block text-[14px] text-muted hover:text-earth py-2 transition-colors"
@@ -690,7 +690,7 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
-                  <Link href="/learn" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
+                  <Link href="/register" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
                     Learning center
                   </Link>
                 </li>
@@ -704,7 +704,7 @@ export default function LandingPage() {
               </h4>
               <ul className="space-y-2.5">
                 <li>
-                  <Link href="/learn" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
+                  <Link href="/register" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
                     Documentation
                   </Link>
                 </li>
