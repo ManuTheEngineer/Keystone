@@ -91,6 +91,8 @@ export interface DocumentData {
   date: string;
   fileUrl?: string;
   type: string;
+  templateId?: string;
+  generatedAt?: string;
 }
 
 export interface PhotoData {

@@ -12,6 +12,7 @@ import {
   type ProjectData,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
 import { Card } from "@/components/ui/Card";
 import { PhaseEducationCard } from "@/components/ui/PhaseEducationCard";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -225,6 +226,7 @@ export function ScheduleClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
@@ -253,36 +255,44 @@ export function ScheduleClient() {
   const handleToggleMilestone = useCallback(
     async (phaseKey: string, milestoneIndex: number, completed: boolean, totalMilestones: number) => {
       if (!user) return;
-      await toggleMilestoneProgress(user.uid, projectId, phaseKey, milestoneIndex, completed, totalMilestones);
+      try {
+        await toggleMilestoneProgress(user.uid, projectId, phaseKey, milestoneIndex, completed, totalMilestones);
 
-      if (completed) {
-        setLastCompletedIndex(milestoneIndex);
-        setTimeout(() => setLastCompletedIndex(null), 1500);
+        if (completed) {
+          setLastCompletedIndex(milestoneIndex);
+          setTimeout(() => setLastCompletedIndex(null), 1500);
 
-        // Check if all milestones in this phase are now complete
-        const currentProgress = allMilestoneProgress[phaseKey] ?? [];
-        const updatedProgress = [...currentProgress];
-        while (updatedProgress.length < totalMilestones) updatedProgress.push(false);
-        updatedProgress[milestoneIndex] = true;
-        const allDone = updatedProgress.length === totalMilestones && updatedProgress.every(Boolean);
+          // Check if all milestones in this phase are now complete
+          const currentProgress = allMilestoneProgress[phaseKey] ?? [];
+          const updatedProgress = [...currentProgress];
+          while (updatedProgress.length < totalMilestones) updatedProgress.push(false);
+          updatedProgress[milestoneIndex] = true;
+          const allDone = updatedProgress.length === totalMilestones && updatedProgress.every(Boolean);
 
-        if (allDone) {
-          const pDef = getPhaseDefinition(market, phaseKey as ProjectPhase);
-          const phaseName = pDef?.name ?? phaseKey;
-          setCompletionMessage(`All milestones complete for ${phaseName}. You can advance to the next phase from the Overview page.`);
-          setTimeout(() => setCompletionMessage(null), 6000);
+          if (allDone) {
+            const pDef = getPhaseDefinition(market, phaseKey as ProjectPhase);
+            const phaseName = pDef?.name ?? phaseKey;
+            setCompletionMessage(`All milestones complete for ${phaseName}. You can advance to the next phase from the Overview page.`);
+            setTimeout(() => setCompletionMessage(null), 6000);
+          }
         }
+      } catch {
+        showToast("Failed to update milestone", "error");
       }
     },
-    [user, projectId, allMilestoneProgress, project]
+    [user, projectId, allMilestoneProgress, project, showToast]
   );
 
   const handleDateChange = useCallback(
     async (phaseKey: string, milestoneIndex: number, date: string | null) => {
       if (!user) return;
-      await setMilestoneDate(user.uid, projectId, phaseKey, milestoneIndex, date);
+      try {
+        await setMilestoneDate(user.uid, projectId, phaseKey, milestoneIndex, date);
+      } catch {
+        showToast("Failed to update milestone date", "error");
+      }
     },
-    [user, projectId]
+    [user, projectId, showToast]
   );
 
   if (!project) return (

@@ -114,7 +114,7 @@ export function ProgressSCurve({ planned, actual, currentWeek }: ProgressSCurveP
             <Line
               type="monotone"
               dataKey="actual"
-              stroke="#059669"
+              stroke="var(--color-emerald-600)"
               strokeWidth={2.5}
               dot={false}
               connectNulls

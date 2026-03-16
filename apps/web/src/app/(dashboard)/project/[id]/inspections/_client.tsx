@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { ClipboardCheck, ChevronDown, ChevronRight, Shield } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTopbar } from "../../../layout";
 import {
@@ -35,6 +36,7 @@ export function InspectionsClient() {
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [results, setResults] = useState<InspectionResultData[]>([]);
+  const { showToast } = useToast();
   const [expandedUpcoming, setExpandedUpcoming] = useState<string | null>(null);
   const [expandedCompleted, setExpandedCompleted] = useState<string | null>(null);
 
@@ -134,22 +136,26 @@ export function InspectionsClient() {
     const allPassed =
       currentItems.length === inspection.checklistItems.length && currentItems.every(Boolean);
 
-    if (existing?.id) {
-      await updateInspectionResult(user.uid, projectId, existing.id, {
-        completedItems: currentItems,
-        passed: allPassed,
-        completedAt: allPassed ? new Date().toISOString() : undefined,
-      });
-    } else {
-      await addInspectionResult(user.uid, {
-        projectId,
-        inspectionId,
-        phase: currentPhaseKey,
-        completedItems: currentItems,
-        passed: allPassed,
-        completedAt: allPassed ? new Date().toISOString() : undefined,
-        updatedAt: new Date().toISOString(),
-      });
+    try {
+      if (existing?.id) {
+        await updateInspectionResult(user.uid, projectId, existing.id, {
+          completedItems: currentItems,
+          passed: allPassed,
+          completedAt: allPassed ? new Date().toISOString() : undefined,
+        });
+      } else {
+        await addInspectionResult(user.uid, {
+          projectId,
+          inspectionId,
+          phase: currentPhaseKey,
+          completedItems: currentItems,
+          passed: allPassed,
+          completedAt: allPassed ? new Date().toISOString() : undefined,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    } catch {
+      showToast("Failed to save inspection result", "error");
     }
   }
 

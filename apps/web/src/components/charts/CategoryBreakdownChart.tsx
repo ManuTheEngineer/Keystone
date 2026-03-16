@@ -109,7 +109,7 @@ export function CategoryBreakdownChart({ items, currency }: CategoryBreakdownCha
               {items.map((item, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={item.actual > item.estimated ? "var(--color-danger)" : "#059669"}
+                  fill={item.actual > item.estimated ? "var(--color-danger)" : "var(--color-emerald-600)"}
                 />
               ))}
             </Bar>

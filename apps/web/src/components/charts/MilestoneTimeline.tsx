@@ -65,11 +65,12 @@ export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
           <svg
             className="absolute inset-0 w-full h-full"
             preserveAspectRatio="none"
+            viewBox={`0 0 ${milestones.length * itemSpacing + padding * 2} ${isMobile ? 80 : 100}`}
           >
             <line
               x1={padding}
               y1={lineY}
-              x2={`calc(100% - ${padding}px)`}
+              x2={milestones.length * itemSpacing + padding}
               y2={lineY}
               stroke="var(--color-sand)"
               strokeWidth={2}

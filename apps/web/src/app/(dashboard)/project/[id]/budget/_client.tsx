@@ -146,8 +146,8 @@ export function BudgetClient() {
     syncTimerRef.current = setTimeout(() => {
       const latestProject = projectRef.current;
       if (!latestProject) return;
-      const newTotal = items.reduce((sum, item) => sum + item.estimated, 0);
-      const newSpent = items.reduce((sum, item) => sum + item.actual, 0);
+      const newTotal = items.reduce((sum, item) => sum + Number(item.estimated || 0), 0);
+      const newSpent = items.reduce((sum, item) => sum + Number(item.actual || 0), 0);
       // Only write if values actually differ from what's already on the project
       if (newTotal !== latestProject.totalBudget || newSpent !== latestProject.totalSpent) {
         updateProject(user.uid, projectId, { totalBudget: newTotal, totalSpent: newSpent }).catch(() => {

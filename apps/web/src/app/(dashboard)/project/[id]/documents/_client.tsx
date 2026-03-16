@@ -213,8 +213,9 @@ export function DocumentsClient() {
         generatedAt: new Date().toISOString(),
       });
       setPreviewHtml(null);
+      showToast("Document saved to project", "success");
     } catch (err) {
-      console.error("Failed to save generated document:", err);
+      showToast("Failed to save generated document", "error");
     } finally {
       setSaving(false);
     }
@@ -334,6 +335,11 @@ export function DocumentsClient() {
                 className={`flex items-center gap-3 py-2.5 cursor-pointer hover:bg-warm/50 transition-colors rounded-[var(--radius)] px-1 ${
                   i < docs.length - 1 ? "border-b border-border" : ""
                 }`}
+                onClick={() => {
+                  if (doc.fileUrl) {
+                    window.open(doc.fileUrl, "_blank");
+                  }
+                }}
               >
                 <div
                   className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${style.bg} ${style.text}`}
@@ -353,7 +359,8 @@ export function DocumentsClient() {
                 </div>
                 <span
                   className="text-[10px] text-info cursor-pointer hover:underline shrink-0"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     if (doc.fileUrl) {
                       window.open(doc.fileUrl, "_blank");
                     }

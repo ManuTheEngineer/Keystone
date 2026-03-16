@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
 import {
   subscribeToProject,
   subscribeToVaultFiles,
@@ -123,6 +124,7 @@ export function VaultClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -193,8 +195,7 @@ export function VaultClient() {
         setUploadDescription("");
         setShowUploadForm(false);
       } catch (err) {
-        // Upload failed silently for now; user sees no new file
-        console.error("Upload failed:", err);
+        showToast("Failed to upload file", "error");
       } finally {
         setUploading(false);
       }
@@ -240,7 +241,7 @@ export function VaultClient() {
     try {
       await deleteVaultFile(user.uid, projectId, fileId);
     } catch (err) {
-      console.error("Delete failed:", err);
+      showToast("Failed to delete file", "error");
     }
     setDeleteConfirm(null);
   }

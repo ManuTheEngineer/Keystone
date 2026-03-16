@@ -8,8 +8,8 @@ import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 const CATEGORY_COLORS = [
   "var(--color-earth)", // earth
   "var(--color-clay)", // clay
-  "#059669", // emerald
-  "#1B4965", // info
+  "var(--color-emerald-600)", // emerald
+  "var(--color-info)", // info
   "var(--color-warning)", // warning
   "var(--color-sand)", // sand
   "var(--color-success)", // success

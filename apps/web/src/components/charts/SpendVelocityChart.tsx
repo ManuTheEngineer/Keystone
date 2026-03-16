@@ -98,7 +98,7 @@ export function SpendVelocityChart({ planned, actual, currency }: SpendVelocityC
               dataKey="actual"
               stroke="var(--color-earth)"
               strokeWidth={2}
-              fill="#059669"
+              fill="var(--color-emerald-600)"
               fillOpacity={0.15}
               connectNulls
               dot={false}

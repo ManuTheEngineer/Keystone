@@ -131,6 +131,7 @@ function CollapsibleSection({ title, defaultOpen = false, children, count }: {
 // ---------------------------------------------------------------------------
 
 function generatePlannedSpend(totalBudget: number, totalWeeks: number): { week: number; amount: number }[] {
+  if (totalWeeks <= 0) return [{ week: 0, amount: 0 }];
   const points: { week: number; amount: number }[] = [];
   for (let w = 0; w <= totalWeeks; w += Math.max(1, Math.floor(totalWeeks / 12))) {
     const t = w / totalWeeks;
@@ -145,6 +146,7 @@ function generatePlannedSpend(totalBudget: number, totalWeeks: number): { week: 
 }
 
 function generateActualSpend(totalSpent: number, currentWeek: number): { week: number; amount: number }[] {
+  if (currentWeek <= 0) return [{ week: 0, amount: 0 }];
   const points: { week: number; amount: number }[] = [];
   const steps = Math.min(currentWeek, 12);
   for (let i = 0; i <= steps; i++) {
@@ -157,6 +159,7 @@ function generateActualSpend(totalSpent: number, currentWeek: number): { week: n
 }
 
 function generatePlannedProgress(totalWeeks: number): { week: number; pct: number }[] {
+  if (totalWeeks <= 0) return [{ week: 0, pct: 0 }];
   const points: { week: number; pct: number }[] = [];
   for (let w = 0; w <= totalWeeks; w += Math.max(1, Math.floor(totalWeeks / 12))) {
     const t = w / totalWeeks;
@@ -170,6 +173,7 @@ function generatePlannedProgress(totalWeeks: number): { week: number; pct: numbe
 }
 
 function generateActualProgress(progress: number, currentWeek: number): { week: number; pct: number }[] {
+  if (currentWeek <= 0) return [{ week: 0, pct: 0 }];
   const points: { week: number; pct: number }[] = [];
   const steps = Math.min(currentWeek, 12);
   for (let i = 0; i <= steps; i++) {

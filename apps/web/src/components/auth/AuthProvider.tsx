@@ -2,7 +2,9 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { type User } from "firebase/auth";
-import { onAuthChange, getUserProfile, type UserProfile } from "@/lib/services/auth-service";
+import { ref, onValue } from "firebase/database";
+import { db } from "@/lib/firebase";
+import { onAuthChange, type UserProfile } from "@/lib/services/auth-service";
 
 interface AuthContextValue {
   user: User | null;
@@ -26,20 +28,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthChange(async (firebaseUser) => {
+    let unsubProfile: (() => void) | null = null;
+
+    const unsubscribe = onAuthChange((firebaseUser) => {
       setUser(firebaseUser);
 
-      if (firebaseUser) {
-        const userProfile = await getUserProfile(firebaseUser.uid);
-        setProfile(userProfile);
-      } else {
-        setProfile(null);
+      // Clean up previous profile subscription
+      if (unsubProfile) {
+        unsubProfile();
+        unsubProfile = null;
       }
 
-      setLoading(false);
+      if (firebaseUser) {
+        const profileRef = ref(db, `users/${firebaseUser.uid}/profile`);
+        unsubProfile = onValue(profileRef, (snapshot) => {
+          setProfile(snapshot.exists() ? snapshot.val() : null);
+          setLoading(false);
+        });
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      if (unsubProfile) {
+        unsubProfile();
+      }
+    };
   }, []);
 
   return (

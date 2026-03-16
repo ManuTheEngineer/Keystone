@@ -24,6 +24,7 @@ import {
   type PunchListItemData,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -312,7 +313,7 @@ function WeeklySummary({ logs, photos, budgetItems, project }: WeeklySummaryProp
   const weekLogs = logs.filter((l) => new Date(l.createdAt ?? l.date) >= weekAgo);
   const weekPhotos = photos.filter((p) => new Date(p.date) >= weekAgo);
   const totalCrew = weekLogs.reduce((sum, l) => sum + (l.crew || 0), 0);
-  const weekSpent = budgetItems.reduce((sum, b) => sum + b.actual, 0);
+  const weekSpent = budgetItems.reduce((sum, b) => sum + Number(b.actual || 0), 0);
 
   const formatCurrency = (amount: number) => {
     if (project.currency === "XOF" || project.currency === "CFA") {
@@ -436,6 +437,7 @@ interface MaterialTrackerProps {
 }
 
 function MaterialTracker({ materials, projectId, userId }: MaterialTrackerProps) {
+  const { showToast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formQtyOrdered, setFormQtyOrdered] = useState("");
@@ -470,7 +472,7 @@ function MaterialTracker({ materials, projectId, userId }: MaterialTrackerProps)
       resetForm();
       setShowForm(false);
     } catch {
-      console.error("Material operation failed");
+      showToast("Failed to add material", "error");
     } finally {
       setSubmitting(false);
     }
@@ -478,7 +480,11 @@ function MaterialTracker({ materials, projectId, userId }: MaterialTrackerProps)
 
   const handleStatusChange = async (material: MaterialData, newStatus: MaterialData["status"]) => {
     if (!material.id) return;
-    await updateMaterial(userId, projectId, material.id, { status: newStatus });
+    try {
+      await updateMaterial(userId, projectId, material.id, { status: newStatus });
+    } catch {
+      showToast("Failed to update material status", "error");
+    }
   };
 
   const statusColor = (status: MaterialData["status"]) => {

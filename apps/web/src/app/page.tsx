@@ -639,11 +639,12 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <span
-                className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-border text-muted cursor-default"
+              <a
+                href="mailto:support@keystone.build"
+                className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-border text-muted hover:text-earth hover:border-earth transition-colors"
               >
                 Contact us
-              </span>
+              </a>
             </div>
           </div>
         </div>
@@ -686,7 +687,7 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
-                  <Link href="/register" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                  <Link href="/learn" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
                     Learning center
                   </Link>
                 </li>
@@ -700,7 +701,7 @@ export default function LandingPage() {
               </h4>
               <ul className="space-y-2.5">
                 <li>
-                  <Link href="/register" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                  <Link href="/learn" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
                     Documentation
                   </Link>
                 </li>
