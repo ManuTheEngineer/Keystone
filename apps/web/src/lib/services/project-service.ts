@@ -844,3 +844,38 @@ export async function seedDemoProject(userId: string): Promise<string> {
 
   return projectId;
 }
+
+// --- Phase Step Completions ---
+
+export interface PhaseStepCompletion {
+  completedAt: string;
+  documentIds?: string[];
+  notes?: string;
+}
+
+export async function completePhaseStep(
+  userId: string,
+  projectId: string,
+  stepId: string,
+  data: PhaseStepCompletion
+): Promise<void> {
+  await set(ref(db, `users/${userId}/projects/${projectId}/phaseSteps/${stepId}`), data);
+}
+
+export async function uncompletePhaseStep(
+  userId: string,
+  projectId: string,
+  stepId: string
+): Promise<void> {
+  await remove(ref(db, `users/${userId}/projects/${projectId}/phaseSteps/${stepId}`));
+}
+
+export function subscribeToPhaseSteps(
+  userId: string,
+  projectId: string,
+  callback: (steps: Record<string, PhaseStepCompletion>) => void
+): Unsubscribe {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/phaseSteps`), (snapshot) => {
+    callback(snapshot.exists() ? snapshot.val() : {});
+  });
+}

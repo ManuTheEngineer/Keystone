@@ -16,6 +16,10 @@ import {
   subscribeToInspectionResults,
   subscribeToMaterials,
   subscribeToAllMilestoneProgress,
+  subscribeToPhaseSteps,
+  subscribeToVaultFiles,
+  completePhaseStep,
+  uncompletePhaseStep,
   updateTask,
   addTask,
   deleteTask,
@@ -30,6 +34,8 @@ import {
   type DocumentData,
   type InspectionResultData,
   type MaterialData,
+  type VaultFileData,
+  type PhaseStepCompletion,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -85,6 +91,10 @@ import { PresentationModal } from "@/components/ui/PresentationModal";
 import type { PresentationData } from "@/lib/services/presentation-service";
 import { PhaseAdvancement } from "@/components/ui/PhaseAdvancement";
 import { ProcessGuide } from "@/components/ui/ProcessGuide";
+import { PhaseSteps } from "@/components/ui/PhaseSteps";
+import { DocumentReadiness } from "@/components/ui/DocumentReadiness";
+import { getPhaseSteps } from "@/lib/phase-steps";
+import { analyzeDocumentCompleteness } from "@/lib/document-intelligence";
 import { LearnTooltip } from "@/components/ui/LearnTooltip";
 import { getNextActions, type NextAction } from "@/lib/next-actions";
 import type { ExportData } from "@/lib/services/export-service";
@@ -166,6 +176,8 @@ export function OverviewClient() {
   const [inspectionResults, setInspectionResults] = useState<InspectionResultData[]>([]);
   const [materials, setMaterials] = useState<MaterialData[]>([]);
   const [allMilestoneProgress, setAllMilestoneProgress] = useState<Record<string, boolean[]>>({});
+  const [phaseStepCompletions, setPhaseStepCompletions] = useState<Record<string, PhaseStepCompletion>>({});
+  const [vaultFiles, setVaultFiles] = useState<VaultFileData[]>([]);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showPresentationModal, setShowPresentationModal] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
@@ -190,6 +202,8 @@ export function OverviewClient() {
       subscribeToInspectionResults(user.uid, projectId, setInspectionResults),
       subscribeToMaterials(user.uid, projectId, setMaterials),
       subscribeToAllMilestoneProgress(user.uid, projectId, setAllMilestoneProgress),
+      subscribeToPhaseSteps(user.uid, projectId, setPhaseStepCompletions),
+      subscribeToVaultFiles(user.uid, projectId, setVaultFiles),
     ];
     return () => unsubs.forEach((u) => u());
   }, [user, projectId]);
@@ -296,6 +310,54 @@ export function OverviewClient() {
           <PhaseEducationCard module={education} />
         </div>
       )}
+
+      {/* Actionable Phase Steps - shown for all phases */}
+      {user && (() => {
+        const steps = getPhaseSteps(market, phase);
+        if (steps.length === 0) return null;
+        return (
+          <div className="mt-4 mb-4">
+            <PhaseSteps
+              steps={steps}
+              completedSteps={phaseStepCompletions}
+              onComplete={(stepId, data) => {
+                completePhaseStep(user.uid, projectId, stepId, {
+                  completedAt: new Date().toISOString(),
+                  notes: data.notes,
+                  documentIds: data.documentIds,
+                });
+              }}
+              onUncomplete={(stepId) => {
+                uncompletePhaseStep(user.uid, projectId, stepId);
+              }}
+              projectId={projectId}
+              userId={user.uid}
+            />
+          </div>
+        );
+      })()}
+
+      {/* Document Readiness - shown for all phases */}
+      {(() => {
+        const docAnalysis = analyzeDocumentCompleteness(
+          phase,
+          market,
+          documents,
+          vaultFiles
+        );
+        if (docAnalysis.complete.length + docAnalysis.missing.length === 0) return null;
+        const phaseNames = ["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"];
+        return (
+          <div className="mb-4">
+            <SectionLabel>Document Readiness</SectionLabel>
+            <DocumentReadiness
+              analysis={docAnalysis}
+              projectId={projectId}
+              phaseName={phaseNames[phase] ?? "Current"}
+            />
+          </div>
+        );
+      })()}
 
       {/* Process guide - shown for phases 0-4 */}
       {phase <= 4 && (
