@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useMemo, createContext, useContext, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { WifiOff, LogOut } from "lucide-react";
+import { WifiOff } from "lucide-react";
 import { usePWA } from "@/lib/hooks/use-pwa";
 import { signOut } from "@/lib/services/auth-service";
-import { subscribeToUserProjects, subscribeToPunchListItems, subscribeToTasks, type ProjectData } from "@/lib/services/project-service";
+import { subscribeToUserProjects, subscribeToPunchListItems, subscribeToTasks, subscribeToDailyLogs, type ProjectData, type PunchListItemData, type TaskData, type DailyLogData } from "@/lib/services/project-service";
 import { LocaleContext } from "@/lib/hooks/use-locale";
 import { getLocaleForMarket } from "@/lib/i18n";
 import { AIMentor } from "@/components/ui/AIMentor";
+import { generateProjectNotifications, generateDetailedNotifications, sortNotifications, type AppNotification } from "@/lib/notifications";
 
 interface DashboardContextValue {
   setTopbar: (title: string, badge?: string, badgeVariant?: "success" | "warning" | "info" | "danger") => void;
@@ -41,6 +42,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [punchListCount, setPunchListCount] = useState(0);
   const [openTaskCount, setOpenTaskCount] = useState(0);
+  const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(new Set());
+  const [detailedData, setDetailedData] = useState<Record<string, { punchList: PunchListItemData[]; tasks: TaskData[]; dailyLogs: DailyLogData[] }>>({});
   const router = useRouter();
   const pathname = usePathname();
   const { isOnline } = usePWA();
@@ -75,6 +78,101 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     });
     return () => { unsub1(); unsub2(); };
   }, [user, currentProjectId]);
+
+  // Get top 3 priority projects for detailed notification subscriptions
+  const priorityProjects = useMemo(() => {
+    const active = projects.filter((p) => p.status === "ACTIVE");
+    const sorted = [...active].sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      const pa = a.priority ?? 999;
+      const pb = b.priority ?? 999;
+      if (pa !== pb) return pa - pb;
+      const ua = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const ub = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return ub - ua;
+    });
+    return sorted.slice(0, 3);
+  }, [projects]);
+
+  // Subscribe to detailed data for top 3 priority projects
+  useEffect(() => {
+    if (!user || priorityProjects.length === 0) {
+      setDetailedData({});
+      return;
+    }
+
+    const unsubs: (() => void)[] = [];
+    const collected: Record<string, { punchList: PunchListItemData[]; tasks: TaskData[]; dailyLogs: DailyLogData[] }> = {};
+
+    for (const project of priorityProjects) {
+      const pid = project.id;
+      if (!pid) continue;
+
+      collected[pid] = { punchList: [], tasks: [], dailyLogs: [] };
+
+      unsubs.push(
+        subscribeToPunchListItems(user.uid, pid, (items) => {
+          collected[pid] = { ...collected[pid], punchList: items };
+          setDetailedData({ ...collected });
+        })
+      );
+      unsubs.push(
+        subscribeToTasks(user.uid, pid, (tasks) => {
+          collected[pid] = { ...collected[pid], tasks };
+          setDetailedData({ ...collected });
+        })
+      );
+      unsubs.push(
+        subscribeToDailyLogs(user.uid, pid, (logs) => {
+          collected[pid] = { ...collected[pid], dailyLogs: logs };
+          setDetailedData({ ...collected });
+        })
+      );
+    }
+
+    return () => {
+      for (const unsub of unsubs) unsub();
+    };
+  }, [user, priorityProjects]);
+
+  // Generate notifications
+  const notifications = useMemo(() => {
+    const projectNotifs = generateProjectNotifications(projects);
+
+    const detailedNotifs: AppNotification[] = [];
+    for (const project of priorityProjects) {
+      const pid = project.id;
+      if (!pid || !detailedData[pid]) continue;
+      const data = detailedData[pid];
+      detailedNotifs.push(
+        ...generateDetailedNotifications(project, data.punchList, data.tasks, data.dailyLogs)
+      );
+    }
+
+    const all = [...projectNotifs, ...detailedNotifs];
+    // Filter out dismissed
+    const filtered = all.filter((n) => !dismissedNotifications.has(n.id));
+    return sortNotifications(filtered);
+  }, [projects, priorityProjects, detailedData, dismissedNotifications]);
+
+  function handleDismissNotification(id: string) {
+    setDismissedNotifications((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }
+
+  function handleDismissAllNotifications() {
+    setDismissedNotifications((prev) => {
+      const next = new Set(prev);
+      for (const n of notifications) {
+        next.add(n.id);
+      }
+      return next;
+    });
+  }
 
   function handleNavigate(section: string) {
     setSidebarOpen(false);
@@ -119,6 +217,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               badge={topbarState.badge || undefined}
               badgeVariant={topbarState.badgeVariant}
               onMenuToggle={() => setSidebarOpen(true)}
+              notifications={notifications}
+              onDismissNotification={handleDismissNotification}
+              onDismissAllNotifications={handleDismissAllNotifications}
             />
             {!isOnline && (
               <div className="mx-5 mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-warning-bg text-warning text-[11px]">
@@ -153,7 +254,8 @@ function getActiveSectionFromPath(pathname: string): string {
   if (pathname.includes("/schedule")) return "schedule";
   if (pathname.includes("/team")) return "team";
   if (pathname.includes("/documents")) return "documents";
-  if (pathname.includes("/vault")) return "vault";
+  if (pathname.includes("/project/") && pathname.includes("/vault")) return "vault";
+  if (pathname === "/vault" || pathname.startsWith("/vault")) return "portfolio";
   if (pathname.includes("/photos")) return "photos";
   if (pathname.includes("/daily-log")) return "daily-log";
   if (pathname.includes("/inspections")) return "inspections";
@@ -183,6 +285,7 @@ function sectionToRoute(section: string, currentProjectId: string | null): strin
     monitor: `/project/${pid}/monitor`,
   };
   if (projectRoutes[section]) return projectRoutes[section];
+  if (section === "portfolio") return "/vault";
   if (section === "new-project") return "/new-project";
   if (section === "deal-analyzer") return "/deal-analyzer";
   if (section === "learn") return "/learn";
