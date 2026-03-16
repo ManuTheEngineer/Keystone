@@ -139,8 +139,8 @@ h1, h2, h3 {
 
 /* === Smooth page transitions === */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .animate-fade-in {
@@ -149,10 +149,9 @@ h1, h2, h3 {
 
 /* === Card hover effect === */
 .card-hover {
-  transition: transform 150ms ease, box-shadow 150ms ease;
+  transition: box-shadow 150ms ease;
 }
 .card-hover:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
