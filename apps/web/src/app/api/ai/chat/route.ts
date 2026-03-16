@@ -33,18 +33,26 @@ export async function POST(req: NextRequest) {
   }
   const idToken = authHeader.split("Bearer ")[1];
 
-  // Decode JWT payload and verify it belongs to our Firebase project
+  // Verify Firebase ID token using Google's tokeninfo endpoint
+  // This validates the signature, audience, expiry, and issuer server-side
   try {
-    const payload = JSON.parse(atob(idToken.split(".")[1]));
-    if (payload.aud !== "keystone-21811" || !payload.user_id) {
+    const verifyRes = await fetch(
+      `https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "AIzaSyCqwv6MBMbIs4PV44A72AG5jOe5W3FydgA"}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      }
+    );
+    if (!verifyRes.ok) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
-    // Check token is not expired
-    if (payload.exp * 1000 < Date.now()) {
-      return NextResponse.json({ error: "Token expired" }, { status: 401 });
+    const verifyData = await verifyRes.json();
+    if (!verifyData.users || verifyData.users.length === 0) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
   } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    return NextResponse.json({ error: "Token verification failed" }, { status: 401 });
   }
 
   // Rate limit by IP

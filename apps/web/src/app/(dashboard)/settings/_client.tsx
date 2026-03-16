@@ -184,10 +184,11 @@ export function SettingsClient() {
     setDeleting(true);
     setDeleteError("");
     try {
-      // Delete auth user first (point of no return)
+      const uid = user.uid;
+      // Delete data first (can be re-created if auth deletion fails)
+      await remove(ref(db, `users/${uid}`));
+      // Then delete auth account (point of no return)
       await deleteUser(user);
-      // Then clean up data
-      await remove(ref(db, `users/${user.uid}`));
       router.push("/");
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code;
