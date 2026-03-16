@@ -74,14 +74,14 @@ export function ProgressSCurve({ planned, actual, currentWeek }: ProgressSCurveP
           <LineChart data={merged} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <XAxis
               dataKey="week"
-              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "var(--color-muted)" }}
               tickLine={false}
-              axisLine={{ stroke: "#D4A574", strokeWidth: 1 }}
+              axisLine={{ stroke: "var(--color-sand)", strokeWidth: 1 }}
               tickFormatter={(v) => `W${v}`}
             />
             <YAxis
               domain={[0, 100]}
-              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A", fontFamily: "var(--font-data, monospace)" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "var(--color-muted)", fontFamily: "var(--font-data, monospace)" }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v}%`}
@@ -91,20 +91,20 @@ export function ProgressSCurve({ planned, actual, currentWeek }: ProgressSCurveP
             <Tooltip content={<CustomTooltip />} />
             <ReferenceLine
               x={currentWeek}
-              stroke="#9B2226"
+              stroke="var(--color-danger)"
               strokeWidth={1.5}
               strokeDasharray="4 2"
               label={{
                 value: "Now",
                 position: "top",
-                fill: "#9B2226",
+                fill: "var(--color-danger)",
                 fontSize: 10,
               }}
             />
             <Line
               type="monotone"
               dataKey="planned"
-              stroke="#D4A574"
+              stroke="var(--color-sand)"
               strokeWidth={2}
               strokeDasharray="6 3"
               dot={false}
@@ -124,7 +124,7 @@ export function ProgressSCurve({ planned, actual, currentWeek }: ProgressSCurveP
               verticalAlign="top"
               align="right"
               iconSize={isMobile ? 8 : 10}
-              wrapperStyle={{ fontSize: isMobile ? "9px" : "11px", color: "#6A6A6A" }}
+              wrapperStyle={{ fontSize: isMobile ? "9px" : "11px", color: "var(--color-muted)" }}
             />
           </LineChart>
         </ResponsiveContainer>

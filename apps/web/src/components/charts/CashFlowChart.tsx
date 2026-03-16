@@ -85,12 +85,12 @@ export function CashFlowChart({ data, currency }: CashFlowChartProps) {
           <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <XAxis
               dataKey="month"
-              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "var(--color-muted)" }}
               tickLine={false}
-              axisLine={{ stroke: "#D4A574", strokeWidth: 1 }}
+              axisLine={{ stroke: "var(--color-sand)", strokeWidth: 1 }}
             />
             <YAxis
-              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A", fontFamily: "var(--font-data, monospace)" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "var(--color-muted)", fontFamily: "var(--font-data, monospace)" }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => formatCurrencyCompact(v, currency)}
@@ -98,22 +98,22 @@ export function CashFlowChart({ data, currency }: CashFlowChartProps) {
               hide={isMobile}
             />
             <Tooltip content={<CustomTooltip currency={currency} />} />
-            <ReferenceLine y={0} stroke="#D4A574" strokeWidth={1} />
-            <Bar dataKey="income" fill="#2D6A4F" radius={[3, 3, 0, 0]} name="Income" />
-            <Bar dataKey="expensesNeg" fill="#9B2226" radius={[0, 0, 3, 3]} name="Expenses" />
+            <ReferenceLine y={0} stroke="var(--color-sand)" strokeWidth={1} />
+            <Bar dataKey="income" fill="var(--color-success)" radius={[3, 3, 0, 0]} name="Income" />
+            <Bar dataKey="expensesNeg" fill="var(--color-danger)" radius={[0, 0, 3, 3]} name="Expenses" />
             <Line
               type="monotone"
               dataKey="net"
-              stroke="#2C1810"
+              stroke="var(--color-earth)"
               strokeWidth={2}
-              dot={{ r: 3, fill: "#2C1810" }}
+              dot={{ r: 3, fill: "var(--color-earth)" }}
               name="Net"
             />
             <Legend
               verticalAlign="top"
               align="right"
               iconSize={isMobile ? 8 : 10}
-              wrapperStyle={{ fontSize: isMobile ? "9px" : "11px", color: "#6A6A6A" }}
+              wrapperStyle={{ fontSize: isMobile ? "9px" : "11px", color: "var(--color-muted)" }}
             />
           </BarChart>
         </ResponsiveContainer>

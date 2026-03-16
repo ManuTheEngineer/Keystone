@@ -650,21 +650,20 @@ export default function LandingPage() {
       </section>
 
       {/* Section 7: Footer -- stays dark in both modes */}
-      <footer className="landing-footer py-12 sm:py-16 px-4 sm:px-6" style={{ backgroundColor: "#2C1810" }}>
+      <footer className="landing-footer py-12 sm:py-16 px-4 sm:px-6 bg-earth">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
             {/* Brand column */}
             <div>
               <div className="flex items-center gap-2.5 mb-4">
-                <KeystoneIcon size={24} className="text-[#D4A574]" />
+                <KeystoneIcon size={24} className="text-sand" />
                 <span
-                  className="text-[16px] text-[#F5E6D3] tracking-tight"
-                  style={{ fontFamily: "var(--font-heading)" }}
+                  className="text-[16px] text-warm tracking-tight font-heading"
                 >
                   KEYSTONE
                 </span>
               </div>
-              <p className="text-[13px] text-[#D4A574]/60 leading-relaxed">
+              <p className="text-[13px] text-sand/60 leading-relaxed">
                 From first idea to final key. The construction management platform
                 for owner-builders worldwide.
               </p>
@@ -672,22 +671,22 @@ export default function LandingPage() {
 
             {/* Product links */}
             <div>
-              <h4 className="text-[12px] uppercase tracking-[2px] text-[#D4A574]/40 font-medium mb-4">
+              <h4 className="text-[12px] uppercase tracking-[2px] text-sand/40 font-medium mb-4">
                 Product
               </h4>
               <ul className="space-y-2.5">
                 <li>
-                  <a href="#how-it-works" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
+                  <a href="#how-it-works" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
                     Features
                   </a>
                 </li>
                 <li>
-                  <a href="#pricing" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
+                  <a href="#pricing" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
                     Pricing
                   </a>
                 </li>
                 <li>
-                  <Link href="/register" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
+                  <Link href="/register" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
                     Learning center
                   </Link>
                 </li>
@@ -696,17 +695,17 @@ export default function LandingPage() {
 
             {/* Support links */}
             <div>
-              <h4 className="text-[12px] uppercase tracking-[2px] text-[#D4A574]/40 font-medium mb-4">
+              <h4 className="text-[12px] uppercase tracking-[2px] text-sand/40 font-medium mb-4">
                 Support
               </h4>
               <ul className="space-y-2.5">
                 <li>
-                  <Link href="/register" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
+                  <Link href="/register" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
                     Documentation
                   </Link>
                 </li>
                 <li>
-                  <a href="mailto:support@keystone.build" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
+                  <a href="mailto:support@keystone.build" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
                     Contact
                   </a>
                 </li>
@@ -715,17 +714,17 @@ export default function LandingPage() {
 
             {/* Legal links */}
             <div>
-              <h4 className="text-[12px] uppercase tracking-[2px] text-[#D4A574]/40 font-medium mb-4">
+              <h4 className="text-[12px] uppercase tracking-[2px] text-sand/40 font-medium mb-4">
                 Legal
               </h4>
               <ul className="space-y-2.5">
                 <li>
-                  <Link href="/privacy" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
+                  <Link href="/privacy" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
                     Privacy policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="text-[13px] text-[#D4A574]/70 hover:text-[#F5E6D3] transition-colors">
+                  <Link href="/terms" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
                     Terms of service
                   </Link>
                 </li>
@@ -733,10 +732,10 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="border-t border-[#D4A574]/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="border-t border-sand/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <KeystoneIcon size={16} className="text-[#D4A574]/40" />
-              <span className="text-[12px] text-[#D4A574]/40">
+              <KeystoneIcon size={16} className="text-sand/40" />
+              <span className="text-[12px] text-sand/40">
                 2026 Keystone. All rights reserved.
               </span>
             </div>

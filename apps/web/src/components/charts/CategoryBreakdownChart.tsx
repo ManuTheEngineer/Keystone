@@ -90,7 +90,7 @@ export function CategoryBreakdownChart({ items, currency }: CategoryBreakdownCha
           >
             <XAxis
               type="number"
-              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A", fontFamily: "var(--font-data, monospace)" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "var(--color-muted)", fontFamily: "var(--font-data, monospace)" }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => formatCurrencyCompact(v, currency)}
@@ -98,18 +98,18 @@ export function CategoryBreakdownChart({ items, currency }: CategoryBreakdownCha
             <YAxis
               type="category"
               dataKey="category"
-              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "var(--color-muted)" }}
               tickLine={false}
               axisLine={false}
               width={isMobile ? 70 : 100}
             />
             <Tooltip content={<CustomTooltip currency={currency} />} />
-            <Bar dataKey="estimated" fill="#D4A574" radius={[0, 3, 3, 0]} name="Estimated" />
+            <Bar dataKey="estimated" fill="var(--color-sand)" radius={[0, 3, 3, 0]} name="Estimated" />
             <Bar dataKey="actual" radius={[0, 3, 3, 0]} name="Actual">
               {items.map((item, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={item.actual > item.estimated ? "#9B2226" : "#059669"}
+                  fill={item.actual > item.estimated ? "var(--color-danger)" : "#059669"}
                 />
               ))}
             </Bar>
@@ -117,7 +117,7 @@ export function CategoryBreakdownChart({ items, currency }: CategoryBreakdownCha
               verticalAlign="top"
               align="right"
               iconSize={isMobile ? 8 : 10}
-              wrapperStyle={{ fontSize: isMobile ? "9px" : "11px", color: "#6A6A6A" }}
+              wrapperStyle={{ fontSize: isMobile ? "9px" : "11px", color: "var(--color-muted)" }}
             />
           </BarChart>
         </ResponsiveContainer>

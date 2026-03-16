@@ -293,11 +293,11 @@ function splitIntoParagraphs(content: string): string[] {
 
 function PhaseInfographic({ phase }: { phase: ProjectPhase }) {
   const colors = {
-    earth: "#2C1810",
-    clay: "#8B4513",
-    sand: "#D4A574",
-    warm: "#F5E6D3",
-    cream: "#FDF8F0",
+    earth: "var(--color-earth)",
+    clay: "var(--color-clay)",
+    sand: "var(--color-sand)",
+    warm: "var(--color-warm)",
+    cream: "var(--color-cream)",
   };
 
   switch (phase) {
@@ -491,8 +491,8 @@ function CostDonutChart({ benchmarks }: { benchmarks: CostBenchmark[] }) {
   }, [benchmarks]);
 
   const chartColors = [
-    "#2C1810", "#8B4513", "#D4A574", "#2D6A4F",
-    "#BC6C25", "#1B4965", "#6B4226", "#9B2226",
+    "var(--color-earth)", "var(--color-clay)", "var(--color-sand)", "var(--color-success)",
+    "var(--color-warning)", "#1B4965", "#6B4226", "var(--color-danger)",
   ];
 
   const total = categories.reduce((s, c) => s + c.value, 0);
@@ -529,10 +529,10 @@ function CostDonutChart({ benchmarks }: { benchmarks: CostBenchmark[] }) {
             );
           })}
           <circle cx="60" cy="60" r="28" fill="white" />
-          <text x="60" y="58" textAnchor="middle" fontSize="10" fill="#2C1810" fontWeight="600">
+          <text x="60" y="58" textAnchor="middle" fontSize="10" fill="var(--color-earth)" fontWeight="600">
             ${Math.round(total)}
           </text>
-          <text x="60" y="70" textAnchor="middle" fontSize="7" fill="#6A6A6A">
+          <text x="60" y="70" textAnchor="middle" fontSize="7" fill="var(--color-muted)">
             /sq ft mid
           </text>
         </svg>

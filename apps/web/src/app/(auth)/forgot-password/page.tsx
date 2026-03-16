@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
         <div className="px-8 pt-8">
           <Link href="/" className="inline-flex items-center gap-2">
             <KeystoneIcon size={24} className="text-earth" />
-            <span className="text-[15px] font-semibold text-earth tracking-tight" style={{ fontFamily: "var(--font-body)" }}>
+            <span className="text-[15px] font-semibold text-earth tracking-tight">
               KEYSTONE
             </span>
           </Link>
@@ -76,11 +76,10 @@ export default function ForgotPasswordPage() {
             <div className="mb-8">
               <h1
                 className="text-[28px] text-earth leading-tight"
-                style={{ fontFamily: "var(--font-heading)" }}
               >
                 Reset your password
               </h1>
-              <p className="text-[14px] text-muted mt-1.5" style={{ fontFamily: "var(--font-body)" }}>
+              <p className="text-[14px] text-muted mt-1.5">
                 Enter your email and we will send you a reset link
               </p>
             </div>
@@ -146,19 +145,19 @@ export default function ForgotPasswordPage() {
       {/* Right half - Gradient with quote */}
       <div
         className="hidden lg:flex lg:w-[45%] relative overflow-hidden flex-col items-center justify-center p-12"
-        style={{ background: "linear-gradient(135deg, #2C1810 0%, #8B4513 100%)" }}
+        style={{ background: "linear-gradient(135deg, var(--color-earth) 0%, var(--color-clay) 100%)" }}
       >
         {/* Architectural line pattern */}
         <svg
-          className="absolute inset-0 w-full h-full"
+          className="absolute inset-0 w-full h-full text-warm"
           xmlns="http://www.w3.org/2000/svg"
           style={{ opacity: 0.1 }}
         >
           <defs>
             <pattern id="archLinesFp" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-              <path d="M0 30 L60 30" stroke="#F5E6D3" strokeWidth="0.5" fill="none" />
-              <path d="M30 0 L30 60" stroke="#F5E6D3" strokeWidth="0.5" fill="none" />
-              <path d="M0 0 L60 60" stroke="#F5E6D3" strokeWidth="0.3" fill="none" />
+              <path d="M0 30 L60 30" stroke="currentColor" strokeWidth="0.5" fill="none" />
+              <path d="M30 0 L30 60" stroke="currentColor" strokeWidth="0.5" fill="none" />
+              <path d="M0 0 L60 60" stroke="currentColor" strokeWidth="0.3" fill="none" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#archLinesFp)" />
@@ -171,14 +170,12 @@ export default function ForgotPasswordPage() {
             style={{ opacity: fadeIn ? 1 : 0 }}
           >
             <p
-              className="text-[24px] leading-relaxed text-warm italic"
-              style={{ fontFamily: "var(--font-heading)" }}
+              className="text-[24px] leading-relaxed text-warm italic font-heading"
             >
               &ldquo;{quotes[quoteIndex].text}&rdquo;
             </p>
             <p
               className="mt-4 text-[12px] text-sand tracking-wide"
-              style={{ fontFamily: "var(--font-body)" }}
             >
               - {quotes[quoteIndex].author}
             </p>

@@ -6,14 +6,14 @@ import { formatCurrency } from "@keystone/market-data";
 import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 
 const CATEGORY_COLORS = [
-  "#2C1810", // earth
-  "#8B4513", // clay
+  "var(--color-earth)", // earth
+  "var(--color-clay)", // clay
   "#059669", // emerald
   "#1B4965", // info
-  "#BC6C25", // warning
-  "#D4A574", // sand
-  "#2D6A4F", // success
-  "#9B2226", // danger
+  "var(--color-warning)", // warning
+  "var(--color-sand)", // sand
+  "var(--color-success)", // success
+  "var(--color-danger)", // danger
 ];
 
 interface BudgetDonutItem {

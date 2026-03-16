@@ -265,7 +265,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 onDismissAllNotifications={handleDismissAllNotifications}
               />
               {!isOnline && (
-                <div className="mx-5 mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-warning-bg text-warning text-[11px]">
+                <div className="mx-5 mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warning-bg text-warning text-[11px]">
                   <WifiOff size={14} />
                   You are offline. Changes will sync when connection is restored.
                 </div>

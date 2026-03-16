@@ -10,9 +10,9 @@ interface PunchListDonutProps {
 }
 
 const SEGMENTS = [
-  { key: "open", label: "Open", color: "#9B2226" },
-  { key: "inProgress", label: "In Progress", color: "#BC6C25" },
-  { key: "resolved", label: "Resolved", color: "#2D6A4F" },
+  { key: "open", label: "Open", color: "var(--color-danger)" },
+  { key: "inProgress", label: "In Progress", color: "var(--color-warning)" },
+  { key: "resolved", label: "Resolved", color: "var(--color-success)" },
 ] as const;
 
 function CustomTooltip({

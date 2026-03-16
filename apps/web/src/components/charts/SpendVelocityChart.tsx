@@ -79,13 +79,13 @@ export function SpendVelocityChart({ planned, actual, currency }: SpendVelocityC
           <AreaChart data={merged} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <XAxis
               dataKey="week"
-              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "var(--color-muted)" }}
               tickLine={false}
-              axisLine={{ stroke: "#D4A574", strokeWidth: 1 }}
+              axisLine={{ stroke: "var(--color-sand)", strokeWidth: 1 }}
               tickFormatter={(v) => `W${v}`}
             />
             <YAxis
-              tick={{ fontSize: isMobile ? 9 : 11, fill: "#6A6A6A", fontFamily: "var(--font-data, monospace)" }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: "var(--color-muted)", fontFamily: "var(--font-data, monospace)" }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => formatCurrencyCompact(v, currency)}
@@ -96,7 +96,7 @@ export function SpendVelocityChart({ planned, actual, currency }: SpendVelocityC
             <Area
               type="monotone"
               dataKey="actual"
-              stroke="#2C1810"
+              stroke="var(--color-earth)"
               strokeWidth={2}
               fill="#059669"
               fillOpacity={0.15}
@@ -107,7 +107,7 @@ export function SpendVelocityChart({ planned, actual, currency }: SpendVelocityC
             <Line
               type="monotone"
               dataKey="planned"
-              stroke="#D4A574"
+              stroke="var(--color-sand)"
               strokeWidth={2}
               strokeDasharray="6 3"
               dot={false}
@@ -118,7 +118,7 @@ export function SpendVelocityChart({ planned, actual, currency }: SpendVelocityC
               verticalAlign="top"
               align="right"
               iconSize={isMobile ? 8 : 10}
-              wrapperStyle={{ fontSize: isMobile ? "9px" : "11px", color: "#6A6A6A" }}
+              wrapperStyle={{ fontSize: isMobile ? "9px" : "11px", color: "var(--color-muted)" }}
             />
           </AreaChart>
         </ResponsiveContainer>
