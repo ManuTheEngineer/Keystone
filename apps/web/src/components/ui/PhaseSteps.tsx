@@ -11,7 +11,12 @@ import {
   FileUp,
   Info,
   MessageSquare,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
 } from "lucide-react";
+import type { StepDecision } from "@/lib/services/project-service";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -33,13 +38,19 @@ export interface PhaseStepCompletion {
   completedAt: string;
   documentIds?: string[];
   notes?: string;
+  decisions?: StepDecision[];
 }
+
+const DECISION_TAGS = ["budget", "timeline", "design", "legal", "financing", "contractor", "material"] as const;
 
 interface PhaseStepsProps {
   steps: PhaseStep[];
   completedSteps: Record<string, PhaseStepCompletion>;
   onComplete: (stepId: string, data: { notes?: string; documentIds?: string[] }) => void;
   onUncomplete: (stepId: string) => void;
+  onAddDecision: (stepId: string, decision: StepDecision) => void;
+  onRemoveDecision: (stepId: string, decisionIndex: number) => void;
+  onUpdateDecision: (stepId: string, decisionIndex: number, decision: StepDecision) => void;
   projectId: string;
   userId: string;
 }
@@ -53,11 +64,22 @@ export function PhaseSteps({
   completedSteps,
   onComplete,
   onUncomplete,
+  onAddDecision,
+  onRemoveDecision,
+  onUpdateDecision,
   projectId,
 }: PhaseStepsProps) {
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
   const [activeNotes, setActiveNotes] = useState<Record<string, string>>({});
   const [confirmingStep, setConfirmingStep] = useState<string | null>(null);
+
+  // Decision form state
+  const [showDecisionForm, setShowDecisionForm] = useState<string | null>(null);
+  const [decisionQuestion, setDecisionQuestion] = useState("");
+  const [decisionAnswer, setDecisionAnswer] = useState("");
+  const [decisionReasoning, setDecisionReasoning] = useState("");
+  const [decisionTags, setDecisionTags] = useState<string[]>([]);
+  const [editingDecision, setEditingDecision] = useState<{ stepId: string; index: number } | null>(null);
 
   const sortedSteps = [...steps].sort((a, b) => a.order - b.order);
   const completedCount = sortedSteps.filter((s) => completedSteps[s.id]).length;
@@ -89,6 +111,47 @@ export function PhaseSteps({
     if (step.inAppRoute.startsWith("/")) return step.inAppRoute;
     // Otherwise it is relative to the project
     return `/project/${projectId}/${step.inAppRoute}`;
+  }
+
+  function resetDecisionForm() {
+    setDecisionQuestion("");
+    setDecisionAnswer("");
+    setDecisionReasoning("");
+    setDecisionTags([]);
+    setShowDecisionForm(null);
+    setEditingDecision(null);
+  }
+
+  function handleSaveDecision(stepId: string) {
+    if (!decisionQuestion.trim() || !decisionAnswer.trim()) return;
+    const decision: StepDecision = {
+      question: decisionQuestion.trim(),
+      answer: decisionAnswer.trim(),
+      reasoning: decisionReasoning.trim() || undefined,
+      decidedAt: new Date().toISOString(),
+      tags: decisionTags.length > 0 ? decisionTags : undefined,
+    };
+    if (editingDecision && editingDecision.stepId === stepId) {
+      onUpdateDecision(stepId, editingDecision.index, decision);
+    } else {
+      onAddDecision(stepId, decision);
+    }
+    resetDecisionForm();
+  }
+
+  function handleEditDecision(stepId: string, index: number, decision: StepDecision) {
+    setShowDecisionForm(stepId);
+    setEditingDecision({ stepId, index });
+    setDecisionQuestion(decision.question);
+    setDecisionAnswer(decision.answer);
+    setDecisionReasoning(decision.reasoning || "");
+    setDecisionTags(decision.tags || []);
+  }
+
+  function toggleTag(tag: string) {
+    setDecisionTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
   }
 
   return (
@@ -370,6 +433,185 @@ export function PhaseSteps({
                           </button>
                         </div>
                       )}
+
+                      {/* Decision Notes Section */}
+                      <div className="mt-3">
+                        {/* Existing decisions list */}
+                        {completion?.decisions && completion.decisions.length > 0 && (
+                          <div className="bg-warm/20 rounded-xl p-2.5 mb-2 space-y-1.5">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <MessageSquare size={11} className="text-clay" />
+                              <span className="text-[10px] font-semibold text-earth uppercase tracking-wider">
+                                Decision Notes
+                              </span>
+                              <span className="text-[9px] text-muted font-data">
+                                ({completion.decisions.length})
+                              </span>
+                            </div>
+                            {completion.decisions.map((dec, di) => (
+                              <div
+                                key={di}
+                                className="group/dec flex items-start gap-1.5 text-[11px] py-1 border-b border-border/30 last:border-b-0"
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {dec.tags?.map((tag) => (
+                                      <span
+                                        key={tag}
+                                        className="inline-block px-1.5 py-0 text-[9px] font-medium rounded bg-clay/10 text-clay leading-relaxed"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                    <span className="text-earth font-medium">{dec.question}:</span>
+                                    <span className="text-earth">{dec.answer}</span>
+                                  </div>
+                                  {dec.reasoning && (
+                                    <p className="text-[10px] text-muted mt-0.5 italic leading-relaxed">
+                                      &ldquo;{dec.reasoning}&rdquo;
+                                      <span className="not-italic ml-1.5 text-[9px] font-data">
+                                        &mdash;{" "}
+                                        {new Date(dec.decidedAt).toLocaleDateString("en-US", {
+                                          month: "short",
+                                          day: "numeric",
+                                          year: "numeric",
+                                        })}
+                                      </span>
+                                    </p>
+                                  )}
+                                  {!dec.reasoning && (
+                                    <p className="text-[9px] text-muted font-data mt-0.5">
+                                      {new Date(dec.decidedAt).toLocaleDateString("en-US", {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      })}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover/dec:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => handleEditDecision(step.id, di, dec)}
+                                    className="p-0.5 text-muted hover:text-earth transition-colors"
+                                    title="Edit decision"
+                                  >
+                                    <Pencil size={10} />
+                                  </button>
+                                  <button
+                                    onClick={() => onRemoveDecision(step.id, di)}
+                                    className="p-0.5 text-muted hover:text-danger transition-colors"
+                                    title="Delete decision"
+                                  >
+                                    <Trash2 size={10} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Add decision button / form */}
+                        {showDecisionForm !== step.id ? (
+                          <button
+                            onClick={() => {
+                              resetDecisionForm();
+                              setShowDecisionForm(step.id);
+                            }}
+                            className="inline-flex items-center gap-1 text-[10px] text-muted hover:text-earth transition-colors"
+                          >
+                            <Plus size={11} />
+                            Add decision note
+                          </button>
+                        ) : (
+                          <div className="bg-warm/20 rounded-xl p-2.5 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <MessageSquare size={11} className="text-clay" />
+                                <span className="text-[10px] font-semibold text-earth uppercase tracking-wider">
+                                  {editingDecision ? "Edit Decision" : "New Decision"}
+                                </span>
+                              </div>
+                              <button
+                                onClick={resetDecisionForm}
+                                className="p-0.5 text-muted hover:text-earth transition-colors"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-medium text-earth block mb-0.5">
+                                What did you decide?
+                              </label>
+                              <input
+                                type="text"
+                                value={decisionQuestion}
+                                onChange={(e) => setDecisionQuestion(e.target.value)}
+                                placeholder="e.g., What financing type did you choose?"
+                                className="w-full px-2 py-1.5 text-[11px] border border-border rounded-lg bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-clay"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-medium text-earth block mb-0.5">
+                                Answer
+                              </label>
+                              <input
+                                type="text"
+                                value={decisionAnswer}
+                                onChange={(e) => setDecisionAnswer(e.target.value)}
+                                placeholder="e.g., Construction loan with 20% down"
+                                className="w-full px-2 py-1.5 text-[11px] border border-border rounded-lg bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-clay"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-medium text-earth block mb-0.5">
+                                Why? <span className="text-muted font-normal">(optional)</span>
+                              </label>
+                              <textarea
+                                value={decisionReasoning}
+                                onChange={(e) => setDecisionReasoning(e.target.value)}
+                                placeholder="e.g., Best rate available, meets DTI requirements"
+                                rows={2}
+                                className="w-full px-2 py-1.5 text-[11px] border border-border rounded-lg bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-clay resize-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-medium text-earth block mb-1">
+                                Tags <span className="text-muted font-normal">(optional)</span>
+                              </label>
+                              <div className="flex flex-wrap gap-1">
+                                {DECISION_TAGS.map((tag) => (
+                                  <button
+                                    key={tag}
+                                    onClick={() => toggleTag(tag)}
+                                    className={`px-2 py-0.5 text-[9px] font-medium rounded-full border transition-colors ${
+                                      decisionTags.includes(tag)
+                                        ? "bg-clay/15 border-clay/40 text-clay"
+                                        : "bg-surface border-border text-muted hover:border-clay/30 hover:text-earth"
+                                    }`}
+                                  >
+                                    {tag}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-1">
+                              <button
+                                onClick={resetDecisionForm}
+                                className="px-3 py-1 text-[11px] text-muted hover:text-earth transition-colors"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleSaveDecision(step.id)}
+                                disabled={!decisionQuestion.trim() || !decisionAnswer.trim()}
+                                className="inline-flex items-center gap-1 px-3 py-1 text-[11px] font-medium rounded-lg bg-earth text-warm hover:bg-earth/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {editingDecision ? "Update Decision" : "Save Decision"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

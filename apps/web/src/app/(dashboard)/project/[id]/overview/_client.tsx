@@ -20,6 +20,9 @@ import {
   subscribeToVaultFiles,
   completePhaseStep,
   uncompletePhaseStep,
+  addStepDecision,
+  removeStepDecision,
+  updateStepDecision,
   updateTask,
   addTask,
   deleteTask,
@@ -36,6 +39,7 @@ import {
   type MaterialData,
   type VaultFileData,
   type PhaseStepCompletion,
+  type StepDecision,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -360,6 +364,15 @@ export function OverviewClient() {
               }}
               onUncomplete={(stepId) => {
                 uncompletePhaseStep(user.uid, projectId, stepId);
+              }}
+              onAddDecision={(stepId, decision) => {
+                addStepDecision(user.uid, projectId, stepId, decision);
+              }}
+              onRemoveDecision={(stepId, decisionIndex) => {
+                removeStepDecision(user.uid, projectId, stepId, decisionIndex);
+              }}
+              onUpdateDecision={(stepId, decisionIndex, decision) => {
+                updateStepDecision(user.uid, projectId, stepId, decisionIndex, decision);
               }}
               projectId={projectId}
               userId={user.uid}

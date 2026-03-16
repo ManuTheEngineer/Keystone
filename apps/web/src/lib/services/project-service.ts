@@ -915,10 +915,19 @@ export async function seedDemoProject(userId: string): Promise<string> {
 
 // --- Phase Step Completions ---
 
+export interface StepDecision {
+  question: string;
+  answer: string;
+  reasoning?: string;
+  decidedAt: string;
+  tags?: string[];
+}
+
 export interface PhaseStepCompletion {
   completedAt: string;
   documentIds?: string[];
   notes?: string;
+  decisions?: StepDecision[];
 }
 
 export async function completePhaseStep(
@@ -948,4 +957,49 @@ export function subscribeToPhaseSteps(
   }, (error) => {
     console.error("Subscription error (phase steps):", error);
   });
+}
+
+export async function addStepDecision(
+  userId: string,
+  projectId: string,
+  stepId: string,
+  decision: StepDecision
+): Promise<void> {
+  const stepRef = ref(db, `users/${userId}/projects/${projectId}/phaseSteps/${stepId}`);
+  const snapshot = await get(stepRef);
+  const existing = snapshot.exists() ? snapshot.val() : {};
+  const decisions = existing.decisions || [];
+  decisions.push(decision);
+  await update(stepRef, { decisions });
+}
+
+export async function removeStepDecision(
+  userId: string,
+  projectId: string,
+  stepId: string,
+  decisionIndex: number
+): Promise<void> {
+  const stepRef = ref(db, `users/${userId}/projects/${projectId}/phaseSteps/${stepId}`);
+  const snapshot = await get(stepRef);
+  if (!snapshot.exists()) return;
+  const existing = snapshot.val();
+  const decisions: StepDecision[] = existing.decisions || [];
+  decisions.splice(decisionIndex, 1);
+  await update(stepRef, { decisions });
+}
+
+export async function updateStepDecision(
+  userId: string,
+  projectId: string,
+  stepId: string,
+  decisionIndex: number,
+  decision: StepDecision
+): Promise<void> {
+  const stepRef = ref(db, `users/${userId}/projects/${projectId}/phaseSteps/${stepId}`);
+  const snapshot = await get(stepRef);
+  if (!snapshot.exists()) return;
+  const existing = snapshot.val();
+  const decisions: StepDecision[] = existing.decisions || [];
+  decisions[decisionIndex] = decision;
+  await update(stepRef, { decisions });
 }
