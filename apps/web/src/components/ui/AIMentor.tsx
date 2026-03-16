@@ -98,27 +98,15 @@ function getMentorGuidance(
     };
   }
 
-  // New project wizard
+  // New project wizard and deal analysis
   if (page === "new-project") {
     return {
       id: "new-project-wizard",
-      title: "Choosing your path",
+      title: "Evaluating your deal",
       guidance:
-        "Build-to-rent generates passive income but requires more capital upfront. Build-to-sell is faster cash but riskier in a slow market. Build-to-occupy saves money long-term but ties up your capital. Think about your 5-year plan.",
+        "Run every potential deal through the numbers before you commit any money. The best developers pass on more deals than they take. Build-to-rent generates passive income. Build-to-sell is faster cash but riskier. Build-to-occupy saves money long-term. Think about your 5-year plan.",
       whyItMatters:
-        "Your build purpose determines your financing structure, design decisions, material quality, and exit strategy. Getting this wrong means rebuilding your entire plan later.",
-    };
-  }
-
-  // New project (includes deal analysis)
-  if (page === "new-project") {
-    return {
-      id: "new-project-guide",
-      title: "Analyzing deals",
-      guidance:
-        "Run every potential deal through the numbers before you commit any money. The best developers pass on more deals than they take. Discipline in deal selection is what separates profitable builders from broke ones.",
-      whyItMatters:
-        "A bad deal with great execution is still a bad deal. No amount of construction skill can fix a project where the numbers never worked from the start.",
+        "A bad deal with great execution is still a bad deal. Your build purpose determines your financing, design, and exit strategy. Getting this wrong means rebuilding your entire plan later.",
     };
   }
 

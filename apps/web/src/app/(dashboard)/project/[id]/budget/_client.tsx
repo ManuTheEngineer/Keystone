@@ -700,7 +700,7 @@ export function BudgetClient() {
       {/* ================================================================= */}
       {/* FLOATING STICKY BAR                                               */}
       {/* ================================================================= */}
-      <div className="fixed bottom-0 right-0 z-40 left-0 bg-earth/95 backdrop-blur-sm border-t border-earth-light glass budget-sticky-bar">
+      <div className="fixed bottom-0 right-0 z-40 bg-[#2C1810]/95 backdrop-blur-sm border-t border-[#3D2215]" style={{ left: "var(--sidebar-width, 0px)" }}>
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3 sm:gap-6">
             <div>

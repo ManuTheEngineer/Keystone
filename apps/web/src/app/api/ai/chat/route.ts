@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   // This validates the signature, audience, expiry, and issuer server-side
   try {
     const verifyRes = await fetch(
-      `https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "AIzaSyCqwv6MBMbIs4PV44A72AG5jOe5W3FydgA"}`,
+      `https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? ""}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

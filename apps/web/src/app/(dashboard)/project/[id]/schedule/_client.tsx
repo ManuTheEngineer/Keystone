@@ -256,7 +256,7 @@ export function ScheduleClient() {
         }
       }
     },
-    [user, projectId, allMilestoneProgress]
+    [user, projectId, allMilestoneProgress, project]
   );
 
   if (!project) return <p className="text-muted text-sm">Loading...</p>;

@@ -259,8 +259,8 @@ export function AIAssistantClient() {
       const finalMessages = [...newMessages, { role: "assistant" as const, content: result.message }];
       setMessages(finalMessages);
       persistMessages(finalMessages);
-    } catch (err: any) {
-      const errMsg: string = err?.message ?? "";
+    } catch (err: unknown) {
+      const errMsg: string = err instanceof Error ? err.message : "";
 
       if (errMsg === "AI_NOT_CONFIGURED") {
         const finalMessages: AIMessage[] = [

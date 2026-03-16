@@ -20,7 +20,7 @@ import { TOGO_MARKET } from "./togo";
 const MARKETS: Record<Market, MarketConfig> = {
   USA: USA_MARKET,
   TOGO: TOGO_MARKET,
-  GHANA: USA_MARKET, // Placeholder until Ghana data is built
+  GHANA: TOGO_MARKET, // Placeholder — uses Togo as closest West African match
   BENIN: TOGO_MARKET, // Placeholder — uses Togo as closest match
 };
 
