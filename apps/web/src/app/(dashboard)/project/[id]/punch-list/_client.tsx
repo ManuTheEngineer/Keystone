@@ -204,9 +204,9 @@ export function PunchListClient() {
       {/* Add item form */}
       {showForm && (
         <Card padding="md" className="mb-4">
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">
+              <label className="block text-[12px] font-medium text-earth mb-1.5">
                 Description
               </label>
               <textarea
@@ -214,16 +214,16 @@ export function PunchListClient() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe the issue or deficiency..."
                 rows={2}
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full resize-none"
+                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full resize-none"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] text-muted font-medium mb-1">Trade</label>
+                <label className="block text-[12px] font-medium text-earth mb-1.5">Trade</label>
                 <select
                   value={trade}
                   onChange={(e) => setTrade(e.target.value)}
-                  className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+                  className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
                 >
                   <option value="">Select trade...</option>
                   {allTrades.map((t) => (
@@ -235,7 +235,7 @@ export function PunchListClient() {
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] text-muted font-medium mb-1">Severity</label>
+                <label className="block text-[12px] font-medium text-earth mb-1.5">Severity</label>
                 <div className="flex gap-1.5">
                   {(["critical", "major", "minor"] as const).map((s) => (
                     <button
@@ -258,7 +258,7 @@ export function PunchListClient() {
               </div>
             </div>
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">
+              <label className="block text-[12px] font-medium text-earth mb-1.5">
                 Notes (optional)
               </label>
               <input
@@ -266,20 +266,20 @@ export function PunchListClient() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Additional context or location details..."
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
               />
             </div>
-            <div className="flex items-center gap-2 justify-end">
+            <div className="flex items-center gap-2 justify-end pt-2">
               <button
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                className="btn-secondary"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddItem}
                 disabled={saving || !description.trim()}
-                className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                className="btn-primary"
               >
                 {saving ? "Saving..." : "Add item"}
               </button>

@@ -391,50 +391,50 @@ export function BudgetClient() {
       {/* Add item form */}
       {showForm && (
         <Card padding="md" className="mb-3">
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">Category *</label>
+              <label className="block text-[12px] font-medium text-earth mb-1.5">Category *</label>
               <input
                 type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="e.g. Foundation, Framing"
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] text-muted font-medium mb-1">Estimated ({marketData.currency.code})</label>
+                <label className="block text-[12px] font-medium text-earth mb-1.5">Estimated ({marketData.currency.code})</label>
                 <input
                   type="number"
                   value={estimated}
                   onChange={(e) => setEstimated(e.target.value)}
                   placeholder="0"
-                  className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full font-data"
+                  className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full font-data"
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-muted font-medium mb-1">Actual ({marketData.currency.code})</label>
+                <label className="block text-[12px] font-medium text-earth mb-1.5">Actual ({marketData.currency.code})</label>
                 <input
                   type="number"
                   value={actual}
                   onChange={(e) => setActual(e.target.value)}
                   placeholder="0"
-                  className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full font-data"
+                  className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full font-data"
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2 pt-2">
               <button
                 onClick={handleSave}
                 disabled={saving || !category.trim() || !estimated.trim()}
-                className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                className="btn-primary"
               >
                 {saving ? "Saving..." : "Save"}
               </button>
               <button
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                className="btn-secondary"
               >
                 Cancel
               </button>

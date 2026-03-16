@@ -18,7 +18,7 @@ const badgeStyles = {
 
 export function Topbar({ title, badge, badgeVariant = "info", onMenuToggle }: TopbarProps) {
   return (
-    <header className="px-6 py-4 border-b border-border/40 bg-surface/80 backdrop-blur-sm flex items-center justify-between shrink-0 sticky top-0 z-30">
+    <header className="px-4 sm:px-6 py-4 shadow-[0_1px_0_rgba(44,24,16,0.06)] bg-surface/80 backdrop-blur-sm flex items-center justify-between shrink-0 sticky top-0 z-30">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuToggle}

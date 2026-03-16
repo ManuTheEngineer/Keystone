@@ -323,19 +323,19 @@ export function TeamClient() {
 
       {showForm && (
         <Card padding="md" className="mb-3">
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">Name *</label>
+              <label className="block text-[12px] font-medium text-earth mb-1.5">Name *</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Contact name"
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">Role</label>
+              <label className="block text-[12px] font-medium text-earth mb-1.5">Role</label>
               <select
                 value={role}
                 onChange={(e) => {
@@ -344,7 +344,7 @@ export function TeamClient() {
                     setCustomRole("");
                   }
                 }}
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
               >
                 <option value="">Select a role...</option>
                 {allTrades.map((trade) => (
@@ -361,54 +361,52 @@ export function TeamClient() {
                   value={customRole}
                   onChange={(e) => setCustomRole(e.target.value)}
                   placeholder="Enter custom role"
-                  className="mt-2 px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                  className="mt-2 px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
                 />
               )}
             </div>
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">Phone</label>
+              <label className="block text-[12px] font-medium text-earth mb-1.5">Phone</label>
               <input
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Optional"
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">Email</label>
+              <label className="block text-[12px] font-medium text-earth mb-1.5">Email</label>
               <input
                 type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Optional"
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">
-                Rating (1-5)
-              </label>
+              <label className="block text-[12px] font-medium text-earth mb-1.5">Rating (1-5)</label>
               <input
                 type="number"
                 min={1}
                 max={5}
                 value={rating}
                 onChange={(e) => setRating(e.target.value)}
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
               />
             </div>
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2 pt-2">
               <button
                 onClick={handleSave}
                 disabled={saving || !name.trim()}
-                className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                className="btn-primary"
               >
                 {saving ? "Saving..." : "Save"}
               </button>
               <button
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                className="btn-secondary"
               >
                 Cancel
               </button>

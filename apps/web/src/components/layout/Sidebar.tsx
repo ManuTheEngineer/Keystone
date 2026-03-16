@@ -122,8 +122,8 @@ export function Sidebar({
             ${collapsed ? "px-0 justify-center" : "px-5"}
             ${
               isActive
-                ? "border-l-emerald-500 bg-emerald-500/8 text-warm opacity-100"
-                : "border-l-transparent text-sand opacity-50 hover:opacity-80 hover:bg-sand/5"
+                ? "border-l-emerald-500 rounded-r-sm bg-emerald-500/8 text-warm opacity-100"
+                : "border-l-transparent text-sand opacity-50 hover:opacity-80 hover:bg-sand/5 hover:border-l-sand/30 hover:border-l-[2px]"
             }
           `}
           title={collapsed ? item.label : undefined}
@@ -197,9 +197,14 @@ export function Sidebar({
           {mainNav.map(renderNavItem)}
         </nav>
 
+        {/* Separator between main nav and project nav */}
+        {projectName && (
+          <div className="mx-5 h-px bg-gradient-to-r from-transparent via-sand/15 to-transparent" />
+        )}
+
         {/* Project navigation */}
         {projectName && (
-          <nav className="py-3 border-t border-sand/10">
+          <nav className="py-3">
             {!collapsed && (
               <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-sand/30 font-medium truncate">
                 {projectName}
@@ -239,7 +244,10 @@ export function Sidebar({
         </div>
 
         {/* User footer */}
-        <div className={`px-3 py-3.5 border-t border-sand/10 flex items-center ${collapsed ? "justify-center" : "gap-2.5 px-5"}`}>
+        <div
+          className={`px-3 py-3.5 flex items-center ${collapsed ? "justify-center" : "gap-2.5 px-5"}`}
+          style={{ borderTop: "1px solid transparent", borderImage: "linear-gradient(90deg, transparent, rgba(212,165,116,0.15), transparent) 1" }}
+        >
           <div className="w-8 h-8 rounded-full bg-sand/15 flex items-center justify-center text-[11px] font-semibold text-sand flex-shrink-0">
             {initials}
           </div>

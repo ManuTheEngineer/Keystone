@@ -171,10 +171,10 @@ export function DailyLogClient() {
 
       {showForm && (
         <Card padding="md" className="mb-4 animate-expand">
-          <div className="space-y-3">
+          <div className="space-y-4">
             {/* Weather preset buttons */}
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1.5">Weather</label>
+              <label className="block text-[12px] font-medium text-earth mb-1.5">Weather</label>
               <div className="flex flex-wrap gap-1.5">
                 {weatherPresets.map((preset) => (
                   <button
@@ -197,7 +197,7 @@ export function DailyLogClient() {
 
             {/* Temperature input */}
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">
+              <label className="block text-[12px] font-medium text-earth mb-1.5">
                 Temperature ({tempSymbol})
               </label>
               <div className="flex items-center gap-2">
@@ -206,25 +206,25 @@ export function DailyLogClient() {
                   value={temperature}
                   onChange={(e) => setTemperature(e.target.value)}
                   placeholder={isUSAMarket ? "e.g. 75" : "e.g. 28"}
-                  className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-24"
+                  className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-24"
                 />
                 <span className="text-[11px] text-muted">{tempSymbol}</span>
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">Crew size</label>
+              <label className="block text-[12px] font-medium text-earth mb-1.5">Crew size</label>
               <input
                 type="number"
                 min={1}
                 value={crew}
                 onChange={(e) => setCrew(e.target.value)}
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
               />
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-[11px] text-muted font-medium">Content</label>
+                <label className="block text-[12px] font-medium text-earth">Content</label>
                 <span className="text-[10px] text-muted">Or use voice</span>
               </div>
               <textarea
@@ -232,7 +232,7 @@ export function DailyLogClient() {
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="What happened on site today?"
                 rows={3}
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full resize-none"
+                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full resize-none"
               />
               <div className="mt-2">
                 <VoiceNote
@@ -241,17 +241,17 @@ export function DailyLogClient() {
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2 justify-end">
+            <div className="flex items-center gap-2 justify-end pt-2">
               <button
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                className="btn-secondary"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving || !content.trim()}
-                className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                className="btn-primary"
               >
                 {saving ? "Saving..." : "Save"}
               </button>

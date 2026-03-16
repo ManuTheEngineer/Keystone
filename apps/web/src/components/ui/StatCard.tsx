@@ -6,8 +6,8 @@ interface StatCardProps {
 
 export function StatCard({ value, label, valueClassName }: StatCardProps) {
   return (
-    <div className="bg-surface border border-border rounded-xl p-4 text-center">
-      <div className={`font-data text-2xl font-semibold text-earth ${valueClassName ?? ""}`}>
+    <div className="bg-gradient-to-br from-surface to-surface-alt/30 border border-border rounded-xl p-4 text-center">
+      <div className={`font-data text-2xl font-semibold text-earth tabular-nums ${valueClassName ?? ""}`}>
         {value}
       </div>
       <div className="text-[10px] text-muted uppercase tracking-[0.12em] mt-1 font-medium">

@@ -265,3 +265,97 @@ h1, h2, h3 {
   border-color: var(--color-emerald-500);
   box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
 }
+
+/* Shared input styling */
+.input-base {
+  padding: 0.75rem 1rem;
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: var(--color-foreground);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  transition: border-color 200ms, box-shadow 200ms;
+  width: 100%;
+}
+.input-base::placeholder {
+  color: var(--color-muted);
+  opacity: 0.5;
+}
+.input-base:focus {
+  outline: none;
+  border-color: var(--color-emerald-500);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.08);
+}
+
+/* Shared button styling */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  color: var(--color-primary-foreground);
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 150ms, transform 150ms;
+}
+.btn-primary:hover {
+  background: var(--color-earth-light);
+  transform: scale(1.02);
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  color: var(--color-foreground);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms;
+}
+.btn-secondary:hover {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border-dark);
+}
+
+/* Link style */
+.link-clay {
+  color: var(--color-clay);
+  text-decoration: none;
+  transition: color 150ms;
+}
+.link-clay:hover {
+  color: var(--color-clay-light);
+  text-decoration: underline;
+}
+
+/* Page container */
+.page-container {
+  animation: fadeIn 200ms ease-out;
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--color-sand);
+  opacity: 0.2;
+  margin: 1.5rem 0;
+}
