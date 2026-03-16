@@ -7,3 +7,5 @@ node_modules/
 .turbo/
 .firebase/
 out/
+.vercel
+.env*.local

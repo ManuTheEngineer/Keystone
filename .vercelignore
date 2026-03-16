@@ -1,0 +1,10 @@
+node_modules
+.next
+.turbo
+.firebase
+out
+functions/node_modules
+functions/lib
+apps/web/node_modules
+apps/web/.next
+apps/web/out
