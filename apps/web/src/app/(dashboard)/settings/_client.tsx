@@ -609,6 +609,15 @@ export function SettingsClient() {
           </div>
         )}
 
+        {/* Free plan upgrade prompt */}
+        {currentPlan === "FOUNDATION" && !hasActiveSubscription && !isAdmin && (
+          <div className="mb-4 p-3 rounded-xl bg-warm/50 border border-sand/30">
+            <p className="text-[12px] text-earth">
+              <span className="font-medium">You are on the free plan.</span> Upgrade to unlock more projects, AI queries, document generation, and exports.
+            </p>
+          </div>
+        )}
+
         {/* Tier cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {TIER_ORDER.map((tier) => {
@@ -626,6 +635,10 @@ export function SettingsClient() {
               ? billingInterval === "monthly" ? "/mo" : "/yr"
               : "";
             const isDeveloper = tier === "DEVELOPER";
+            const tierIndex = ["FOUNDATION", "BUILDER", "DEVELOPER", "ENTERPRISE"].indexOf(tier);
+            const currentIndex = ["FOUNDATION", "BUILDER", "DEVELOPER", "ENTERPRISE"].indexOf(currentPlan);
+            const isHigherTier = tierIndex > currentIndex;
+            const isLowerTier = tierIndex < currentIndex;
 
             return (
               <div
@@ -668,17 +681,40 @@ export function SettingsClient() {
                 </ul>
 
                 {isCurrent ? (
-                  <span className="inline-block w-full text-center px-3 py-1.5 text-[10px] font-medium text-success bg-success/10 rounded-full">
-                    Current plan
-                  </span>
+                  <div className="text-center">
+                    <span className="inline-block w-full px-3 py-1.5 text-[10px] font-medium text-success bg-success/10 rounded-full">
+                      Current plan
+                    </span>
+                    {profile?.billingInterval && !isFoundation && (
+                      <p className="text-[9px] text-muted mt-1">
+                        Billed {profile.billingInterval === "annual" ? "annually" : "monthly"}
+                      </p>
+                    )}
+                  </div>
                 ) : isAdmin ? (
                   <span className="inline-block w-full text-center px-3 py-1.5 text-[10px] text-muted">
                     Admin access
                   </span>
+                ) : isFoundation && isLowerTier && hasActiveSubscription ? (
+                  <button
+                    onClick={handleManageSubscription}
+                    disabled={managingPortal}
+                    className="w-full px-3 py-1.5 text-[11px] font-medium rounded-full transition-colors disabled:opacity-40 border border-border text-muted hover:text-earth hover:bg-surface-alt"
+                  >
+                    {managingPortal ? "Opening..." : "Downgrade"}
+                  </button>
                 ) : isFoundation ? (
                   <span className="inline-block w-full text-center px-3 py-1.5 text-[10px] text-muted">
                     Free tier
                   </span>
+                ) : isLowerTier && hasActiveSubscription ? (
+                  <button
+                    onClick={handleManageSubscription}
+                    disabled={managingPortal}
+                    className="w-full px-3 py-1.5 text-[11px] font-medium rounded-full transition-colors disabled:opacity-40 border border-border text-muted hover:text-earth hover:bg-surface-alt"
+                  >
+                    {managingPortal ? "Opening..." : "Downgrade"}
+                  </button>
                 ) : (
                   <button
                     onClick={() => handleUpgrade(tier)}
@@ -697,16 +733,24 @@ export function SettingsClient() {
           })}
         </div>
 
-        {/* Manage subscription button for active subscribers */}
+        {/* Manage subscription for active subscribers */}
         {hasActiveSubscription && !isAdmin && (
-          <div className="mt-4 pt-3 border-t border-border">
-            <button
-              onClick={handleManageSubscription}
-              disabled={managingPortal}
-              className="px-4 py-2 text-[12px] border border-border text-earth rounded-[var(--radius)] hover:bg-surface-alt transition-colors disabled:opacity-40"
-            >
-              {managingPortal ? "Opening portal..." : "Manage Subscription"}
-            </button>
+          <div className="mt-4 p-4 rounded-2xl border border-border bg-surface">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[13px] font-medium text-earth">Subscription Management</p>
+                <p className="text-[11px] text-muted mt-0.5">
+                  Change your plan, update payment method, view invoices, or cancel your subscription.
+                </p>
+              </div>
+              <button
+                onClick={handleManageSubscription}
+                disabled={managingPortal}
+                className="shrink-0 px-4 py-2 text-[12px] font-medium border border-border text-earth rounded-xl hover:bg-surface-alt transition-colors disabled:opacity-40"
+              >
+                {managingPortal ? "Opening..." : "Manage Subscription"}
+              </button>
+            </div>
           </div>
         )}
       </Card>

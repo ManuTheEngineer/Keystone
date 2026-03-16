@@ -53,8 +53,11 @@ import {
   getCostBenchmarks,
   formatCurrency,
   formatCurrencyCompact,
+  getClosestLocation,
+  getCostComparisonText,
+  adjustCostForLocation,
 } from "@keystone/market-data";
-import type { Market, PropertyType, CostBenchmark } from "@keystone/market-data";
+import type { Market, PropertyType, CostBenchmark, LocationData } from "@keystone/market-data";
 
 // ---------------------------------------------------------------------------
 // Category icon mapping
@@ -180,9 +183,12 @@ export function BudgetClient() {
 
   const market = project.market as Market;
   const marketData = getMarketData(market);
+  const locationData: LocationData | null = project.city ? getClosestLocation(project.city, market) : null;
   const benchmarks = getCostBenchmarks(market, project.propertyType as PropertyType);
   const fmt = (amount: number) => formatCurrency(amount, marketData.currency);
   const fmtCompact = (amount: number) => formatCurrencyCompact(amount, marketData.currency);
+  const adjustForLocation = (amount: number) =>
+    locationData ? adjustCostForLocation(amount, locationData) : amount;
 
   const remaining = project.totalBudget - project.totalSpent;
   const varianceNum = project.totalBudget > 0
@@ -239,7 +245,7 @@ export function BudgetClient() {
           await addBudgetItem(user.uid, {
             projectId,
             category: bm.category,
-            estimated: bm.midRange,
+            estimated: adjustForLocation(bm.midRange),
             actual: 0,
             status: "not-started",
           });
@@ -355,6 +361,17 @@ export function BudgetClient() {
           </Card>
         </div>
       </div>
+
+      {/* ================================================================= */}
+      {/* Location context banner                                           */}
+      {/* ================================================================= */}
+      {locationData && (
+        <div className="p-2.5 rounded-[var(--radius)] bg-surface-alt border border-border text-[11px] text-earth mb-4">
+          <span className="font-medium">Benchmarks adjusted for {locationData.city}{locationData.state ? `, ${locationData.state}` : ""}.</span>{" "}
+          Cost index: <span className="font-data">{locationData.costIndex.toFixed(2)}x</span> ({getCostComparisonText(locationData.costIndex)}).
+          All market ranges below reflect local pricing.
+        </div>
+      )}
 
       {/* ================================================================= */}
       {/* AI Budget Insights                                                */}
@@ -557,21 +574,25 @@ export function BudgetClient() {
                   </div>
 
                   {/* Benchmark range indicator */}
-                  {benchmark && !isExpanded && (
-                    <div className="mt-2 flex items-center gap-2 text-[9px] text-muted">
-                      <span>Market range:</span>
-                      <span className="font-data">{fmtCompact(benchmark.lowRange)} - {fmtCompact(benchmark.highRange)}</span>
-                      {item.estimated > 0 && item.estimated >= benchmark.lowRange && item.estimated <= benchmark.highRange && (
-                        <span className="text-success">Within range</span>
-                      )}
-                      {item.estimated > 0 && item.estimated > benchmark.highRange && (
-                        <span className="text-danger">Above range</span>
-                      )}
-                      {item.estimated > 0 && item.estimated < benchmark.lowRange && (
-                        <span className="text-info">Below range</span>
-                      )}
-                    </div>
-                  )}
+                  {benchmark && !isExpanded && (() => {
+                    const adjLow = adjustForLocation(benchmark.lowRange);
+                    const adjHigh = adjustForLocation(benchmark.highRange);
+                    return (
+                      <div className="mt-2 flex items-center gap-2 text-[9px] text-muted flex-wrap">
+                        <span>{locationData ? `Range for ${locationData.city}:` : "Market range:"}</span>
+                        <span className="font-data">{fmtCompact(adjLow)} - {fmtCompact(adjHigh)}</span>
+                        {item.estimated > 0 && item.estimated >= adjLow && item.estimated <= adjHigh && (
+                          <span className="text-success">Within range</span>
+                        )}
+                        {item.estimated > 0 && item.estimated > adjHigh && (
+                          <span className="text-danger">Above range</span>
+                        )}
+                        {item.estimated > 0 && item.estimated < adjLow && (
+                          <span className="text-info">Below range</span>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Expand chevron */}
                   <div className="flex justify-center mt-1">
@@ -590,9 +611,9 @@ export function BudgetClient() {
                     {showBenchmarks && benchmark && (
                       <div className="mb-3">
                         <CostRangeBar
-                          low={benchmark.lowRange}
-                          mid={benchmark.midRange}
-                          high={benchmark.highRange}
+                          low={adjustForLocation(benchmark.lowRange)}
+                          mid={adjustForLocation(benchmark.midRange)}
+                          high={adjustForLocation(benchmark.highRange)}
                           actual={item.estimated > 0 ? item.estimated : undefined}
                           currency={marketData.currency}
                         />
@@ -658,17 +679,22 @@ export function BudgetClient() {
                           {benchmark && (
                             <>
                               <div className="border-t border-border pt-1.5 mt-1.5">
+                                {locationData && (
+                                  <div className="text-[10px] text-muted mb-1.5">
+                                    Adjusted for {locationData.city} (cost index: {locationData.costIndex.toFixed(2)}x, {getCostComparisonText(locationData.costIndex)})
+                                  </div>
+                                )}
                                 <div className="flex justify-between">
-                                  <span className="text-muted">Market low</span>
-                                  <span className="font-data text-muted">{fmt(benchmark.lowRange)}</span>
+                                  <span className="text-muted">{locationData ? `${locationData.city} low` : "Market low"}</span>
+                                  <span className="font-data text-muted">{fmt(adjustForLocation(benchmark.lowRange))}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-muted">Market mid</span>
-                                  <span className="font-data text-muted">{fmt(benchmark.midRange)}</span>
+                                  <span className="text-muted">{locationData ? `${locationData.city} mid` : "Market mid"}</span>
+                                  <span className="font-data text-muted">{fmt(adjustForLocation(benchmark.midRange))}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-muted">Market high</span>
-                                  <span className="font-data text-muted">{fmt(benchmark.highRange)}</span>
+                                  <span className="text-muted">{locationData ? `${locationData.city} high` : "Market high"}</span>
+                                  <span className="font-data text-muted">{fmt(adjustForLocation(benchmark.highRange))}</span>
                                 </div>
                               </div>
                             </>
@@ -728,7 +754,7 @@ export function BudgetClient() {
         <p>
           Every financial calculation should be auditable. The estimated column shows your planned cost,
           the actual column shows what you have spent. Toggle &quot;Show typical ranges&quot; to see how your
-          estimates compare to market benchmarks for {market === "USA" ? "US" : "Togolese"} residential construction.
+          estimates compare to market benchmarks{locationData ? ` for ${locationData.city}${locationData.state ? `, ${locationData.state}` : ""}` : ` for ${market === "USA" ? "US" : "Togolese"}`} residential construction.
           Each category card shows a progress bar comparing actual spend against estimates. Click a card
           to see detailed variance and market benchmark comparisons.
         </p>

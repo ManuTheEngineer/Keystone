@@ -23,7 +23,7 @@ import { StarRating } from "@/components/ui/StarRating";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AIInsight } from "@/components/ui/AIInsight";
 import { generateTeamInsights } from "@/lib/insights";
-import { getTradesForPhase, PHASE_ORDER, PHASE_NAMES } from "@keystone/market-data";
+import { getTradesForPhase, PHASE_ORDER, PHASE_NAMES, getMarketData, formatCurrency } from "@keystone/market-data";
 import type { Market, ProjectPhase, TradeDefinition } from "@keystone/market-data";
 
 const COLORS = [
@@ -44,11 +44,14 @@ function TradeRequirementList({
   trades,
   phaseName,
   contacts,
+  market,
 }: {
   trades: TradeDefinition[];
   phaseName: string;
   contacts: ContactData[];
+  market: Market;
 }) {
+  const marketData = getMarketData(market);
   if (trades.length === 0) {
     return (
       <Card padding="md" className="text-center mb-4">
@@ -103,6 +106,12 @@ function TradeRequirementList({
                   <span className="text-[9px] text-warning">
                     License required{trade.licensingNotes ? `: ${trade.licensingNotes}` : ""}
                   </span>
+                </div>
+              )}
+              {trade.typicalRateRange && (
+                <div className="text-[9px] text-muted mt-0.5 font-data">
+                  Typical rate: {formatCurrency(trade.typicalRateRange.low, marketData.currency)} - {formatCurrency(trade.typicalRateRange.high, marketData.currency)}/{trade.typicalRateRange.unit}
+                  <span className="font-sans ml-1">(typical for {market === "USA" ? "US" : market.charAt(0) + market.slice(1).toLowerCase()} market)</span>
                 </div>
               )}
             </div>
@@ -313,6 +322,7 @@ export function TeamClient() {
         trades={currentPhaseTrades}
         phaseName={PHASE_NAMES[currentPhaseKey]}
         contacts={contacts}
+        market={market}
       />
 
       {/* Contractor hiring tips */}
