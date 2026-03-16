@@ -119,7 +119,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 }
 
 function getActiveSectionFromPath(pathname: string): string {
-  if (pathname === "/") return "dashboard";
+  if (pathname === "/" || pathname === "/dashboard") return "dashboard";
   if (pathname.includes("/new-project")) return "new-project";
   if (pathname.includes("/learn")) return "learn";
   if (pathname.includes("/overview")) return "overview";
@@ -158,5 +158,5 @@ function sectionToRoute(section: string, currentProjectId: string | null): strin
   if (projectRoutes[section]) return projectRoutes[section];
   if (section === "new-project") return "/new-project";
   if (section === "learn") return "/learn";
-  return "/";
+  return "/dashboard";
 }

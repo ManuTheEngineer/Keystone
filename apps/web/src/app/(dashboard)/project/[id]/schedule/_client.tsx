@@ -165,7 +165,7 @@ function PhaseCard({
                 </span>
                 <div className="flex items-center gap-1 shrink-0">
                   {m.requiresInspection && (
-                    <Shield size={10} className="text-warning" title="Inspection required" />
+                    <Shield size={10} className="text-warning" />
                   )}
                   {m.requiresPayment && m.paymentPct != null && (
                     <span className="text-[8px] font-data text-info flex items-center gap-0.5">

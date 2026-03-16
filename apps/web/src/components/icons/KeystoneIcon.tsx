@@ -14,32 +14,17 @@ export function KeystoneIcon({ size = 32, className }: KeystoneIconProps) {
       className={className}
       aria-label="Keystone"
     >
-      {/* Keystone trapezoid */}
+      {/*
+        Keystone shape: tapered trapezoid wider at top, narrower at bottom.
+        A small arch cutout at the bottom center represents a doorway.
+        Uses fill-rule evenodd so the inner arch becomes transparent.
+      */}
       <path
-        d="M12 8L36 8L32 40L16 40Z"
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M10 6 L38 6 L33 42 L15 42 Z M20 42 L20 30 A4 4 0 0 1 28 30 L28 42 Z"
         fill="currentColor"
-        opacity="0.9"
       />
-      {/* Arch cutout */}
-      <path
-        d="M19 40L19 25A5 5 0 0 1 29 25L29 40Z"
-        fill="#2C1810"
-      />
-      {/* Emerald accent bar */}
-      <rect x="12" y="8" width="24" height="3" rx="0.5" fill="#059669" />
-      {/* K letter */}
-      <text
-        x="24"
-        y="34"
-        fontFamily="serif"
-        fontWeight="700"
-        fontSize="10"
-        fill="#D4A574"
-        textAnchor="middle"
-        dominantBaseline="central"
-      >
-        K
-      </text>
     </svg>
   );
 }

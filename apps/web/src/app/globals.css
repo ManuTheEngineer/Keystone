@@ -136,3 +136,54 @@ h1, h2, h3 {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* === Smooth page transitions === */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 200ms ease-out;
+}
+
+/* === Card hover effect === */
+.card-hover {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* === Button hover === */
+.btn-hover {
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+.btn-hover:hover {
+  transform: scale(1.02);
+}
+
+/* === Skeleton loading === */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--color-surface-alt) 25%, var(--color-warm) 50%, var(--color-surface-alt) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius);
+}
+
+/* === Progress bar gradient === */
+.progress-gradient {
+  background: linear-gradient(90deg, var(--color-emerald-600), var(--color-emerald-400));
+}
+
+/* === Topographic background pattern === */
+.bg-topo {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Cg fill='none' stroke='%23D4A574' stroke-width='0.8' opacity='0.05'%3E%3Cellipse cx='300' cy='300' rx='280' ry='180'/%3E%3Cellipse cx='300' cy='300' rx='240' ry='150'/%3E%3Cellipse cx='300' cy='300' rx='200' ry='120'/%3E%3Cellipse cx='300' cy='300' rx='160' ry='90'/%3E%3Cellipse cx='300' cy='300' rx='120' ry='65'/%3E%3Cellipse cx='300' cy='300' rx='80' ry='40'/%3E%3Cellipse cx='150' cy='200' rx='120' ry='80' transform='rotate(-15 150 200)'/%3E%3Cellipse cx='150' cy='200' rx='80' ry='50' transform='rotate(-15 150 200)'/%3E%3Cellipse cx='450' cy='400' rx='130' ry='85' transform='rotate(20 450 400)'/%3E%3Cellipse cx='450' cy='400' rx='90' ry='55' transform='rotate(20 450 400)'/%3E%3Cellipse cx='200' cy='450' rx='100' ry='60' transform='rotate(-10 200 450)'/%3E%3Cellipse cx='400' cy='150' rx='110' ry='70' transform='rotate(12 400 150)'/%3E%3Cellipse cx='400' cy='150' rx='70' ry='40' transform='rotate(12 400 150)'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 600px 600px;
+  background-repeat: repeat;
+}

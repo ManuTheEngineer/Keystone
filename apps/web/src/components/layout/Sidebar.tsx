@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
 import type { Locale } from "@/lib/i18n";
 import {
@@ -7,7 +9,6 @@ import {
   Plus,
   BookOpen,
   Clock,
-  CheckSquare,
   DollarSign,
   Calculator,
   Calendar,
@@ -22,35 +23,45 @@ import {
   X,
   LogOut,
   Globe,
+  ChevronLeft,
 } from "lucide-react";
 
 interface NavItem {
   id: string;
   label: string;
   icon: React.ReactNode;
+  iconCollapsed: React.ReactNode;
 }
 
-const mainNav: NavItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: <LayoutGrid size={16} /> },
-  { id: "new-project", label: "New project", icon: <Plus size={16} /> },
-  { id: "learn", label: "Learn", icon: <BookOpen size={16} /> },
-];
+function makeNav(items: { id: string; label: string; Icon: React.ComponentType<{ size: number }> }[]): NavItem[] {
+  return items.map(({ id, label, Icon }) => ({
+    id,
+    label,
+    icon: <Icon size={18} />,
+    iconCollapsed: <Icon size={18} />,
+  }));
+}
 
-const projectNav: NavItem[] = [
-  { id: "overview", label: "Overview", icon: <Clock size={16} /> },
-  { id: "tasks", label: "Tasks", icon: <CheckSquare size={16} /> },
-  { id: "budget", label: "Budget", icon: <DollarSign size={16} /> },
-  { id: "financials", label: "Financials", icon: <Calculator size={16} /> },
-  { id: "schedule", label: "Schedule", icon: <Calendar size={16} /> },
-  { id: "team", label: "Team", icon: <Users size={16} /> },
-  { id: "documents", label: "Documents", icon: <FileText size={16} /> },
-  { id: "photos", label: "Photos", icon: <Image size={16} /> },
-  { id: "daily-log", label: "Daily log", icon: <ClipboardList size={16} /> },
-  { id: "inspections", label: "Inspections", icon: <ClipboardCheck size={16} /> },
-  { id: "punch-list", label: "Punch list", icon: <ListChecks size={16} /> },
-  { id: "ai-assistant", label: "AI assistant", icon: <HelpCircle size={16} /> },
-  { id: "monitor", label: "Monitor", icon: <Eye size={16} /> },
-];
+const mainNav = makeNav([
+  { id: "dashboard", label: "Dashboard", Icon: LayoutGrid },
+  { id: "new-project", label: "New project", Icon: Plus },
+  { id: "learn", label: "Learn", Icon: BookOpen },
+]);
+
+const projectNav = makeNav([
+  { id: "overview", label: "Overview", Icon: Clock },
+  { id: "budget", label: "Budget", Icon: DollarSign },
+  { id: "schedule", label: "Schedule", Icon: Calendar },
+  { id: "financials", label: "Financials", Icon: Calculator },
+  { id: "team", label: "Team", Icon: Users },
+  { id: "documents", label: "Documents", Icon: FileText },
+  { id: "photos", label: "Photos", Icon: Image },
+  { id: "daily-log", label: "Daily log", Icon: ClipboardList },
+  { id: "inspections", label: "Inspections", Icon: ClipboardCheck },
+  { id: "punch-list", label: "Punch list", Icon: ListChecks },
+  { id: "monitor", label: "Monitor", Icon: Eye },
+  { id: "ai-assistant", label: "AI assistant", Icon: HelpCircle },
+]);
 
 interface SidebarProps {
   activeSection: string;
@@ -62,6 +73,7 @@ interface SidebarProps {
   userPlan?: string;
   onSignOut?: () => void;
   locale?: Locale;
+  projectMarket?: string;
 }
 
 export function Sidebar({
@@ -74,7 +86,10 @@ export function Sidebar({
   userPlan = "FOUNDATION",
   onSignOut,
   locale = "en",
+  projectMarket,
 }: SidebarProps) {
+  const [collapsed, setCollapsed] = useState(false);
+
   const initials = userName
     .split(" ")
     .map((n) => n[0])
@@ -83,129 +98,163 @@ export function Sidebar({
     .slice(0, 2);
 
   const planLabel = userPlan.charAt(0) + userPlan.slice(1).toLowerCase() + " plan";
+
+  const showLangBadge = projectMarket === "TOGO" || projectMarket === "BENIN";
+
+  const sidebarWidth = collapsed ? "w-[60px]" : "w-[240px]";
+
+  function renderNavItem(item: NavItem) {
+    const isActive = activeSection === item.id;
+    return (
+      <div key={item.id} className="relative group">
+        <button
+          onClick={() => {
+            onNavigate(item.id);
+            onClose();
+          }}
+          className={`
+            w-full flex items-center gap-2.5 py-2 text-[13px]
+            border-l-[3px] transition-all duration-150
+            ${collapsed ? "px-0 justify-center" : "px-5"}
+            ${
+              isActive
+                ? "border-l-emerald-500 bg-emerald-500/8 text-warm opacity-100"
+                : "border-l-transparent text-sand opacity-50 hover:opacity-80 hover:bg-sand/5"
+            }
+          `}
+          title={collapsed ? item.label : undefined}
+        >
+          <span className="flex-shrink-0">{item.icon}</span>
+          {!collapsed && <span>{item.label}</span>}
+        </button>
+        {/* Tooltip for collapsed mode */}
+        {collapsed && (
+          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 rounded-md bg-earth-light text-warm text-[11px] whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-md">
+            {item.label}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-earth/40 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-earth/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
         className={`
-          fixed top-0 left-0 bottom-0 w-[260px] bg-earth text-sand z-50
-          flex flex-col overflow-y-auto
-          transition-transform duration-300 ease-out
+          fixed top-0 left-0 bottom-0 ${sidebarWidth} bg-earth text-sand z-50
+          flex flex-col overflow-y-auto overflow-x-hidden
+          transition-all duration-300 ease-out
           lg:translate-x-0
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
         {/* Logo */}
-        <div className="px-5 pt-5 pb-4 border-b border-sand/10 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <KeystoneIcon size={28} className="text-sand" />
-            <div>
-              <h2 className="text-[15px] font-semibold text-warm tracking-tight">
-                Keystone
-              </h2>
-              <p className="text-[9px] uppercase tracking-[2px] text-sand/30">
-                Build with confidence
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="lg:hidden p-1 rounded text-sand/50 hover:text-sand/80 transition-colors"
-          >
-            <X size={18} />
-          </button>
+        <div className={`px-5 pt-5 pb-4 border-b border-sand/10 flex items-center ${collapsed ? "justify-center" : "justify-between"}`}>
+          {collapsed ? (
+            <Link href="/dashboard" className="flex items-center justify-center">
+              <KeystoneIcon size={22} className="text-sand" />
+            </Link>
+          ) : (
+            <>
+              <Link href="/dashboard" className="flex items-center gap-2.5">
+                <KeystoneIcon size={22} className="text-sand" />
+                <span
+                  className="text-[15px] font-semibold text-warm tracking-tight"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  Keystone
+                </span>
+              </Link>
+              <button
+                onClick={onClose}
+                className="lg:hidden p-1 rounded text-sand/50 hover:text-sand/80 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Main navigation */}
         <nav className="py-3">
-          <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-sand/25 font-medium">
-            Main
-          </p>
-          {mainNav.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                onNavigate(item.id);
-                onClose();
-              }}
-              className={`
-                w-full flex items-center gap-2.5 px-5 py-2 text-[13px]
-                border-l-[2.5px] transition-all duration-150
-                ${
-                  activeSection === item.id
-                    ? "opacity-100 bg-sand/8 border-l-sand text-warm"
-                    : "opacity-40 border-l-transparent text-sand hover:opacity-65 hover:bg-sand/5"
-                }
-              `}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          ))}
+          {!collapsed && (
+            <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-sand/30 font-medium">
+              Main
+            </p>
+          )}
+          {mainNav.map(renderNavItem)}
         </nav>
 
         {/* Project navigation */}
         {projectName && (
           <nav className="py-3 border-t border-sand/10">
-            <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-sand/25 font-medium">
-              {projectName}
-            </p>
-            {projectNav.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  onNavigate(item.id);
-                  onClose();
-                }}
-                className={`
-                  w-full flex items-center gap-2.5 px-5 py-2 text-[13px]
-                  border-l-[2.5px] transition-all duration-150
-                  ${
-                    activeSection === item.id
-                      ? "opacity-100 bg-sand/8 border-l-sand text-warm"
-                      : "opacity-40 border-l-transparent text-sand hover:opacity-65 hover:bg-sand/5"
-                  }
-                `}
-              >
-                {item.icon}
-                {item.label}
-              </button>
-            ))}
+            {!collapsed && (
+              <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-sand/30 font-medium truncate">
+                {projectName}
+              </p>
+            )}
+            {projectNav.map(renderNavItem)}
           </nav>
         )}
 
+        {/* Spacer */}
+        <div className="flex-1" />
+
         {/* Language indicator */}
-        <div className="mt-auto px-5 py-2 flex items-center gap-2 text-sand/40">
-          <Globe size={12} />
-          <span className="text-[10px] uppercase tracking-[1.5px] font-medium">
-            {locale === "fr" ? "FR" : "EN"}
-          </span>
+        {showLangBadge && (
+          <div className={`px-5 py-2 flex items-center gap-2 text-sand/40 ${collapsed ? "justify-center" : ""}`}>
+            <Globe size={12} />
+            {!collapsed && (
+              <span className="text-[10px] uppercase tracking-[1.5px] font-medium">
+                {locale === "fr" ? "FR" : "EN"}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Collapse toggle - desktop only */}
+        <div className="hidden lg:flex px-3 py-2 justify-center">
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-1.5 rounded text-sand/30 hover:text-sand/60 hover:bg-sand/5 transition-all duration-150"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <ChevronLeft
+              size={16}
+              className={`transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`}
+            />
+          </button>
         </div>
 
         {/* User footer */}
-        <div className="px-5 py-3.5 border-t border-sand/10 flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-sand/15 flex items-center justify-center text-[11px] font-semibold text-sand">
+        <div className={`px-3 py-3.5 border-t border-sand/10 flex items-center ${collapsed ? "justify-center" : "gap-2.5 px-5"}`}>
+          <div className="w-8 h-8 rounded-full bg-sand/15 flex items-center justify-center text-[11px] font-semibold text-sand flex-shrink-0">
             {initials}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[12px] text-warm truncate">{userName}</p>
-            <p className="text-[10px] text-sand/35">{planLabel}</p>
-          </div>
-          {onSignOut && (
-            <button
-              onClick={onSignOut}
-              className="p-1.5 rounded text-sand/40 hover:text-sand/80 transition-colors"
-              title="Sign out"
-            >
-              <LogOut size={14} />
-            </button>
+          {!collapsed && (
+            <>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] text-warm truncate">{userName}</p>
+                <p className="text-[10px] text-sand/35">{planLabel}</p>
+              </div>
+              {onSignOut && (
+                <button
+                  onClick={onSignOut}
+                  className="p-1.5 rounded text-sand/40 hover:text-sand/80 transition-colors"
+                  title="Sign out"
+                >
+                  <LogOut size={14} />
+                </button>
+              )}
+            </>
           )}
         </div>
       </aside>
