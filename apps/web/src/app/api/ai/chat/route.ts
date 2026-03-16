@@ -20,10 +20,25 @@ function checkRateLimit(ip: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  // Basic authentication gate: require custom header from our frontend
-  const authHeader = req.headers.get("x-keystone-auth");
-  if (!authHeader || authHeader !== "authenticated") {
+  // Verify Firebase ID token from Authorization header
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const idToken = authHeader.split("Bearer ")[1];
+
+  // Decode JWT payload and verify it belongs to our Firebase project
+  try {
+    const payload = JSON.parse(atob(idToken.split(".")[1]));
+    if (payload.aud !== "keystone-21811" || !payload.user_id) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+    // Check token is not expired
+    if (payload.exp * 1000 < Date.now()) {
+      return NextResponse.json({ error: "Token expired" }, { status: 401 });
+    }
+  } catch {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 
   // Rate limit by IP

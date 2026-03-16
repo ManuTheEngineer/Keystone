@@ -1,3 +1,5 @@
+import { auth } from "@/lib/firebase";
+
 export interface AIMessage {
   role: "user" | "assistant";
   content: string;
@@ -14,11 +16,15 @@ export async function sendAIMessage(
   projectContext: Record<string, unknown>,
   mode: string = "general"
 ): Promise<{ message: string; usage?: AIUsage }> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Not authenticated");
+  const token = await user.getIdToken();
+
   const res = await fetch("/api/ai/chat", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-keystone-auth": "authenticated",
+      "Authorization": `Bearer ${token}`,
     },
     body: JSON.stringify({ messages, projectContext, mode }),
   });

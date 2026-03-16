@@ -162,7 +162,7 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
       />
 
       {/* Tour card */}
-      <div className="relative z-10 w-full max-w-md mx-4 bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div className="relative z-10 w-full max-w-md mx-4 bg-surface rounded-2xl shadow-xl overflow-hidden">
         {/* Step dots */}
         <div className="flex items-center justify-center gap-1.5 pt-6 pb-2">
           {TOUR_STEPS.map((_, idx) => (

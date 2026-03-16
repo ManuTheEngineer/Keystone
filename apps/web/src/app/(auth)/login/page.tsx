@@ -69,7 +69,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left half - Form */}
-      <div className="w-full lg:w-[55%] bg-cream flex flex-col min-h-screen">
+      <div className="w-full lg:w-[55%] bg-background flex flex-col min-h-screen">
         {/* Logo */}
         <div className="px-8 pt-8">
           <Link href="/" className="inline-flex items-center gap-2">
@@ -112,7 +112,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full px-4 py-3.5 text-[14px] border border-border rounded-xl bg-white text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
+                  className="w-full px-4 py-3.5 text-[14px] border border-border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
                   placeholder="you@example.com"
                 />
               </div>
@@ -132,7 +132,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full px-4 py-3.5 text-[14px] border border-border rounded-xl bg-white text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
+                  className="w-full px-4 py-3.5 text-[14px] border border-border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
                   placeholder="Your password"
                 />
               </div>

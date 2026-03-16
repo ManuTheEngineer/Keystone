@@ -56,7 +56,7 @@ export function LearnTooltip({ term, explanation, whyItMatters, children }: Lear
       {open && (
         <div
           ref={tooltipRef}
-          className={`absolute z-50 left-0 max-w-xs w-72 p-4 bg-white rounded-xl shadow-lg border border-border ${
+          className={`absolute z-50 left-0 max-w-xs w-72 p-4 bg-surface rounded-xl shadow-lg border border-border ${
             above ? "bottom-full mb-2" : "top-full mt-2"
           }`}
           onMouseEnter={() => setOpen(true)}

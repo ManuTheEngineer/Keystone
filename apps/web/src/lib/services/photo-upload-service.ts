@@ -115,7 +115,7 @@ export async function uploadProjectPhoto(
 
   // Upload to Firebase Storage
   const timestamp = Date.now();
-  const filename = `projects/${projectId}/photos/${timestamp}_${file.name}`;
+  const filename = `users/${userId}/projects/${projectId}/photos/${timestamp}_${file.name}`;
   const fileRef = storageRef(storage, filename);
   await uploadBytes(fileRef, compressed, { contentType: "image/jpeg" });
   const fileUrl = await getDownloadURL(fileRef);

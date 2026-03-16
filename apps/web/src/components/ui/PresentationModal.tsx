@@ -77,7 +77,7 @@ export function PresentationModal({ data, onClose }: PresentationModalProps) {
       />
 
       {/* Modal card */}
-      <div className="relative z-10 w-full max-w-lg mx-4 bg-white rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+      <div className="relative z-10 w-full max-w-lg mx-4 bg-surface rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div>
@@ -106,7 +106,7 @@ export function PresentationModal({ data, onClose }: PresentationModalProps) {
             return (
               <div
                 key={opt.id}
-                className="bg-white border border-border rounded-xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 cursor-pointer"
+                className="bg-surface border border-border rounded-xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 cursor-pointer"
                 onClick={() => !isLoading && handleGenerate(opt.id)}
                 role="button"
                 tabIndex={0}

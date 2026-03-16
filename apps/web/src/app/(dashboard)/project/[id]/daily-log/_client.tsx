@@ -77,7 +77,7 @@ export function DailyLogClient() {
   }, [setTopbar, logs]);
 
   const market = (project?.market ?? "USA") as Market;
-  const isUSAMarket = market === "USA" || market === "GHANA";
+  const isUSAMarket = market === "USA";
   const tempUnit = isUSAMarket ? "F" : "C";
   const tempSymbol = isUSAMarket ? "°F" : "°C";
   const weatherPresets = isUSAMarket ? WEATHER_PRESETS_EN : WEATHER_PRESETS_FR;

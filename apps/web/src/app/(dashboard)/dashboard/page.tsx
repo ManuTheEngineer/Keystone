@@ -457,6 +457,7 @@ export default function DashboardPage() {
     const collected: Partial<ExportData> = {};
     let loaded = 0;
     const total = 9;
+    let unsubs: (() => void)[] = [];
 
     function checkDone() {
       loaded++;
@@ -473,10 +474,12 @@ export default function DashboardPage() {
           materials: collected.materials || [],
         });
         setLoadingExport(null);
+        // Clean up subscriptions as soon as all data is loaded
+        unsubs.forEach((u) => u());
       }
     }
 
-    const unsubs = [
+    unsubs = [
       subscribeToBudgetItems(user.uid, proj.id, (d) => { collected.budgetItems = d; checkDone(); }),
       subscribeToContacts(user.uid, proj.id, (d) => { collected.contacts = d; checkDone(); }),
       subscribeToDailyLogs(user.uid, proj.id, (d) => { collected.dailyLogs = d; checkDone(); }),
@@ -487,11 +490,6 @@ export default function DashboardPage() {
       subscribeToPunchListItems(user.uid, proj.id, (d) => { collected.punchListItems = d; checkDone(); }),
       subscribeToMaterials(user.uid, proj.id, (d) => { collected.materials = d; checkDone(); }),
     ];
-
-    // Clean up subscriptions after data is loaded
-    setTimeout(() => {
-      unsubs.forEach((u) => u());
-    }, 5000);
   }
 
   function handleCloseExport() {
@@ -587,7 +585,7 @@ export default function DashboardPage() {
               return (
                 <div
                   key={p.id}
-                  className={`bg-white rounded-xl shadow-[var(--shadow-sm)] p-5 border border-border border-t-[3px] ${topBorderColor} card-hover`}
+                  className={`bg-surface rounded-xl shadow-[var(--shadow-sm)] p-5 border border-border border-t-[3px] ${topBorderColor} card-hover`}
                 >
                   {/* Header row */}
                   <div className="flex items-center justify-between mb-1">
@@ -669,7 +667,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6 animate-stagger">
         <Link
           href="/new-project"
-          className="bg-white border border-border rounded-xl p-4 text-left card-hover group block"
+          className="bg-surface border border-border rounded-xl p-4 text-left card-hover group block"
         >
           <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-3">
             <Plus size={24} className="text-clay" />
@@ -680,7 +678,7 @@ export default function DashboardPage() {
 
         <Link
           href="/learn"
-          className="bg-white border border-border rounded-xl p-4 text-left card-hover group block"
+          className="bg-surface border border-border rounded-xl p-4 text-left card-hover group block"
         >
           <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-3">
             <BookOpen size={24} className="text-clay" />
@@ -695,7 +693,7 @@ export default function DashboardPage() {
           <>
             <Link
               href={`/project/${mostRecentProject.id}/daily-log`}
-              className="bg-white border border-border rounded-xl p-4 text-left card-hover group block"
+              className="bg-surface border border-border rounded-xl p-4 text-left card-hover group block"
             >
               <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-3">
                 <ClipboardList size={24} className="text-clay" />
@@ -710,7 +708,7 @@ export default function DashboardPage() {
 
             <Link
               href={`/project/${mostRecentProject.id}/photos`}
-              className="bg-white border border-border rounded-xl p-4 text-left card-hover group block"
+              className="bg-surface border border-border rounded-xl p-4 text-left card-hover group block"
             >
               <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-3">
                 <Camera size={24} className="text-clay" />

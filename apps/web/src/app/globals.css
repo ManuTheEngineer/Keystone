@@ -445,3 +445,19 @@ html.dark {
 :root:not(.light) img {
   opacity: 0.9;
 }
+
+/* Glass effect dark mode override */
+html.dark .glass {
+  background: rgba(26, 20, 18, 0.85);
+}
+
+/* Emerald educational sections dark mode override */
+html.dark .bg-emerald-50 {
+  background-color: rgba(5, 150, 105, 0.1) !important;
+}
+html.dark .text-emerald-800 {
+  color: rgba(167, 243, 208, 0.9) !important;
+}
+html.dark .border-emerald-200 {
+  border-color: rgba(5, 150, 105, 0.2) !important;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import {
@@ -47,6 +47,17 @@ export function PhotosClient() {
 
   // Lightbox state
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  // Track object URLs for file previews to avoid memory leaks
+  const previewUrlsRef = useRef<string[]>([]);
+
+  // Clean up preview URLs when selected files change or component unmounts
+  useEffect(() => {
+    return () => {
+      previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      previewUrlsRef.current = [];
+    };
+  }, [selectedFiles]);
 
   // Subscribe to data
   useEffect(() => {
@@ -121,6 +132,13 @@ export function PhotosClient() {
     () => photos.filter((p) => p.phase === currentPhaseKey),
     [photos, currentPhaseKey]
   );
+
+  // Create a preview URL and track it for cleanup
+  const getPreviewUrl = useCallback((file: File): string => {
+    const url = URL.createObjectURL(file);
+    previewUrlsRef.current.push(url);
+    return url;
+  }, []);
 
   // Handlers
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -271,7 +289,7 @@ export function PhotosClient() {
                 className="w-16 h-16 rounded-[var(--radius)] overflow-hidden border border-border flex-shrink-0"
               >
                 <img
-                  src={URL.createObjectURL(file)}
+                  src={getPreviewUrl(file)}
                   alt={file.name}
                   className="w-full h-full object-cover"
                 />

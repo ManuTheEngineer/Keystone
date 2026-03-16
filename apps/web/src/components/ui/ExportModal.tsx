@@ -157,7 +157,7 @@ export function ExportModal({ project, data, onClose }: ExportModalProps) {
       />
 
       {/* Modal card */}
-      <div className="relative z-10 w-full max-w-lg mx-4 bg-white rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+      <div className="relative z-10 w-full max-w-lg mx-4 bg-surface rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div>
@@ -184,7 +184,7 @@ export function ExportModal({ project, data, onClose }: ExportModalProps) {
             return (
               <div
                 key={opt.id}
-                className="bg-white border border-border rounded-xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
+                className="bg-surface border border-border rounded-xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
               >
                 {/* Icon */}
                 <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center mb-3">

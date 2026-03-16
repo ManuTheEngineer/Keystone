@@ -305,7 +305,7 @@ export function VaultClient() {
               <select
                 value={uploadCategory}
                 onChange={(e) => setUploadCategory(e.target.value as VaultCategory)}
-                className="w-full px-3 py-2 text-[12px] border border-border rounded-lg bg-white text-earth focus:outline-none focus:ring-1 focus:ring-clay"
+                className="w-full px-3 py-2 text-[12px] border border-border rounded-lg bg-surface text-earth focus:outline-none focus:ring-1 focus:ring-clay"
               >
                 {UPLOAD_CATEGORIES.map((cat) => (
                   <option key={cat.value} value={cat.value}>
@@ -325,7 +325,7 @@ export function VaultClient() {
                 value={uploadDescription}
                 onChange={(e) => setUploadDescription(e.target.value)}
                 placeholder="Brief description of the file"
-                className="w-full px-3 py-2 text-[12px] border border-border rounded-lg bg-white text-earth placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-clay"
+                className="w-full px-3 py-2 text-[12px] border border-border rounded-lg bg-surface text-earth placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-clay"
               />
             </div>
 
@@ -400,7 +400,7 @@ export function VaultClient() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search files..."
-            className="w-full sm:w-48 pl-8 pr-3 py-1.5 text-[12px] border border-border rounded-lg bg-white text-earth placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-clay"
+            className="w-full sm:w-48 pl-8 pr-3 py-1.5 text-[12px] border border-border rounded-lg bg-surface text-earth placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-clay"
           />
         </div>
       </div>
@@ -432,7 +432,7 @@ export function VaultClient() {
             return (
               <div
                 key={file.id}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-white hover:bg-warm/30 transition-colors group"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-surface hover:bg-warm/30 transition-colors group"
               >
                 {/* Icon */}
                 <div className="w-9 h-9 rounded-lg bg-warm flex items-center justify-center shrink-0">
