@@ -344,25 +344,51 @@ export function VaultClient() {
                 className="hidden"
                 onChange={(e) => handleUpload(e.target.files)}
               />
+              {droppedFiles ? (
+                <button
+                  onClick={() => {
+                    handleUpload(droppedFiles);
+                    setDroppedFiles(null);
+                  }}
+                  disabled={uploading}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-[12px] font-medium rounded-lg bg-earth text-warm hover:bg-earth-light transition-colors disabled:opacity-60"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={14} />
+                      Upload {droppedFiles.length} file{droppedFiles.length !== 1 ? "s" : ""}
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-[12px] font-medium rounded-lg bg-earth text-warm hover:bg-earth-light transition-colors disabled:opacity-60"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={14} />
+                      Browse Files
+                    </>
+                  )}
+                </button>
+              )}
               <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-[12px] font-medium rounded-lg bg-earth text-warm hover:bg-earth-light transition-colors disabled:opacity-60"
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload size={14} />
-                    Browse Files
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => setShowUploadForm(false)}
+                onClick={() => {
+                  setShowUploadForm(false);
+                  setDroppedFiles(null);
+                }}
                 className="px-3 py-2 text-[12px] text-muted hover:text-earth rounded-lg border border-border hover:bg-warm transition-colors"
               >
                 Cancel

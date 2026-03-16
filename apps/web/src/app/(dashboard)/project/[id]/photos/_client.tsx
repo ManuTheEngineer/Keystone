@@ -483,7 +483,7 @@ export function PhotosClient() {
           <div className="space-y-2 mb-5">
             {currentPhaseDef.milestones.map((milestone) => {
               const milestonePhotos = currentPhasePhotos.filter(
-                (p) => p.caption?.includes(milestone.name)
+                (p) => p.caption?.trim().toLowerCase().includes(milestone.name.trim().toLowerCase())
               );
               const hasPhotos = milestonePhotos.length > 0;
 

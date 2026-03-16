@@ -71,7 +71,6 @@ interface PhotoFeedProps {
 
 function PhotoFeed({ photos, projectId }: PhotoFeedProps) {
   const [dateFilter, setDateFilter] = useState<"all" | "week" | "month">("all");
-  const [photoRequestSent, setPhotoRequestSent] = useState(false);
 
   const now = new Date();
   const filtered = photos.filter((p) => {
@@ -167,16 +166,13 @@ function PhotoFeed({ photos, projectId }: PhotoFeedProps) {
       )}
 
       <button
-        onClick={() => {
-          setPhotoRequestSent(true);
-          setTimeout(() => setPhotoRequestSent(false), 3000);
-        }}
-        disabled={photoRequestSent}
-        className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius)] border border-dashed border-sand/40 text-[11px] text-muted hover:border-sand hover:text-earth transition-colors disabled:opacity-60"
+        disabled
+        className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius)] border border-dashed border-sand/40 text-[11px] text-muted opacity-60 cursor-not-allowed"
       >
         <Send size={12} />
-        {photoRequestSent ? "Photo update request sent" : "Request photo update"}
+        Request photo update (coming soon)
       </button>
+      <p className="text-[9px] text-muted text-center mt-1">Notification features coming soon</p>
     </Card>
   );
 }

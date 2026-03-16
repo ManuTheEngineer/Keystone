@@ -111,6 +111,15 @@ export function SettingsClient() {
     setTopbar("Settings");
   }, [setTopbar]);
 
+  // Update form state when profile loads asynchronously
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.name ?? "");
+      setTimezone(profile.timezone ?? "UTC");
+      setCurrency(profile.currency ?? "USD");
+    }
+  }, [profile]);
+
   async function handleSaveProfile() {
     if (!user) return;
     setProfileSaving(true);
@@ -177,7 +186,7 @@ export function SettingsClient() {
       await deleteUser(user);
       router.push("/");
     } catch {
-      setDeleteError("Failed to delete account. You may need to sign in again before retrying.");
+      setDeleteError("Account deletion failed. Please sign out, sign back in, and try again.");
       setDeleting(false);
     }
   }

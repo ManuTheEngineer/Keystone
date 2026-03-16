@@ -339,8 +339,15 @@ export function DocumentsClient() {
                     {doc.phase} / {doc.date}
                   </div>
                 </div>
-                <span className="text-[10px] text-info cursor-pointer hover:underline shrink-0">
-                  View
+                <span
+                  className="text-[10px] text-info cursor-pointer hover:underline shrink-0"
+                  onClick={() => {
+                    if (doc.fileUrl) {
+                      window.open(doc.fileUrl, "_blank");
+                    }
+                  }}
+                >
+                  {doc.fileUrl ? "View" : "No file"}
                 </span>
               </div>
             );

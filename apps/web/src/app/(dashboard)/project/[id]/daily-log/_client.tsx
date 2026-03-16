@@ -98,7 +98,7 @@ export function DailyLogClient() {
     if (!content.trim() || !user) return;
     setSaving(true);
     try {
-      const day = logs.length > 0 ? logs[0].day + 1 : 1;
+      const day = logs.length > 0 ? Math.max(...logs.map(l => l.day)) + 1 : 1;
       const date = new Date().toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
