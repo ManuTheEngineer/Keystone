@@ -9,7 +9,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { WifiOff, LogOut } from "lucide-react";
 import { usePWA } from "@/lib/hooks/use-pwa";
 import { signOut } from "@/lib/services/auth-service";
-import { getUserProjects, subscribeToPunchListItems, subscribeToTasks, type ProjectData } from "@/lib/services/project-service";
+import { subscribeToUserProjects, subscribeToPunchListItems, subscribeToTasks, type ProjectData } from "@/lib/services/project-service";
 import { LocaleContext } from "@/lib/hooks/use-locale";
 import { getLocaleForMarket } from "@/lib/i18n";
 
@@ -45,13 +45,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { isOnline } = usePWA();
   const { user, profile } = useAuth();
 
-  // Load projects from Firebase
+  // Subscribe to projects from Firebase
   useEffect(() => {
     if (!user) return;
-    getUserProjects(user.uid).then(setProjects).catch(() => {
-      // Firebase may not have data yet, that is fine
-      setProjects([]);
-    });
+    const unsub = subscribeToUserProjects(user.uid, setProjects);
+    return unsub;
   }, [user]);
 
   const activeSection = getActiveSectionFromPath(pathname);

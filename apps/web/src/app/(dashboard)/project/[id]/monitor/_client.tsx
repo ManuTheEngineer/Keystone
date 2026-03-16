@@ -190,28 +190,25 @@ interface MilestoneTrackerProps {
   currency: string;
 }
 
-type MilestonePaymentStatus = "not-started" | "photo-pending" | "verified" | "paid";
+type MilestonePaymentStatus = "not-started" | "photo-pending" | "verified";
 
 function MilestonePaymentTracker({ milestones, photos, totalBudget, currency }: MilestoneTrackerProps) {
-  // Derive status from photos: if milestone has photos, it can be verified
+  // Derive status from photos: if milestone has matching photos, it is verified
   const paymentMilestones = milestones.filter((m) => m.requiresPayment && m.paymentPct);
 
   const getStatus = (milestone: MilestoneDefinition): MilestonePaymentStatus => {
-    // Simple heuristic: first 40% milestones are "paid", next one is "verified", rest are not started
-    const idx = paymentMilestones.indexOf(milestone);
-    const totalPayment = paymentMilestones.length;
-    if (totalPayment === 0) return "not-started";
-    const paidCount = Math.floor(totalPayment * 0.4);
-    if (idx < paidCount) return "paid";
-    if (idx === paidCount) return "verified";
-    if (idx === paidCount + 1) return "photo-pending";
+    // Check if any photo caption references this milestone (case-insensitive)
+    const hasPhoto = photos.some(
+      (p) => p.caption?.toLowerCase().includes(milestone.name.toLowerCase())
+    );
+    if (hasPhoto) return "verified";
+    // If the milestone appears in the list but has no photo evidence, it is photo-pending
+    // We cannot determine if a milestone is "reached" without explicit data, so default to not-started
     return "not-started";
   };
 
   const statusIcon = (status: MilestonePaymentStatus) => {
     switch (status) {
-      case "paid":
-        return <Check size={12} className="text-success" />;
       case "verified":
         return <Check size={12} className="text-emerald-500" />;
       case "photo-pending":
@@ -223,17 +220,16 @@ function MilestonePaymentTracker({ milestones, photos, totalBudget, currency }: 
 
   const statusLabel = (status: MilestonePaymentStatus) => {
     switch (status) {
-      case "paid": return "Paid";
       case "verified": return "Verified";
       case "photo-pending": return "Photo pending";
       case "not-started": return "Not started";
     }
   };
 
-  const totalReleased = paymentMilestones
-    .filter((m) => getStatus(m) === "paid")
+  const totalVerified = paymentMilestones
+    .filter((m) => getStatus(m) === "verified")
     .reduce((sum, m) => sum + (m.paymentPct ?? 0), 0);
-  const totalHeld = 100 - totalReleased;
+  const totalRemaining = 100 - totalVerified;
 
   const formatCurrency = (amount: number) => {
     if (currency === "XOF" || currency === "CFA") {
@@ -257,7 +253,7 @@ function MilestonePaymentTracker({ milestones, photos, totalBudget, currency }: 
                 <div
                   key={i}
                   className={`flex items-center gap-2 py-2 px-2.5 rounded text-[11px] ${
-                    status === "paid" ? "bg-success/5" : status === "verified" ? "bg-emerald-50" : ""
+                    status === "verified" ? "bg-emerald-50" : ""
                   }`}
                 >
                   {statusIcon(status)}
@@ -266,7 +262,6 @@ function MilestonePaymentTracker({ milestones, photos, totalBudget, currency }: 
                     {m.paymentPct}%
                   </span>
                   <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
-                    status === "paid" ? "bg-success/10 text-success" :
                     status === "verified" ? "bg-emerald-100 text-emerald-700" :
                     status === "photo-pending" ? "bg-warning/10 text-warning" :
                     "bg-muted/10 text-muted"
@@ -281,18 +276,18 @@ function MilestonePaymentTracker({ milestones, photos, totalBudget, currency }: 
           {/* Summary bar */}
           <div className="border-t border-border pt-2.5">
             <div className="flex justify-between text-[10px] mb-1.5">
-              <span className="text-success font-medium">Released: {totalReleased}%</span>
-              <span className="text-muted">Held: {totalHeld}%</span>
+              <span className="text-success font-medium">Verified: {totalVerified}%</span>
+              <span className="text-muted">Remaining: {totalRemaining}%</span>
             </div>
             <div className="h-2 bg-surface-alt rounded-full overflow-hidden">
               <div
                 className="h-full bg-success rounded-full transition-all"
-                style={{ width: `${totalReleased}%` }}
+                style={{ width: `${totalVerified}%` }}
               />
             </div>
             <div className="flex justify-between text-[9px] text-muted mt-1">
-              <span>{formatCurrency(totalBudget * totalReleased / 100)}</span>
-              <span>{formatCurrency(totalBudget * totalHeld / 100)}</span>
+              <span>{formatCurrency(totalBudget * totalVerified / 100)}</span>
+              <span>{formatCurrency(totalBudget * totalRemaining / 100)}</span>
             </div>
           </div>
         </>
@@ -330,7 +325,7 @@ function WeeklySummary({ logs, photos, budgetItems, project }: WeeklySummaryProp
     { label: "Days with activity", value: `${weekLogs.length} / 7`, icon: <Calendar size={14} /> },
     { label: "Total crew-days", value: `${totalCrew}`, icon: <Users size={14} /> },
     { label: "Photos uploaded", value: `${weekPhotos.length}`, icon: <Camera size={14} /> },
-    { label: "Budget spent to date", value: formatCurrency(weekSpent), icon: <DollarSign size={14} /> },
+    { label: "Total spent to date", value: formatCurrency(weekSpent), icon: <DollarSign size={14} /> },
     { label: "Current progress", value: `${project.progress}%`, icon: <TrendingUp size={14} /> },
     { label: "Open items", value: `${project.openItems}`, icon: <AlertTriangle size={14} /> },
   ];
@@ -768,7 +763,7 @@ export function MonitorClient() {
       {/* Activity log + Material tracker */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ActivityLog logs={logs} photos={photos} />
-        <MaterialTracker materials={materials} projectId={projectId} userId={user!.uid} />
+        <MaterialTracker materials={materials} projectId={projectId} userId={user?.uid ?? ""} />
       </div>
 
       {/* Educational note */}

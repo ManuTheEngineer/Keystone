@@ -323,7 +323,7 @@ export function BudgetClient() {
       {/* AI Budget Insights                                                */}
       {/* ================================================================= */}
       {items.length > 0 && (() => {
-        const budgetInsights = generateBudgetInsights(project, items);
+        const budgetInsights = generateBudgetInsights(project, items, marketData.currency.symbol);
         const topInsights = budgetInsights.sort((a, b) => b.priority - a.priority).slice(0, 3);
         if (topInsights.length === 0) return null;
         return (

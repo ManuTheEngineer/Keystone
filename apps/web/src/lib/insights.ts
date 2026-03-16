@@ -47,7 +47,7 @@ export function generateOverviewInsights(
 
   // 2. No recent activity
   if (logs.length > 0) {
-    const latestDate = new Date(logs[0].createdAt);
+    const latestDate = new Date(logs[0].createdAt ?? logs[0].date);
     const daysSince = Math.floor(
       (Date.now() - latestDate.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -182,7 +182,8 @@ export function generateOverviewInsights(
 
 export function generateBudgetInsights(
   project: ProjectData,
-  items: BudgetItemData[]
+  items: BudgetItemData[],
+  currencySymbol?: string
 ): Insight[] {
   const insights: Insight[] = [];
   const projectId = project.id ?? "";
@@ -199,7 +200,7 @@ export function generateBudgetInsights(
       insights.push({
         type: "risk",
         title: `${item.category} is ${overPct}% over estimate`,
-        content: `Total overrun: $${overAmt.toLocaleString()}. Consider reviewing the scope or negotiating with your contractor to contain further increases.`,
+        content: `Total overrun: ${currencySymbol ?? "$"}${overAmt.toLocaleString()}. Consider reviewing the scope or negotiating with your contractor to contain further increases.`,
         priority: 8,
       });
     }
@@ -219,7 +220,7 @@ export function generateBudgetInsights(
       insights.push({
         type: "tip",
         title: `${item.category} tracking ${underPct}% under estimate`,
-        content: `Potential savings of $${savings.toLocaleString()} so far. This surplus can offset overruns in other categories.`,
+        content: `Potential savings of ${currencySymbol ?? "$"}${savings.toLocaleString()} so far. This surplus can offset overruns in other categories.`,
         priority: 3,
       });
     }

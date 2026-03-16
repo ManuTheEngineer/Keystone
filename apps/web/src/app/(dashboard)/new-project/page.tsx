@@ -132,7 +132,7 @@ export default function NewProjectPage() {
     setTopbar("New project", "Setup wizard", "info");
   }, [setTopbar]);
 
-  const currentStep = STEPS[step];
+  const currentStep = step < STEPS.length ? STEPS[step] : undefined;
   const isLastStep = step === STEPS.length;
   const canProceed = step < STEPS.length ? !!selections[step] : projectName.trim().length > 0;
 
@@ -250,11 +250,11 @@ export default function NewProjectPage() {
 
       {step < STEPS.length ? (
         <div key={step} className="animate-fade-in">
-          <h3 style={{ fontFamily: "var(--font-heading)" }} className="text-2xl text-earth mb-2">{currentStep.title}</h3>
-          <p className="text-[13px] text-muted mb-8">{currentStep.subtitle}</p>
+          <h3 style={{ fontFamily: "var(--font-heading)" }} className="text-2xl text-earth mb-2">{currentStep!.title}</h3>
+          <p className="text-[13px] text-muted mb-8">{currentStep!.subtitle}</p>
 
           <div className="space-y-3 text-left animate-stagger">
-            {currentStep.options.map((opt) => (
+            {currentStep!.options.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => handleSelect(opt.id)}

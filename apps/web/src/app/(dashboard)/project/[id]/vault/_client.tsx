@@ -220,12 +220,18 @@ export function VaultClient() {
     e.stopPropagation();
   }
 
+  // State for files selected via drag-drop (shown in upload form before uploading)
+  const [droppedFiles, setDroppedFiles] = useState<FileList | null>(null);
+
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    setShowUploadForm(true);
-    handleUpload(e.dataTransfer.files);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      setDroppedFiles(files);
+      setShowUploadForm(true);
+    }
   }
 
   // Delete handler

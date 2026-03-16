@@ -6,6 +6,8 @@ import { useTopbar } from "../../../layout";
 import {
   subscribeToProject,
   subscribeToBudgetItems,
+  subscribeToPhasedFunding,
+  savePhasedFunding,
   type ProjectData,
   type BudgetItemData,
 } from "@/lib/services/project-service";
@@ -106,9 +108,11 @@ export function FinancialsClient() {
     if (!user) return;
     const unsub1 = subscribeToProject(user.uid, projectId, setProject);
     const unsub2 = subscribeToBudgetItems(user.uid, projectId, setItems);
+    const unsub3 = subscribeToPhasedFunding(user.uid, projectId, setPhaseFunding);
     return () => {
       unsub1();
       unsub2();
+      unsub3();
     };
   }, [user, projectId]);
 
@@ -675,12 +679,16 @@ export function FinancialsClient() {
                       type="number"
                       placeholder="0"
                       value={phaseFunding[row.phase] || ""}
-                      onChange={(e) =>
-                        setPhaseFunding((prev) => ({
-                          ...prev,
-                          [row.phase]: Number(e.target.value) || 0,
-                        }))
-                      }
+                      onChange={(e) => {
+                        const newVal = Number(e.target.value) || 0;
+                        setPhaseFunding((prev) => {
+                          const updated = { ...prev, [row.phase]: newVal };
+                          if (user) {
+                            savePhasedFunding(user.uid, projectId, updated);
+                          }
+                          return updated;
+                        });
+                      }}
                       className="w-24 px-2 py-1 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth font-data focus:outline-none focus:border-emerald-500"
                     />
                   </div>

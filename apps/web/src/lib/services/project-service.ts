@@ -688,6 +688,22 @@ export async function advanceProjectPhase(userId: string, projectId: string, new
   });
 }
 
+// --- Phased Funding ---
+
+export async function savePhasedFunding(userId: string, projectId: string, funding: Record<string, number>): Promise<void> {
+  await set(ref(db, `users/${userId}/projects/${projectId}/phasedFunding`), funding);
+}
+
+export function subscribeToPhasedFunding(
+  userId: string,
+  projectId: string,
+  callback: (funding: Record<string, number>) => void
+): Unsubscribe {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/phasedFunding`), (snapshot) => {
+    callback(snapshot.exists() ? snapshot.val() : {});
+  });
+}
+
 // --- Seed demo data ---
 
 export async function seedDemoProject(userId: string): Promise<string> {

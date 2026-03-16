@@ -9,6 +9,12 @@ const RATE_WINDOW = 3600000; // 1 hour in ms
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
+  // Cleanup old entries periodically to prevent memory leak
+  if (rateLimitMap.size > 1000) {
+    for (const [key, entry] of rateLimitMap) {
+      if (now > entry.resetAt) rateLimitMap.delete(key);
+    }
+  }
   const entry = rateLimitMap.get(ip);
   if (!entry || now > entry.resetAt) {
     rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW });

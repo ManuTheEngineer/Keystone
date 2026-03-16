@@ -369,246 +369,48 @@ h1, h2, h3 {
   margin: 1.5rem 0;
 }
 
-/* Dark mode variables - html.dark for higher specificity over @theme */
+/* Dark mode specific -- inline styles on <html> handle variable overrides (see ThemeToggle.tsx) */
 html.dark {
   color-scheme: dark;
-  /* Keep buttons and interactive elements readable */
-  --color-emerald-50: rgba(236, 253, 245, 0.1);
-  --color-emerald-100: rgba(209, 250, 229, 0.15);
-  --color-emerald-200: rgba(167, 243, 208, 0.2);
-  --color-background: #1A1412;
-  --color-foreground: #E8DDD0;
-  --color-surface: #231E1A;
-  --color-surface-alt: #2C2520;
-  --color-surface-dim: #1E1916;
-  --color-primary: #E8DDD0;
-  --color-primary-foreground: #1A1412;
-  --color-border: #3D342C;
-  --color-border-dark: #4A4038;
-  --color-muted: #9A8E82;
-  --color-earth: #E8DDD0;
-  --color-earth-light: #F5E6D3;
-  --color-clay: #C4956A;
-  --color-clay-light: #D4A574;
-  --color-sand: #8B7B6B;
-  --color-warm: #2C2520;
-  --color-cream: #1A1412;
-  --color-success-bg: rgba(45, 106, 79, 0.15);
-  --color-warning-bg: rgba(188, 108, 37, 0.15);
-  --color-danger-bg: rgba(155, 34, 38, 0.15);
-  --color-info-bg: rgba(27, 73, 101, 0.15);
-  --color-accent-usa-light: rgba(27, 73, 101, 0.2);
-  --color-accent-wa-light: rgba(107, 66, 38, 0.2);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --color-background: #1A1412;
-    --color-foreground: #E8DDD0;
-    --color-surface: #231E1A;
-    --color-surface-alt: #2C2520;
-    --color-surface-dim: #1E1916;
-    --color-primary: #E8DDD0;
-    --color-primary-foreground: #1A1412;
-    --color-border: #3D342C;
-    --color-border-dark: #4A4038;
-    --color-muted: #9A8E82;
-    --color-earth: #E8DDD0;
-    --color-earth-light: #F5E6D3;
-    --color-clay: #C4956A;
-    --color-clay-light: #D4A574;
-    --color-sand: #8B7B6B;
-    --color-warm: #2C2520;
-    --color-cream: #1A1412;
-    --color-success-bg: rgba(45, 106, 79, 0.15);
-    --color-warning-bg: rgba(188, 108, 37, 0.15);
-    --color-danger-bg: rgba(155, 34, 38, 0.15);
-    --color-info-bg: rgba(27, 73, 101, 0.15);
-    --color-accent-usa-light: rgba(27, 73, 101, 0.2);
-    --color-accent-wa-light: rgba(107, 66, 38, 0.2);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
-    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.35);
-  }
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: var(--color-surface-dim);
+  border-color: var(--color-border);
+  color: var(--color-foreground);
 }
 
-/* Dark mode specific overrides */
-.dark .bg-surface,
-:root:not(.light) .bg-surface {
-  background-color: var(--color-surface);
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--color-muted);
 }
 
-.dark img,
-:root:not(.light) img {
-  opacity: 0.9;
+html.dark input:disabled,
+html.dark textarea:disabled,
+html.dark select:disabled {
+  background-color: var(--color-surface-dim);
+  opacity: 0.6;
 }
 
-/* Glass effect dark mode override */
+html.dark img {
+  opacity: 0.92;
+}
+
+/* Glass effect adapts via variables */
 html.dark .glass {
   background: rgba(26, 20, 18, 0.85);
 }
 
-/* Emerald educational sections dark mode override */
-html.dark .bg-emerald-50 {
-  background-color: rgba(5, 150, 105, 0.1) !important;
-}
-html.dark .bg-emerald-50\/50 {
-  background-color: rgba(5, 150, 105, 0.07) !important;
-}
-html.dark .bg-emerald-100 {
-  background-color: rgba(5, 150, 105, 0.15) !important;
-}
-html.dark .bg-emerald-100\/50 {
-  background-color: rgba(5, 150, 105, 0.08) !important;
-}
-html.dark .text-emerald-600 {
-  color: rgba(52, 211, 153, 0.9) !important;
-}
-html.dark .text-emerald-700 {
-  color: rgba(110, 231, 183, 0.9) !important;
-}
-html.dark .text-emerald-800 {
-  color: rgba(167, 243, 208, 0.9) !important;
-}
-html.dark .text-emerald-900 {
-  color: rgba(209, 250, 229, 0.9) !important;
-}
-html.dark .border-emerald-200 {
-  border-color: rgba(5, 150, 105, 0.2) !important;
-}
-html.dark .border-emerald-300 {
-  border-color: rgba(5, 150, 105, 0.25) !important;
-}
-html.dark .border-emerald-500 {
-  border-color: rgba(16, 185, 129, 0.5) !important;
-}
-
-/* Amber/warning sections dark mode override */
-html.dark .bg-amber-50\/50 {
-  background-color: rgba(188, 108, 37, 0.1) !important;
-}
-html.dark .text-amber-600 {
-  color: rgba(251, 191, 36, 0.9) !important;
-}
-html.dark .border-amber-500 {
-  border-color: rgba(245, 158, 11, 0.5) !important;
-}
-
-/* Red/danger sections dark mode override */
-html.dark .bg-red-50\/50 {
-  background-color: rgba(155, 34, 38, 0.1) !important;
-}
-html.dark .text-red-600 {
-  color: rgba(252, 165, 165, 0.9) !important;
-}
-html.dark .border-red-500 {
-  border-color: rgba(239, 68, 68, 0.5) !important;
-}
-
-/* Blue/info sections dark mode override */
-html.dark .bg-blue-50\/50 {
-  background-color: rgba(27, 73, 101, 0.12) !important;
-}
-html.dark .text-blue-600 {
-  color: rgba(147, 197, 253, 0.9) !important;
-}
-html.dark .border-blue-500 {
-  border-color: rgba(59, 130, 246, 0.5) !important;
-}
-
-/* Gray shades dark mode */
-html.dark .bg-gray-200 {
-  background-color: var(--color-border) !important;
-}
-
-/* Form elements in dark mode */
-html.dark input,
-html.dark textarea,
-html.dark select {
-  background-color: var(--color-surface) !important;
-  border-color: var(--color-border) !important;
-  color: var(--color-foreground) !important;
-}
-html.dark input::placeholder,
-html.dark textarea::placeholder {
-  color: var(--color-muted) !important;
-}
-html.dark input:disabled,
-html.dark textarea:disabled,
-html.dark select:disabled {
-  background-color: var(--color-surface-dim) !important;
-}
-
-/* Cards in dark mode need subtle borders */
-html.dark .border-border\/60 {
-  border-color: var(--color-border) !important;
-}
-
-/* Chart backgrounds (Recharts) */
-html.dark .recharts-wrapper {
-  color: var(--color-foreground);
-}
+/* Recharts adapts via variables */
 html.dark .recharts-text {
-  fill: var(--color-muted) !important;
+  fill: var(--color-muted);
 }
 html.dark .recharts-cartesian-grid line {
-  stroke: var(--color-border) !important;
+  stroke: var(--color-border);
 }
 html.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
   background-color: var(--color-surface) !important;
   border-color: var(--color-border) !important;
-}
-
-/* Phase tracker dots in dark mode */
-html.dark .bg-border {
-  background-color: var(--color-border) !important;
-}
-
-/* Status backgrounds in dark mode */
-html.dark .bg-success-bg {
-  background-color: rgba(45, 106, 79, 0.15) !important;
-}
-html.dark .bg-warning-bg {
-  background-color: rgba(188, 108, 37, 0.15) !important;
-}
-html.dark .bg-danger-bg {
-  background-color: rgba(155, 34, 38, 0.15) !important;
-}
-html.dark .bg-info-bg {
-  background-color: rgba(27, 73, 101, 0.15) !important;
-}
-
-/* Accent backgrounds */
-html.dark .bg-accent-usa-light {
-  background-color: rgba(27, 73, 101, 0.2) !important;
-}
-html.dark .bg-accent-wa-light {
-  background-color: rgba(107, 66, 38, 0.2) !important;
-}
-
-/* Success/danger opacity variants */
-html.dark .bg-success\/5 {
-  background-color: rgba(45, 106, 79, 0.08) !important;
-}
-html.dark .bg-success\/10 {
-  background-color: rgba(45, 106, 79, 0.12) !important;
-}
-html.dark .bg-danger\/5 {
-  background-color: rgba(155, 34, 38, 0.08) !important;
-}
-
-/* Table rows in dark mode */
-html.dark table thead tr {
-  border-color: var(--color-border) !important;
-}
-html.dark table tbody tr {
-  border-color: var(--color-border) !important;
-}
-
-/* Fix text-slate (non-semantic slate usage) */
-html.dark .text-slate {
-  color: var(--color-foreground) !important;
 }
