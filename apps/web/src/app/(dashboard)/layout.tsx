@@ -88,6 +88,23 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
+  // Keyboard shortcut: [ to toggle sidebar collapse
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Ignore if user is typing in an input, textarea, or contenteditable
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return;
+      if (e.key === "[" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const next = !sidebarCollapsed;
+        setSidebarCollapsed(next);
+        localStorage.setItem("keystone-sidebar-collapsed", String(next));
+        window.dispatchEvent(new Event("storage"));
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [sidebarCollapsed]);
+
   // Set CSS variable for sidebar width (used by fixed-position elements like budget sticky bar)
   useEffect(() => {
     document.documentElement.style.setProperty(
