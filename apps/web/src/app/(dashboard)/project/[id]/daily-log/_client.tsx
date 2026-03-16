@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useTopbar } from "../../../layout";
 import {
   subscribeToDailyLogs,
@@ -36,6 +37,7 @@ const WEATHER_PRESETS_FR = [
 export function DailyLogClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const projectId = params.id as string;
   const [logs, setLogs] = useState<DailyLogData[]>([]);
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -47,14 +49,16 @@ export function DailyLogClient() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const unsub = subscribeToDailyLogs(projectId, setLogs);
+    if (!user) return;
+    const unsub = subscribeToDailyLogs(user.uid, projectId, setLogs);
     return unsub;
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
-    const unsub = subscribeToProject(projectId, setProject);
+    if (!user) return;
+    const unsub = subscribeToProject(user.uid, projectId, setProject);
     return unsub;
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
     const latestDay = logs.length > 0 ? logs[0].day : 0;
@@ -80,7 +84,7 @@ export function DailyLogClient() {
   }
 
   async function handleSave() {
-    if (!content.trim()) return;
+    if (!content.trim() || !user) return;
     setSaving(true);
     try {
       const day = logs.length > 0 ? logs[0].day + 1 : 1;
@@ -89,7 +93,7 @@ export function DailyLogClient() {
         day: "numeric",
         year: "numeric",
       });
-      await addDailyLog({
+      await addDailyLog(user.uid, {
         projectId,
         date,
         day,

@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { ClipboardCheck, ChevronDown, ChevronRight, Shield } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useTopbar } from "../../../layout";
 import {
   subscribeToProject,
@@ -28,6 +29,7 @@ import type { Market, ProjectPhase, InspectionRequirement } from "@keystone/mark
 export function InspectionsClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [results, setResults] = useState<InspectionResultData[]>([]);
@@ -35,13 +37,14 @@ export function InspectionsClient() {
   const [expandedCompleted, setExpandedCompleted] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsub1 = subscribeToProject(projectId, setProject);
-    const unsub2 = subscribeToInspectionResults(projectId, setResults);
+    if (!user) return;
+    const unsub1 = subscribeToProject(user.uid, projectId, setProject);
+    const unsub2 = subscribeToInspectionResults(user.uid, projectId, setResults);
     return () => {
       unsub1();
       unsub2();
     };
-  }, [projectId]);
+  }, [user, projectId]);
 
   const market = (project?.market ?? "USA") as Market;
   const currentPhaseIndex = project?.currentPhase ?? 0;
@@ -113,7 +116,7 @@ export function InspectionsClient() {
 
   async function handleToggle(inspectionId: string, itemIndex: number) {
     const inspection = currentPhaseInspections.find((i) => i.id === inspectionId);
-    if (!inspection) return;
+    if (!inspection || !user) return;
 
     const existing = results.find((r) => r.inspectionId === inspectionId);
     const currentItems = existing?.completedItems
@@ -130,13 +133,13 @@ export function InspectionsClient() {
       currentItems.length === inspection.checklistItems.length && currentItems.every(Boolean);
 
     if (existing?.id) {
-      await updateInspectionResult(projectId, existing.id, {
+      await updateInspectionResult(user.uid, projectId, existing.id, {
         completedItems: currentItems,
         passed: allPassed,
         completedAt: allPassed ? new Date().toISOString() : undefined,
       });
     } else {
-      await addInspectionResult({
+      await addInspectionResult(user.uid, {
         projectId,
         inspectionId,
         phase: currentPhaseKey,

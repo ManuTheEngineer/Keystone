@@ -17,6 +17,7 @@ import {
   type BudgetItemData,
   type MaterialData,
 } from "@/lib/services/project-service";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Badge } from "@/components/ui/Badge";
@@ -411,9 +412,10 @@ function ActivityLog({ logs, photos }: ActivityLogProps) {
 interface MaterialTrackerProps {
   materials: MaterialData[];
   projectId: string;
+  userId: string;
 }
 
-function MaterialTracker({ materials, projectId }: MaterialTrackerProps) {
+function MaterialTracker({ materials, projectId, userId }: MaterialTrackerProps) {
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formQtyOrdered, setFormQtyOrdered] = useState("");
@@ -436,7 +438,7 @@ function MaterialTracker({ materials, projectId }: MaterialTrackerProps) {
     if (!formName || !formQtyOrdered || !formUnitPrice) return;
     setSubmitting(true);
     try {
-      await addMaterial({
+      await addMaterial(userId, {
         projectId,
         name: formName,
         quantityOrdered: Number(formQtyOrdered),
@@ -456,7 +458,7 @@ function MaterialTracker({ materials, projectId }: MaterialTrackerProps) {
 
   const handleStatusChange = async (material: MaterialData, newStatus: MaterialData["status"]) => {
     if (!material.id) return;
-    await updateMaterial(projectId, material.id, { status: newStatus });
+    await updateMaterial(userId, projectId, material.id, { status: newStatus });
   };
 
   const statusColor = (status: MaterialData["status"]) => {
@@ -615,6 +617,7 @@ function MaterialTracker({ materials, projectId }: MaterialTrackerProps) {
 export function MonitorClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const { isOnline } = usePWA();
   const projectId = params.id as string;
 
@@ -625,15 +628,16 @@ export function MonitorClient() {
   const [materials, setMaterials] = useState<MaterialData[]>([]);
 
   useEffect(() => {
+    if (!user) return;
     const unsubs = [
-      subscribeToProject(projectId, setProject),
-      subscribeToPhotos(projectId, setPhotos),
-      subscribeToDailyLogs(projectId, setLogs),
-      subscribeToBudgetItems(projectId, setBudgetItems),
-      subscribeToMaterials(projectId, setMaterials),
+      subscribeToProject(user.uid, projectId, setProject),
+      subscribeToPhotos(user.uid, projectId, setPhotos),
+      subscribeToDailyLogs(user.uid, projectId, setLogs),
+      subscribeToBudgetItems(user.uid, projectId, setBudgetItems),
+      subscribeToMaterials(user.uid, projectId, setMaterials),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
     if (project) {
@@ -707,7 +711,7 @@ export function MonitorClient() {
       {/* Activity log + Material tracker */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ActivityLog logs={logs} photos={photos} />
-        <MaterialTracker materials={materials} projectId={projectId} />
+        <MaterialTracker materials={materials} projectId={projectId} userId={user!.uid} />
       </div>
 
       {/* Educational note */}

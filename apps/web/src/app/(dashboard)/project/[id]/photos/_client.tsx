@@ -9,6 +9,7 @@ import {
   type PhotoData,
   type ProjectData,
 } from "@/lib/services/project-service";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { uploadProjectPhoto } from "@/lib/services/photo-upload-service";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
@@ -22,6 +23,7 @@ import { ImageIcon, Plus, Loader2, X, ChevronLeft, ChevronRight, MapPin, Calenda
 export function PhotosClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const projectId = params.id as string;
 
   const [photos, setPhotos] = useState<PhotoData[]>([]);
@@ -46,13 +48,14 @@ export function PhotosClient() {
 
   // Subscribe to data
   useEffect(() => {
-    const unsubPhotos = subscribeToPhotos(projectId, setPhotos);
-    const unsubProject = subscribeToProject(projectId, setProject);
+    if (!user) return;
+    const unsubPhotos = subscribeToPhotos(user.uid, projectId, setPhotos);
+    const unsubProject = subscribeToProject(user.uid, projectId, setProject);
     return () => {
       unsubPhotos();
       unsubProject();
     };
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
     setTopbar("Photos", `${photos.length} photos`, "info");
@@ -126,7 +129,7 @@ export function PhotosClient() {
   }
 
   async function handleUploadSubmit() {
-    if (selectedFiles.length === 0) return;
+    if (selectedFiles.length === 0 || !user) return;
     setUploading(true);
     try {
       for (const file of selectedFiles) {
@@ -134,7 +137,7 @@ export function PhotosClient() {
         const caption = [uploadCaption, uploadMilestone ? `Milestone: ${uploadMilestone}` : ""]
           .filter(Boolean)
           .join(" | ");
-        await uploadProjectPhoto(projectId, file, phase, caption || undefined);
+        await uploadProjectPhoto(user.uid, projectId, file, phase, caption || undefined);
       }
     } catch (err) {
       console.error("Upload failed:", err);

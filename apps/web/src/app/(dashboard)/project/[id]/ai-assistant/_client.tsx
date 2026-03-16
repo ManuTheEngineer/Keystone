@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { sendAIMessage, getAIUsage, type AIMessage, type AIUsage } from "@/lib/services/ai-service";
 import { subscribeToProject, type ProjectData } from "@/lib/services/project-service";
 import {
@@ -123,6 +124,7 @@ function renderInline(text: string) {
 export function AIAssistantClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -137,9 +139,10 @@ export function AIAssistantClient() {
   /* ---------- subscriptions ---------- */
 
   useEffect(() => {
-    const unsub = subscribeToProject(projectId, setProject);
+    if (!user) return;
+    const unsub = subscribeToProject(user.uid, projectId, setProject);
     return unsub;
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
     setTopbar("AI assistant", project ? `Context: ${project.name}` : "AI assistant", "info");

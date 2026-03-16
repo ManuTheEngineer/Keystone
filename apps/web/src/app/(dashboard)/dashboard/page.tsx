@@ -54,7 +54,7 @@ export default function DashboardPage() {
   // Subscribe to projects
   useEffect(() => {
     if (!user) return;
-    const unsubscribe = subscribeToUserProjects(user.uid, (data) => {
+    const unsubscribe = subscribeToUserProjects(user.uid, (data: ProjectData[]) => {
       setProjects(data);
     });
     return unsubscribe;
@@ -62,7 +62,7 @@ export default function DashboardPage() {
 
   // Subscribe to recent activity across all projects
   useEffect(() => {
-    if (projects.length === 0) {
+    if (!user || projects.length === 0) {
       setActivities([]);
       return;
     }
@@ -86,7 +86,7 @@ export default function DashboardPage() {
 
       // Daily logs
       unsubs.push(
-        subscribeToDailyLogs(pid, (logs) => {
+        subscribeToDailyLogs(user.uid, pid, (logs) => {
           for (const [key] of allActivities) {
             if (key.startsWith(`log-${pid}-`)) allActivities.delete(key);
           }
@@ -106,7 +106,7 @@ export default function DashboardPage() {
 
       // Tasks (completed ones)
       unsubs.push(
-        subscribeToTasks(pid, (tasks) => {
+        subscribeToTasks(user.uid, pid, (tasks) => {
           for (const [key] of allActivities) {
             if (key.startsWith(`task-${pid}-`)) allActivities.delete(key);
           }
@@ -127,7 +127,7 @@ export default function DashboardPage() {
 
       // Photos
       unsubs.push(
-        subscribeToPhotos(pid, (photos) => {
+        subscribeToPhotos(user.uid, pid, (photos) => {
           for (const [key] of allActivities) {
             if (key.startsWith(`photo-${pid}-`)) allActivities.delete(key);
           }
@@ -154,7 +154,7 @@ export default function DashboardPage() {
     return () => {
       for (const unsub of unsubs) unsub();
     };
-  }, [projects]);
+  }, [user, projects]);
 
   useEffect(() => {
     setTopbar("Dashboard", `${projects.length} project${projects.length !== 1 ? "s" : ""}`, "success");

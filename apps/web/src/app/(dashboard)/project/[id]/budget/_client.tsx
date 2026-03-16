@@ -10,6 +10,7 @@ import {
   type ProjectData,
   type BudgetItemData,
 } from "@/lib/services/project-service";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCard } from "@/components/ui/StatCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -90,6 +91,7 @@ function getStatusInfo(item: BudgetItemData): { label: string; variant: "success
 export function BudgetClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [items, setItems] = useState<BudgetItemData[]>([]);
@@ -103,10 +105,11 @@ export function BudgetClient() {
   const [loadingBenchmarks, setLoadingBenchmarks] = useState(false);
 
   useEffect(() => {
-    const unsub1 = subscribeToProject(projectId, setProject);
-    const unsub2 = subscribeToBudgetItems(projectId, setItems);
+    if (!user) return;
+    const unsub1 = subscribeToProject(user.uid, projectId, setProject);
+    const unsub2 = subscribeToBudgetItems(user.uid, projectId, setItems);
     return () => { unsub1(); unsub2(); };
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
     if (project) {
@@ -148,10 +151,10 @@ export function BudgetClient() {
   }
 
   async function handleSave() {
-    if (!category.trim() || !estimated.trim()) return;
+    if (!category.trim() || !estimated.trim() || !user) return;
     setSaving(true);
     try {
-      await addBudgetItem({
+      await addBudgetItem(user.uid, {
         projectId,
         category: category.trim(),
         estimated: Number(estimated),
@@ -168,6 +171,7 @@ export function BudgetClient() {
   }
 
   async function handleLoadBenchmarks() {
+    if (!user) return;
     setLoadingBenchmarks(true);
     try {
       for (const bm of benchmarks.filter((b) => b.unit !== "lump")) {
@@ -175,7 +179,7 @@ export function BudgetClient() {
           (item) => item.category.toLowerCase() === bm.category.toLowerCase()
         );
         if (!exists) {
-          await addBudgetItem({
+          await addBudgetItem(user.uid, {
             projectId,
             category: bm.category,
             estimated: bm.midRange,

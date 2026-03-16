@@ -5,9 +5,6 @@ import {
   get,
   update,
   remove,
-  query,
-  orderByChild,
-  equalTo,
   onValue,
   type Unsubscribe,
 } from "firebase/database";
@@ -110,7 +107,7 @@ export interface TaskData {
 // --- Project CRUD ---
 
 export async function createProject(data: Omit<ProjectData, "id" | "createdAt" | "updatedAt">): Promise<string> {
-  const projectsRef = ref(db, "projects");
+  const projectsRef = ref(db, `users/${data.userId}/projects`);
   const newRef = push(projectsRef);
   const now = new Date().toISOString();
   await set(newRef, {
@@ -121,8 +118,8 @@ export async function createProject(data: Omit<ProjectData, "id" | "createdAt" |
   return newRef.key!;
 }
 
-export async function getProject(projectId: string): Promise<ProjectData | null> {
-  const snapshot = await get(ref(db, `projects/${projectId}`));
+export async function getProject(userId: string, projectId: string): Promise<ProjectData | null> {
+  const snapshot = await get(ref(db, `users/${userId}/projects/${projectId}`));
   if (snapshot.exists()) {
     return { id: projectId, ...snapshot.val() } as ProjectData;
   }
@@ -130,12 +127,7 @@ export async function getProject(projectId: string): Promise<ProjectData | null>
 }
 
 export async function getUserProjects(userId: string): Promise<ProjectData[]> {
-  const projectsRef = query(
-    ref(db, "projects"),
-    orderByChild("userId"),
-    equalTo(userId)
-  );
-  const snapshot = await get(projectsRef);
+  const snapshot = await get(ref(db, `users/${userId}/projects`));
   if (!snapshot.exists()) return [];
 
   const projects: ProjectData[] = [];
@@ -146,10 +138,11 @@ export async function getUserProjects(userId: string): Promise<ProjectData[]> {
 }
 
 export function subscribeToProject(
+  userId: string,
   projectId: string,
   callback: (project: ProjectData | null) => void
 ): Unsubscribe {
-  const projectRef = ref(db, `projects/${projectId}`);
+  const projectRef = ref(db, `users/${userId}/projects/${projectId}`);
   return onValue(projectRef, (snapshot) => {
     if (snapshot.exists()) {
       callback({ id: projectId, ...snapshot.val() });
@@ -163,11 +156,7 @@ export function subscribeToUserProjects(
   userId: string,
   callback: (projects: ProjectData[]) => void
 ): Unsubscribe {
-  const projectsRef = query(
-    ref(db, "projects"),
-    orderByChild("userId"),
-    equalTo(userId)
-  );
+  const projectsRef = ref(db, `users/${userId}/projects`);
   return onValue(projectsRef, (snapshot) => {
     const projects: ProjectData[] = [];
     if (snapshot.exists()) {
@@ -180,32 +169,34 @@ export function subscribeToUserProjects(
 }
 
 export async function updateProject(
+  userId: string,
   projectId: string,
   data: Partial<ProjectData>
 ): Promise<void> {
-  await update(ref(db, `projects/${projectId}`), {
+  await update(ref(db, `users/${userId}/projects/${projectId}`), {
     ...data,
     updatedAt: new Date().toISOString(),
   });
 }
 
-export async function deleteProject(projectId: string): Promise<void> {
-  await remove(ref(db, `projects/${projectId}`));
+export async function deleteProject(userId: string, projectId: string): Promise<void> {
+  await remove(ref(db, `users/${userId}/projects/${projectId}`));
 }
 
 // --- Budget Items ---
 
-export async function addBudgetItem(data: Omit<BudgetItemData, "id">): Promise<string> {
-  const itemRef = push(ref(db, `budgetItems/${data.projectId}`));
+export async function addBudgetItem(userId: string, data: Omit<BudgetItemData, "id">): Promise<string> {
+  const itemRef = push(ref(db, `users/${userId}/projects/${data.projectId}/budgetItems`));
   await set(itemRef, data);
   return itemRef.key!;
 }
 
 export function subscribeToBudgetItems(
+  userId: string,
   projectId: string,
   callback: (items: BudgetItemData[]) => void
 ): Unsubscribe {
-  return onValue(ref(db, `budgetItems/${projectId}`), (snapshot) => {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/budgetItems`), (snapshot) => {
     const items: BudgetItemData[] = [];
     if (snapshot.exists()) {
       snapshot.forEach((child) => {
@@ -217,26 +208,28 @@ export function subscribeToBudgetItems(
 }
 
 export async function updateBudgetItem(
+  userId: string,
   projectId: string,
   itemId: string,
   data: Partial<BudgetItemData>
 ): Promise<void> {
-  await update(ref(db, `budgetItems/${projectId}/${itemId}`), data);
+  await update(ref(db, `users/${userId}/projects/${projectId}/budgetItems/${itemId}`), data);
 }
 
 // --- Contacts ---
 
-export async function addContact(data: Omit<ContactData, "id">): Promise<string> {
-  const contactRef = push(ref(db, `contacts/${data.projectId}`));
+export async function addContact(userId: string, data: Omit<ContactData, "id">): Promise<string> {
+  const contactRef = push(ref(db, `users/${userId}/projects/${data.projectId}/contacts`));
   await set(contactRef, data);
   return contactRef.key!;
 }
 
 export function subscribeToContacts(
+  userId: string,
   projectId: string,
   callback: (contacts: ContactData[]) => void
 ): Unsubscribe {
-  return onValue(ref(db, `contacts/${projectId}`), (snapshot) => {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/contacts`), (snapshot) => {
     const contacts: ContactData[] = [];
     if (snapshot.exists()) {
       snapshot.forEach((child) => {
@@ -249,17 +242,18 @@ export function subscribeToContacts(
 
 // --- Daily Logs ---
 
-export async function addDailyLog(data: Omit<DailyLogData, "id" | "createdAt">): Promise<string> {
-  const logRef = push(ref(db, `dailyLogs/${data.projectId}`));
+export async function addDailyLog(userId: string, data: Omit<DailyLogData, "id" | "createdAt">): Promise<string> {
+  const logRef = push(ref(db, `users/${userId}/projects/${data.projectId}/dailyLogs`));
   await set(logRef, { ...data, createdAt: new Date().toISOString() });
   return logRef.key!;
 }
 
 export function subscribeToDailyLogs(
+  userId: string,
   projectId: string,
   callback: (logs: DailyLogData[]) => void
 ): Unsubscribe {
-  return onValue(ref(db, `dailyLogs/${projectId}`), (snapshot) => {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/dailyLogs`), (snapshot) => {
     const logs: DailyLogData[] = [];
     if (snapshot.exists()) {
       snapshot.forEach((child) => {
@@ -272,17 +266,18 @@ export function subscribeToDailyLogs(
 
 // --- Tasks ---
 
-export async function addTask(data: Omit<TaskData, "id">): Promise<string> {
-  const taskRef = push(ref(db, `tasks/${data.projectId}`));
+export async function addTask(userId: string, data: Omit<TaskData, "id">): Promise<string> {
+  const taskRef = push(ref(db, `users/${userId}/projects/${data.projectId}/tasks`));
   await set(taskRef, data);
   return taskRef.key!;
 }
 
 export function subscribeToTasks(
+  userId: string,
   projectId: string,
   callback: (tasks: TaskData[]) => void
 ): Unsubscribe {
-  return onValue(ref(db, `tasks/${projectId}`), (snapshot) => {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/tasks`), (snapshot) => {
     const tasks: TaskData[] = [];
     if (snapshot.exists()) {
       snapshot.forEach((child) => {
@@ -294,26 +289,28 @@ export function subscribeToTasks(
 }
 
 export async function updateTask(
+  userId: string,
   projectId: string,
   taskId: string,
   data: Partial<TaskData>
 ): Promise<void> {
-  await update(ref(db, `tasks/${projectId}/${taskId}`), data);
+  await update(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`), data);
 }
 
 // --- Documents ---
 
-export async function addDocument(data: Omit<DocumentData, "id">): Promise<string> {
-  const docRef = push(ref(db, `documents/${data.projectId}`));
+export async function addDocument(userId: string, data: Omit<DocumentData, "id">): Promise<string> {
+  const docRef = push(ref(db, `users/${userId}/projects/${data.projectId}/documents`));
   await set(docRef, data);
   return docRef.key!;
 }
 
 export function subscribeToDocuments(
+  userId: string,
   projectId: string,
   callback: (docs: DocumentData[]) => void
 ): Unsubscribe {
-  return onValue(ref(db, `documents/${projectId}`), (snapshot) => {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/documents`), (snapshot) => {
     const docs: DocumentData[] = [];
     if (snapshot.exists()) {
       snapshot.forEach((child) => {
@@ -326,7 +323,7 @@ export function subscribeToDocuments(
 
 // --- Generated Documents ---
 
-export async function addGeneratedDocument(data: {
+export async function addGeneratedDocument(userId: string, data: {
   projectId: string;
   name: string;
   type: string;
@@ -334,7 +331,7 @@ export async function addGeneratedDocument(data: {
   templateId: string;
   generatedAt: string;
 }): Promise<string> {
-  const docRef = push(ref(db, `documents/${data.projectId}`));
+  const docRef = push(ref(db, `users/${userId}/projects/${data.projectId}/documents`));
   await set(docRef, {
     ...data,
     date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
@@ -344,17 +341,18 @@ export async function addGeneratedDocument(data: {
 
 // --- Photos ---
 
-export async function addPhoto(data: Omit<PhotoData, "id">): Promise<string> {
-  const photoRef = push(ref(db, `photos/${data.projectId}`));
+export async function addPhoto(userId: string, data: Omit<PhotoData, "id">): Promise<string> {
+  const photoRef = push(ref(db, `users/${userId}/projects/${data.projectId}/photos`));
   await set(photoRef, data);
   return photoRef.key!;
 }
 
 export function subscribeToPhotos(
+  userId: string,
   projectId: string,
   callback: (photos: PhotoData[]) => void
 ): Unsubscribe {
-  return onValue(ref(db, `photos/${projectId}`), (snapshot) => {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/photos`), (snapshot) => {
     const photos: PhotoData[] = [];
     if (snapshot.exists()) {
       snapshot.forEach((child) => {
@@ -380,17 +378,18 @@ export interface InspectionResultData {
   updatedAt: string;
 }
 
-export async function addInspectionResult(data: Omit<InspectionResultData, "id">): Promise<string> {
-  const resultRef = push(ref(db, `inspectionResults/${data.projectId}`));
+export async function addInspectionResult(userId: string, data: Omit<InspectionResultData, "id">): Promise<string> {
+  const resultRef = push(ref(db, `users/${userId}/projects/${data.projectId}/inspectionResults`));
   await set(resultRef, data);
   return resultRef.key!;
 }
 
 export function subscribeToInspectionResults(
+  userId: string,
   projectId: string,
   callback: (results: InspectionResultData[]) => void
 ): Unsubscribe {
-  return onValue(ref(db, `inspectionResults/${projectId}`), (snapshot) => {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/inspectionResults`), (snapshot) => {
     const results: InspectionResultData[] = [];
     if (snapshot.exists()) {
       snapshot.forEach((child) => {
@@ -402,11 +401,12 @@ export function subscribeToInspectionResults(
 }
 
 export async function updateInspectionResult(
+  userId: string,
   projectId: string,
   resultId: string,
   data: Partial<InspectionResultData>
 ): Promise<void> {
-  await update(ref(db, `inspectionResults/${projectId}/${resultId}`), {
+  await update(ref(db, `users/${userId}/projects/${projectId}/inspectionResults/${resultId}`), {
     ...data,
     updatedAt: new Date().toISOString(),
   });
@@ -427,17 +427,18 @@ export interface PunchListItemData {
   resolvedAt?: string;
 }
 
-export async function addPunchListItem(data: Omit<PunchListItemData, "id" | "createdAt">): Promise<string> {
-  const itemRef = push(ref(db, `punchListItems/${data.projectId}`));
+export async function addPunchListItem(userId: string, data: Omit<PunchListItemData, "id" | "createdAt">): Promise<string> {
+  const itemRef = push(ref(db, `users/${userId}/projects/${data.projectId}/punchListItems`));
   await set(itemRef, { ...data, createdAt: new Date().toISOString() });
   return itemRef.key!;
 }
 
 export function subscribeToPunchListItems(
+  userId: string,
   projectId: string,
   callback: (items: PunchListItemData[]) => void
 ): Unsubscribe {
-  return onValue(ref(db, `punchListItems/${projectId}`), (snapshot) => {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/punchListItems`), (snapshot) => {
     const items: PunchListItemData[] = [];
     if (snapshot.exists()) {
       snapshot.forEach((child) => {
@@ -449,11 +450,12 @@ export function subscribeToPunchListItems(
 }
 
 export async function updatePunchListItem(
+  userId: string,
   projectId: string,
   itemId: string,
   data: Partial<PunchListItemData>
 ): Promise<void> {
-  await update(ref(db, `punchListItems/${projectId}/${itemId}`), data);
+  await update(ref(db, `users/${userId}/projects/${projectId}/punchListItems/${itemId}`), data);
 }
 
 // --- Materials ---
@@ -470,17 +472,18 @@ export interface MaterialData {
   createdAt: string;
 }
 
-export async function addMaterial(data: Omit<MaterialData, "id" | "createdAt">): Promise<string> {
-  const materialRef = push(ref(db, `materials/${data.projectId}`));
+export async function addMaterial(userId: string, data: Omit<MaterialData, "id" | "createdAt">): Promise<string> {
+  const materialRef = push(ref(db, `users/${userId}/projects/${data.projectId}/materials`));
   await set(materialRef, { ...data, createdAt: new Date().toISOString() });
   return materialRef.key!;
 }
 
 export function subscribeToMaterials(
+  userId: string,
   projectId: string,
   callback: (materials: MaterialData[]) => void
 ): Unsubscribe {
-  return onValue(ref(db, `materials/${projectId}`), (snapshot) => {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/materials`), (snapshot) => {
     const materials: MaterialData[] = [];
     if (snapshot.exists()) {
       snapshot.forEach((child) => {
@@ -492,11 +495,12 @@ export function subscribeToMaterials(
 }
 
 export async function updateMaterial(
+  userId: string,
   projectId: string,
   materialId: string,
   data: Partial<MaterialData>
 ): Promise<void> {
-  await update(ref(db, `materials/${projectId}/${materialId}`), data);
+  await update(ref(db, `users/${userId}/projects/${projectId}/materials/${materialId}`), data);
 }
 
 // --- Seed demo data ---
@@ -538,7 +542,7 @@ export async function seedDemoProject(userId: string): Promise<string> {
     { category: "Contingency (15%)", estimated: 57750, actual: 5500, status: "under" as const },
   ];
   for (const item of budgetItems) {
-    await addBudgetItem({ projectId, ...item });
+    await addBudgetItem(userId, { projectId, ...item });
   }
 
   // Seed contacts
@@ -551,7 +555,7 @@ export async function seedDemoProject(userId: string): Promise<string> {
     { name: "K. Brown Architecture", initials: "KB", role: "Architect", rating: 4.9 },
   ];
   for (const c of contacts) {
-    await addContact({ projectId, ...c });
+    await addContact(userId, { projectId, ...c });
   }
 
   // Seed tasks
@@ -569,7 +573,7 @@ export async function seedDemoProject(userId: string): Promise<string> {
     { label: "Insulation: blown attic (R-49)", status: "upcoming" as const, done: false, order: 10 },
   ];
   for (const t of tasks) {
-    await addTask({ projectId, ...t });
+    await addTask(userId, { projectId, ...t });
   }
 
   // Seed daily logs
@@ -579,7 +583,7 @@ export async function seedDemoProject(userId: string): Promise<string> {
     { date: "Mar 13, 2026", day: 140, weather: "Sunny 70F", crew: 3, content: "Plumbing rough-in completed. PEX supply lines pressure tested 80 PSI for 30 min -- no drop. PVC drain slope verified with level. Water heater placed in utility closet. Bathtubs set in all 3 bathrooms. Ready for electrical rough-in." },
   ];
   for (const l of logs) {
-    await addDailyLog({ projectId, ...l });
+    await addDailyLog(userId, { projectId, ...l });
   }
 
   // Seed documents
@@ -594,7 +598,7 @@ export async function seedDemoProject(userId: string): Promise<string> {
     { name: "Change order #2 windows", phase: "Phase 6: Build", date: "Mar 15", type: "CONTRACT" },
   ];
   for (const d of docs) {
-    await addDocument({ projectId, ...d });
+    await addDocument(userId, { projectId, ...d });
   }
 
   return projectId;

@@ -23,6 +23,7 @@ import {
   type CurrencyConversionInput,
   type ContingencyInput,
 } from "@keystone/core";
+import { useAuth } from "@/components/auth/AuthProvider";
 import {
   getMarketData,
   formatCurrency,
@@ -66,6 +67,7 @@ function FormulaToggle({ formula }: { formula: string }) {
 export function FinancialsClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -97,13 +99,14 @@ export function FinancialsClient() {
   // ---------------------------------------------------------------------------
 
   useEffect(() => {
-    const unsub1 = subscribeToProject(projectId, setProject);
-    const unsub2 = subscribeToBudgetItems(projectId, setItems);
+    if (!user) return;
+    const unsub1 = subscribeToProject(user.uid, projectId, setProject);
+    const unsub2 = subscribeToBudgetItems(user.uid, projectId, setItems);
     return () => {
       unsub1();
       unsub2();
     };
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
     if (project) {

@@ -10,6 +10,7 @@ import {
   type ContactData,
   type ProjectData,
 } from "@/lib/services/project-service";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { Plus, Phone, Mail, Wrench, AlertCircle } from "lucide-react";
@@ -108,6 +109,7 @@ function TradeRequirementList({
 export function TeamClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const projectId = params.id as string;
   const [contacts, setContacts] = useState<ContactData[]>([]);
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -121,14 +123,16 @@ export function TeamClient() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const unsub = subscribeToContacts(projectId, setContacts);
+    if (!user) return;
+    const unsub = subscribeToContacts(user.uid, projectId, setContacts);
     return unsub;
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
-    const unsub = subscribeToProject(projectId, setProject);
+    if (!user) return;
+    const unsub = subscribeToProject(user.uid, projectId, setProject);
     return unsub;
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
     setTopbar("Team", `${contacts.length} contacts`, "info");
@@ -155,7 +159,7 @@ export function TeamClient() {
   const resolvedRole = role === "__other__" ? customRole.trim() : role;
 
   async function handleSave() {
-    if (!name.trim()) return;
+    if (!name.trim() || !user) return;
     setSaving(true);
     try {
       const words = name.trim().split(/\s+/);
@@ -163,7 +167,7 @@ export function TeamClient() {
         words.length >= 2
           ? (words[0][0] + words[1][0]).toUpperCase()
           : words[0].slice(0, 2).toUpperCase();
-      await addContact({
+      await addContact(user.uid, {
         projectId,
         name: name.trim(),
         initials,

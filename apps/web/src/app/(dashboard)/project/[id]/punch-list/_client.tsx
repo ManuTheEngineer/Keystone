@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { Plus, Filter, ListChecks, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useTopbar } from "../../../layout";
 import {
   subscribeToProject,
@@ -36,6 +37,7 @@ const STATUS_BADGE: Record<string, "danger" | "warning" | "success"> = {
 export function PunchListClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [items, setItems] = useState<PunchListItemData[]>([]);
@@ -53,13 +55,14 @@ export function PunchListClient() {
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
 
   useEffect(() => {
-    const unsub1 = subscribeToProject(projectId, setProject);
-    const unsub2 = subscribeToPunchListItems(projectId, setItems);
+    if (!user) return;
+    const unsub1 = subscribeToProject(user.uid, projectId, setProject);
+    const unsub2 = subscribeToPunchListItems(user.uid, projectId, setItems);
     return () => {
       unsub1();
       unsub2();
     };
-  }, [projectId]);
+  }, [user, projectId]);
 
   const market = (project?.market ?? "USA") as Market;
   const currentPhaseKey = PHASE_ORDER[project?.currentPhase ?? 0] ?? "DEFINE";
@@ -101,10 +104,10 @@ export function PunchListClient() {
   }, [items, filterStatus, filterSeverity]);
 
   async function handleAddItem() {
-    if (!description.trim()) return;
+    if (!description.trim() || !user) return;
     setSaving(true);
     try {
-      await addPunchListItem({
+      await addPunchListItem(user.uid, {
         projectId,
         description: description.trim(),
         trade: trade || "General",
@@ -126,8 +129,8 @@ export function PunchListClient() {
     item: PunchListItemData,
     newStatus: "open" | "in-progress" | "resolved"
   ) {
-    if (!item.id) return;
-    await updatePunchListItem(projectId, item.id, {
+    if (!item.id || !user) return;
+    await updatePunchListItem(user.uid, projectId, item.id, {
       status: newStatus,
       resolvedAt: newStatus === "resolved" ? new Date().toISOString() : undefined,
     });

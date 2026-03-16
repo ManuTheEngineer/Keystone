@@ -42,7 +42,7 @@ export async function registerUser(
     createdAt: new Date().toISOString(),
   };
 
-  await set(ref(db, `users/${user.uid}`), profile);
+  await set(ref(db, `users/${user.uid}/profile`), profile);
 
   return user;
 }
@@ -61,7 +61,7 @@ export async function resetPassword(email: string): Promise<void> {
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
-  const snapshot = await get(ref(db, `users/${uid}`));
+  const snapshot = await get(ref(db, `users/${uid}/profile`));
   if (snapshot.exists()) {
     return snapshot.val() as UserProfile;
   }

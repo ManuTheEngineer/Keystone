@@ -21,6 +21,7 @@ import {
   type PhotoData,
   type PunchListItemData,
 } from "@/lib/services/project-service";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCard } from "@/components/ui/StatCard";
 import { PhaseTracker } from "@/components/ui/PhaseTracker";
@@ -123,6 +124,7 @@ function generateActualProgress(progress: number, currentWeek: number): { week: 
 export function OverviewClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -134,17 +136,18 @@ export function OverviewClient() {
   const [punchListItems, setPunchListItems] = useState<PunchListItemData[]>([]);
 
   useEffect(() => {
+    if (!user) return;
     const unsubs = [
-      subscribeToProject(projectId, setProject),
-      subscribeToTasks(projectId, setTasks),
-      subscribeToBudgetItems(projectId, setBudgetItems),
-      subscribeToContacts(projectId, setContacts),
-      subscribeToDailyLogs(projectId, setDailyLogs),
-      subscribeToPhotos(projectId, setPhotos),
-      subscribeToPunchListItems(projectId, setPunchListItems),
+      subscribeToProject(user.uid, projectId, setProject),
+      subscribeToTasks(user.uid, projectId, setTasks),
+      subscribeToBudgetItems(user.uid, projectId, setBudgetItems),
+      subscribeToContacts(user.uid, projectId, setContacts),
+      subscribeToDailyLogs(user.uid, projectId, setDailyLogs),
+      subscribeToPhotos(user.uid, projectId, setPhotos),
+      subscribeToPunchListItems(user.uid, projectId, setPunchListItems),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
     if (project) {
@@ -356,7 +359,7 @@ export function OverviewClient() {
                 <div key={task.id} className="flex items-center gap-2 text-[12px]">
                   <div
                     className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
-                    onClick={() => updateTask(projectId, task.id!, { done: true, status: "done" })}
+                    onClick={() => user && updateTask(user.uid, projectId, task.id!, { done: true, status: "done" })}
                   />
                   <span className="text-muted">{task.label}</span>
                   <Badge variant={task.status === "in-progress" ? "warning" : "info"}>
@@ -506,7 +509,7 @@ export function OverviewClient() {
                 >
                   <div
                     className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
-                    onClick={() => updateTask(projectId, task.id!, { done: true, status: "done" })}
+                    onClick={() => user && updateTask(user.uid, projectId, task.id!, { done: true, status: "done" })}
                   />
                   <span className="flex-1 text-muted">{task.label}</span>
                   <Badge variant={task.status === "in-progress" ? "warning" : "info"}>
@@ -874,7 +877,7 @@ export function OverviewClient() {
                 >
                   <div
                     className="w-4 h-4 rounded border-[1.5px] bg-success border-success shrink-0 flex items-center justify-center cursor-pointer"
-                    onClick={() => updateTask(projectId, task.id!, { done: false, status: "upcoming" })}
+                    onClick={() => user && updateTask(user.uid, projectId, task.id!, { done: false, status: "upcoming" })}
                   >
                     <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
                       <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

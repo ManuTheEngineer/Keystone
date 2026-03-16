@@ -14,6 +14,7 @@ import {
   type ContactData,
   type BudgetItemData,
 } from "@/lib/services/project-service";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { generateDocument } from "@/lib/services/document-generator";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
@@ -86,6 +87,7 @@ function DocumentTemplateCard({
 export function DocumentsClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const projectId = params.id as string;
 
   const [docs, setDocs] = useState<DocumentData[]>([]);
@@ -105,24 +107,28 @@ export function DocumentsClient() {
 
   // Subscribe to data
   useEffect(() => {
-    const unsub = subscribeToDocuments(projectId, setDocs);
+    if (!user) return;
+    const unsub = subscribeToDocuments(user.uid, projectId, setDocs);
     return unsub;
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
-    const unsub = subscribeToProject(projectId, setProject);
+    if (!user) return;
+    const unsub = subscribeToProject(user.uid, projectId, setProject);
     return unsub;
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
-    const unsub = subscribeToContacts(projectId, setContacts);
+    if (!user) return;
+    const unsub = subscribeToContacts(user.uid, projectId, setContacts);
     return unsub;
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
-    const unsub = subscribeToBudgetItems(projectId, setBudgetItems);
+    if (!user) return;
+    const unsub = subscribeToBudgetItems(user.uid, projectId, setBudgetItems);
     return unsub;
-  }, [projectId]);
+  }, [user, projectId]);
 
   // Count generated documents (those with a templateId field)
   const generatedCount = docs.filter((d) => (d as unknown as Record<string, unknown>).templateId).length;
@@ -174,10 +180,10 @@ export function DocumentsClient() {
 
   // Step 3: User clicks "Save to project" in preview -> save metadata to Firebase
   const handleSaveToProject = useCallback(async () => {
-    if (saving) return;
+    if (saving || !user) return;
     setSaving(true);
     try {
-      await addGeneratedDocument({
+      await addGeneratedDocument(user.uid, {
         projectId,
         name: previewTitle,
         type: previewType,
@@ -191,7 +197,7 @@ export function DocumentsClient() {
     } finally {
       setSaving(false);
     }
-  }, [saving, projectId, previewTitle, previewType, previewPhase, previewTemplateId]);
+  }, [saving, user, projectId, previewTitle, previewType, previewPhase, previewTemplateId]);
 
   const handleClosePreview = useCallback(() => {
     setPreviewHtml(null);

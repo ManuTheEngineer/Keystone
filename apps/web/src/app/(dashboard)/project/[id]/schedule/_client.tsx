@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import { subscribeToProject, type ProjectData } from "@/lib/services/project-service";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Card } from "@/components/ui/Card";
 import { PhaseEducationCard } from "@/components/ui/PhaseEducationCard";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -188,15 +189,17 @@ function PhaseCard({
 export function ScheduleClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
+  const { user } = useAuth();
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const unsub = subscribeToProject(projectId, setProject);
+    if (!user) return;
+    const unsub = subscribeToProject(user.uid, projectId, setProject);
     return unsub;
-  }, [projectId]);
+  }, [user, projectId]);
 
   useEffect(() => {
     if (project) {

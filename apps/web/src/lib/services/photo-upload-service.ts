@@ -101,6 +101,7 @@ export function extractGeoLocation(): Promise<{ latitude: number; longitude: num
  * Upload a photo with compression, geotagging, and Firebase Storage.
  */
 export async function uploadProjectPhoto(
+  userId: string,
   projectId: string,
   file: File,
   phase: string,
@@ -134,7 +135,7 @@ export async function uploadProjectPhoto(
     longitude: geo?.longitude,
   };
 
-  const photoId = await addPhoto(photoData);
+  const photoId = await addPhoto(userId, photoData);
 
   return { id: photoId, ...photoData };
 }
