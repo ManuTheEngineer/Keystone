@@ -122,6 +122,7 @@ function getActiveSectionFromPath(pathname: string): string {
   if (pathname === "/" || pathname === "/dashboard") return "dashboard";
   if (pathname.includes("/new-project")) return "new-project";
   if (pathname.includes("/learn")) return "learn";
+  if (pathname.includes("/settings")) return "settings";
   if (pathname.includes("/overview")) return "overview";
   if (pathname.includes("/financials")) return "financials";
   if (pathname.includes("/budget")) return "budget";
@@ -160,5 +161,6 @@ function sectionToRoute(section: string, currentProjectId: string | null): strin
   if (projectRoutes[section]) return projectRoutes[section];
   if (section === "new-project") return "/new-project";
   if (section === "learn") return "/learn";
+  if (section === "settings") return "/settings";
   return "/dashboard";
 }

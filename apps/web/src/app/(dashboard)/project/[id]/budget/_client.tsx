@@ -7,6 +7,8 @@ import {
   subscribeToProject,
   subscribeToBudgetItems,
   addBudgetItem,
+  updateBudgetItem,
+  deleteBudgetItem,
   type ProjectData,
   type BudgetItemData,
 } from "@/lib/services/project-service";
@@ -36,6 +38,8 @@ import {
   Hammer,
   Package,
   DollarSign,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -108,6 +112,11 @@ export function BudgetClient() {
   const [actual, setActual] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadingBenchmarks, setLoadingBenchmarks] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editEstimated, setEditEstimated] = useState("");
+  const [editActual, setEditActual] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -196,6 +205,37 @@ export function BudgetClient() {
     } finally {
       setLoadingBenchmarks(false);
     }
+  }
+
+  function startEditItem(item: BudgetItemData) {
+    setEditingItemId(item.id!);
+    setEditEstimated(String(item.estimated));
+    setEditActual(String(item.actual));
+  }
+
+  async function handleEditSave(item: BudgetItemData) {
+    if (!user) return;
+    setEditSaving(true);
+    try {
+      const est = Number(editEstimated);
+      const act = Number(editActual);
+      const status = act > est ? "over" : act > 0 ? "on-track" : "not-started";
+      await updateBudgetItem(user.uid, projectId, item.id!, {
+        estimated: est,
+        actual: act,
+        status,
+      });
+      setEditingItemId(null);
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function handleDeleteItem(itemId: string) {
+    if (!user) return;
+    await deleteBudgetItem(user.uid, projectId, itemId);
+    setDeleteConfirmId(null);
+    setExpandedItem(null);
   }
 
   return (
@@ -487,41 +527,118 @@ export function BudgetClient() {
                       </div>
                     )}
 
-                    {/* Detailed breakdown */}
-                    <div className="space-y-1.5 text-[11px]">
-                      <div className="flex justify-between">
-                        <span className="text-muted">Estimated</span>
-                        <span className="font-data text-earth">{fmt(item.estimated)}</span>
+                    {/* Edit mode */}
+                    {editingItemId === item.id ? (
+                      <div className="space-y-2 mb-3">
+                        <div>
+                          <label className="block text-[10px] text-muted font-medium mb-0.5">Estimated ({marketData.currency.code})</label>
+                          <input
+                            type="number"
+                            value={editEstimated}
+                            onChange={(e) => setEditEstimated(e.target.value)}
+                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full font-data"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-muted font-medium mb-0.5">Actual ({marketData.currency.code})</label>
+                          <input
+                            type="number"
+                            value={editActual}
+                            onChange={(e) => setEditActual(e.target.value)}
+                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full font-data"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditSave(item)}
+                            disabled={editSaving}
+                            className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                          >
+                            {editSaving ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            onClick={() => setEditingItemId(null)}
+                            className="px-3 py-1.5 text-[11px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted">Actual spent</span>
-                        <span className="font-data text-earth">{fmt(item.actual)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted">Variance</span>
-                        <span className={`font-data ${item.actual > item.estimated ? "text-danger" : "text-success"}`}>
-                          {item.actual > item.estimated ? "+" : ""}{fmt(item.actual - item.estimated)}
-                        </span>
-                      </div>
-                      {benchmark && (
-                        <>
-                          <div className="border-t border-border pt-1.5 mt-1.5">
-                            <div className="flex justify-between">
-                              <span className="text-muted">Market low</span>
-                              <span className="font-data text-muted">{fmt(benchmark.lowRange)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted">Market mid</span>
-                              <span className="font-data text-muted">{fmt(benchmark.midRange)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted">Market high</span>
-                              <span className="font-data text-muted">{fmt(benchmark.highRange)}</span>
-                            </div>
+                    ) : (
+                      <>
+                        {/* Detailed breakdown */}
+                        <div className="space-y-1.5 text-[11px]">
+                          <div className="flex justify-between">
+                            <span className="text-muted">Estimated</span>
+                            <span className="font-data text-earth">{fmt(item.estimated)}</span>
                           </div>
-                        </>
-                      )}
-                    </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted">Actual spent</span>
+                            <span className="font-data text-earth">{fmt(item.actual)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted">Variance</span>
+                            <span className={`font-data ${item.actual > item.estimated ? "text-danger" : "text-success"}`}>
+                              {item.actual > item.estimated ? "+" : ""}{fmt(item.actual - item.estimated)}
+                            </span>
+                          </div>
+                          {benchmark && (
+                            <>
+                              <div className="border-t border-border pt-1.5 mt-1.5">
+                                <div className="flex justify-between">
+                                  <span className="text-muted">Market low</span>
+                                  <span className="font-data text-muted">{fmt(benchmark.lowRange)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted">Market mid</span>
+                                  <span className="font-data text-muted">{fmt(benchmark.midRange)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted">Market high</span>
+                                  <span className="font-data text-muted">{fmt(benchmark.highRange)}</span>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Edit / Delete buttons */}
+                    {editingItemId !== item.id && (
+                      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); startEditItem(item); }}
+                          className="flex items-center gap-1 px-3 py-1.5 text-[11px] border border-border rounded-[var(--radius)] text-earth hover:bg-surface-alt transition-colors"
+                        >
+                          <Pencil size={12} /> Edit
+                        </button>
+                        {deleteConfirmId === item.id ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] text-danger">Are you sure? This cannot be undone.</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id!); }}
+                              className="px-2 py-1 text-[10px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors"
+                            >
+                              Delete
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}
+                              className="px-2 py-1 text-[10px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(item.id!); }}
+                            className="flex items-center gap-1 px-3 py-1.5 text-[11px] border border-danger/30 rounded-[var(--radius)] text-danger hover:bg-danger/5 transition-colors"
+                          >
+                            <Trash2 size={12} /> Delete
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </Card>

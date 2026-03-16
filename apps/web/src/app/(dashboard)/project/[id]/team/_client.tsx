@@ -7,6 +7,8 @@ import {
   subscribeToContacts,
   subscribeToProject,
   addContact,
+  updateContact,
+  deleteContact,
   type ContactData,
   type ProjectData,
 } from "@/lib/services/project-service";
@@ -15,7 +17,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { Plus, Phone, Mail, Wrench, AlertCircle, Users } from "lucide-react";
+import { Plus, Phone, Mail, Wrench, AlertCircle, Users, Pencil, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AIInsight } from "@/components/ui/AIInsight";
 import { generateTeamInsights } from "@/lib/insights";
@@ -133,6 +135,15 @@ export function TeamClient() {
   const [email, setEmail] = useState("");
   const [rating, setRating] = useState("5");
   const [saving, setSaving] = useState(false);
+  const [expandedContact, setExpandedContact] = useState<string | null>(null);
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editRole, setEditRole] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editRating, setEditRating] = useState("5");
+  const [editSaving, setEditSaving] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -198,6 +209,45 @@ export function TeamClient() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function startEditContact(c: ContactData) {
+    setEditingContactId(c.id!);
+    setEditName(c.name);
+    setEditRole(c.role);
+    setEditPhone(c.phone ?? "");
+    setEditEmail(c.email ?? "");
+    setEditRating(String(c.rating));
+  }
+
+  async function handleEditContactSave(contactId: string) {
+    if (!user || !editName.trim()) return;
+    setEditSaving(true);
+    try {
+      const words = editName.trim().split(/\s+/);
+      const initials =
+        words.length >= 2
+          ? (words[0][0] + words[1][0]).toUpperCase()
+          : words[0].slice(0, 2).toUpperCase();
+      await updateContact(user.uid, projectId, contactId, {
+        name: editName.trim(),
+        initials,
+        role: editRole,
+        phone: editPhone.trim() || undefined,
+        email: editEmail.trim() || undefined,
+        rating: Number(editRating),
+      });
+      setEditingContactId(null);
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function handleDeleteContact(contactId: string) {
+    if (!user) return;
+    await deleteContact(user.uid, projectId, contactId);
+    setDeleteConfirmId(null);
+    setExpandedContact(null);
   }
 
   // Compute trades filled count
@@ -377,43 +427,189 @@ export function TeamClient() {
         <div className="space-y-1.5">
           {contacts.map((c, i) => {
             const color = COLORS[i % COLORS.length];
+            const isExpanded = expandedContact === c.id;
+            const isEditing = editingContactId === c.id;
+            const borderColor = [
+              "var(--color-info)",
+              "var(--color-success)",
+              "var(--color-warning)",
+              "#8B4513",
+            ][i % 4];
+
             return (
-              <button
+              <div
                 key={c.id}
-                className="w-full flex items-center gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface hover:border-border-dark hover:shadow-[var(--shadow-sm)] transition-all text-left border-l-[3px]"
-                style={{ borderLeftColor: [
-                  "var(--color-info)",
-                  "var(--color-success)",
-                  "var(--color-warning)",
-                  "#8B4513",
-                ][i % 4] }}
+                className="border border-border rounded-[var(--radius)] bg-surface transition-all border-l-[3px]"
+                style={{ borderLeftColor: borderColor }}
               >
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
-                  style={{ background: color.bg, color: color.text }}
+                {/* Contact summary row */}
+                <button
+                  className="w-full flex items-center gap-3 p-3 hover:bg-surface-alt transition-colors text-left"
+                  onClick={() => setExpandedContact(isExpanded ? null : c.id!)}
                 >
-                  {c.initials}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium text-earth truncate">{c.name}</div>
-                  <div className="text-[10px] text-muted">{c.role}</div>
-                  {(c.phone || c.email) && (
-                    <div className="flex items-center gap-3 mt-0.5">
-                      {c.phone && (
-                        <span className="flex items-center gap-1 text-[10px] text-muted">
-                          <Phone size={10} /> {c.phone}
-                        </span>
-                      )}
-                      {c.email && (
-                        <span className="flex items-center gap-1 text-[10px] text-muted">
-                          <Mail size={10} /> {c.email}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="text-[10px] text-muted font-data">{c.rating}/5</div>
-              </button>
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
+                    style={{ background: color.bg, color: color.text }}
+                  >
+                    {c.initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-medium text-earth truncate">{c.name}</div>
+                    <div className="text-[10px] text-muted">{c.role}</div>
+                    {(c.phone || c.email) && (
+                      <div className="flex items-center gap-3 mt-0.5">
+                        {c.phone && (
+                          <span className="flex items-center gap-1 text-[10px] text-muted">
+                            <Phone size={10} /> {c.phone}
+                          </span>
+                        )}
+                        {c.email && (
+                          <span className="flex items-center gap-1 text-[10px] text-muted">
+                            <Mail size={10} /> {c.email}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-muted font-data">{c.rating}/5</div>
+                </button>
+
+                {/* Expanded details */}
+                {isExpanded && (
+                  <div className="px-3 pb-3 border-t border-border">
+                    {isEditing ? (
+                      <div className="space-y-2 pt-2">
+                        <div>
+                          <label className="block text-[10px] text-muted font-medium mb-0.5">Name</label>
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-muted font-medium mb-0.5">Role</label>
+                          <input
+                            type="text"
+                            value={editRole}
+                            onChange={(e) => setEditRole(e.target.value)}
+                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-muted font-medium mb-0.5">Phone</label>
+                          <input
+                            type="text"
+                            value={editPhone}
+                            onChange={(e) => setEditPhone(e.target.value)}
+                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-muted font-medium mb-0.5">Email</label>
+                          <input
+                            type="text"
+                            value={editEmail}
+                            onChange={(e) => setEditEmail(e.target.value)}
+                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-muted font-medium mb-0.5">Rating (1-5)</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={5}
+                            value={editRating}
+                            onChange={(e) => setEditRating(e.target.value)}
+                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-20"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            onClick={() => handleEditContactSave(c.id!)}
+                            disabled={editSaving || !editName.trim()}
+                            className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                          >
+                            {editSaving ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            onClick={() => setEditingContactId(null)}
+                            className="px-3 py-1.5 text-[11px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="pt-2">
+                        {/* Full details */}
+                        <div className="space-y-1 text-[11px] mb-3">
+                          <div className="flex justify-between">
+                            <span className="text-muted">Name</span>
+                            <span className="text-earth">{c.name}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted">Role</span>
+                            <span className="text-earth">{c.role}</span>
+                          </div>
+                          {c.phone && (
+                            <div className="flex justify-between">
+                              <span className="text-muted">Phone</span>
+                              <span className="text-earth">{c.phone}</span>
+                            </div>
+                          )}
+                          {c.email && (
+                            <div className="flex justify-between">
+                              <span className="text-muted">Email</span>
+                              <span className="text-earth">{c.email}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-muted">Rating</span>
+                            <span className="text-earth font-data">{c.rating}/5</span>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-border">
+                          <button
+                            onClick={() => startEditContact(c)}
+                            className="flex items-center gap-1 px-3 py-1.5 text-[11px] border border-border rounded-[var(--radius)] text-earth hover:bg-surface-alt transition-colors"
+                          >
+                            <Pencil size={12} /> Edit
+                          </button>
+                          {deleteConfirmId === c.id ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] text-danger">Are you sure?</span>
+                              <button
+                                onClick={() => handleDeleteContact(c.id!)}
+                                className="px-2 py-1 text-[10px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors"
+                              >
+                                Delete
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="px-2 py-1 text-[10px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setDeleteConfirmId(c.id!)}
+                              className="flex items-center gap-1 px-3 py-1.5 text-[11px] border border-danger/30 rounded-[var(--radius)] text-danger hover:bg-danger/5 transition-colors"
+                            >
+                              <Trash2 size={12} /> Delete
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

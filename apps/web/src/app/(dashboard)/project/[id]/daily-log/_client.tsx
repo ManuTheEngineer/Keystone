@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Plus, ClipboardList } from "lucide-react";
+import { Plus, ClipboardList, Pencil, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTopbar } from "../../../layout";
@@ -12,6 +12,8 @@ import {
   subscribeToDailyLogs,
   subscribeToProject,
   addDailyLog,
+  updateDailyLog,
+  deleteDailyLog,
   type DailyLogData,
   type ProjectData,
 } from "@/lib/services/project-service";
@@ -49,6 +51,12 @@ export function DailyLogClient() {
   const [crew, setCrew] = useState("1");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [editWeather, setEditWeather] = useState("");
+  const [editCrew, setEditCrew] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -119,6 +127,34 @@ export function DailyLogClient() {
     if (w.includes("rain") || w.includes("pluie")) return "var(--color-info)";
     if (w.includes("sunny") || w.includes("ensoleille")) return "var(--color-warning)";
     return "var(--color-muted)";
+  }
+
+  function startEditLog(entry: DailyLogData) {
+    setEditingLogId(entry.id!);
+    setEditContent(entry.content);
+    setEditWeather(entry.weather);
+    setEditCrew(String(entry.crew));
+  }
+
+  async function handleEditLogSave(logId: string) {
+    if (!user || !editContent.trim()) return;
+    setEditSaving(true);
+    try {
+      await updateDailyLog(user.uid, projectId, logId, {
+        content: editContent.trim(),
+        weather: editWeather,
+        crew: Number(editCrew),
+      });
+      setEditingLogId(null);
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function handleDeleteLog(logId: string) {
+    if (!user) return;
+    await deleteDailyLog(user.uid, projectId, logId);
+    setDeleteConfirmId(null);
   }
 
   return (
@@ -222,25 +258,121 @@ export function DailyLogClient() {
         />
       ) : (
         <div className="space-y-2">
-          {logs.map((entry, i) => (
-            <div
-              key={entry.id}
-              className="flex gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface border-l-[3px]"
-              style={{ borderLeftColor: getWeatherBorderColor(entry.weather) }}
-            >
-              {/* Day badge */}
-              <div className="shrink-0 w-10 h-10 rounded-[var(--radius)] bg-warm flex flex-col items-center justify-center">
-                <span className="text-[8px] uppercase tracking-wider text-muted leading-none">Day</span>
-                <span className="text-[14px] font-data font-semibold text-earth leading-tight">{entry.day}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[10px] text-muted font-data mb-1">
-                  {entry.date} | {entry.weather} | Crew: {entry.crew}
+          {logs.map((entry, i) => {
+            const isEditing = editingLogId === entry.id;
+            const isDeleteConfirm = deleteConfirmId === entry.id;
+
+            return (
+              <div
+                key={entry.id}
+                className="p-3 border border-border rounded-[var(--radius)] bg-surface border-l-[3px]"
+                style={{ borderLeftColor: getWeatherBorderColor(entry.weather) }}
+              >
+                <div className="flex gap-3">
+                  {/* Day badge */}
+                  <div className="shrink-0 w-10 h-10 rounded-[var(--radius)] bg-warm flex flex-col items-center justify-center">
+                    <span className="text-[8px] uppercase tracking-wider text-muted leading-none">Day</span>
+                    <span className="text-[14px] font-data font-semibold text-earth leading-tight">{entry.day}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] text-muted font-medium mb-0.5">Weather</label>
+                            <input
+                              type="text"
+                              value={editWeather}
+                              onChange={(e) => setEditWeather(e.target.value)}
+                              className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-muted font-medium mb-0.5">Crew size</label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={editCrew}
+                              onChange={(e) => setEditCrew(e.target.value)}
+                              className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-muted font-medium mb-0.5">Content</label>
+                          <textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            rows={3}
+                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full resize-none"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditLogSave(entry.id!)}
+                            disabled={editSaving || !editContent.trim()}
+                            className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                          >
+                            {editSaving ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            onClick={() => setEditingLogId(null)}
+                            className="px-3 py-1.5 text-[11px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-[10px] text-muted font-data mb-1">
+                          {entry.date} | {entry.weather} | Crew: {entry.crew}
+                        </div>
+                        <div className="text-[12px] text-muted leading-relaxed">{entry.content}</div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Edit / Delete buttons */}
+                  {!isEditing && (
+                    <div className="flex items-start gap-1 shrink-0">
+                      <button
+                        onClick={() => startEditLog(entry)}
+                        className="p-1 text-muted hover:text-earth transition-colors"
+                        title="Edit entry"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      {isDeleteConfirm ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleDeleteLog(entry.id!)}
+                            className="px-2 py-1 text-[10px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmId(null)}
+                            className="px-2 py-1 text-[10px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setDeleteConfirmId(entry.id!)}
+                          className="p-1 text-muted hover:text-danger transition-colors"
+                          title="Delete entry"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="text-[12px] text-muted leading-relaxed">{entry.content}</div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

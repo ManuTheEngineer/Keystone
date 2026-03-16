@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTopbar } from "../../../layout";
 import {
@@ -16,6 +16,9 @@ import {
   subscribeToInspectionResults,
   subscribeToMaterials,
   updateTask,
+  addTask,
+  deleteTask,
+  deleteProject,
   type ProjectData,
   type TaskData,
   type BudgetItemData,
@@ -70,8 +73,12 @@ import {
   Home,
   TrendingUp,
   Download,
+  Plus,
+  X,
+  AlertTriangle,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
+import { PhaseAdvancement } from "@/components/ui/PhaseAdvancement";
 import type { ExportData } from "@/lib/services/export-service";
 
 // ---------------------------------------------------------------------------
@@ -137,6 +144,7 @@ export function OverviewClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
+  const router = useRouter();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -150,6 +158,13 @@ export function OverviewClient() {
   const [inspectionResults, setInspectionResults] = useState<InspectionResultData[]>([]);
   const [materials, setMaterials] = useState<MaterialData[]>([]);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [newTaskLabel, setNewTaskLabel] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskLabel, setEditingTaskLabel] = useState("");
+  const [showDeleteProject, setShowDeleteProject] = useState(false);
+  const [deleteProjectName, setDeleteProjectName] = useState("");
+  const [deletingProject, setDeletingProject] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -195,6 +210,42 @@ export function OverviewClient() {
     ? Math.round((project.totalSpent / project.totalBudget) * 100)
     : 0;
 
+  async function handleAddTask() {
+    if (!newTaskLabel.trim() || !user) return;
+    await addTask(user.uid, {
+      projectId,
+      label: newTaskLabel.trim(),
+      status: "upcoming",
+      done: false,
+      order: tasks.length,
+    });
+    setNewTaskLabel("");
+    setShowAddTask(false);
+  }
+
+  async function handleDeleteTask(taskId: string) {
+    if (!user) return;
+    await deleteTask(user.uid, projectId, taskId);
+  }
+
+  async function handleEditTaskSave(taskId: string) {
+    if (!user || !editingTaskLabel.trim()) return;
+    await updateTask(user.uid, projectId, taskId, { label: editingTaskLabel.trim() });
+    setEditingTaskId(null);
+    setEditingTaskLabel("");
+  }
+
+  async function handleDeleteProject() {
+    if (!user || !project || deleteProjectName !== project.name) return;
+    setDeletingProject(true);
+    try {
+      await deleteProject(user.uid, projectId);
+      router.push("/dashboard");
+    } catch {
+      setDeletingProject(false);
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -211,6 +262,11 @@ export function OverviewClient() {
 
       {/* Phase tracker - always shown */}
       <PhaseTracker currentPhase={project.currentPhase} completedPhases={project.completedPhases} />
+
+      {/* Phase advancement */}
+      {user && project && (
+        <PhaseAdvancement project={project} userId={user.uid} onAdvance={() => {}} />
+      )}
 
       {/* Phase education - always shown */}
       {education && (
@@ -399,7 +455,41 @@ export function OverviewClient() {
 
           {/* Next steps */}
           <Card padding="md" className="mb-5">
-            <h4 className="text-[12px] font-semibold text-earth mb-2">Next Steps</h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-[12px] font-semibold text-earth">Next Steps</h4>
+              <button
+                onClick={() => setShowAddTask(true)}
+                className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
+              >
+                <Plus size={12} /> Add task
+              </button>
+            </div>
+            {showAddTask && (
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  type="text"
+                  value={newTaskLabel}
+                  onChange={(e) => setNewTaskLabel(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
+                  placeholder="Task description"
+                  className="flex-1 px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
+                  autoFocus
+                />
+                <button
+                  onClick={handleAddTask}
+                  disabled={!newTaskLabel.trim()}
+                  className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                >
+                  Add
+                </button>
+                <button
+                  onClick={() => { setShowAddTask(false); setNewTaskLabel(""); }}
+                  className="p-1 text-muted hover:text-earth transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
             <div className="space-y-2">
               {activeTasks.slice(0, 4).map((task, i) => (
                 <div key={task.id} className="flex items-center gap-2 text-[12px]">
@@ -407,13 +497,41 @@ export function OverviewClient() {
                     className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
                     onClick={() => user && updateTask(user.uid, projectId, task.id!, { done: true, status: "done" })}
                   />
-                  <span className="text-muted">{task.label}</span>
+                  {editingTaskId === task.id ? (
+                    <input
+                      type="text"
+                      value={editingTaskLabel}
+                      onChange={(e) => setEditingTaskLabel(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleEditTaskSave(task.id!);
+                        if (e.key === "Escape") { setEditingTaskId(null); setEditingTaskLabel(""); }
+                      }}
+                      onBlur={() => handleEditTaskSave(task.id!)}
+                      className="flex-1 px-2 py-0.5 text-[12px] border border-border rounded bg-surface text-earth focus:outline-none focus:border-emerald-500"
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      className="text-muted cursor-pointer hover:text-earth transition-colors"
+                      onClick={() => { setEditingTaskId(task.id!); setEditingTaskLabel(task.label); }}
+                      title="Click to edit"
+                    >
+                      {task.label}
+                    </span>
+                  )}
                   <Badge variant={task.status === "in-progress" ? "warning" : "info"}>
                     {task.status === "in-progress" ? "In progress" : "Upcoming"}
                   </Badge>
+                  <button
+                    onClick={() => handleDeleteTask(task.id!)}
+                    className="p-0.5 text-muted hover:text-danger transition-colors shrink-0"
+                    title="Delete task"
+                  >
+                    <X size={12} />
+                  </button>
                 </div>
               ))}
-              {activeTasks.length === 0 && (
+              {activeTasks.length === 0 && !showAddTask && (
                 <p className="text-[11px] text-muted">No active tasks. Add tasks to plan your next steps.</p>
               )}
             </div>
@@ -542,8 +660,47 @@ export function OverviewClient() {
           {/* Active tasks */}
           <div className="flex items-center justify-between mb-2">
             <SectionLabel>Active Tasks</SectionLabel>
-            <span className="text-[10px] text-muted font-data">{activeTasks.length} open</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-muted font-data">{activeTasks.length} open</span>
+              <button
+                onClick={() => setShowAddTask(true)}
+                className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
+              >
+                <Plus size={12} /> Add task
+              </button>
+            </div>
           </div>
+
+          {/* Inline add task */}
+          {showAddTask && (
+            <Card padding="sm" className="mb-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newTaskLabel}
+                  onChange={(e) => setNewTaskLabel(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
+                  placeholder="Task description"
+                  className="flex-1 px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
+                  autoFocus
+                />
+                <button
+                  onClick={handleAddTask}
+                  disabled={!newTaskLabel.trim()}
+                  className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                >
+                  Add
+                </button>
+                <button
+                  onClick={() => { setShowAddTask(false); setNewTaskLabel(""); }}
+                  className="p-1 text-muted hover:text-earth transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </Card>
+          )}
+
           {activeTasks.length > 0 && (
             <Card padding="sm" className="mb-4">
               {activeTasks.slice(0, 6).map((task, i) => (
@@ -557,10 +714,38 @@ export function OverviewClient() {
                     className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
                     onClick={() => user && updateTask(user.uid, projectId, task.id!, { done: true, status: "done" })}
                   />
-                  <span className="flex-1 text-muted">{task.label}</span>
+                  {editingTaskId === task.id ? (
+                    <input
+                      type="text"
+                      value={editingTaskLabel}
+                      onChange={(e) => setEditingTaskLabel(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleEditTaskSave(task.id!);
+                        if (e.key === "Escape") { setEditingTaskId(null); setEditingTaskLabel(""); }
+                      }}
+                      onBlur={() => handleEditTaskSave(task.id!)}
+                      className="flex-1 px-2 py-0.5 text-[12px] border border-border rounded bg-surface text-earth focus:outline-none focus:border-emerald-500"
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      className="flex-1 text-muted cursor-pointer hover:text-earth transition-colors"
+                      onClick={() => { setEditingTaskId(task.id!); setEditingTaskLabel(task.label); }}
+                      title="Click to edit"
+                    >
+                      {task.label}
+                    </span>
+                  )}
                   <Badge variant={task.status === "in-progress" ? "warning" : "info"}>
                     {task.status === "in-progress" ? "In progress" : "Upcoming"}
                   </Badge>
+                  <button
+                    onClick={() => handleDeleteTask(task.id!)}
+                    className="p-0.5 text-muted hover:text-danger transition-colors shrink-0"
+                    title="Delete task"
+                  >
+                    <X size={12} />
+                  </button>
                 </div>
               ))}
             </Card>
@@ -907,6 +1092,14 @@ export function OverviewClient() {
             )}
             <DetailRow label="Details" value={project.details} last />
           </Card>
+          <div className="mt-2">
+            <button
+              onClick={() => setShowDeleteProject(true)}
+              className="text-[11px] text-danger hover:underline cursor-pointer"
+            >
+              Delete project
+            </button>
+          </div>
         </div>
         <div>
           <SectionLabel>Completed Tasks</SectionLabel>
@@ -930,6 +1123,13 @@ export function OverviewClient() {
                     </svg>
                   </div>
                   <span className="flex-1 text-muted line-through opacity-40">{task.label}</span>
+                  <button
+                    onClick={() => handleDeleteTask(task.id!)}
+                    className="p-0.5 text-muted hover:text-danger transition-colors shrink-0"
+                    title="Delete task"
+                  >
+                    <X size={10} />
+                  </button>
                 </div>
               ))
             )}
@@ -954,6 +1154,44 @@ export function OverviewClient() {
           }}
           onClose={() => setShowExportModal(false)}
         />
+      )}
+
+      {/* Delete Project Modal */}
+      {showDeleteProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-earth/50 backdrop-blur-sm" onClick={() => setShowDeleteProject(false)} />
+          <div className="relative bg-surface border border-border rounded-xl shadow-lg max-w-md w-full p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle size={20} className="text-danger" />
+              <h3 className="text-[14px] font-semibold text-earth">Delete project</h3>
+            </div>
+            <p className="text-[12px] text-muted mb-3 leading-relaxed">
+              This will permanently delete <strong className="text-earth">{project.name}</strong> and all its data. This action cannot be undone. Type the project name to confirm.
+            </p>
+            <input
+              type="text"
+              value={deleteProjectName}
+              onChange={(e) => setDeleteProjectName(e.target.value)}
+              placeholder={project.name}
+              className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-danger w-full mb-3"
+            />
+            <div className="flex items-center gap-2 justify-end">
+              <button
+                onClick={() => { setShowDeleteProject(false); setDeleteProjectName(""); }}
+                className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProject}
+                disabled={deleteProjectName !== project.name || deletingProject}
+                className="px-4 py-2 text-[12px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors disabled:opacity-40"
+              >
+                {deletingProject ? "Deleting..." : "Delete project"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

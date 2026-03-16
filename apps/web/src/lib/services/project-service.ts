@@ -546,6 +546,53 @@ export async function deleteVaultFile(userId: string, projectId: string, fileId:
   await remove(ref(db, `users/${userId}/projects/${projectId}/vault/${fileId}`));
 }
 
+// --- Delete Budget Item ---
+
+export async function deleteBudgetItem(userId: string, projectId: string, itemId: string): Promise<void> {
+  await remove(ref(db, `users/${userId}/projects/${projectId}/budgetItems/${itemId}`));
+}
+
+// --- Update Contact ---
+
+export async function updateContact(userId: string, projectId: string, contactId: string, data: Partial<ContactData>): Promise<void> {
+  await update(ref(db, `users/${userId}/projects/${projectId}/contacts/${contactId}`), data);
+}
+
+// --- Delete Contact ---
+
+export async function deleteContact(userId: string, projectId: string, contactId: string): Promise<void> {
+  await remove(ref(db, `users/${userId}/projects/${projectId}/contacts/${contactId}`));
+}
+
+// --- Delete Task ---
+
+export async function deleteTask(userId: string, projectId: string, taskId: string): Promise<void> {
+  await remove(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`));
+}
+
+// --- Update Daily Log ---
+
+export async function updateDailyLog(userId: string, projectId: string, logId: string, data: Partial<DailyLogData>): Promise<void> {
+  await update(ref(db, `users/${userId}/projects/${projectId}/dailyLogs/${logId}`), data);
+}
+
+// --- Delete Daily Log ---
+
+export async function deleteDailyLog(userId: string, projectId: string, logId: string): Promise<void> {
+  await remove(ref(db, `users/${userId}/projects/${projectId}/dailyLogs/${logId}`));
+}
+
+// --- Advance Project Phase ---
+
+export async function advanceProjectPhase(userId: string, projectId: string, newPhase: number, phaseName: string): Promise<void> {
+  await update(ref(db, `users/${userId}/projects/${projectId}`), {
+    currentPhase: newPhase,
+    completedPhases: newPhase,
+    phaseName: phaseName,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 // --- Seed demo data ---
 
 export async function seedDemoProject(userId: string): Promise<string> {

@@ -8,6 +8,7 @@ import {
   LayoutGrid,
   Plus,
   BookOpen,
+  Settings,
   Clock,
   DollarSign,
   Calculator,
@@ -47,6 +48,7 @@ const mainNav = makeNav([
   { id: "dashboard", label: "Dashboard", Icon: LayoutGrid },
   { id: "new-project", label: "New project", Icon: Plus },
   { id: "learn", label: "Learn", Icon: BookOpen },
+  { id: "settings", label: "Settings", Icon: Settings },
 ]);
 
 const projectNav = makeNav([
