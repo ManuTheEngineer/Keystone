@@ -196,39 +196,49 @@ export default function NewProjectPage() {
 
   function handleBack() {
     if (step > 0) setStep(step - 1);
-    else router.push("/");
+    else router.push("/dashboard");
   }
 
   return (
-    <div className="max-w-md mx-auto py-8 text-center">
-      {/* Step dots */}
-      <div className="flex gap-1.5 justify-center mb-6">
-        {[...STEPS, { title: "Name" }].map((_, i) => (
-          <span
-            key={i}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              i === step ? "bg-earth" : i < step ? "bg-emerald-500" : "bg-border"
-            }`}
-          />
+    <div className="max-w-lg mx-auto py-12 text-center animate-fade-in">
+      {/* Step indicator */}
+      <div className="flex gap-2 justify-center mb-8">
+        {[...STEPS, { title: "Name" }].map((s, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-data font-medium transition-all ${
+                i === step ? "bg-earth text-warm" : i < step ? "bg-emerald-500 text-white" : "bg-surface-alt text-muted"
+              }`}
+            >
+              {i < step ? (
+                <svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              ) : (
+                i + 1
+              )}
+            </div>
+            {i < STEPS.length && (
+              <div className={`w-8 h-[2px] ${i < step ? "bg-emerald-500" : "bg-border"}`} />
+            )}
+          </div>
         ))}
       </div>
 
       {step < STEPS.length ? (
         <>
-          <h3 className="text-xl font-semibold text-earth mb-1">{currentStep.title}</h3>
-          <p className="text-[13px] text-muted mb-6">{currentStep.subtitle}</p>
+          <h3 style={{ fontFamily: "var(--font-heading)" }} className="text-2xl text-earth mb-2">{currentStep.title}</h3>
+          <p className="text-[13px] text-muted mb-8">{currentStep.subtitle}</p>
 
-          <div className="space-y-2 text-left">
+          <div className="space-y-3 text-left">
             {currentStep.options.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => handleSelect(opt.id)}
                 className={`
-                  w-full p-4 rounded-[var(--radius)] border text-left transition-all
+                  w-full p-5 rounded-xl border text-left transition-all card-hover
                   ${
                     selections[step] === opt.id
-                      ? "border-earth border-2 bg-surface-alt"
-                      : "border-border bg-surface hover:border-border-dark hover:bg-surface-alt"
+                      ? "border-emerald-500 border-2 bg-emerald-50/30 shadow-sm"
+                      : "border-border bg-surface hover:border-sand"
                   }
                 `}
               >

@@ -13,7 +13,8 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
-import { Plus, Phone, Mail, Wrench, AlertCircle } from "lucide-react";
+import { Plus, Phone, Mail, Wrench, AlertCircle, Users } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getTradesForPhase, PHASE_ORDER, PHASE_NAMES } from "@keystone/market-data";
 import type { Market, ProjectPhase, TradeDefinition } from "@keystone/market-data";
 
@@ -309,11 +310,12 @@ export function TeamClient() {
         </Card>
       )}
       {contacts.length === 0 ? (
-        <Card padding="md" className="text-center">
-          <p className="text-[12px] text-muted">
-            No team members yet. Add contractors and professionals as you build your team.
-          </p>
-        </Card>
+        <EmptyState
+          icon={<Users size={28} />}
+          title="No team members yet"
+          description="Add contractors, architects, and professionals as you build your construction team."
+          action={{ label: "Add contact", onClick: () => setShowForm(true) }}
+        />
       ) : (
         <div className="space-y-1.5">
           {contacts.map((c, i) => {

@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import { useTopbar } from "../layout";
 import { LEARN_MODULES } from "@/lib/data/mock-projects";
-import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Badge } from "@/components/ui/Badge";
-import { BookOpen } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 const LESSON_CONTENT: Record<string, string[]> = {
   "Construction loan types explained": [
@@ -84,47 +83,62 @@ export default function LearnPage() {
 
   return (
     <>
-      <SectionLabel>Educational modules</SectionLabel>
-      <div className="space-y-0">
-        {LEARN_MODULES.map((mod, i) => (
-          <div key={i}>
+      <h1 className="text-[24px] text-earth">Construction Knowledge Base</h1>
+      <p className="text-[13px] text-muted mt-1 mb-6">
+        Everything you need to know about building, from financing to final inspection.
+      </p>
+
+      <div className="space-y-2">
+        {LEARN_MODULES.map((mod, i) => {
+          const isOpen = openModule === i;
+          return (
             <div
-              onClick={() => handleToggle(i)}
-              className={`flex items-center gap-3 py-3 cursor-pointer ${
-                i < LEARN_MODULES.length - 1 && openModule !== i ? "border-b border-border" : ""
-              }`}
+              key={i}
+              className="bg-white rounded-xl p-5 card-hover"
             >
-              <div className="w-9 h-9 rounded-lg bg-surface-alt flex items-center justify-center shrink-0 text-muted">
-                <BookOpen size={16} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-medium text-earth truncate">{mod.title}</div>
-                <div className="mt-0.5">
-                  <Badge variant={mod.variant}>{mod.category}</Badge>
-                </div>
-              </div>
-              <span className="text-[10px] text-info cursor-pointer hover:underline shrink-0">
-                {openModule === i ? "Close" : "Start lesson"}
-              </span>
-            </div>
-            {openModule === i && LESSON_CONTENT[mod.title] && (
               <div
-                className={`px-4 pb-4 pt-2 ${
-                  i < LEARN_MODULES.length - 1 ? "border-b border-border" : ""
-                }`}
+                onClick={() => handleToggle(i)}
+                className="flex items-center gap-3 cursor-pointer"
               >
-                {LESSON_CONTENT[mod.title].map((paragraph, j) => (
-                  <p key={j} className="text-[12px] text-muted leading-relaxed mb-3">
-                    {paragraph}
-                  </p>
-                ))}
-                <p className="text-[10px] text-muted italic mt-2">
-                  This is educational guidance. Consult a licensed professional for your specific situation.
-                </p>
+                <div className="w-7 h-7 rounded-full bg-warm flex items-center justify-center shrink-0">
+                  <span className="text-clay font-data text-[12px] font-semibold">{i + 1}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[14px] font-semibold text-earth">{mod.title}</div>
+                  <div className="mt-0.5">
+                    <Badge variant={mod.variant}>{mod.category}</Badge>
+                  </div>
+                </div>
+                <span className="text-muted shrink-0">
+                  {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </span>
               </div>
-            )}
-          </div>
-        ))}
+
+              <div
+                className="overflow-hidden transition-all duration-300 ease-in-out"
+                style={{ maxHeight: isOpen ? "2000px" : "0px" }}
+              >
+                {LESSON_CONTENT[mod.title] && (
+                  <div className="pt-4 mt-4 border-t border-border">
+                    {LESSON_CONTENT[mod.title].map((paragraph, j) => (
+                      <p key={j} className="text-[12px] text-muted leading-relaxed mb-3">
+                        {paragraph}
+                      </p>
+                    ))}
+                    <p className="text-[10px] text-muted italic mt-2">
+                      This is educational guidance. Consult a licensed professional for your specific situation.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 p-4 rounded-xl bg-warm border border-sand/30 text-[11px] text-muted leading-relaxed text-center">
+        All educational content is for general informational purposes only. Always consult licensed
+        professionals for advice specific to your project, location, and circumstances.
       </div>
     </>
   );

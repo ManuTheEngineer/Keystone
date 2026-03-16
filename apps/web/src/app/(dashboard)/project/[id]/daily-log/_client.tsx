@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, ClipboardList } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTopbar } from "../../../layout";
 import {
@@ -206,11 +207,12 @@ export function DailyLogClient() {
         </Card>
       )}
       {logs.length === 0 ? (
-        <Card padding="md" className="text-center">
-          <p className="text-[12px] text-muted">
-            No daily log entries yet. Start documenting your construction progress.
-          </p>
-        </Card>
+        <EmptyState
+          icon={<ClipboardList size={28} />}
+          title="No daily log entries yet"
+          description="Document your construction progress with daily entries tracking weather, crew size, and work completed."
+          action={{ label: "Add first entry", onClick: () => setShowForm(true) }}
+        />
       ) : (
         <Card padding="sm">
           {logs.map((entry, i) => (

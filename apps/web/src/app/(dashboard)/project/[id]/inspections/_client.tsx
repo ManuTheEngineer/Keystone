@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { ClipboardCheck, ChevronDown, ChevronRight, Shield } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTopbar } from "../../../layout";
 import {
@@ -184,11 +185,13 @@ export function InspectionsClient() {
       </SectionLabel>
 
       {currentPhaseInspections.length === 0 ? (
-        <Card padding="md" className="mb-5">
-          <p className="text-[12px] text-muted">
-            No inspections required for the {PHASE_NAMES[currentPhaseKey]} phase.
-          </p>
-        </Card>
+        <div className="mb-5">
+          <EmptyState
+            icon={<ClipboardCheck size={28} />}
+            title="No inspections yet"
+            description="Inspection checklists will appear based on your project phase and market requirements."
+          />
+        </div>
       ) : (
         <div className="mb-5">
           <InspectionChecklist

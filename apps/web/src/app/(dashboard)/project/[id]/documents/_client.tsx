@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/Card";
 import { DocumentFillForm } from "@/components/ui/DocumentFillForm";
 import { DocumentPreview } from "@/components/ui/DocumentPreview";
 import { FileText, ChevronDown, Plus, FileCheck } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   getTemplatesForPhase,
   PHASE_ORDER,
@@ -273,12 +274,11 @@ export function DocumentsClient() {
       {/* All project documents */}
       <SectionLabel>All project documents</SectionLabel>
       {docs.length === 0 ? (
-        <Card padding="md" className="text-center">
-          <p className="text-[12px] text-muted">
-            No documents yet. Use templates above or documents will appear as you progress
-            through project phases.
-          </p>
-        </Card>
+        <EmptyState
+          icon={<FileText size={28} />}
+          title="No documents yet"
+          description="Generate contracts, checklists, and forms from templates, or documents will appear as you progress through project phases."
+        />
       ) : (
         <div className="space-y-0">
           {docs.map((doc, i) => {

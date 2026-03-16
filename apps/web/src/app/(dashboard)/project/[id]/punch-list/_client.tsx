@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { Plus, Filter, ListChecks, AlertTriangle } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTopbar } from "../../../layout";
 import {
@@ -285,13 +286,20 @@ export function PunchListClient() {
       </SectionLabel>
 
       {filteredItems.length === 0 ? (
-        <Card padding="md" className="text-center">
-          <p className="text-[12px] text-muted">
-            {items.length === 0
-              ? "No punch list items yet. Add items as you identify deficiencies during inspections."
-              : "No items match the current filters."}
-          </p>
-        </Card>
+        items.length === 0 ? (
+          <EmptyState
+            icon={<ListChecks size={28} />}
+            title="No punch list items"
+            description="Add deficiency items found during inspections or walkthroughs to track them through resolution."
+            action={{ label: "Add item", onClick: () => setShowForm(true) }}
+          />
+        ) : (
+          <Card padding="md" className="text-center">
+            <p className="text-[12px] text-muted">
+              No items match the current filters.
+            </p>
+          </Card>
+        )
       ) : (
         <div className="space-y-2">
           {filteredItems.map((item) => (

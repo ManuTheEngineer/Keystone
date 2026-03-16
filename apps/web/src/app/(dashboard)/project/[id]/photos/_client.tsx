@@ -18,7 +18,8 @@ import { StatCard } from "@/components/ui/StatCard";
 import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { getMarketData, getPhaseDefinition, PHASE_ORDER, PHASE_NAMES } from "@keystone/market-data";
 import type { Market, ProjectPhase } from "@keystone/market-data";
-import { ImageIcon, Plus, Loader2, X, ChevronLeft, ChevronRight, MapPin, Calendar } from "lucide-react";
+import { ImageIcon, Plus, Loader2, X, ChevronLeft, ChevronRight, MapPin, Calendar, Camera } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export function PhotosClient() {
   const params = useParams();
@@ -372,6 +373,13 @@ export function PhotosClient() {
         {filterPhase !== "ALL" ? `${PHASE_NAMES[filterPhase as ProjectPhase]} photos` : "All photos"}{" "}
         ({filteredPhotos.length})
       </SectionLabel>
+      {filteredPhotos.length === 0 && !showUploadForm && (
+        <EmptyState
+          icon={<Camera size={28} />}
+          title="No photos yet"
+          description="Upload timestamped site photos to document progress, verify milestones, and build a visual record of your construction."
+        />
+      )}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 mb-5">
         {filteredPhotos.map((photo, idx) => (
           <div

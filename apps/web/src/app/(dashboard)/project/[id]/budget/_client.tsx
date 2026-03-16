@@ -35,7 +35,9 @@ import {
   Receipt,
   Hammer,
   Package,
+  DollarSign,
 } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   getMarketData,
   getCostBenchmarks,
@@ -348,9 +350,14 @@ export function BudgetClient() {
 
       {/* Category cards grid */}
       {items.length === 0 && !showForm ? (
-        <Card padding="md" className="text-center mb-24">
-          <p className="text-[12px] text-muted">No budget items yet. Add line items or load market benchmarks to get started.</p>
-        </Card>
+        <div className="mb-24">
+          <EmptyState
+            icon={<DollarSign size={28} />}
+            title="No budget items yet"
+            description="Add line items manually or load market benchmarks to build your construction budget with typical cost ranges."
+            action={{ label: "Load market benchmarks", onClick: handleLoadBenchmarks }}
+          />
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-24">
           {items.map((item) => {
