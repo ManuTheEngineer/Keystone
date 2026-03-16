@@ -61,7 +61,7 @@ function DocumentTemplateCard({
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-[12px] font-medium text-earth">{template.name}</div>
-        <div className="text-[10px] text-muted mt-0.5 line-clamp-2">{template.description}</div>
+        <div className="text-[10px] text-muted mt-0.5 line-clamp-3 leading-relaxed">{template.description}</div>
         <div className="flex flex-wrap gap-1 mt-1.5">
           <span
             className={`text-[9px] px-1.5 py-0.5 rounded-full ${style.bg} ${style.text} font-medium`}

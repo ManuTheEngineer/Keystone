@@ -255,6 +255,13 @@ export function PunchListClient() {
                     </button>
                   ))}
                 </div>
+                <p className="text-[10px] text-muted mt-1.5 leading-relaxed">
+                  {severity === "critical"
+                    ? "Safety hazard or code violation. Must be fixed before occupancy. Examples: missing handrail, faulty wiring, plumbing leak."
+                    : severity === "major"
+                    ? "Significant quality issue. Should be fixed before final payment. Examples: uneven flooring, poorly fitted cabinets, paint defects visible from 5 feet."
+                    : "Cosmetic issue. Can be fixed during the warranty period. Examples: small nail pops, touch-up paint needed, minor caulking gaps."}
+                </p>
               </div>
             </div>
             <div>

@@ -213,6 +213,8 @@ export function ScheduleClient() {
   const [project, setProject] = useState<ProjectData | null>(null);
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
   const [allMilestoneProgress, setAllMilestoneProgress] = useState<Record<string, boolean[]>>({});
+  const [completionMessage, setCompletionMessage] = useState<string | null>(null);
+  const [lastCompletedIndex, setLastCompletedIndex] = useState<number | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -234,8 +236,27 @@ export function ScheduleClient() {
     async (phaseKey: string, milestoneIndex: number, completed: boolean, totalMilestones: number) => {
       if (!user) return;
       await toggleMilestoneProgress(user.uid, projectId, phaseKey, milestoneIndex, completed, totalMilestones);
+
+      if (completed) {
+        setLastCompletedIndex(milestoneIndex);
+        setTimeout(() => setLastCompletedIndex(null), 1500);
+
+        // Check if all milestones in this phase are now complete
+        const currentProgress = allMilestoneProgress[phaseKey] ?? [];
+        const updatedProgress = [...currentProgress];
+        while (updatedProgress.length < totalMilestones) updatedProgress.push(false);
+        updatedProgress[milestoneIndex] = true;
+        const allDone = updatedProgress.length === totalMilestones && updatedProgress.every(Boolean);
+
+        if (allDone) {
+          const pDef = getPhaseDefinition(market, phaseKey as ProjectPhase);
+          const phaseName = pDef?.name ?? phaseKey;
+          setCompletionMessage(`All milestones complete for ${phaseName}. You can advance to the next phase from the Overview page.`);
+          setTimeout(() => setCompletionMessage(null), 6000);
+        }
+      }
     },
-    [user, projectId]
+    [user, projectId, allMilestoneProgress]
   );
 
   if (!project) return <p className="text-muted text-sm">Loading...</p>;
@@ -345,6 +366,13 @@ export function ScheduleClient() {
 
           <MilestoneTimeline milestones={milestoneTimelineData} />
 
+          {/* Phase completion message */}
+          {completionMessage && (
+            <div className="p-3 rounded-[var(--radius)] bg-success/10 border border-success/30 text-[12px] text-success leading-relaxed animate-expand">
+              {completionMessage}
+            </div>
+          )}
+
           {/* Milestone list */}
           <Card padding="sm">
             <div className="space-y-0">
@@ -354,13 +382,14 @@ export function ScheduleClient() {
                   (_, idx) => !(currentPhaseProgress[idx] ?? false)
                 );
                 const isActive = i === firstIncomplete;
+                const justCompleted = lastCompletedIndex === i;
 
                 return (
                   <div
                     key={i}
-                    className={`flex items-center gap-2.5 py-2 px-2 text-[12px] ${
+                    className={`flex items-center gap-2.5 py-2 px-2 text-[12px] transition-colors duration-500 ${
                       i < currentPhaseDef.milestones.length - 1 ? "border-b border-border" : ""
-                    } ${isActive ? "bg-emerald-50/50 rounded" : ""}`}
+                    } ${isActive ? "bg-emerald-50/50 rounded" : ""} ${justCompleted ? "bg-success/20 rounded" : ""}`}
                   >
                     <button
                       onClick={() =>

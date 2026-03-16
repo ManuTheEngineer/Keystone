@@ -343,9 +343,9 @@ export function BudgetClient() {
       {/* Market benchmarks prompt (when no items) */}
       {items.length === 0 && benchmarks.length > 0 && (
         <Card padding="md" className="mb-4 text-center">
-          <p className="text-[12px] text-earth font-medium mb-1">Start with market benchmarks?</p>
-          <p className="text-[11px] text-muted mb-3">
-            Pre-fill your budget with typical {market === "USA" ? "per-sqft" : "per-sqm"} cost ranges for {market === "USA" ? "US" : "Togolese"} residential construction.
+          <p className="text-[12px] text-earth font-medium mb-1">Let us build your budget</p>
+          <p className="text-[11px] text-muted mb-3 max-w-md mx-auto leading-relaxed">
+            We will start with typical construction costs for {project.city || (market === "USA" ? "your area" : "your region")} and you can adjust from there. Every category shows what other builders in your area are paying.
           </p>
           <button
             onClick={handleLoadBenchmarks}
@@ -353,8 +353,16 @@ export function BudgetClient() {
             className="inline-flex items-center gap-1.5 px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 btn-hover"
           >
             <Download size={14} />
-            {loadingBenchmarks ? "Loading..." : "Load market benchmarks"}
+            {loadingBenchmarks ? "Loading..." : `Start with typical costs for ${project.city || (market === "USA" ? "US" : "Togo")}`}
           </button>
+          <div className="mt-2">
+            <button
+              onClick={() => setShowForm(true)}
+              className="text-[11px] text-info hover:underline cursor-pointer"
+            >
+              Or add items manually
+            </button>
+          </div>
         </Card>
       )}
 
@@ -448,9 +456,9 @@ export function BudgetClient() {
         <div className="mb-24">
           <EmptyState
             icon={<DollarSign size={28} />}
-            title="No budget items yet"
-            description="Add line items manually or load market benchmarks to build your construction budget with typical cost ranges."
-            action={{ label: "Load market benchmarks", onClick: handleLoadBenchmarks }}
+            title="Let us build your budget"
+            description={`We will start with typical construction costs for ${project.city || (market === "USA" ? "your area" : "your region")} and you can adjust from there. Every category shows what other builders in your area are paying.`}
+            action={{ label: `Start with typical costs for ${project.city || (market === "USA" ? "US" : "Togo")}`, onClick: handleLoadBenchmarks }}
           />
         </div>
       ) : (

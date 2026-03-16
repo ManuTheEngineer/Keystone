@@ -89,6 +89,7 @@ import {
   X,
   AlertTriangle,
   ArrowRight,
+  ChevronDown,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
 import { PresentationModal } from "@/components/ui/PresentationModal";
@@ -102,6 +103,28 @@ import { analyzeDocumentCompleteness } from "@/lib/document-intelligence";
 import { LearnTooltip } from "@/components/ui/LearnTooltip";
 import { getNextActions, type NextAction } from "@/lib/next-actions";
 import type { ExportData } from "@/lib/services/export-service";
+
+// ---------------------------------------------------------------------------
+// Collapsible section component
+// ---------------------------------------------------------------------------
+
+function CollapsibleSection({ title, defaultOpen = false, children, count }: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+  count?: number;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="mb-4">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between py-2">
+        <SectionLabel>{title}{count != null ? ` (${count})` : ""}</SectionLabel>
+        <ChevronDown size={16} className={`text-muted transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && <div className="animate-expand">{children}</div>}
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Helpers to generate planned curves from budget / timeline data
@@ -352,14 +375,13 @@ export function OverviewClient() {
         if (docAnalysis.complete.length + docAnalysis.missing.length === 0) return null;
         const phaseNames = ["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"];
         return (
-          <div className="mb-4">
-            <SectionLabel>Document Readiness</SectionLabel>
+          <CollapsibleSection title="Documents Needed" count={docAnalysis.missing.length}>
             <DocumentReadiness
               analysis={docAnalysis}
               projectId={projectId}
               phaseName={phaseNames[phase] ?? "Current"}
             />
-          </div>
+          </CollapsibleSection>
         );
       })()}
 
@@ -370,16 +392,18 @@ export function OverviewClient() {
         </div>
       )}
 
-      {/* Stat cards - always shown */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 mb-5 animate-stagger">
-        <StatCard value={`${project.progress}%`} label="Progress" />
-        <StatCard
-          value={fmtCompact(project.totalSpent)}
-          label={`Spent of ${fmtCompact(project.totalBudget)}`}
-        />
-        <StatCard value={`Wk ${project.currentWeek}`} label={`Of est. ${project.totalWeeks}`} />
-        <StatCard value={String(project.openItems)} label="Open items" />
-      </div>
+      {/* Stat cards - always shown, collapsible for early phases */}
+      <CollapsibleSection title="Your Progress" defaultOpen={phase >= 6}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1 mb-3 animate-stagger">
+          <StatCard value={`${project.progress}%`} label="Progress" />
+          <StatCard
+            value={fmtCompact(project.totalSpent)}
+            label={`Spent of ${fmtCompact(project.totalBudget)}`}
+          />
+          <StatCard value={`Wk ${project.currentWeek}`} label={`Of est. ${project.totalWeeks}`} />
+          <StatCard value={String(project.openItems)} label="Open items" />
+        </div>
+      </CollapsibleSection>
 
       {/* Location Context Card */}
       {(() => {
@@ -424,12 +448,13 @@ export function OverviewClient() {
         const topInsights = insights.sort((a, b) => b.priority - a.priority).slice(0, 3);
         if (topInsights.length === 0) return null;
         return (
-          <div className="mb-5 space-y-2">
-            <SectionLabel>AI Insights</SectionLabel>
-            {topInsights.map((insight, i) => (
-              <AIInsight key={i} type={insight.type} title={insight.title} content={insight.content} action={insight.action} />
-            ))}
-          </div>
+          <CollapsibleSection title="AI Insights" count={topInsights.length}>
+            <div className="space-y-2">
+              {topInsights.map((insight, i) => (
+                <AIInsight key={i} type={insight.type} title={insight.title} content={insight.content} action={insight.action} />
+              ))}
+            </div>
+          </CollapsibleSection>
         );
       })()}
 
@@ -1276,9 +1301,9 @@ export function OverviewClient() {
       {/* Common bottom section: Project details + Completed tasks          */}
       {/* Shown for all phases                                             */}
       {/* ----------------------------------------------------------------- */}
+      <CollapsibleSection title="Project Details">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <SectionLabel>Project Details</SectionLabel>
           <Card padding="sm">
             <DetailRow label="Market" value={<MarketBadge market={market} />} />
             <DetailRow label="Purpose" value={project.purpose} />
@@ -1298,7 +1323,7 @@ export function OverviewClient() {
           </div>
         </div>
         <div>
-          <SectionLabel>Completed Tasks</SectionLabel>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-clay/60 mb-2">Completed Tasks</p>
           <Card padding="sm">
             {completedTasks.length === 0 ? (
               <p className="text-[11px] text-muted py-2">None yet.</p>
@@ -1332,6 +1357,7 @@ export function OverviewClient() {
           </Card>
         </div>
       </div>
+      </CollapsibleSection>
 
       {/* Export Modal */}
       {showExportModal && (

@@ -397,7 +397,7 @@ export function PhotosClient() {
         <EmptyState
           icon={<Camera size={28} />}
           title="No photos yet"
-          description="Upload timestamped site photos to document progress, verify milestones, and build a visual record of your construction."
+          description="Construction photos serve three critical purposes: they verify progress for milestone payments, they document conditions before walls close up (you will never see the plumbing or wiring again once drywall goes up), and they protect you in disputes. Take photos BEFORE every concrete pour and BEFORE every inspection."
         />
       )}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 mb-5 animate-stagger">

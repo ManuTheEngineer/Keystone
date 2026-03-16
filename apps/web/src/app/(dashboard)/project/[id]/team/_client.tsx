@@ -302,6 +302,30 @@ export function TeamClient() {
         contacts={contacts}
       />
 
+      {/* Contractor hiring tips */}
+      {currentPhaseTrades.length > 0 && (
+        <Card padding="md" className="mb-4 bg-warm/30 border-sand/30">
+          <p className="text-[12px] font-semibold text-earth mb-2">How to find good contractors</p>
+          {market === "USA" ? (
+            <ol className="text-[11px] text-muted leading-relaxed space-y-1 list-decimal list-inside">
+              <li>Ask neighbors who are building or recently built</li>
+              <li>Check with your local builders association</li>
+              <li>Visit active construction sites and ask who they recommend</li>
+              <li>Get at least 3 bids for every trade</li>
+              <li>Always verify licenses, insurance, and references before hiring</li>
+            </ol>
+          ) : (
+            <ol className="text-[11px] text-muted leading-relaxed space-y-1 list-decimal list-inside">
+              <li>Ask your chef de quartier for recommendations</li>
+              <li>Visit active construction sites in your neighborhood</li>
+              <li>Get referrals from friends and family</li>
+              <li>Check the contractor{"'"}s recent work in person</li>
+              <li>Agree on daily rates in writing before work begins</li>
+            </ol>
+          )}
+        </Card>
+      )}
+
       {/* AI Team Insights */}
       {project && (() => {
         const teamInsights = generateTeamInsights(project, contacts, market);

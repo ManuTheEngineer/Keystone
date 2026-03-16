@@ -163,6 +163,23 @@ export function InspectionsClient() {
         projectId={projectId}
       />
 
+      {/* What to expect tip card */}
+      {market === "USA" ? (
+        <Card padding="md" className="mb-4 bg-warm/30 border-sand/30">
+          <p className="text-[12px] font-semibold text-earth mb-2">What to expect during an inspection</p>
+          <p className="text-[11px] text-muted leading-relaxed">
+            The building inspector will visit your site to verify that work meets code requirements. Schedule inspections before covering any work (do not drywall before the rough-in inspection). The inspector will either pass the inspection, or note corrections needed. Common reasons for failure: missing fire blocking, incorrect nail spacing, improper electrical connections. Fix corrections and schedule a re-inspection.
+          </p>
+        </Card>
+      ) : (
+        <Card padding="md" className="mb-4 bg-warm/30 border-sand/30">
+          <p className="text-[12px] font-semibold text-earth mb-2">Why quality checkpoints matter</p>
+          <p className="text-[11px] text-muted leading-relaxed">
+            Formal inspections are less common in West Africa, but quality checkpoints are essential. Before every concrete pour, have your architect or a trusted third party inspect the rebar placement, spacing, and concrete mix. Once concrete is poured, you cannot fix problems without costly demolition.
+          </p>
+        </Card>
+      )}
+
       {/* Summary stat bar */}
       <div className="flex items-center gap-4 mb-4 px-3 py-2.5 rounded-[var(--radius)] bg-warm border border-sand/30">
         <div className="flex items-center gap-1.5 text-[11px]">

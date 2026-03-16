@@ -413,6 +413,10 @@ export function SettingsClient() {
           </div>
         </div>
 
+        <p className="text-[11px] text-muted leading-relaxed mb-3">
+          Your current plan determines how many projects you can manage and how many AI queries you can make per day. Most individual builders start with Foundation and upgrade to Builder when they start their second project.
+        </p>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {Object.entries(PLAN_FEATURES).map(([plan, features]) => {
             const isCurrentPlan = plan === currentPlan;

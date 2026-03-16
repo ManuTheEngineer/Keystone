@@ -704,6 +704,31 @@ export default function DashboardPage() {
             initial concept through financing, construction, and operations.
           </p>
 
+          <p className="text-[13px] text-earth font-medium mb-4">Not sure where to start? We recommend this:</p>
+
+          <div className="w-full max-w-lg mb-4">
+            <Link
+              href="/learn"
+              className="bg-surface border-2 border-emerald-300 rounded-xl p-6 text-left card-hover group block shadow-sm"
+            >
+              <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-4">
+                <BookOpen size={24} className="text-clay" />
+              </div>
+              <div className="flex items-center gap-2 mb-1">
+                <div
+                  className="text-[16px] text-earth"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
+                  Learn the Fundamentals
+                </div>
+                <Badge variant="emerald">Recommended</Badge>
+              </div>
+              <p className="text-[12px] text-muted leading-relaxed">
+                New to construction? Start here. Learn the basics of building, financing, and managing a construction project before you invest a dollar.
+              </p>
+            </Link>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg mb-6">
             <Link
               href="/new-project"
@@ -724,30 +749,23 @@ export default function DashboardPage() {
             </Link>
 
             <Link
-              href="/learn"
+              href="/new-project?skip=true"
               className="bg-surface border border-border rounded-xl p-6 text-left card-hover group block"
             >
               <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-4">
-                <BookOpen size={24} className="text-clay" />
+                <Plus size={24} className="text-clay" />
               </div>
               <div
                 className="text-[16px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                Learn the Fundamentals
+                I Have a Project in Mind
               </div>
               <p className="text-[12px] text-muted leading-relaxed">
-                Master construction basics, financing strategies, and market-specific building practices.
+                Already know what you want to build? Jump straight into project setup and start tracking your build.
               </p>
             </Link>
           </div>
-
-          <p className="text-[13px] text-muted">
-            Or{" "}
-            <Link href="/new-project" className="text-clay hover:underline font-medium">
-              create a project directly
-            </Link>
-          </p>
         </div>
       </>
     );
@@ -881,11 +899,16 @@ export default function DashboardPage() {
             <SectionLabel>Needs Your Attention</SectionLabel>
             {actionItems.length === 0 ? (
               <Card className="mb-0">
-                <div className="flex items-center gap-3 py-1">
-                  <CheckCircle2 size={18} className="text-success shrink-0" />
-                  <p className="text-[13px] text-muted">
-                    Everything is on track. Keep building.
-                  </p>
+                <div className="flex items-start gap-3 py-1">
+                  <CheckCircle2 size={18} className="text-success shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[13px] text-earth font-medium mb-1">
+                      No urgent items right now.
+                    </p>
+                    <p className="text-[12px] text-muted leading-relaxed">
+                      Consider updating your daily log, uploading progress photos, or reviewing your budget. Keeping records current makes every decision easier.
+                    </p>
+                  </div>
                 </div>
               </Card>
             ) : (

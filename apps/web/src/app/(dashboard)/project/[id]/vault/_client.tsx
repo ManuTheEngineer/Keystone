@@ -447,12 +447,25 @@ export function VaultClient() {
       {/* File list */}
       {filteredFiles.length === 0 ? (
         <Card padding="md">
-          <div className="text-center py-8">
+          <div className="text-center py-6">
             <FolderOpen size={32} className="text-sand mx-auto mb-3" />
-            <p className="text-[13px] text-earth font-medium mb-1">No files yet</p>
-            <p className="text-[11px] text-muted">
+            <p className="text-[13px] text-earth font-medium mb-2">No files yet</p>
+            <p className="text-[11px] text-muted mb-4">
               Upload files using the drop zone above to get started.
             </p>
+          </div>
+          <div className="text-left border-t border-border pt-4">
+            <p className="text-[12px] text-earth font-medium mb-2">
+              This is your project file vault. Organize all your construction documents in one place:
+            </p>
+            <ul className="text-[11px] text-muted leading-relaxed space-y-1.5">
+              <li><span className="font-medium text-earth">Architecture:</span> floor plans, elevations, construction documents</li>
+              <li><span className="font-medium text-earth">Legal:</span> contracts, deeds, permits, insurance certificates</li>
+              <li><span className="font-medium text-earth">Financial:</span> invoices, receipts, draw requests, lien waivers</li>
+              <li><span className="font-medium text-earth">Photos:</span> site photos, progress documentation</li>
+              <li><span className="font-medium text-earth">Notes:</span> meeting notes, site observations, decision logs</li>
+              <li><span className="font-medium text-earth">Reports:</span> inspection reports, engineering reports, appraisals</li>
+            </ul>
           </div>
         </Card>
       ) : (

@@ -238,6 +238,10 @@ function MilestonePaymentTracker({ milestones, photos, totalBudget, currency }: 
     <Card padding="md">
       <SectionLabel>Milestone payment tracker</SectionLabel>
 
+      <p className="text-[11px] text-muted leading-relaxed mb-3">
+        Milestone-based payments protect both you and your contractors. Instead of paying a lump sum upfront, you release funds as specific milestones are completed and verified with photos. This ensures work is done before money changes hands. A typical draw schedule releases 10% at foundation, 20% at framing, 15% at rough-in, and so on.
+      </p>
+
       {paymentMilestones.length === 0 ? (
         <p className="text-[11px] text-muted py-4 text-center">No payment milestones defined for this phase</p>
       ) : (

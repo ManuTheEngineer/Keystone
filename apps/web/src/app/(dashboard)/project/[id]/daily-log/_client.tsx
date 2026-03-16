@@ -227,11 +227,32 @@ export function DailyLogClient() {
                 <label className="block text-[12px] font-medium text-earth">Content</label>
                 <span className="text-[10px] text-muted">Or use voice</span>
               </div>
+              {/* Quick tags */}
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {[
+                  "Concrete poured",
+                  "Framing completed",
+                  "Inspection passed",
+                  "Weather delay",
+                  "Material delivered",
+                  "Change order",
+                  "No work today",
+                ].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setContent((prev) => prev ? prev + " " + tag + "." : tag + ".")}
+                    className="px-2 py-1 text-[10px] rounded-full border border-border bg-surface text-muted hover:border-earth hover:text-earth transition-colors"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="What happened on site today?"
-                rows={3}
+                placeholder={"What happened on site today? Consider noting:\n- Which trades were working and what they completed\n- Any materials delivered\n- Problems or delays encountered\n- Decisions made\n- Photos taken (reference by description)"}
+                rows={4}
                 className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full resize-none"
               />
               <div className="mt-2">
