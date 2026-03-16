@@ -17,7 +17,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { Plus, Phone, Mail, Wrench, AlertCircle, Users, Pencil, Trash2 } from "lucide-react";
+import { Plus, Phone, Mail, MessageCircle, Wrench, AlertCircle, Users, Pencil, Trash2 } from "lucide-react";
+import { StarRating } from "@/components/ui/StarRating";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AIInsight } from "@/components/ui/AIInsight";
 import { generateTeamInsights } from "@/lib/insights";
@@ -133,6 +134,7 @@ export function TeamClient() {
   const [customRole, setCustomRole] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [rating, setRating] = useState("5");
   const [saving, setSaving] = useState(false);
   const [expandedContact, setExpandedContact] = useState<string | null>(null);
@@ -141,6 +143,7 @@ export function TeamClient() {
   const [editRole, setEditRole] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editWhatsapp, setEditWhatsapp] = useState("");
   const [editRating, setEditRating] = useState("5");
   const [editSaving, setEditSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -198,12 +201,14 @@ export function TeamClient() {
         rating: Number(rating),
         phone: phone.trim() || undefined,
         email: email.trim() || undefined,
+        whatsapp: whatsapp.trim() || undefined,
       });
       setName("");
       setRole("");
       setCustomRole("");
       setPhone("");
       setEmail("");
+      setWhatsapp("");
       setRating("5");
       setShowForm(false);
     } finally {
@@ -217,6 +222,7 @@ export function TeamClient() {
     setEditRole(c.role);
     setEditPhone(c.phone ?? "");
     setEditEmail(c.email ?? "");
+    setEditWhatsapp(c.whatsapp ?? "");
     setEditRating(String(c.rating));
   }
 
@@ -235,6 +241,7 @@ export function TeamClient() {
         role: editRole,
         phone: editPhone.trim() || undefined,
         email: editEmail.trim() || undefined,
+        whatsapp: editWhatsapp.trim() || undefined,
         rating: Number(editRating),
       });
       setEditingContactId(null);
@@ -365,6 +372,19 @@ export function TeamClient() {
                 />
               )}
             </div>
+            {/* For West African markets, show WhatsApp before Phone */}
+            {(market === "TOGO" || market === "GHANA" || market === "BENIN") && (
+              <div>
+                <label className="block text-[12px] font-medium text-earth mb-1.5">WhatsApp</label>
+                <input
+                  type="text"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  placeholder="e.g. +228 90 12 34 56"
+                  className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-[12px] font-medium text-earth mb-1.5">Phone</label>
               <input
@@ -385,16 +405,22 @@ export function TeamClient() {
                 className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
               />
             </div>
+            {/* For USA market, show WhatsApp after Email */}
+            {market === "USA" && (
+              <div>
+                <label className="block text-[12px] font-medium text-earth mb-1.5">WhatsApp</label>
+                <input
+                  type="text"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  placeholder="e.g. +1 555 123 4567"
+                  className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                />
+              </div>
+            )}
             <div>
-              <label className="block text-[12px] font-medium text-earth mb-1.5">Rating (1-5)</label>
-              <input
-                type="number"
-                min={1}
-                max={5}
-                value={rating}
-                onChange={(e) => setRating(e.target.value)}
-                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
-              />
+              <label className="block text-[12px] font-medium text-earth mb-1.5">Rating</label>
+              <StarRating value={Number(rating)} onChange={(v) => setRating(String(v))} />
             </div>
             <div className="flex items-center gap-2 pt-2">
               <button
@@ -454,8 +480,13 @@ export function TeamClient() {
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-medium text-earth truncate">{c.name}</div>
                     <div className="text-[10px] text-muted">{c.role}</div>
-                    {(c.phone || c.email) && (
-                      <div className="flex items-center gap-3 mt-0.5">
+                    {(c.phone || c.email || c.whatsapp) && (
+                      <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                        {c.whatsapp && (
+                          <span className="flex items-center gap-1 text-[10px] text-muted">
+                            <MessageCircle size={10} /> {c.whatsapp}
+                          </span>
+                        )}
                         {c.phone && (
                           <span className="flex items-center gap-1 text-[10px] text-muted">
                             <Phone size={10} /> {c.phone}
@@ -469,7 +500,7 @@ export function TeamClient() {
                       </div>
                     )}
                   </div>
-                  <div className="text-[10px] text-muted font-data">{c.rating}/5</div>
+                  <StarRating value={c.rating} readonly size={12} />
                 </button>
 
                 {/* Expanded details */}
@@ -514,15 +545,18 @@ export function TeamClient() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] text-muted font-medium mb-0.5">Rating (1-5)</label>
+                          <label className="block text-[10px] text-muted font-medium mb-0.5">WhatsApp</label>
                           <input
-                            type="number"
-                            min={1}
-                            max={5}
-                            value={editRating}
-                            onChange={(e) => setEditRating(e.target.value)}
-                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-20"
+                            type="text"
+                            value={editWhatsapp}
+                            onChange={(e) => setEditWhatsapp(e.target.value)}
+                            placeholder="e.g. +228 90 12 34 56"
+                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
                           />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-muted font-medium mb-0.5">Rating</label>
+                          <StarRating value={Number(editRating)} onChange={(v) => setEditRating(String(v))} />
                         </div>
                         <div className="flex items-center gap-2 pt-1">
                           <button
@@ -564,9 +598,17 @@ export function TeamClient() {
                               <span className="text-earth">{c.email}</span>
                             </div>
                           )}
-                          <div className="flex justify-between">
+                          {c.whatsapp && (
+                            <div className="flex justify-between">
+                              <span className="text-muted">WhatsApp</span>
+                              <span className="flex items-center gap-1 text-earth">
+                                <MessageCircle size={10} /> {c.whatsapp}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center">
                             <span className="text-muted">Rating</span>
-                            <span className="text-earth font-data">{c.rating}/5</span>
+                            <StarRating value={c.rating} readonly size={12} />
                           </div>
                         </div>
 

@@ -9,7 +9,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { WifiOff, LogOut } from "lucide-react";
 import { usePWA } from "@/lib/hooks/use-pwa";
 import { signOut } from "@/lib/services/auth-service";
-import { getUserProjects, type ProjectData } from "@/lib/services/project-service";
+import { getUserProjects, subscribeToPunchListItems, subscribeToTasks, type ProjectData } from "@/lib/services/project-service";
 import { LocaleContext } from "@/lib/hooks/use-locale";
 import { getLocaleForMarket } from "@/lib/i18n";
 
@@ -38,6 +38,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [topbarState, setTopbarState] = useState<{ title: string; badge: string; badgeVariant: "success" | "warning" | "info" | "danger" }>({ title: "Dashboard", badge: "", badgeVariant: "info" });
   const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [punchListCount, setPunchListCount] = useState(0);
+  const [openTaskCount, setOpenTaskCount] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
   const { isOnline } = usePWA();
@@ -58,6 +60,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const projectMatch = pathname.match(/\/project\/([^/]+)/);
   const currentProjectId = projectMatch?.[1] ?? null;
   const currentProject = projects.find((p) => p.id === currentProjectId);
+
+  // Subscribe to punch list items and tasks for badge counts
+  useEffect(() => {
+    if (!user || !currentProjectId) {
+      setPunchListCount(0);
+      setOpenTaskCount(0);
+      return;
+    }
+    const unsub1 = subscribeToPunchListItems(user.uid, currentProjectId, (items) => {
+      setPunchListCount(items.filter((i) => i.status === "open").length);
+    });
+    const unsub2 = subscribeToTasks(user.uid, currentProjectId, (tasks) => {
+      setOpenTaskCount(tasks.filter((t) => !t.done).length);
+    });
+    return () => { unsub1(); unsub2(); };
+  }, [user, currentProjectId]);
 
   function handleNavigate(section: string) {
     setSidebarOpen(false);
@@ -94,6 +112,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             onSignOut={handleSignOut}
             locale={locale}
             projectMarket={currentProject?.market}
+            badges={{ "punch-list": punchListCount, "overview": openTaskCount > 5 ? openTaskCount : 0 }}
           />
           <div className="lg:ml-[240px] flex flex-col min-h-screen">
             <Topbar

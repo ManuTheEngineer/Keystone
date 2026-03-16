@@ -67,6 +67,15 @@ const projectNav = makeNav([
   { id: "ai-assistant", label: "AI assistant", Icon: HelpCircle },
 ]);
 
+const projectNavGroups = [
+  { label: "Planning", items: ["overview", "budget", "schedule", "financials"] },
+  { label: "Execution", items: ["team", "documents", "photos", "daily-log"] },
+  { label: "Quality", items: ["inspections", "punch-list", "monitor"] },
+  { label: "Tools", items: ["ai-assistant", "vault"] },
+];
+
+const projectNavMap = new Map(projectNav.map((item) => [item.id, item]));
+
 interface SidebarProps {
   activeSection: string;
   onNavigate: (section: string) => void;
@@ -78,6 +87,7 @@ interface SidebarProps {
   onSignOut?: () => void;
   locale?: Locale;
   projectMarket?: string;
+  badges?: Record<string, number>;
 }
 
 export function Sidebar({
@@ -91,8 +101,17 @@ export function Sidebar({
   onSignOut,
   locale = "en",
   projectMarket,
+  badges,
 }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("keystone-sidebar-collapsed") === "true";
+  });
+
+  function handleCollapse(value: boolean) {
+    setCollapsed(value);
+    localStorage.setItem("keystone-sidebar-collapsed", String(value));
+  }
 
   const initials = userName
     .split(" ")
@@ -129,7 +148,12 @@ export function Sidebar({
           title={collapsed ? item.label : undefined}
         >
           <span className="flex-shrink-0">{item.icon}</span>
-          {!collapsed && <span>{item.label}</span>}
+          {!collapsed && <span className="flex-1">{item.label}</span>}
+          {!collapsed && badges?.[item.id] != null && badges[item.id] > 0 && (
+            <span className="ml-auto bg-danger text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+              {badges[item.id]}
+            </span>
+          )}
         </button>
         {/* Tooltip for collapsed mode */}
         {collapsed && (
@@ -210,7 +234,19 @@ export function Sidebar({
                 {projectName}
               </p>
             )}
-            {projectNav.map(renderNavItem)}
+            {projectNavGroups.map((group) => (
+              <div key={group.label}>
+                {!collapsed && (
+                  <p className="px-5 mt-3 mb-1 text-[9px] uppercase tracking-[2px] text-sand/30 font-medium">
+                    {group.label}
+                  </p>
+                )}
+                {group.items.map((itemId) => {
+                  const item = projectNavMap.get(itemId);
+                  return item ? renderNavItem(item) : null;
+                })}
+              </div>
+            ))}
           </nav>
         )}
 
@@ -232,7 +268,7 @@ export function Sidebar({
         {/* Collapse toggle - desktop only */}
         <div className="hidden lg:flex px-3 py-2 justify-center">
           <button
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={() => handleCollapse(!collapsed)}
             className="p-1.5 rounded text-sand/30 hover:text-sand/60 hover:bg-sand/5 transition-all duration-150"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
