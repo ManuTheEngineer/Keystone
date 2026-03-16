@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
 import type { Locale } from "@/lib/i18n";
@@ -119,6 +119,15 @@ export function Sidebar({
     if (typeof window === "undefined") return false;
     return localStorage.getItem("keystone-sidebar-collapsed") === "true";
   });
+
+  // Sync with keyboard shortcut (Ctrl+B) from layout
+  useEffect(() => {
+    function handleStorage() {
+      setCollapsed(localStorage.getItem("keystone-sidebar-collapsed") === "true");
+    }
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   function handleCollapse(value: boolean) {
     setCollapsed(value);
