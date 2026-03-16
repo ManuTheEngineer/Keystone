@@ -142,8 +142,8 @@ export function Sidebar({
             ${collapsed ? "px-0 justify-center" : "px-5"}
             ${
               isActive
-                ? "border-l-emerald-500 rounded-r-sm bg-emerald-500/8 text-warm opacity-100"
-                : "border-l-transparent text-sand opacity-50 hover:opacity-80 hover:bg-sand/5 hover:border-l-sand/30 hover:border-l-[2px]"
+                ? "border-l-emerald-500 rounded-r-sm bg-[rgba(16,185,129,0.08)] text-[#F5E6D3] opacity-100"
+                : "border-l-transparent text-[#D4A574] opacity-50 hover:opacity-80 hover:bg-[rgba(212,165,116,0.05)] hover:border-l-[rgba(212,165,116,0.3)] hover:border-l-[2px]"
             }
           `}
           title={collapsed ? item.label : undefined}
@@ -158,7 +158,7 @@ export function Sidebar({
         </button>
         {/* Tooltip for collapsed mode */}
         {collapsed && (
-          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 rounded-md bg-earth-light text-warm text-[11px] whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-md">
+          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 rounded-md bg-[#3D2215] text-[#F5E6D3] text-[11px] whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-md">
             {item.label}
           </div>
         )}
@@ -186,17 +186,17 @@ export function Sidebar({
         `}
       >
         {/* Logo */}
-        <div className={`px-5 pt-5 pb-4 border-b border-sand/10 flex items-center ${collapsed ? "justify-center" : "justify-between"}`}>
+        <div className={`px-5 pt-5 pb-4 border-b border-[rgba(212,165,116,0.1)] flex items-center ${collapsed ? "justify-center" : "justify-between"}`}>
           {collapsed ? (
             <Link href="/dashboard" className="flex items-center justify-center">
-              <KeystoneIcon size={22} className="text-sand" />
+              <KeystoneIcon size={22} className="text-[#D4A574]" />
             </Link>
           ) : (
             <>
               <Link href="/dashboard" className="flex items-center gap-2.5">
-                <KeystoneIcon size={22} className="text-sand" />
+                <KeystoneIcon size={22} className="text-[#D4A574]" />
                 <span
-                  className="text-[15px] font-semibold text-warm tracking-tight"
+                  className="text-[15px] font-semibold text-[#F5E6D3] tracking-tight"
                   style={{ fontFamily: "var(--font-body)" }}
                 >
                   Keystone
@@ -204,7 +204,7 @@ export function Sidebar({
               </Link>
               <button
                 onClick={onClose}
-                className="lg:hidden p-1 rounded text-sand/50 hover:text-sand/80 transition-colors"
+                className="lg:hidden p-1 rounded text-[rgba(212,165,116,0.5)] hover:text-[rgba(212,165,116,0.8)] transition-colors"
               >
                 <X size={18} />
               </button>
@@ -215,7 +215,7 @@ export function Sidebar({
         {/* Main navigation */}
         <nav className="py-3">
           {!collapsed && (
-            <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-sand/30 font-medium">
+            <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-[rgba(212,165,116,0.3)] font-medium">
               Main
             </p>
           )}
@@ -231,14 +231,14 @@ export function Sidebar({
         {projectName && (
           <nav className="py-3">
             {!collapsed && (
-              <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-sand/30 font-medium truncate">
+              <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-[rgba(212,165,116,0.3)] font-medium truncate">
                 {projectName}
               </p>
             )}
             {projectNavGroups.map((group) => (
               <div key={group.label}>
                 {!collapsed && (
-                  <p className="px-5 mt-3 mb-1 text-[9px] uppercase tracking-[2px] text-sand/30 font-medium">
+                  <p className="px-5 mt-3 mb-1 text-[9px] uppercase tracking-[2px] text-[rgba(212,165,116,0.3)] font-medium">
                     {group.label}
                   </p>
                 )}
@@ -256,7 +256,7 @@ export function Sidebar({
 
         {/* Language indicator */}
         {showLangBadge && (
-          <div className={`px-5 py-2 flex items-center gap-2 text-sand/40 ${collapsed ? "justify-center" : ""}`}>
+          <div className={`px-5 py-2 flex items-center gap-2 text-[rgba(212,165,116,0.4)] ${collapsed ? "justify-center" : ""}`}>
             <Globe size={12} />
             {!collapsed && (
               <span className="text-[10px] uppercase tracking-[1.5px] font-medium">
@@ -270,7 +270,7 @@ export function Sidebar({
         <div className="hidden lg:flex px-3 py-2 justify-center">
           <button
             onClick={() => handleCollapse(!collapsed)}
-            className="p-1.5 rounded text-sand/30 hover:text-sand/60 hover:bg-sand/5 transition-all duration-150"
+            className="p-1.5 rounded text-[rgba(212,165,116,0.3)] hover:text-[rgba(212,165,116,0.6)] hover:bg-[rgba(212,165,116,0.05)] transition-all duration-150"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronLeft
@@ -305,20 +305,20 @@ export function Sidebar({
 
           {/* User profile */}
           <div className={`px-3 py-3 flex items-center ${collapsed ? "justify-center" : "gap-2.5 px-5"}`}>
-            <div className="w-8 h-8 rounded-full bg-sand/15 flex items-center justify-center text-[11px] font-semibold text-sand flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-[rgba(212,165,116,0.15)] flex items-center justify-center text-[11px] font-semibold text-sand flex-shrink-0">
               {initials}
             </div>
             {!collapsed && (
               <>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] text-warm truncate">{userName}</p>
-                  <p className="text-[10px] text-sand/35">{planLabel}</p>
+                  <p className="text-[12px] text-[#F5E6D3] truncate">{userName}</p>
+                  <p className="text-[10px] text-[rgba(212,165,116,0.35)]">{planLabel}</p>
                 </div>
                 <ThemeToggle />
                 {onSignOut && (
                   <button
                     onClick={onSignOut}
-                    className="p-1.5 rounded text-sand/40 hover:text-sand/80 transition-colors"
+                    className="p-1.5 rounded text-[rgba(212,165,116,0.4)] hover:text-sand/80 transition-colors"
                     title="Sign out"
                   >
                     <LogOut size={14} />

@@ -9,16 +9,24 @@ import { AlertTriangle } from "lucide-react";
 
 const quotes = [
   {
-    text: "A house is made of walls and beams; a home is built with love and dreams.",
-    author: "Ralph Waldo Emerson",
+    text: "The foundation of every great structure is laid long before the first brick. Planning is where profit is made or lost.",
+    author: "Keystone Principle",
   },
   {
-    text: "The best time to build was twenty years ago. The second best time is today.",
-    author: "African proverb",
+    text: "Real estate cannot be lost or stolen, nor can it be carried away. Managed with reasonable care, it is about the safest investment in the world.",
+    author: "Franklin D. Roosevelt",
   },
   {
-    text: "Every great building once began as a building plan. Every great project starts with a single step.",
-    author: "Unknown",
+    text: "Do not wait to buy real estate. Buy real estate and wait. The best developers started before they felt ready.",
+    author: "Will Rogers (adapted)",
+  },
+  {
+    text: "Every wall you raise, every foundation you pour, every key you hand over brings you closer to financial freedom.",
+    author: "Keystone Principle",
+  },
+  {
+    text: "The difference between a builder and a developer is simple. A builder constructs a house. A developer creates wealth.",
+    author: "Keystone Principle",
   },
 ];
 
@@ -184,14 +192,14 @@ export default function LoginPage() {
             style={{ opacity: fadeIn ? 1 : 0 }}
           >
             <p
-              className="text-[24px] leading-relaxed text-warm italic"
-              style={{ fontFamily: "var(--font-heading)" }}
+              className="text-[24px] leading-relaxed italic"
+              style={{ color: "#F5E6D3", fontFamily: "var(--font-heading)" }}
             >
               &ldquo;{quotes[quoteIndex].text}&rdquo;
             </p>
             <p
-              className="mt-4 text-[12px] text-sand tracking-wide"
-              style={{ fontFamily: "var(--font-body)" }}
+              className="mt-4 text-[12px] tracking-wide"
+              style={{ color: "#D4A574", fontFamily: "var(--font-body)" }}
             >
               - {quotes[quoteIndex].author}
             </p>
