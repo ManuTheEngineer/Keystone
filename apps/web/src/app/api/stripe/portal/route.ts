@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripeServer } from "@/lib/stripe";
 import { ref, get } from "firebase/database";
 import { db } from "@/lib/firebase";
 
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No active subscription found" }, { status: 400 });
     }
 
-    const session = await stripe.billingPortal.sessions.create({
+    const session = await getStripeServer().billingPortal.sessions.create({
       customer: profile.stripeCustomerId,
       return_url: `${request.nextUrl.origin}/settings`,
     });

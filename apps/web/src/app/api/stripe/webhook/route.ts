@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripeServer } from "@/lib/stripe";
 import { ref, update, get } from "firebase/database";
 import { db } from "@/lib/firebase";
 import type Stripe from "stripe";
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = getStripeServer().webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err: any) {
     console.error("Webhook signature verification failed:", err.message);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         const subId = (invoice as any).subscription as string;
         if (subId) {
-          const sub = await stripe.subscriptions.retrieve(subId);
+          const sub = await getStripeServer().subscriptions.retrieve(subId);
           const userId = sub.metadata?.userId;
           if (userId) {
             await update(ref(db, `users/${userId}/profile`), {
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         const subId = (invoice as any).subscription as string;
         if (subId) {
-          const sub = await stripe.subscriptions.retrieve(subId);
+          const sub = await getStripeServer().subscriptions.retrieve(subId);
           const userId = sub.metadata?.userId;
           if (userId) {
             await update(ref(db, `users/${userId}/profile`), {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripeServer } from "@/lib/stripe";
 import { ref, get } from "firebase/database";
 import { db } from "@/lib/firebase";
 import { PLAN_CONFIG, type PlanTier } from "@/lib/stripe-config";
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       sessionParams.customer_email = email;
     }
 
-    const session = await stripe.checkout.sessions.create(sessionParams as any);
+    const session = await getStripeServer().checkout.sessions.create(sessionParams as any);
 
     return NextResponse.json({ url: session.url });
   } catch (error: any) {
