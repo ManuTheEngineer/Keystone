@@ -64,6 +64,10 @@ import {
   getTemplatesForPhase,
   formatCurrencyCompact,
   PHASE_ORDER,
+  getClosestLocation,
+  getCostComparisonText,
+  getClimateLabel,
+  formatMonthList,
 } from "@keystone/market-data";
 import type { Market, ProjectPhase } from "@keystone/market-data";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -376,6 +380,43 @@ export function OverviewClient() {
         <StatCard value={`Wk ${project.currentWeek}`} label={`Of est. ${project.totalWeeks}`} />
         <StatCard value={String(project.openItems)} label="Open items" />
       </div>
+
+      {/* Location Context Card */}
+      {(() => {
+        if (!project.city) return null;
+        const locData = getClosestLocation(project.city, project.market);
+        if (!locData) return null;
+        return (
+          <Card padding="sm" className="mb-5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-clay/60">Location context</span>
+              <span className="text-[10px] text-muted font-data">
+                {locData.city}{locData.state ? `, ${locData.state}` : ""}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mb-3">
+              <div>
+                <div className="font-data text-[14px] font-medium text-earth">{locData.costIndex.toFixed(2)}x</div>
+                <div className="text-[9px] text-muted uppercase tracking-wider">Cost index</div>
+                <div className="text-[10px] text-muted mt-0.5">{getCostComparisonText(locData.costIndex)}</div>
+              </div>
+              <div>
+                <div className="font-data text-[14px] font-medium text-earth">{locData.propertyTaxRate}%</div>
+                <div className="text-[9px] text-muted uppercase tracking-wider">Property tax</div>
+              </div>
+              <div>
+                <div className="font-data text-[14px] font-medium text-earth">{getClimateLabel(locData.climate)}</div>
+                <div className="text-[9px] text-muted uppercase tracking-wider">Climate</div>
+              </div>
+              <div>
+                <div className="font-data text-[13px] font-medium text-earth">{formatMonthList(locData.buildingSeasonMonths)}</div>
+                <div className="text-[9px] text-muted uppercase tracking-wider">Build season</div>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted leading-relaxed border-t border-border pt-2">{locData.localNotes}</p>
+          </Card>
+        );
+      })()}
 
       {/* AI Insights */}
       {(() => {

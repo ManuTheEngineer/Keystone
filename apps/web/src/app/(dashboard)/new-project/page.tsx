@@ -27,8 +27,13 @@ import {
   formatCurrency,
   formatCurrencyCompact,
   PHASE_ORDER,
+  getClosestLocation,
+  getLocationSuggestions,
+  getCostComparisonText,
+  getClimateLabel,
+  formatMonthList,
 } from "@keystone/market-data";
-import type { Market as MarketType, CurrencyConfig } from "@keystone/market-data";
+import type { Market as MarketType, CurrencyConfig, LocationData } from "@keystone/market-data";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -154,17 +159,29 @@ function getMarketCostRange(market: MarketType): { low: number; mid: number; hig
   };
 }
 
-function getConstructionCost(state: WizardState): number {
+function getConstructionCost(state: WizardState, locationData?: LocationData | null): number {
   if (!state.market) return 0;
   const size = getBuildingSize(state);
   if (size <= 0) return 0;
   const costs = getMarketCostRange(state.market as MarketType);
-  return Math.round(costs.mid * size);
+  const baseCost = costs.mid * size;
+  const costIndex = locationData?.costIndex ?? 1.0;
+  return Math.round(baseCost * costIndex);
 }
 
-function getLandCost(state: WizardState): number {
+function getLandCost(state: WizardState, locationData?: LocationData | null): number {
   if (state.landOption === "known") return state.landPrice;
-  return Math.round(getConstructionCost(state) * 0.25);
+  // Use location-specific land mid-price if available
+  if (locationData) {
+    if (state.market === "USA" && locationData.landPricePerAcre) {
+      return locationData.landPricePerAcre.mid;
+    }
+    if (locationData.landPricePerSqm) {
+      // Estimate for a typical 500sqm residential plot in West Africa
+      return locationData.landPricePerSqm.mid * 500;
+    }
+  }
+  return Math.round(getConstructionCost(state, locationData) * 0.25);
 }
 
 function getSoftCosts(constructionCost: number): number {
@@ -182,9 +199,9 @@ function getContingency(constructionCost: number): number {
   return Math.round(constructionCost * 0.15);
 }
 
-function getTotalProjectCost(state: WizardState) {
-  const construction = getConstructionCost(state);
-  const land = getLandCost(state);
+function getTotalProjectCost(state: WizardState, locationData?: LocationData | null) {
+  const construction = getConstructionCost(state, locationData);
+  const land = getLandCost(state, locationData);
   const soft = getSoftCosts(construction);
   const financing = getFinancingCosts(state, land, construction);
   const contingency = getContingency(construction);
@@ -192,31 +209,45 @@ function getTotalProjectCost(state: WizardState) {
   return { land, construction, soft, financing, contingency, total };
 }
 
-function getEstimatedSaleValue(state: WizardState): number {
-  const costs = getTotalProjectCost(state);
+function getEstimatedSaleValue(state: WizardState, locationData?: LocationData | null): number {
+  // If we have sale price data, use building size * sale price per unit
+  if (locationData) {
+    const size = getBuildingSize(state);
+    if (state.market === "USA" && locationData.avgSalePricePerSqft && size > 0) {
+      return Math.round(size * locationData.avgSalePricePerSqft);
+    }
+    if (locationData.avgSalePricePerSqm && size > 0) {
+      return Math.round(size * locationData.avgSalePricePerSqm);
+    }
+  }
+  const costs = getTotalProjectCost(state, locationData);
   return Math.round(costs.total * 1.20);
 }
 
-function getEstimatedMonthlyRent(state: WizardState): number {
+function getEstimatedMonthlyRent(state: WizardState, locationData?: LocationData | null): number {
   if (!state.market) return 0;
   const size = getBuildingSize(state);
-  if (state.market === "USA") return Math.round(size * 1.0);
-  return Math.round(size * 2000);
+  if (state.market === "USA") {
+    const ratePerSqft = locationData?.avgRentPerSqft ?? 1.0;
+    return Math.round(size * ratePerSqft);
+  }
+  const ratePerSqm = locationData?.avgRentPerSqm ?? 2000;
+  return Math.round(size * ratePerSqm);
 }
 
 // ---------------------------------------------------------------------------
 // Deal scoring
 // ---------------------------------------------------------------------------
 
-function calculateDealScore(state: WizardState): { score: number; factors: ScoreFactor[]; risks: string[]; verdict: string; verdictLevel: "strong" | "decent" | "risky" } {
-  const costs = getTotalProjectCost(state);
+function calculateDealScore(state: WizardState, locData?: LocationData | null): { score: number; factors: ScoreFactor[]; risks: string[]; verdict: string; verdictLevel: "strong" | "decent" | "risky" } {
+  const costs = getTotalProjectCost(state, locData);
   const factors: ScoreFactor[] = [];
   const risks: string[] = [];
   const currency = getCurrencyForMarket(state.market);
 
   // 1. Profit / cap rate / savings (25 points)
   if (state.goal === "sell") {
-    const salePrice = state.targetSalePrice > 0 ? state.targetSalePrice : getEstimatedSaleValue(state);
+    const salePrice = state.targetSalePrice > 0 ? state.targetSalePrice : getEstimatedSaleValue(state, locData);
     const profit = salePrice - costs.total;
     const margin = costs.total > 0 ? (profit / costs.total) * 100 : 0;
     if (margin > 20) {
@@ -231,7 +262,7 @@ function calculateDealScore(state: WizardState): { score: number; factors: Score
       risks.push("Margin below 10% means even a small delay creates a loss.");
     }
   } else if (state.goal === "rent") {
-    const monthlyRent = state.monthlyRent > 0 ? state.monthlyRent : getEstimatedMonthlyRent(state);
+    const monthlyRent = state.monthlyRent > 0 ? state.monthlyRent : getEstimatedMonthlyRent(state, locData);
     const annualRent = monthlyRent * 12;
     const capRate = costs.total > 0 ? (annualRent / costs.total) * 100 : 0;
     if (capRate > 8) {
@@ -251,7 +282,7 @@ function calculateDealScore(state: WizardState): { score: number; factors: Score
   if (state.market) {
     const costRange = getMarketCostRange(state.market as MarketType);
     const size = getBuildingSize(state);
-    const actualPerUnit = size > 0 ? getConstructionCost(state) / size : 0;
+    const actualPerUnit = size > 0 ? getConstructionCost(state, locData) / size : 0;
     if (actualPerUnit <= costRange.mid) {
       factors.push({ label: "Construction cost at or below average", points: 15, maxPoints: 15, positive: true, explanation: "Estimated cost is within the typical range for this market." });
     } else if (actualPerUnit <= costRange.high) {
@@ -437,23 +468,34 @@ export default function NewProjectPage() {
     );
   }, [marketData]);
 
-  const costs = useMemo(() => getTotalProjectCost(state), [state]);
-  const dealResult = useMemo(() => calculateDealScore(state), [state]);
+  // Location intelligence
+  const locationData = useMemo(() => {
+    if (!state.market || !state.city) return null;
+    return getClosestLocation(state.city, state.market);
+  }, [state.market, state.city]);
+
+  const locationSuggestions = useMemo(() => {
+    if (!state.market) return [];
+    return getLocationSuggestions(state.market);
+  }, [state.market]);
+
+  const costs = useMemo(() => getTotalProjectCost(state, locationData), [state, locationData]);
+  const dealResult = useMemo(() => calculateDealScore(state, locationData), [state, locationData]);
 
   // Revenue projections
   const revenueProjection = useMemo(() => {
     if (state.goal === "sell") {
-      const salePrice = state.targetSalePrice > 0 ? state.targetSalePrice : getEstimatedSaleValue(state);
+      const salePrice = state.targetSalePrice > 0 ? state.targetSalePrice : getEstimatedSaleValue(state, locationData);
       const profit = salePrice - costs.total;
       return { label: "Projected sale price", value: salePrice, secondary: `Profit: ${formatCurrencyCompact(profit, currency)}` };
     } else if (state.goal === "rent") {
-      const monthlyRent = state.monthlyRent > 0 ? state.monthlyRent : getEstimatedMonthlyRent(state);
+      const monthlyRent = state.monthlyRent > 0 ? state.monthlyRent : getEstimatedMonthlyRent(state, locationData);
       const annualRent = monthlyRent * 12;
       const capRate = costs.total > 0 ? (annualRent / costs.total) * 100 : 0;
       return { label: "Monthly rental income", value: monthlyRent, secondary: `Cap rate: ${capRate.toFixed(1)}%` };
     }
     return null;
-  }, [state, costs, currency]);
+  }, [state, costs, currency, locationData]);
 
   // Step validation
   function canProceed(): boolean {
@@ -493,7 +535,7 @@ export default function NewProjectPage() {
         city: state.city.trim(),
         region: state.city.trim(),
         financingType: state.financingType,
-        landCost: getLandCost(state),
+        landCost: getLandCost(state, locationData),
         dealScore: dealResult.score,
         currentPhase: 0,
         completedPhases: 0,
@@ -661,6 +703,17 @@ export default function NewProjectPage() {
       ? "Enter your city or area (e.g., Accra, Tema, Kumasi)"
       : "Enter your city or area";
 
+    // Filter suggestions based on current input
+    const filteredSuggestions = state.city.trim().length > 0
+      ? locationSuggestions.filter((s) =>
+          s.toLowerCase().includes(state.city.toLowerCase().trim())
+        )
+      : [];
+
+    // Only show suggestions if the input does not exactly match a suggestion
+    const showSuggestions = filteredSuggestions.length > 0 &&
+      !filteredSuggestions.some((s) => s.toLowerCase() === state.city.toLowerCase().trim());
+
     return (
       <div className="animate-fade-in">
         <StepHeading title="What city or area?" subtitle="Location affects your costs, regulations, and market demand." />
@@ -676,9 +729,107 @@ export default function NewProjectPage() {
             placeholder={placeholder}
             className="w-full px-4 py-3 text-[14px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
           />
+
+          {/* Autocomplete suggestions */}
+          {showSuggestions && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {filteredSuggestions.slice(0, 8).map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => update("city", suggestion)}
+                  className="px-3 py-1.5 text-[11px] rounded-full border border-border bg-surface text-earth hover:border-emerald-400 hover:bg-emerald-50 transition-all"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Location Intelligence Card */}
+          {locationData && (
+            <div className="mt-4 p-4 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 text-left animate-fade-in">
+              <div className="flex items-center gap-2 mb-3">
+                <Info size={14} className="text-emerald-700 shrink-0" />
+                <span className="text-[12px] font-semibold text-emerald-800">
+                  Location intelligence: {locationData.city}{locationData.state ? `, ${locationData.state}` : ""}
+                </span>
+              </div>
+              <div className="space-y-2 text-[11px] text-emerald-800">
+                <div className="flex justify-between">
+                  <span className="text-muted">Cost index</span>
+                  <span className="font-medium font-data">
+                    {locationData.costIndex.toFixed(2)}x ({getCostComparisonText(locationData.costIndex)})
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Labor index</span>
+                  <span className="font-medium font-data">
+                    {locationData.laborIndex.toFixed(2)}x
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Typical lot prices</span>
+                  <span className="font-medium font-data">
+                    {state.market === "USA"
+                      ? `$${(locationData.landPricePerAcre.low / 1000).toFixed(0)}K to $${(locationData.landPricePerAcre.high / 1000).toFixed(0)}K per acre`
+                      : locationData.landPricePerSqm
+                        ? `${locationData.landPricePerSqm.low.toLocaleString()} to ${locationData.landPricePerSqm.high.toLocaleString()} per sqm`
+                        : "N/A"
+                    }
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Property tax rate</span>
+                  <span className="font-medium font-data">{locationData.propertyTaxRate}% annually</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Permit cost estimate</span>
+                  <span className="font-medium font-data">
+                    {state.market === "USA"
+                      ? `$${locationData.permitCostEstimate.toLocaleString()}`
+                      : `${locationData.permitCostEstimate.toLocaleString()} CFA`
+                    }
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Climate</span>
+                  <span className="font-medium">{getClimateLabel(locationData.climate)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted">Best building months</span>
+                  <span className="font-medium">{formatMonthList(locationData.buildingSeasonMonths)}</span>
+                </div>
+                {locationData.avgRentPerSqft && (
+                  <div className="flex justify-between">
+                    <span className="text-muted">Avg rent</span>
+                    <span className="font-medium font-data">${locationData.avgRentPerSqft.toFixed(2)}/sqft/mo</span>
+                  </div>
+                )}
+                {locationData.avgRentPerSqm && !locationData.avgRentPerSqft && (
+                  <div className="flex justify-between">
+                    <span className="text-muted">Avg rent</span>
+                    <span className="font-medium font-data">{locationData.avgRentPerSqm.toLocaleString()}/sqm/mo</span>
+                  </div>
+                )}
+              </div>
+              <div className="mt-3 pt-2 border-t border-emerald-200">
+                <p className="text-[10px] text-emerald-700 leading-relaxed">{locationData.localNotes}</p>
+              </div>
+            </div>
+          )}
+
+          {/* No data message */}
+          {state.city.trim().length > 2 && !locationData && (
+            <div className="mt-4 p-3 rounded-[var(--radius)] border border-border bg-surface-alt text-left">
+              <p className="text-[11px] text-muted">
+                We do not have specific data for this area. National averages will be used for cost estimates. You can adjust costs manually in later steps.
+              </p>
+            </div>
+          )}
+
           <MentorTip>
             {state.market === "USA"
-              ? "Construction in downtown Houston costs 20 to 30% more than suburbs. Location also determines which building codes and inspectors apply to your project."
+              ? "Construction costs vary significantly by city. A project in San Francisco costs roughly 50% more than the same build in Houston. Location also determines which building codes and inspectors apply to your project."
               : "In Lome, construction costs vary significantly between central quartiers and peripheral areas like Avepozo or Baguida. Land near the coast tends to be more expensive."
             }
           </MentorTip>
@@ -740,7 +891,7 @@ export default function NewProjectPage() {
     const presets = getSizePresets(sizeUnit);
     const presetEntries = Object.entries(presets) as [string, { min: number; max: number; typical: number; label: string }][];
 
-    const constructionCostNow = getConstructionCost(state);
+    const constructionCostNow = getConstructionCost(state, locationData);
 
     return (
       <div className="animate-fade-in">
@@ -749,7 +900,7 @@ export default function NewProjectPage() {
           {presetEntries.map(([key, preset]) => {
             const isSelected = state.sizeCategory === key;
             const tempState = { ...state, sizeCategory: key as SizeCategory };
-            const estCost = getConstructionCost(tempState);
+            const estCost = getConstructionCost(tempState, locationData);
             return (
               <button
                 key={key}
@@ -809,7 +960,7 @@ export default function NewProjectPage() {
               {formatCurrency(constructionCostNow, currency)}
             </span>
             <p className="text-[10px] text-emerald-600 mt-1">
-              Based on market benchmarks for {getBuildingSize(state).toLocaleString()} {sizeUnit}. Actual costs vary by location and finishes.
+              Based on market benchmarks for {getBuildingSize(state).toLocaleString()} {sizeUnit}{locationData ? `, adjusted for ${locationData.city} (${locationData.costIndex.toFixed(2)}x cost index)` : ""}. Actual costs vary by finishes and site conditions.
             </p>
           </div>
         )}
@@ -818,7 +969,7 @@ export default function NewProjectPage() {
   }
 
   function renderLandStep() {
-    const estimatedLand = Math.round(getConstructionCost(state) * 0.25);
+    const estimatedLand = getLandCost({ ...state, landOption: "estimate" }, locationData);
 
     return (
       <div className="animate-fade-in">
@@ -867,7 +1018,10 @@ export default function NewProjectPage() {
               <div>
                 <h5 className="text-[14px] font-semibold text-earth">I am still looking</h5>
                 <p className="text-[11px] text-muted">
-                  We will estimate land at 25% of construction cost ({formatCurrencyCompact(estimatedLand, currency)})
+                  {locationData
+                    ? `Based on typical lot prices in ${locationData.city}: ${formatCurrencyCompact(estimatedLand, currency)}`
+                    : `We will estimate land at 25% of construction cost (${formatCurrencyCompact(estimatedLand, currency)})`
+                  }
                 </p>
               </div>
             </div>
@@ -965,10 +1119,17 @@ export default function NewProjectPage() {
   }
 
   function renderFinancialsStep() {
+    const locationLabel = locationData ? ` Adjusted for ${locationData.city} (${locationData.costIndex.toFixed(2)}x cost index).` : "";
+    const landDetail = state.landOption === "known"
+      ? "Your entered land price."
+      : locationData
+        ? `Based on typical lot prices in ${locationData.city}.`
+        : "Estimated at 25% of construction cost.";
+
     const costRows = [
-      { label: "Land", value: costs.land, pct: costs.total > 0 ? (costs.land / costs.total) * 100 : 0, color: "#8B4513", detail: state.landOption === "known" ? "Your entered land price." : "Estimated at 25% of construction cost." },
-      { label: "Construction", value: costs.construction, pct: costs.total > 0 ? (costs.construction / costs.total) * 100 : 0, color: "#2C1810", detail: `Based on ${getBuildingSize(state).toLocaleString()} ${sizeUnit} at market mid-range cost per ${sizeUnit}.` },
-      { label: "Soft costs (permits, design, fees)", value: costs.soft, pct: costs.total > 0 ? (costs.soft / costs.total) * 100 : 0, color: "#D4A574", detail: "Estimated at 15% of construction cost. Includes architectural design, permits, engineering, and inspections." },
+      { label: "Land", value: costs.land, pct: costs.total > 0 ? (costs.land / costs.total) * 100 : 0, color: "#8B4513", detail: landDetail },
+      { label: "Construction", value: costs.construction, pct: costs.total > 0 ? (costs.construction / costs.total) * 100 : 0, color: "#2C1810", detail: `Based on ${getBuildingSize(state).toLocaleString()} ${sizeUnit} at market mid-range cost per ${sizeUnit}.${locationLabel}` },
+      { label: "Soft costs (permits, design, fees)", value: costs.soft, pct: costs.total > 0 ? (costs.soft / costs.total) * 100 : 0, color: "#D4A574", detail: `Estimated at 15% of construction cost. Includes architectural design, permits, engineering, and inspections.${locationData ? ` Typical permit cost in ${locationData.city}: ${state.market === "USA" ? "$" : ""}${locationData.permitCostEstimate.toLocaleString()}${state.market !== "USA" ? " CFA" : ""}.` : ""}` },
       { label: "Financing costs", value: costs.financing, pct: costs.total > 0 ? (costs.financing / costs.total) * 100 : 0, color: "#1B4965", detail: state.financingType === "cash" || state.financingType === "phased_cash" ? "No financing costs with cash payment." : `Based on ${state.downPaymentPct}% down at ${state.loanRate}% over ${state.timelineMonths} months.` },
       { label: "Contingency (15%)", value: costs.contingency, pct: costs.total > 0 ? (costs.contingency / costs.total) * 100 : 0, color: "#BC6C25", detail: "A 15% contingency protects against cost overruns. This is the industry standard safety buffer." },
     ];
@@ -1041,7 +1202,7 @@ export default function NewProjectPage() {
                 type="number"
                 value={state.targetSalePrice || ""}
                 onChange={(e) => update("targetSalePrice", Number(e.target.value))}
-                placeholder={`Default: ${formatCurrencyCompact(getEstimatedSaleValue(state), currency)}`}
+                placeholder={`Default: ${formatCurrencyCompact(getEstimatedSaleValue(state, locationData), currency)}`}
                 className="w-full px-3 py-2 text-[13px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
               />
             </div>
@@ -1053,7 +1214,7 @@ export default function NewProjectPage() {
                 type="number"
                 value={state.monthlyRent || ""}
                 onChange={(e) => update("monthlyRent", Number(e.target.value))}
-                placeholder={`Default: ${formatCurrencyCompact(getEstimatedMonthlyRent(state), currency)}`}
+                placeholder={`Default: ${formatCurrencyCompact(getEstimatedMonthlyRent(state, locationData), currency)}`}
                 className="w-full px-3 py-2 text-[13px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
               />
             </div>

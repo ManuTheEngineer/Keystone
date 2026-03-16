@@ -31,8 +31,9 @@ import {
   formatCurrency,
   formatCurrencyCompact,
   PHASE_ORDER,
+  getClosestLocation,
 } from "@keystone/market-data";
-import type { Market } from "@keystone/market-data";
+import type { Market, LocationData } from "@keystone/market-data";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
@@ -135,6 +136,7 @@ export function FinancialsClient() {
 
   const market = project.market as Market;
   const marketData = getMarketData(market);
+  const locationData: LocationData | null = project.city ? getClosestLocation(project.city, market) : null;
   const fmt = (amount: number) => formatCurrency(amount, marketData.currency);
   const fmtCompact = (amount: number) => formatCurrencyCompact(amount, marketData.currency);
 
@@ -168,7 +170,7 @@ export function FinancialsClient() {
       downPaymentPct: Number(loanDown) || 20,
       interestRate: Number(loanRate) || 7,
       loanTermYears: Number(loanTerm) || 30,
-      propertyTaxRate: 1.2,
+      propertyTaxRate: locationData?.propertyTaxRate ?? 1.2,
       insuranceAnnual: 1800,
     };
     setLoanResult(calculateLoanQualification(input));
@@ -429,6 +431,12 @@ export function FinancialsClient() {
         <>
           <SectionLabel>Loan qualification calculator</SectionLabel>
           <Card padding="md" className="mb-5">
+            {locationData && (
+              <div className="p-2.5 rounded-[var(--radius)] bg-surface-alt border border-border text-[11px] text-earth mb-3">
+                <span className="font-medium">Location data applied:</span>{" "}
+                Property tax rate set to {locationData.propertyTaxRate}% based on {locationData.city}{locationData.state ? `, ${locationData.state}` : ""} averages.
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
               <div>
                 <label className="block text-[11px] text-muted font-medium mb-1">
@@ -778,6 +786,17 @@ export function FinancialsClient() {
               estimate your investment returns. All calculations are based on your total
               project budget of {fmt(project.totalBudget)}.
             </p>
+            {locationData && (locationData.avgRentPerSqft || locationData.avgRentPerSqm) && (
+              <div className="p-2.5 rounded-[var(--radius)] bg-surface-alt border border-border text-[11px] text-earth mb-3">
+                <span className="font-medium">Location tip:</span>{" "}
+                {market === "USA" && locationData.avgRentPerSqft
+                  ? `Typical rent in ${locationData.city} is $${locationData.avgRentPerSqft.toFixed(2)}/sqft/mo.${project.sizeRange ? "" : ""}`
+                  : locationData.avgRentPerSqm
+                    ? `Typical rent in ${locationData.city} is ${locationData.avgRentPerSqm.toLocaleString()}/sqm/mo.`
+                    : ""
+                }
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
               <div>
                 <label className="block text-[11px] text-muted font-medium mb-1">

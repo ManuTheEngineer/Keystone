@@ -2,6 +2,16 @@ export * from "./types";
 export * from "./utils/currency";
 export { USA_MARKET } from "./usa";
 export { TOGO_MARKET } from "./togo";
+export {
+  getLocationData,
+  getClosestLocation,
+  adjustCostForLocation,
+  getLocationSuggestions,
+  getCostComparisonText,
+  getClimateLabel,
+  formatMonthList,
+} from "./locations";
+export type { LocationData, ClimateType } from "./locations";
 
 import type { Market, MarketConfig, ProjectPhase, CostBenchmark, PropertyType } from "./types";
 import { USA_MARKET } from "./usa";
