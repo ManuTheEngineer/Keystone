@@ -93,8 +93,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             userPlan={profile?.plan ?? "FOUNDATION"}
             onSignOut={handleSignOut}
             locale={locale}
+            projectMarket={currentProject?.market}
           />
-          <div className="lg:ml-[260px] flex flex-col min-h-screen">
+          <div className="lg:ml-[240px] flex flex-col min-h-screen">
             <Topbar
               title={topbarState.title}
               badge={topbarState.badge || undefined}

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { registerUser } from "@/lib/services/auth-service";
-import { seedDemoProject } from "@/lib/services/project-service";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
 import { AlertTriangle } from "lucide-react";
 
@@ -56,8 +55,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const user = await registerUser(email, password, name);
-      await seedDemoProject(user.uid);
+      await registerUser(email, password, name);
       router.push("/dashboard");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Registration failed";

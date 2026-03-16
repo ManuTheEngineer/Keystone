@@ -582,6 +582,24 @@ export async function deleteDailyLog(userId: string, projectId: string, logId: s
   await remove(ref(db, `users/${userId}/projects/${projectId}/dailyLogs/${logId}`));
 }
 
+// --- Delete Photo ---
+
+export async function deletePhoto(userId: string, projectId: string, photoId: string): Promise<void> {
+  await remove(ref(db, `users/${userId}/projects/${projectId}/photos/${photoId}`));
+}
+
+// --- Delete Document ---
+
+export async function deleteDocument(userId: string, projectId: string, docId: string): Promise<void> {
+  await remove(ref(db, `users/${userId}/projects/${projectId}/documents/${docId}`));
+}
+
+// --- Delete Punch List Item ---
+
+export async function deletePunchListItem(userId: string, projectId: string, itemId: string): Promise<void> {
+  await remove(ref(db, `users/${userId}/projects/${projectId}/punchListItems/${itemId}`));
+}
+
 // --- Advance Project Phase ---
 
 export async function advanceProjectPhase(userId: string, projectId: string, newPhase: number, phaseName: string): Promise<void> {

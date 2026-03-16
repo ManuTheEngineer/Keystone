@@ -156,7 +156,7 @@ export function AIAssistantClient() {
   /* ---------- derived ---------- */
 
   const market = (project?.market ?? "USA") as Market;
-  const isWAMarket = market === "TOGO" || market === "BENIN";
+  const isWAMarket = market === "TOGO" || market === "BENIN" || market === "GHANA";
   const suggestions = isWAMarket ? SUGGESTIONS[mode].wa : SUGGESTIONS[mode].usa;
   const modeInfo = MODES.find((m) => m.key === mode)!;
 

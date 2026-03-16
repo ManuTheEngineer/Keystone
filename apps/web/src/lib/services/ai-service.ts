@@ -16,7 +16,10 @@ export async function sendAIMessage(
 ): Promise<{ message: string; usage?: AIUsage }> {
   const res = await fetch("/api/ai/chat", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-keystone-auth": "authenticated",
+    },
     body: JSON.stringify({ messages, projectContext, mode }),
   });
 

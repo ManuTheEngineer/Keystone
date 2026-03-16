@@ -2,7 +2,36 @@ import { NextRequest, NextResponse } from "next/server";
 
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 
+// Simple in-memory rate limiter
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 20; // requests per window
+const RATE_WINDOW = 3600000; // 1 hour in ms
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
+
 export async function POST(req: NextRequest) {
+  // Basic authentication gate: require custom header from our frontend
+  const authHeader = req.headers.get("x-keystone-auth");
+  if (!authHeader || authHeader !== "authenticated") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit by IP
+  const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json({ error: "Rate limit exceeded. Try again later." }, { status: 429 });
+  }
+
   if (!CLAUDE_API_KEY) {
     return NextResponse.json({ error: "AI service not configured" }, { status: 503 });
   }

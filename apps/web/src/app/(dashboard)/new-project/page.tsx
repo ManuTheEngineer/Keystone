@@ -135,7 +135,7 @@ export default function NewProjectPage() {
     const totalLowPerUnit = benchmarks.reduce((sum, b) => sum + b.lowRange, 0);
     const totalHighPerUnit = benchmarks.reduce((sum, b) => sum + b.highRange, 0);
 
-    const isUSA = selectedMarketKey === "USA" || selectedMarketKey === "GHANA";
+    const isUSA = selectedMarketKey === "USA";
     const sizeMap = isUSA ? SIZE_SQFT_USA : SIZE_SQM_TOGO;
     const sizeValue = sizeMap[selections[3]] ?? sizeMap.medium;
     const unit = isUSA ? "sqft" : "sqm";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import {
@@ -9,6 +9,7 @@ import {
   addBudgetItem,
   updateBudgetItem,
   deleteBudgetItem,
+  updateProject,
   type ProjectData,
   type BudgetItemData,
 } from "@/lib/services/project-service";
@@ -124,6 +125,21 @@ export function BudgetClient() {
     const unsub2 = subscribeToBudgetItems(user.uid, projectId, setItems);
     return () => { unsub1(); unsub2(); };
   }, [user, projectId]);
+
+  // Sync project totals when budget items change
+  const syncRef = useRef(false);
+  useEffect(() => {
+    if (!user || !project || items.length === 0) return;
+    const newTotal = items.reduce((sum, item) => sum + item.estimated, 0);
+    const newSpent = items.reduce((sum, item) => sum + item.actual, 0);
+    if (newTotal !== project.totalBudget || newSpent !== project.totalSpent) {
+      // Avoid sync on initial load race
+      if (syncRef.current) {
+        updateProject(user.uid, projectId, { totalBudget: newTotal, totalSpent: newSpent });
+      }
+    }
+    syncRef.current = true;
+  }, [items, user, projectId]); // intentionally exclude project to avoid loop
 
   useEffect(() => {
     if (project) {
@@ -683,11 +699,13 @@ export function BudgetClient() {
             </div>
           </div>
           <div>
-            <p className="text-[8px] sm:text-[9px] text-warm/60 uppercase tracking-wider">Conting.</p>
+            <p className="text-[8px] sm:text-[9px] text-warm/60 uppercase tracking-wider">Contingency left</p>
             <p className="font-data text-xs sm:text-sm text-warm font-medium">
-              {project.totalBudget > 0
-                ? `${Math.round(((project.totalBudget - project.totalSpent) / project.totalBudget) * 100)}%`
-                : "--"}
+              {(() => {
+                const contingencyItem = items.find(i => i.category.toLowerCase().includes("contingency"));
+                if (!contingencyItem) return "--";
+                return fmtCompact(contingencyItem.estimated - contingencyItem.actual);
+              })()}
             </p>
           </div>
         </div>

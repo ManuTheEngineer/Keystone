@@ -534,7 +534,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-3 gap-2 mb-6">
             <StatCard value={String(projects.length)} label="Total projects" />
             <StatCard
-              value={formatCurrencyCompact(stats.totalBudget, getMarketData("USA").currency)}
+              value={formatCurrencyCompact(stats.totalBudget, getMarketData((projects[0]?.market as Market) ?? "USA").currency)}
               label="Total invested"
             />
             <StatCard value={`${stats.avgProgress}%`} label="Average progress" />

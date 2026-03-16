@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -105,8 +105,11 @@ export function SettingsClient() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
-  setTopbar("Settings");
+  useEffect(() => {
+    setTopbar("Settings");
+  }, [setTopbar]);
 
   async function handleSaveProfile() {
     if (!user) return;
@@ -168,11 +171,13 @@ export function SettingsClient() {
   async function handleDeleteAccount() {
     if (!user || deleteConfirmText !== "DELETE") return;
     setDeleting(true);
+    setDeleteError("");
     try {
       await remove(ref(db, `users/${user.uid}`));
       await deleteUser(user);
-      router.push("/login");
+      router.push("/");
     } catch {
+      setDeleteError("Failed to delete account. You may need to sign in again before retrying.");
       setDeleting(false);
     }
   }
@@ -414,7 +419,7 @@ export function SettingsClient() {
                   </span>
                 ) : (
                   <a
-                    href="/pricing"
+                    href="/#pricing"
                     className="inline-block px-3 py-1.5 text-[10px] font-medium text-earth border border-border rounded-[var(--radius)] hover:bg-surface-alt transition-colors"
                   >
                     Upgrade
@@ -446,8 +451,11 @@ export function SettingsClient() {
             onClick={handleExportAll}
             className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors"
           >
-            Export all data
+            Export profile data
           </button>
+          <p className="text-[10px] text-muted mt-1">
+            Exports your profile and preferences. For full project data, use the Export button on each project's overview page.
+          </p>
 
           <div className="border-t border-border pt-3">
             <p className="text-[12px] font-medium text-danger mb-1">Danger zone</p>
@@ -471,6 +479,9 @@ export function SettingsClient() {
                 <p className="text-[11px] text-muted mb-2">
                   Type DELETE to confirm. This will permanently remove your account and all associated data.
                 </p>
+                {deleteError && (
+                  <p className="text-[11px] text-danger mb-2">{deleteError}</p>
+                )}
                 <input
                   type="text"
                   value={deleteConfirmText}

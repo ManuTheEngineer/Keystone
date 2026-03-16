@@ -470,7 +470,7 @@ export default function LandingPage() {
       </section>
 
       {/* Section 6: Pricing */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6">
+      <section id="pricing" className="py-16 sm:py-24 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <h2
             className="text-[28px] sm:text-[32px] text-earth text-center mb-4"
@@ -674,35 +674,40 @@ export default function LandingPage() {
                 Product
               </h4>
               <ul className="space-y-2.5">
-                {["Features", "Pricing", "Learning center", "AI advisor"].map((link) => (
-                  <li key={link}>
-                    <Link
-                      href="/register"
-                      className="text-[13px] text-sand/70 hover:text-warm transition-colors"
-                    >
-                      {link}
-                    </Link>
-                  </li>
-                ))}
+                <li>
+                  <a href="#how-it-works" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#pricing" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                    Pricing
+                  </a>
+                </li>
+                <li>
+                  <Link href="/learn" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                    Learning center
+                  </Link>
+                </li>
               </ul>
             </div>
 
-            {/* Company links */}
+            {/* Support links */}
             <div>
               <h4 className="text-[12px] uppercase tracking-[2px] text-sand/40 font-medium mb-4">
-                Company
+                Support
               </h4>
               <ul className="space-y-2.5">
-                {["About", "Blog", "Careers", "Contact"].map((link) => (
-                  <li key={link}>
-                    <Link
-                      href="/register"
-                      className="text-[13px] text-sand/70 hover:text-warm transition-colors"
-                    >
-                      {link}
-                    </Link>
-                  </li>
-                ))}
+                <li>
+                  <Link href="/learn" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                    Documentation
+                  </Link>
+                </li>
+                <li>
+                  <a href="mailto:support@keystone.build" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                    Contact
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -712,16 +717,16 @@ export default function LandingPage() {
                 Legal
               </h4>
               <ul className="space-y-2.5">
-                {["Privacy policy", "Terms of service", "Cookie policy"].map((link) => (
-                  <li key={link}>
-                    <Link
-                      href="/register"
-                      className="text-[13px] text-sand/70 hover:text-warm transition-colors"
-                    >
-                      {link}
-                    </Link>
-                  </li>
-                ))}
+                <li>
+                  <span className="text-[13px] text-sand/40 cursor-default">
+                    Privacy policy (coming soon)
+                  </span>
+                </li>
+                <li>
+                  <span className="text-[13px] text-sand/40 cursor-default">
+                    Terms of service (coming soon)
+                  </span>
+                </li>
               </ul>
             </div>
           </div>
