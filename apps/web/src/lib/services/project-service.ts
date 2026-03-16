@@ -38,6 +38,10 @@ export interface ProjectData {
   subPhase: string;
   details: string;
   isDemo?: boolean;
+  priority?: number; // 1, 2, 3 (1 = highest)
+  pinned?: boolean;
+  lastActivityAt?: string;
+  contactCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -182,6 +186,20 @@ export async function updateProject(
 
 export async function deleteProject(userId: string, projectId: string): Promise<void> {
   await remove(ref(db, `users/${userId}/projects/${projectId}`));
+}
+
+export async function updateProjectPriority(userId: string, projectId: string, priority: number | null): Promise<void> {
+  if (priority === null) {
+    await update(ref(db, `users/${userId}/projects/${projectId}`), {
+      priority: null,
+      pinned: false,
+    });
+  } else {
+    await update(ref(db, `users/${userId}/projects/${projectId}`), {
+      priority,
+      pinned: priority === 1,
+    });
+  }
 }
 
 // --- Budget Items ---

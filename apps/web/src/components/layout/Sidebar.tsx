@@ -48,6 +48,7 @@ function makeNav(items: { id: string; label: string; Icon: React.ComponentType<{
 
 const mainNav = makeNav([
   { id: "dashboard", label: "Dashboard", Icon: LayoutGrid },
+  { id: "portfolio", label: "Portfolio", Icon: FolderOpen },
   { id: "new-project", label: "New project", Icon: Plus },
   { id: "deal-analyzer", label: "Deal Analyzer", Icon: TrendingUp },
   { id: "learn", label: "Learn", Icon: BookOpen },

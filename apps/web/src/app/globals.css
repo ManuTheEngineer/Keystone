@@ -384,7 +384,7 @@ html.dark {
   color-scheme: dark;
 }
 
-/* Background colors */
+/* ── Background colors ── */
 html.dark .bg-background { background-color: var(--color-background) !important; }
 html.dark .bg-surface { background-color: var(--color-surface) !important; }
 html.dark .bg-surface-alt { background-color: var(--color-surface-alt) !important; }
@@ -395,61 +395,197 @@ html.dark .bg-earth { background-color: var(--color-earth) !important; }
 html.dark .bg-earth-light { background-color: var(--color-earth-light) !important; }
 html.dark .bg-clay { background-color: var(--color-clay) !important; }
 html.dark .bg-primary { background-color: var(--color-primary) !important; }
+html.dark .bg-sand { background-color: var(--color-sand) !important; }
+html.dark .bg-warning { background-color: var(--color-warning) !important; }
+html.dark .bg-white { background-color: var(--color-surface) !important; }
 
-/* Text colors */
+/* ── Text colors ── */
 html.dark .text-earth { color: var(--color-earth) !important; }
 html.dark .text-foreground { color: var(--color-foreground) !important; }
 html.dark .text-muted { color: var(--color-muted) !important; }
 html.dark .text-clay { color: var(--color-clay) !important; }
+html.dark .text-clay-light { color: var(--color-clay-light) !important; }
 html.dark .text-sand { color: var(--color-sand) !important; }
 html.dark .text-warm { color: var(--color-warm) !important; }
 html.dark .text-slate-text { color: var(--color-foreground) !important; }
+html.dark .text-slate { color: var(--color-foreground) !important; }
 
-/* Border colors */
+/* ── Border colors ── */
 html.dark .border-border { border-color: var(--color-border) !important; }
 html.dark .border-border-dark { border-color: var(--color-border-dark) !important; }
 html.dark .border-sand { border-color: var(--color-sand) !important; }
+html.dark .border-warning { border-color: var(--color-warning) !important; }
+html.dark .border-clay { border-color: var(--color-clay) !important; }
 html.dark [class*="border-border\/"] { border-color: var(--color-border) !important; }
 
-/* Status backgrounds */
+/* ── Status backgrounds (solid) ── */
 html.dark .bg-success-bg { background-color: var(--color-success-bg) !important; }
 html.dark .bg-warning-bg { background-color: var(--color-warning-bg) !important; }
 html.dark .bg-danger-bg { background-color: var(--color-danger-bg) !important; }
 html.dark .bg-info-bg { background-color: var(--color-info-bg) !important; }
+html.dark .bg-success { background-color: var(--color-success) !important; }
+html.dark .bg-danger { background-color: var(--color-danger) !important; }
+
+/* ── Status text ── */
 html.dark .text-success { color: var(--color-success) !important; }
 html.dark .text-warning { color: var(--color-warning) !important; }
 html.dark .text-danger { color: var(--color-danger) !important; }
 html.dark .text-info { color: var(--color-info) !important; }
-html.dark .bg-success { background-color: var(--color-success) !important; }
-html.dark .bg-danger { background-color: var(--color-danger) !important; }
+
+/* ── Status borders ── */
 html.dark .border-success { border-color: var(--color-success) !important; }
 html.dark .border-danger { border-color: var(--color-danger) !important; }
 
-/* Market accents */
+/* ── Market accents ── */
 html.dark .bg-accent-usa-light { background-color: var(--color-accent-usa-light) !important; }
 html.dark .bg-accent-wa-light { background-color: var(--color-accent-wa-light) !important; }
 html.dark .text-accent-usa { color: var(--color-accent-usa) !important; }
 html.dark .text-accent-wa { color: var(--color-accent-wa) !important; }
 
-/* Emerald scale */
+/* ── Emerald scale: backgrounds ── */
 html.dark .bg-emerald-50 { background-color: var(--color-emerald-50) !important; }
 html.dark .bg-emerald-100 { background-color: var(--color-emerald-100) !important; }
 html.dark .bg-emerald-200 { background-color: var(--color-emerald-200) !important; }
+html.dark .bg-emerald-300 { background-color: var(--color-emerald-300) !important; }
+html.dark .bg-emerald-400 { background-color: var(--color-emerald-400) !important; }
+html.dark .bg-emerald-500 { background-color: var(--color-emerald-500) !important; }
+html.dark .bg-emerald-600 { background-color: var(--color-emerald-600) !important; }
+
+/* ── Emerald scale: text ── */
+html.dark .text-emerald-500 { color: var(--color-emerald-500) !important; }
 html.dark .text-emerald-600 { color: var(--color-emerald-600) !important; }
 html.dark .text-emerald-700 { color: var(--color-emerald-700) !important; }
 html.dark .text-emerald-800 { color: var(--color-emerald-800) !important; }
 html.dark .text-emerald-900 { color: var(--color-emerald-900) !important; }
+
+/* ── Emerald scale: borders ── */
 html.dark .border-emerald-200 { border-color: var(--color-emerald-200) !important; }
+html.dark .border-emerald-300 { border-color: var(--color-emerald-300) !important; }
+html.dark .border-emerald-400 { border-color: var(--color-emerald-400) !important; }
 html.dark .border-emerald-500 { border-color: var(--color-emerald-500) !important; }
 
-/* Gradient overrides */
+/* ── Non-brand utility colors (activity dots) ── */
+html.dark .bg-blue-500 { background-color: #3b82f6 !important; }
+html.dark .bg-amber-500 { background-color: #f59e0b !important; }
+
+/* ── Opacity variants: sand ── */
+html.dark .bg-sand\/5 { background-color: color-mix(in srgb, var(--color-sand) 5%, transparent) !important; }
+html.dark .bg-sand\/8 { background-color: color-mix(in srgb, var(--color-sand) 8%, transparent) !important; }
+html.dark .bg-sand\/15 { background-color: color-mix(in srgb, var(--color-sand) 15%, transparent) !important; }
+
+/* ── Opacity variants: warm ── */
+html.dark .bg-warm\/30 { background-color: color-mix(in srgb, var(--color-warm) 30%, transparent) !important; }
+html.dark .bg-warm\/50 { background-color: color-mix(in srgb, var(--color-warm) 50%, transparent) !important; }
+
+/* ── Opacity variants: success ── */
+html.dark .bg-success\/5 { background-color: color-mix(in srgb, var(--color-success) 5%, transparent) !important; }
+html.dark .bg-success\/10 { background-color: color-mix(in srgb, var(--color-success) 10%, transparent) !important; }
+html.dark .bg-success\/15 { background-color: color-mix(in srgb, var(--color-success) 15%, transparent) !important; }
+
+/* ── Opacity variants: danger ── */
+html.dark .bg-danger\/5 { background-color: color-mix(in srgb, var(--color-danger) 5%, transparent) !important; }
+html.dark .bg-danger\/10 { background-color: color-mix(in srgb, var(--color-danger) 10%, transparent) !important; }
+
+/* ── Opacity variants: warning ── */
+html.dark .bg-warning\/10 { background-color: color-mix(in srgb, var(--color-warning) 10%, transparent) !important; }
+
+/* ── Opacity variants: muted ── */
+html.dark .bg-muted\/10 { background-color: color-mix(in srgb, var(--color-muted) 10%, transparent) !important; }
+html.dark .bg-muted\/20 { background-color: color-mix(in srgb, var(--color-muted) 20%, transparent) !important; }
+
+/* ── Opacity variants: surface-alt ── */
+html.dark .bg-surface-alt\/30 { background-color: color-mix(in srgb, var(--color-surface-alt) 30%, transparent) !important; }
+html.dark .bg-surface-alt\/50 { background-color: color-mix(in srgb, var(--color-surface-alt) 50%, transparent) !important; }
+
+/* ── Opacity variants: emerald-50 ── */
+html.dark .bg-emerald-50\/30 { background-color: color-mix(in srgb, var(--color-emerald-50) 30%, transparent) !important; }
+html.dark .bg-emerald-50\/50 { background-color: color-mix(in srgb, var(--color-emerald-50) 50%, transparent) !important; }
+
+/* ── Opacity variants: earth ── */
+html.dark .bg-earth\/40 { background-color: color-mix(in srgb, var(--color-earth) 40%, transparent) !important; }
+html.dark .bg-earth\/60 { background-color: color-mix(in srgb, var(--color-earth) 60%, transparent) !important; }
+html.dark .bg-earth\/70 { background-color: color-mix(in srgb, var(--color-earth) 70%, transparent) !important; }
+html.dark .bg-earth\/80 { background-color: color-mix(in srgb, var(--color-earth) 80%, transparent) !important; }
+html.dark .bg-earth\/90 { background-color: color-mix(in srgb, var(--color-earth) 90%, transparent) !important; }
+html.dark .bg-earth\/95 { background-color: color-mix(in srgb, var(--color-earth) 95%, transparent) !important; }
+
+/* ── Opacity variants: clay ── */
+html.dark .bg-clay\/90 { background-color: color-mix(in srgb, var(--color-clay) 90%, transparent) !important; }
+
+/* ── Opacity variants: danger (hover/border) ── */
+html.dark .bg-danger\/90 { background-color: color-mix(in srgb, var(--color-danger) 90%, transparent) !important; }
+
+/* ── Opacity variants: border (sand, danger) ── */
+html.dark .border-sand\/30 { border-color: color-mix(in srgb, var(--color-sand) 30%, transparent) !important; }
+html.dark .border-sand\/40 { border-color: color-mix(in srgb, var(--color-sand) 40%, transparent) !important; }
+html.dark .border-border\/50 { border-color: color-mix(in srgb, var(--color-border) 50%, transparent) !important; }
+html.dark .border-border\/60 { border-color: color-mix(in srgb, var(--color-border) 60%, transparent) !important; }
+html.dark .border-danger\/20 { border-color: color-mix(in srgb, var(--color-danger) 20%, transparent) !important; }
+html.dark .border-danger\/30 { border-color: color-mix(in srgb, var(--color-danger) 30%, transparent) !important; }
+html.dark .border-success\/30 { border-color: color-mix(in srgb, var(--color-success) 30%, transparent) !important; }
+
+/* ── Text opacity variants ── */
+html.dark .text-emerald-600\/70 { color: color-mix(in srgb, var(--color-emerald-600) 70%, transparent) !important; }
+html.dark .text-muted\/40 { color: color-mix(in srgb, var(--color-muted) 40%, transparent) !important; }
+html.dark .text-muted\/50 { color: color-mix(in srgb, var(--color-muted) 50%, transparent) !important; }
+html.dark .text-muted\/60 { color: color-mix(in srgb, var(--color-muted) 60%, transparent) !important; }
+html.dark .text-clay\/60 { color: color-mix(in srgb, var(--color-clay) 60%, transparent) !important; }
+html.dark .text-clay\/70 { color: color-mix(in srgb, var(--color-clay) 70%, transparent) !important; }
+
+/* ── Placeholder text opacity variants ── */
+html.dark .placeholder\:text-muted\/40::placeholder { color: color-mix(in srgb, var(--color-muted) 40%, transparent) !important; }
+html.dark .placeholder\:text-muted\/50::placeholder { color: color-mix(in srgb, var(--color-muted) 50%, transparent) !important; }
+
+/* ── Hover state: backgrounds ── */
+html.dark .hover\:bg-warm:hover { background-color: var(--color-warm) !important; }
+html.dark .hover\:bg-surface-alt:hover { background-color: var(--color-surface-alt) !important; }
+html.dark .hover\:bg-earth-light:hover { background-color: var(--color-earth-light) !important; }
+html.dark .hover\:bg-warm\/30:hover { background-color: color-mix(in srgb, var(--color-warm) 30%, transparent) !important; }
+html.dark .hover\:bg-warm\/10:hover { background-color: color-mix(in srgb, var(--color-warm) 10%, transparent) !important; }
+html.dark .hover\:bg-danger\/5:hover { background-color: color-mix(in srgb, var(--color-danger) 5%, transparent) !important; }
+html.dark .hover\:bg-danger\/10:hover { background-color: color-mix(in srgb, var(--color-danger) 10%, transparent) !important; }
+html.dark .hover\:bg-clay\/90:hover { background-color: color-mix(in srgb, var(--color-clay) 90%, transparent) !important; }
+html.dark .hover\:bg-earth\/90:hover { background-color: color-mix(in srgb, var(--color-earth) 90%, transparent) !important; }
+html.dark .hover\:bg-emerald-700:hover { background-color: var(--color-emerald-700) !important; }
+html.dark .hover\:bg-danger\/90:hover { background-color: color-mix(in srgb, var(--color-danger) 90%, transparent) !important; }
+
+/* ── Hover state: borders ── */
+html.dark .hover\:border-sand:hover { border-color: var(--color-sand) !important; }
+html.dark .hover\:border-border-dark:hover { border-color: var(--color-border-dark) !important; }
+html.dark .hover\:border-earth:hover { border-color: var(--color-earth) !important; }
+html.dark .hover\:border-emerald-400:hover { border-color: var(--color-emerald-400) !important; }
+html.dark .hover\:border-emerald-500:hover { border-color: var(--color-emerald-500) !important; }
+
+/* ── Hover state: text ── */
+html.dark .hover\:text-earth:hover { color: var(--color-earth) !important; }
+html.dark .hover\:text-clay:hover { color: var(--color-clay) !important; }
+html.dark .hover\:text-clay-light:hover { color: var(--color-clay-light) !important; }
+html.dark .hover\:text-danger:hover { color: var(--color-danger) !important; }
+html.dark .hover\:text-emerald-700:hover { color: var(--color-emerald-700) !important; }
+
+/* ── Focus state: borders ── */
+html.dark .focus\:border-emerald-500:focus { border-color: var(--color-emerald-500) !important; }
+html.dark .focus\:border-earth:focus { border-color: var(--color-earth) !important; }
+html.dark .focus\:border-clay:focus { border-color: var(--color-clay) !important; }
+html.dark .focus\:border-danger:focus { border-color: var(--color-danger) !important; }
+
+/* ── Focus state: ring ── */
+html.dark .focus\:ring-emerald-500\/20:focus { --tw-ring-color: color-mix(in srgb, var(--color-emerald-500) 20%, transparent) !important; }
+html.dark .focus\:ring-clay:focus { --tw-ring-color: var(--color-clay) !important; }
+
+/* ── Divide colors ── */
+html.dark .divide-border > * + * { border-color: var(--color-border) !important; }
+
+/* ── Gradient overrides ── */
 html.dark .from-surface { --tw-gradient-from: var(--color-surface) !important; }
+html.dark .from-background { --tw-gradient-from: var(--color-background) !important; }
 html.dark .to-surface-alt\/30 { --tw-gradient-to: var(--color-surface-alt) !important; }
 html.dark .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--color-surface), var(--color-surface-alt)) !important; }
 
-/* Shadow overrides */
+/* ── Shadow overrides ── */
 html.dark [class*="shadow-\[var(--shadow"] { box-shadow: var(--shadow-sm) !important; }
 
+/* ── Form element base styles ── */
 html.dark input,
 html.dark textarea,
 html.dark select {
@@ -470,16 +606,23 @@ html.dark select:disabled {
   opacity: 0.6;
 }
 
+/* ── Images ── */
 html.dark img {
   opacity: 0.92;
 }
 
-/* Glass effect adapts via variables */
+/* ── Glass effect ── */
 html.dark .glass {
   background: rgba(26, 20, 18, 0.85);
 }
 
-/* Recharts adapts via variables */
+/* ── Heading colors (h1/h2/h3 use var(--color-earth) via base styles) ── */
+
+/* ── Document preview background ── */
+html.dark .bg-\[\#e8e8e8\] { background-color: var(--color-surface-dim) !important; }
+html.dark .dark\:bg-\[\#1a1a1a\] { background-color: #1a1a1a !important; }
+
+/* ── Recharts adapts via variables ── */
 html.dark .recharts-text {
   fill: var(--color-muted);
 }

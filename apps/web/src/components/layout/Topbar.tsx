@@ -1,12 +1,17 @@
 "use client";
 
 import { Menu } from "lucide-react";
+import { NotificationBell } from "@/components/ui/NotificationBell";
+import type { AppNotification } from "@/lib/notifications";
 
 interface TopbarProps {
   title: string;
   badge?: string;
   badgeVariant?: "success" | "warning" | "info" | "danger";
   onMenuToggle: () => void;
+  notifications?: AppNotification[];
+  onDismissNotification?: (id: string) => void;
+  onDismissAllNotifications?: () => void;
 }
 
 const badgeStyles = {
@@ -16,7 +21,15 @@ const badgeStyles = {
   danger: "bg-danger/10 text-danger border border-danger/20",
 };
 
-export function Topbar({ title, badge, badgeVariant = "info", onMenuToggle }: TopbarProps) {
+export function Topbar({
+  title,
+  badge,
+  badgeVariant = "info",
+  onMenuToggle,
+  notifications = [],
+  onDismissNotification,
+  onDismissAllNotifications,
+}: TopbarProps) {
   return (
     <header className="px-4 sm:px-6 py-4 shadow-[0_1px_0_rgba(44,24,16,0.06)] bg-surface/80 backdrop-blur-sm flex items-center justify-between shrink-0 sticky top-0 z-30">
       <div className="flex items-center gap-3">
@@ -29,13 +42,20 @@ export function Topbar({ title, badge, badgeVariant = "info", onMenuToggle }: To
         </button>
         <h3 style={{ fontFamily: "var(--font-heading)" }} className="text-[17px] text-earth">{title}</h3>
       </div>
-      {badge && (
-        <span
-          className={`text-[10px] px-3 py-1 rounded-full font-medium ${badgeStyles[badgeVariant]}`}
-        >
-          {badge}
-        </span>
-      )}
+      <div className="flex items-center gap-2">
+        {badge && (
+          <span
+            className={`text-[10px] px-3 py-1 rounded-full font-medium ${badgeStyles[badgeVariant]}`}
+          >
+            {badge}
+          </span>
+        )}
+        <NotificationBell
+          notifications={notifications}
+          onDismiss={onDismissNotification ?? (() => {})}
+          onDismissAll={onDismissAllNotifications ?? (() => {})}
+        />
+      </div>
     </header>
   );
 }
