@@ -369,10 +369,86 @@ h1, h2, h3 {
   margin: 1.5rem 0;
 }
 
-/* Dark mode specific -- inline styles on <html> handle variable overrides (see ThemeToggle.tsx) */
+/* ================================================================
+   DARK MODE
+
+   Tailwind CSS 4's @theme inline compiles utility classes to STATIC
+   color values (not var() references). So bg-background compiles to
+   background-color: #FDF8F0 regardless of CSS variable changes.
+
+   The ONLY way to override is with CSS rules that target the
+   Tailwind-generated class names and use var() references.
+   ================================================================ */
+
 html.dark {
   color-scheme: dark;
 }
+
+/* Background colors */
+html.dark .bg-background { background-color: var(--color-background) !important; }
+html.dark .bg-surface { background-color: var(--color-surface) !important; }
+html.dark .bg-surface-alt { background-color: var(--color-surface-alt) !important; }
+html.dark .bg-surface-dim { background-color: var(--color-surface-dim) !important; }
+html.dark .bg-cream { background-color: var(--color-cream) !important; }
+html.dark .bg-warm { background-color: var(--color-warm) !important; }
+html.dark .bg-earth { background-color: var(--color-earth) !important; }
+html.dark .bg-earth-light { background-color: var(--color-earth-light) !important; }
+html.dark .bg-clay { background-color: var(--color-clay) !important; }
+html.dark .bg-primary { background-color: var(--color-primary) !important; }
+
+/* Text colors */
+html.dark .text-earth { color: var(--color-earth) !important; }
+html.dark .text-foreground { color: var(--color-foreground) !important; }
+html.dark .text-muted { color: var(--color-muted) !important; }
+html.dark .text-clay { color: var(--color-clay) !important; }
+html.dark .text-sand { color: var(--color-sand) !important; }
+html.dark .text-warm { color: var(--color-warm) !important; }
+html.dark .text-slate-text { color: var(--color-foreground) !important; }
+
+/* Border colors */
+html.dark .border-border { border-color: var(--color-border) !important; }
+html.dark .border-border-dark { border-color: var(--color-border-dark) !important; }
+html.dark .border-sand { border-color: var(--color-sand) !important; }
+html.dark [class*="border-border\/"] { border-color: var(--color-border) !important; }
+
+/* Status backgrounds */
+html.dark .bg-success-bg { background-color: var(--color-success-bg) !important; }
+html.dark .bg-warning-bg { background-color: var(--color-warning-bg) !important; }
+html.dark .bg-danger-bg { background-color: var(--color-danger-bg) !important; }
+html.dark .bg-info-bg { background-color: var(--color-info-bg) !important; }
+html.dark .text-success { color: var(--color-success) !important; }
+html.dark .text-warning { color: var(--color-warning) !important; }
+html.dark .text-danger { color: var(--color-danger) !important; }
+html.dark .text-info { color: var(--color-info) !important; }
+html.dark .bg-success { background-color: var(--color-success) !important; }
+html.dark .bg-danger { background-color: var(--color-danger) !important; }
+html.dark .border-success { border-color: var(--color-success) !important; }
+html.dark .border-danger { border-color: var(--color-danger) !important; }
+
+/* Market accents */
+html.dark .bg-accent-usa-light { background-color: var(--color-accent-usa-light) !important; }
+html.dark .bg-accent-wa-light { background-color: var(--color-accent-wa-light) !important; }
+html.dark .text-accent-usa { color: var(--color-accent-usa) !important; }
+html.dark .text-accent-wa { color: var(--color-accent-wa) !important; }
+
+/* Emerald scale */
+html.dark .bg-emerald-50 { background-color: var(--color-emerald-50) !important; }
+html.dark .bg-emerald-100 { background-color: var(--color-emerald-100) !important; }
+html.dark .bg-emerald-200 { background-color: var(--color-emerald-200) !important; }
+html.dark .text-emerald-600 { color: var(--color-emerald-600) !important; }
+html.dark .text-emerald-700 { color: var(--color-emerald-700) !important; }
+html.dark .text-emerald-800 { color: var(--color-emerald-800) !important; }
+html.dark .text-emerald-900 { color: var(--color-emerald-900) !important; }
+html.dark .border-emerald-200 { border-color: var(--color-emerald-200) !important; }
+html.dark .border-emerald-500 { border-color: var(--color-emerald-500) !important; }
+
+/* Gradient overrides */
+html.dark .from-surface { --tw-gradient-from: var(--color-surface) !important; }
+html.dark .to-surface-alt\/30 { --tw-gradient-to: var(--color-surface-alt) !important; }
+html.dark .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--color-surface), var(--color-surface-alt)) !important; }
+
+/* Shadow overrides */
+html.dark [class*="shadow-\[var(--shadow"] { box-shadow: var(--shadow-sm) !important; }
 
 html.dark input,
 html.dark textarea,
