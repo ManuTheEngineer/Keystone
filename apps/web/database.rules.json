@@ -3,7 +3,128 @@
     "users": {
       "$uid": {
         ".read": "$uid === auth.uid",
-        ".write": "$uid === auth.uid"
+        ".write": "$uid === auth.uid",
+
+        "profile": {
+          ".validate": "newData.hasChildren(['name', 'email'])",
+          "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
+          "email": { ".validate": "newData.isString() && newData.val().length > 0" },
+          "plan": { ".validate": "newData.isString() && (newData.val() === 'FOUNDATION' || newData.val() === 'BUILDER' || newData.val() === 'DEVELOPER' || newData.val() === 'ENTERPRISE')" },
+          "currency": { ".validate": "newData.isString()" },
+          "timezone": { ".validate": "newData.isString()" },
+          "locale": { ".validate": "newData.isString()" },
+          "createdAt": { ".validate": "newData.isString()" },
+          "demoSeeded": { ".validate": "newData.isBoolean()" },
+          "tourCompleted": { ".validate": "newData.isBoolean()" }
+        },
+
+        "projects": {
+          "$projectId": {
+            ".validate": "newData.hasChildren(['name', 'market', 'status'])",
+            "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200" },
+            "market": { ".validate": "newData.isString() && (newData.val() === 'USA' || newData.val() === 'TOGO' || newData.val() === 'GHANA' || newData.val() === 'BENIN')" },
+            "status": { ".validate": "newData.isString() && (newData.val() === 'ACTIVE' || newData.val() === 'PAUSED' || newData.val() === 'COMPLETED' || newData.val() === 'CANCELLED')" },
+            "totalBudget": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "totalSpent": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "currentPhase": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 8" },
+            "progress": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+
+            "budgetItems": {
+              "$itemId": {
+                ".validate": "newData.hasChildren(['category', 'estimated'])",
+                "category": { ".validate": "newData.isString() && newData.val().length > 0" },
+                "estimated": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+                "actual": { ".validate": "newData.isNumber() && newData.val() >= 0" }
+              }
+            },
+
+            "contacts": {
+              "$contactId": {
+                ".validate": "newData.hasChildren(['name'])",
+                "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200" },
+                "rating": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 5" }
+              }
+            },
+
+            "dailyLogs": {
+              "$logId": {
+                ".validate": "newData.hasChildren(['content', 'date'])",
+                "content": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 5000" },
+                "crew": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 200" }
+              }
+            },
+
+            "tasks": {
+              "$taskId": {
+                ".validate": "newData.hasChildren(['label'])",
+                "label": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500" },
+                "done": { ".validate": "newData.isBoolean()" },
+                "order": { ".validate": "newData.isNumber() && newData.val() >= 0" }
+              }
+            },
+
+            "documents": {
+              "$docId": {
+                ".validate": "newData.hasChildren(['name'])",
+                "name": { ".validate": "newData.isString() && newData.val().length > 0" }
+              }
+            },
+
+            "photos": {
+              "$photoId": {
+                ".validate": "newData.hasChildren(['fileUrl'])",
+                "fileUrl": { ".validate": "newData.isString()" },
+                "latitude": { ".validate": "newData.isNumber()" },
+                "longitude": { ".validate": "newData.isNumber()" }
+              }
+            },
+
+            "inspectionResults": {
+              "$resultId": {
+                ".validate": "newData.hasChildren(['inspectionId', 'phase'])"
+              }
+            },
+
+            "punchListItems": {
+              "$itemId": {
+                ".validate": "newData.hasChildren(['description', 'severity', 'status'])",
+                "severity": { ".validate": "newData.isString() && (newData.val() === 'critical' || newData.val() === 'major' || newData.val() === 'minor')" },
+                "status": { ".validate": "newData.isString() && (newData.val() === 'open' || newData.val() === 'in-progress' || newData.val() === 'resolved')" }
+              }
+            },
+
+            "materials": {
+              "$materialId": {
+                ".validate": "newData.hasChildren(['name'])",
+                "quantityOrdered": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+                "quantityDelivered": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+                "unitPrice": { ".validate": "newData.isNumber() && newData.val() >= 0" }
+              }
+            },
+
+            "conversations": {
+              "$convId": {
+                ".validate": "newData.hasChildren(['messages'])"
+              }
+            },
+
+            "vault": {
+              "$fileId": {
+                ".validate": "newData.hasChildren(['name', 'fileUrl'])",
+                "name": { ".validate": "newData.isString() && newData.val().length > 0" },
+                "fileUrl": { ".validate": "newData.isString()" },
+                "fileSize": { ".validate": "newData.isNumber() && newData.val() >= 0" }
+              }
+            }
+          }
+        },
+
+        "aiUsage": {
+          "$date": {
+            ".validate": "newData.hasChildren(['count'])",
+            "count": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000" }
+          }
+        }
       }
     }
   }
