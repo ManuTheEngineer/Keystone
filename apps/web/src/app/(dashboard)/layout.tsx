@@ -253,7 +253,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             projectMarket={currentProject?.market}
             badges={{ "punch-list": punchListCount, "overview": openTaskCount > 5 ? openTaskCount : 0 }}
           />
-          <div className={`${sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[240px]"} transition-all duration-300 flex flex-col min-h-screen min-w-0 bg-surface-dim lg:pl-2`}>
+          <div className={`${sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[240px]"} transition-all duration-300 flex flex-col min-h-screen min-w-0 bg-surface-dim lg:pl-2 lg:pr-2`}>
             <div className="flex flex-col flex-1 bg-background rounded-t-3xl mt-2 shadow-[var(--shadow-sm)] min-w-0 overflow-hidden">
               <Topbar
                 title={topbarState.title}
