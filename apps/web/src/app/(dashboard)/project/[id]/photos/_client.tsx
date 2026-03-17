@@ -109,13 +109,15 @@ export function PhotosClient() {
     }
 
     if (filterDateFrom) {
-      const from = new Date(filterDateFrom).getTime();
+      // Parse as local midnight (YYYY-MM-DD + T00:00:00) to avoid UTC shift
+      const from = new Date(filterDateFrom + "T00:00:00").getTime();
       result = result.filter((p) => p.date && new Date(p.date).getTime() >= from);
     }
 
     if (filterDateTo) {
-      const to = new Date(filterDateTo).getTime() + 86400000; // include end of day
-      result = result.filter((p) => p.date && new Date(p.date).getTime() < to);
+      // End of selected day in local time (23:59:59.999)
+      const to = new Date(filterDateTo + "T23:59:59.999").getTime();
+      result = result.filter((p) => p.date && new Date(p.date).getTime() <= to);
     }
 
     // Sort newest first

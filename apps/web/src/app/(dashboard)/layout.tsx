@@ -56,7 +56,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [punchListCount, setPunchListCount] = useState(0);
   const [openTaskCount, setOpenTaskCount] = useState(0);
-  const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(new Set());
+  const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const stored = localStorage.getItem("keystone-dismissed-notifications");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
   const [detailedData, setDetailedData] = useState<Record<string, { punchList: PunchListItemData[]; tasks: TaskData[]; dailyLogs: DailyLogData[] }>>({});
   const router = useRouter();
   const pathname = usePathname();
@@ -213,10 +219,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return sortNotifications(filtered);
   }, [projects, priorityProjects, detailedData, dismissedNotifications]);
 
+  function persistDismissed(set: Set<string>) {
+    try { localStorage.setItem("keystone-dismissed-notifications", JSON.stringify([...set])); } catch {}
+  }
+
   function handleDismissNotification(id: string) {
     setDismissedNotifications((prev) => {
       const next = new Set(prev);
       next.add(id);
+      persistDismissed(next);
       return next;
     });
   }
@@ -227,6 +238,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       for (const n of notifications) {
         next.add(n.id);
       }
+      persistDismissed(next);
       return next;
     });
   }
@@ -266,7 +278,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             onSignOut={handleSignOut}
             locale={locale}
             projectMarket={currentProject?.market}
-            badges={{ "punch-list": punchListCount, "overview": openTaskCount > 5 ? openTaskCount : 0 }}
+            badges={{ "punch-list": punchListCount, "overview": openTaskCount }}
           />
           <div className={`${sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[240px]"} transition-all duration-300 flex flex-col min-h-screen min-w-0 bg-[#2C1810] lg:pl-2 lg:pr-2`}>
             <div className="flex flex-col flex-1 bg-background rounded-t-3xl mt-2 min-w-0 overflow-clip">

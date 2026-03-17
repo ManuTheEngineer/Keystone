@@ -58,7 +58,8 @@ export async function POST(req: NextRequest) {
   // Rate limit by IP
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
   if (!checkRateLimit(ip)) {
-    return NextResponse.json({ error: "Rate limit exceeded. Try again later." }, { status: 429 });
+    const entry = rateLimitMap.get(ip);
+    return NextResponse.json({ error: `RATE_LIMITED:${entry?.count ?? RATE_LIMIT}:${RATE_LIMIT}` }, { status: 429 });
   }
 
   if (!CLAUDE_API_KEY) {

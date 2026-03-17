@@ -170,6 +170,13 @@ export function VaultClient() {
   const handleUpload = useCallback(
     async (fileList: FileList | null) => {
       if (!fileList || fileList.length === 0 || !user) return;
+      const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+      for (let i = 0; i < fileList.length; i++) {
+        if (fileList[i].size > MAX_FILE_SIZE) {
+          showToast(`"${fileList[i].name}" exceeds 25 MB limit.`, "error");
+          return;
+        }
+      }
       setUploading(true);
       try {
         for (let i = 0; i < fileList.length; i++) {

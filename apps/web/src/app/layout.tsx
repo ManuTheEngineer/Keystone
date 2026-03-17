@@ -8,6 +8,17 @@ export const metadata: Metadata = {
   title: "",
   description:
     "Construction project lifecycle management for owner-builders. Guides you from initial idea through financing, design, construction, and occupancy.",
+  openGraph: {
+    title: "Keystone",
+    description: "From first idea to final key. Construction project management for owner-builders.",
+    type: "website",
+    siteName: "Keystone",
+  },
+  twitter: {
+    card: "summary",
+    title: "Keystone",
+    description: "From first idea to final key. Construction project management for owner-builders.",
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

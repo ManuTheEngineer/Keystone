@@ -25,6 +25,8 @@ export interface UserProfile {
   billingInterval?: "monthly" | "annual";
   trialExpiresAt?: string;
   trialCodeUsed?: string;
+  tourCompleted?: boolean;
+  demoSeeded?: boolean;
   createdAt: string;
 }
 
