@@ -2,6 +2,8 @@ export * from "./types";
 export * from "./utils/currency";
 export { USA_MARKET } from "./usa";
 export { TOGO_MARKET } from "./togo";
+export { GHANA_MARKET } from "./ghana";
+export { BENIN_MARKET } from "./benin";
 export {
   getLocationData,
   getClosestLocation,
@@ -16,12 +18,14 @@ export type { LocationData, ClimateType } from "./locations";
 import type { Market, MarketConfig, ProjectPhase, CostBenchmark, PropertyType } from "./types";
 import { USA_MARKET } from "./usa";
 import { TOGO_MARKET } from "./togo";
+import { GHANA_MARKET } from "./ghana";
+import { BENIN_MARKET } from "./benin";
 
 const MARKETS: Record<Market, MarketConfig> = {
   USA: USA_MARKET,
   TOGO: TOGO_MARKET,
-  GHANA: TOGO_MARKET, // Placeholder — uses Togo as closest West African match
-  BENIN: TOGO_MARKET, // Placeholder — uses Togo as closest match
+  GHANA: GHANA_MARKET,
+  BENIN: BENIN_MARKET,
 };
 
 export function getMarketData(market: Market): MarketConfig {
