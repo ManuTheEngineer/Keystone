@@ -5,7 +5,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Keystone - From First Idea to Final Key",
+  title: "",
   description:
     "Construction project lifecycle management for owner-builders. Guides you from initial idea through financing, design, construction, and occupancy.",
   manifest: "/manifest.json",
