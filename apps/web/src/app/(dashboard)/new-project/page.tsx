@@ -558,7 +558,7 @@ export default function NewProjectPage() {
     switch (step) {
       case 0: return state.goal !== "";
       case 1: return state.market !== "";
-      case 2: return state.city.trim().length > 0;
+      case 2: return state.market === "USA" ? /^\d{5}$/.test(state.city.trim()) : state.city.trim().length > 0;
       case 3: return state.propertyType !== "";
       case 4: return state.sizeCategory === "custom" ? state.customSize > 0 : true;
       case 5: return state.landOption !== "";
@@ -772,16 +772,15 @@ export default function NewProjectPage() {
   }
 
   function renderLocationStep() {
-    const placeholder = state.market === "USA"
-      ? "Enter your city and state, or ZIP code (e.g., Modesto CA, 95350)"
-      : state.market === "TOGO"
+    const isUSA = state.market === "USA";
+    const waPlaceholder = state.market === "TOGO"
       ? "Enter your city or quartier (e.g., Lome, Avepozo, Kpalime)"
       : state.market === "GHANA"
       ? "Enter your city or area (e.g., Accra, Tema, Kumasi)"
       : "Enter your city or area";
 
-    // Filter suggestions based on current input
-    const filteredSuggestions = state.city.trim().length > 0
+    // Filter suggestions based on current input (WA only)
+    const filteredSuggestions = !isUSA && state.city.trim().length > 0
       ? locationSuggestions.filter((s) =>
           s.toLowerCase().includes(state.city.toLowerCase().trim())
         )
@@ -795,19 +794,47 @@ export default function NewProjectPage() {
       <div className="animate-fade-in">
         <StepHeading title="What city or area?" subtitle="Location affects your costs, regulations, and market demand." />
         <div className="text-left">
-          <div className="flex items-center gap-2 mb-3">
-            <MapPin size={16} className="text-clay" />
-            <label className="text-[13px] font-medium text-earth">City or region</label>
-          </div>
-          <input
-            type="text"
-            value={state.city}
-            onChange={(e) => update("city", e.target.value)}
-            placeholder={placeholder}
-            className="w-full px-4 py-3 text-[14px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-          />
+          {isUSA ? (
+            <>
+              {/* USA: ZIP code field (required, drives API) */}
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin size={16} className="text-clay" />
+                <label className="text-[13px] font-medium text-earth">ZIP code</label>
+              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={5}
+                value={state.city}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 5);
+                  update("city", val);
+                }}
+                placeholder="Enter 5-digit ZIP code (e.g., 95350)"
+                className="w-full px-4 py-3 text-[14px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-data tracking-wider"
+              />
+              <p className="text-[10px] text-muted mt-1.5">
+                ZIP code gives you the most accurate cost data for your area. We pull real data from Census, HUD, and BLS.
+              </p>
+            </>
+          ) : (
+            <>
+              {/* West Africa: city name field */}
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin size={16} className="text-clay" />
+                <label className="text-[13px] font-medium text-earth">City or region</label>
+              </div>
+              <input
+                type="text"
+                value={state.city}
+                onChange={(e) => update("city", e.target.value)}
+                placeholder={waPlaceholder}
+                className="w-full px-4 py-3 text-[14px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+              />
+            </>
+          )}
 
-          {/* Autocomplete suggestions */}
+          {/* Autocomplete suggestions (WA only) */}
           {showSuggestions && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {filteredSuggestions.slice(0, 8).map((suggestion) => (
