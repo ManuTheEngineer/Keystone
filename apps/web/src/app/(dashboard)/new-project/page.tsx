@@ -767,7 +767,7 @@ export default function NewProjectPage() {
 
   function renderLocationStep() {
     const placeholder = state.market === "USA"
-      ? "Enter your city or zip code (e.g., Houston TX, 77001)"
+      ? "Enter your city and state, or ZIP code (e.g., Modesto CA, 95350)"
       : state.market === "TOGO"
       ? "Enter your city or quartier (e.g., Lome, Avepozo, Kpalime)"
       : state.market === "GHANA"

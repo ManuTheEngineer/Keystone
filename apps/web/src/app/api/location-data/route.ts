@@ -61,12 +61,31 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: staticData, source: "curated" });
   }
 
-  // --- USA: extract ZIP code ---
-  const zipMatch = q.match(/\b(\d{5})\b/);
-  const zip = zipMatch ? zipMatch[1] : null;
+  // --- USA: extract or resolve ZIP code ---
+  let zip: string | null = q.match(/\b(\d{5})\b/)?.[1] ?? null;
+
+  // If no ZIP provided, try Census Geocoder to resolve city name → ZIP
+  if (!zip) {
+    try {
+      // Census geocoder works best with "city, state" format
+      const searchAddr = q.includes(",") ? q : `${q}, USA`;
+      const geoUrl = `https://geocoding.geo.census.gov/geocoder/addresses/onelineaddress?address=${encodeURIComponent(searchAddr)}&benchmark=Public_AR_Current&vintage=Current_Current&format=json`;
+      const geoRes = await fetch(geoUrl, { signal: AbortSignal.timeout(5000) });
+      if (geoRes.ok) {
+        const geoData = await geoRes.json();
+        const match = geoData?.result?.addressMatches?.[0];
+        // Try to extract ZIP from matched address
+        const matchedAddr = match?.matchedAddress ?? "";
+        const addrZip = matchedAddr.match(/(\d{5})/)?.[1];
+        if (addrZip) zip = addrZip;
+      }
+    } catch {
+      // Geocoder failed or timed out — fall through to static
+    }
+  }
 
   if (!zip) {
-    // No ZIP — fall back to static fuzzy matching
+    // Still no ZIP — fall back to static fuzzy matching
     const staticData = getClosestLocation(q, "USA");
     return NextResponse.json({ data: staticData, source: "static" });
   }
