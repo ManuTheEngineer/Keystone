@@ -143,9 +143,11 @@ export function subscribeToTrialCodes(
 export async function revokeTrialCode(
   code: string
 ): Promise<{ revokedUsers: number; warning?: string }> {
+  const { getAuthHeaders } = await import("@/lib/api-client");
+  const headers = await getAuthHeaders();
   const res = await fetch("/api/stripe/revoke-trial", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ code }),
   });
   const data = await res.json();

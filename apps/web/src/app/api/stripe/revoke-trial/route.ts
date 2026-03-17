@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuth, isAuthError } from "@/lib/api-auth";
 
 const DB_URL = "https://keystone-21811-default-rtdb.firebaseio.com";
 
@@ -42,6 +43,9 @@ function normalizeUsedBy(raw: unknown): string[] {
 
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await verifyAuth(request);
+    if (isAuthError(authResult)) return authResult;
+
     const { code } = await request.json();
 
     if (!code) {

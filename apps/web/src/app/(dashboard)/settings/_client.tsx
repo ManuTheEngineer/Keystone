@@ -30,6 +30,7 @@ import {
   Crown,
 } from "lucide-react";
 import { PLAN_CONFIG, formatPrice, getAnnualSavings, type PlanTier, type BillingInterval } from "@/lib/stripe-config";
+import { getAuthHeaders } from "@/lib/api-client";
 import { useToast } from "@/components/ui/Toast";
 import {
   generateTrialCode,
@@ -150,11 +151,12 @@ export function SettingsClient() {
     const upgradeStatus = searchParams.get("upgrade");
     const sessionId = searchParams.get("session_id");
     if (upgradeStatus === "success" && sessionId) {
+      getAuthHeaders().then((headers) =>
       fetch("/api/stripe/verify", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ sessionId }),
-      })
+      }))
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
@@ -309,11 +311,11 @@ export function SettingsClient() {
     if (tier === "FOUNDATION" || !user) return;
     setUpgradingTier(tier);
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
-          userId: user.uid,
           email: user.email,
           planTier: tier,
           billingInterval,
@@ -337,9 +339,10 @@ export function SettingsClient() {
   async function handleManageSubscription() {
     setManagingPortal(true);
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch("/api/stripe/portal", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ stripeCustomerId: profile?.stripeCustomerId }),
       });
       const data = await res.json();
@@ -363,9 +366,10 @@ export function SettingsClient() {
     // Fetch current subscription period end from Stripe
     if (profile?.stripeSubscriptionId) {
       try {
+        const subHeaders = await getAuthHeaders();
         const res = await fetch("/api/stripe/subscription", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: subHeaders,
           body: JSON.stringify({ stripeSubscriptionId: profile.stripeSubscriptionId }),
         });
         const data = await res.json();

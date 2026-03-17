@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
+import { verifyAuth, isAuthError } from "@/lib/api-auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await verifyAuth(request);
+    if (isAuthError(authResult)) return authResult;
+
     const { stripeSubscriptionId } = await request.json();
 
     if (!stripeSubscriptionId) {

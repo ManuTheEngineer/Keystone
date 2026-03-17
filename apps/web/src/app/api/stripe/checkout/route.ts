@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
 import { PLAN_CONFIG, type PlanTier } from "@/lib/stripe-config";
+import { verifyAuth, isAuthError } from "@/lib/api-auth";
 
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await verifyAuth(request);
+    if (isAuthError(authResult)) return authResult;
+
     const body = await request.json();
-    const { userId, email, planTier, billingInterval, isAdmin, stripeCustomerId } = body as {
-      userId: string;
+    const { email, planTier, billingInterval, isAdmin, stripeCustomerId } = body as {
       email: string;
       planTier: Exclude<PlanTier, "FOUNDATION">;
       billingInterval: "monthly" | "annual";
@@ -14,7 +17,10 @@ export async function POST(request: NextRequest) {
       stripeCustomerId?: string;
     };
 
-    if (!userId || !email || !planTier || !billingInterval) {
+    // Use the authenticated UID, not a client-supplied userId
+    const userId = authResult.uid;
+
+    if (!email || !planTier || !billingInterval) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
