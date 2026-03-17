@@ -14,7 +14,10 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCard } from "@/components/ui/StatCard";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Card } from "@/components/ui/Card";
-import { Plus } from "lucide-react";
+import { Plus, Zap } from "lucide-react";
+import { getCostBenchmark, generateBudgetEstimate, formatCostPerUnit, formatMultiplier } from "@/lib/data/costs";
+import { getStateName } from "@/lib/data/geo";
+import { updateProject } from "@/lib/services/project-service";
 
 function fmt(amount: number, currency: string): string {
   if (currency === "XOF") return `CFA ${(amount / 1000000).toFixed(1)}M`;
@@ -33,6 +36,7 @@ export function BudgetClient() {
   const [estimated, setEstimated] = useState("");
   const [actual, setActual] = useState("");
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     const unsub1 = subscribeToProject(projectId, setProject);
@@ -61,6 +65,71 @@ export function BudgetClient() {
         <StatCard value={fmt(remaining, project.currency)} label="Remaining" />
         <StatCard value={`${variance}%`} label="Variance" valueClassName={Number(variance) <= 0 ? "text-success" : "text-warning"} />
       </div>
+
+      {/* Regional cost benchmark */}
+      {project.state && (() => {
+        const benchmark = getCostBenchmark(project.market, project.state);
+        if (!benchmark) return null;
+        const regionLabel = getStateName(project.market, project.state);
+        const estimate = generateBudgetEstimate(project.market, project.state, project.sizeRange);
+        return (
+          <div className="mb-5 p-4 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[12px] font-semibold text-emerald-800 mb-1">
+                  Regional cost benchmark: {regionLabel}
+                  {project.city ? `, ${project.city}` : ""}
+                </p>
+                <p className="text-[13px] text-emerald-700 font-data font-semibold">
+                  {formatCostPerUnit(benchmark)}
+                </p>
+                <p className="text-[11px] text-emerald-600 mt-0.5">
+                  {formatMultiplier(benchmark.multiplier)}
+                  {estimate ? ` — Est. total: ${fmt(estimate.totalEstimate, project.currency)} for ${project.sizeRange} build` : ""}
+                </p>
+                <p className="text-[10px] text-muted mt-1">
+                  Source: {benchmark.source} ({benchmark.lastUpdated})
+                </p>
+              </div>
+              {estimate && items.length === 0 && (
+                <button
+                  type="button"
+                  disabled={generating}
+                  onClick={async () => {
+                    if (!estimate) return;
+                    setGenerating(true);
+                    try {
+                      for (const item of estimate.items) {
+                        await addBudgetItem({
+                          projectId,
+                          category: item.category,
+                          estimated: item.estimated,
+                          actual: 0,
+                          status: "not-started",
+                        });
+                      }
+                      await updateProject(projectId, {
+                        totalBudget: estimate.totalEstimate,
+                      });
+                    } finally {
+                      setGenerating(false);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium bg-emerald-600 text-white rounded-[var(--radius)] hover:bg-emerald-700 transition-colors disabled:opacity-40 shrink-0"
+                >
+                  <Zap size={12} />
+                  {generating ? "Generating..." : "Generate budget"}
+                </button>
+              )}
+            </div>
+            <p className="text-[10px] text-emerald-700/70 mt-2 leading-relaxed">
+              These are regional averages for standard-finish residential construction.
+              Your actual costs will vary based on materials, contractor rates, and project complexity.
+              Use this as a starting point and adjust line items as you get real bids.
+            </p>
+          </div>
+        );
+      })()}
 
       <div className="flex items-center justify-between mb-0">
         <SectionLabel>Budget line items</SectionLabel>
