@@ -106,6 +106,7 @@ export function SettingsClient() {
   // Delete account state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
@@ -245,10 +246,14 @@ export function SettingsClient() {
   }
 
   async function handleDeleteAccount() {
-    if (!user || deleteConfirmText !== "DELETE") return;
+    if (!user || !user.email || deleteConfirmText !== "DELETE" || !deletePassword) return;
     setDeleting(true);
     setDeleteError("");
     try {
+      // Reauthenticate first so Firebase doesn't require a fresh login
+      const credential = EmailAuthProvider.credential(user.email, deletePassword);
+      await reauthenticateWithCredential(user, credential);
+
       const uid = user.uid;
       // Delete data first (can be re-created if auth deletion fails)
       await remove(ref(db, `users/${uid}`));
@@ -257,8 +262,8 @@ export function SettingsClient() {
       router.push("/");
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code;
-      if (code === "auth/requires-recent-login") {
-        setDeleteError("For security, please sign out, sign back in, and try again within 5 minutes.");
+      if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+        setDeleteError("Incorrect password. Please try again.");
       } else {
         setDeleteError("Account deletion failed. Please try again.");
       }
@@ -1247,12 +1252,19 @@ export function SettingsClient() {
                 <AlertTriangle size={16} className="text-danger" />
                 <p className="text-[12px] font-medium text-danger">Confirm account deletion</p>
               </div>
-              <p className="text-[11px] text-muted mb-2">
-                Type DELETE to confirm. This will permanently remove your account and all associated data.
+              <p className="text-[11px] text-muted mb-3">
+                This will permanently remove your account and all associated data. Enter your password and type DELETE to confirm.
               </p>
               {deleteError && (
                 <p className="text-[11px] text-danger mb-2">{deleteError}</p>
               )}
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Enter your password"
+                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-danger w-full mb-2"
+              />
               <input
                 type="text"
                 value={deleteConfirmText}
@@ -1263,7 +1275,7 @@ export function SettingsClient() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleDeleteAccount}
-                  disabled={deleteConfirmText !== "DELETE" || deleting}
+                  disabled={deleteConfirmText !== "DELETE" || !deletePassword || deleting}
                   className="px-4 py-2 text-[12px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors disabled:opacity-40"
                 >
                   {deleting ? "Deleting..." : "Delete my account"}
@@ -1272,6 +1284,7 @@ export function SettingsClient() {
                   onClick={() => {
                     setShowDeleteConfirm(false);
                     setDeleteConfirmText("");
+                    setDeletePassword("");
                   }}
                   className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
                 >

@@ -28,6 +28,7 @@ export interface UserProfile {
   trialCodeUsed?: string;
   tourCompleted?: boolean;
   demoSeeded?: boolean;
+  orgLogo?: string;     // Enterprise only: base64 data URL for custom export branding
   createdAt: string;
 }
 
