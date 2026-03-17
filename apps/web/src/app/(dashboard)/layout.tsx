@@ -69,7 +69,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { isOnline } = usePWA();
   const { showToast } = useToast();
-  const [dismissedVerifyBanner, setDismissedVerifyBanner] = useState(false);
+  const [dismissedVerifyBanner, setDismissedVerifyBanner] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("keystone-verify-dismissed") === "true";
+  });
   const { user, profile } = useAuth();
 
   // Check and revert expired trials
@@ -325,9 +328,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       await user.reload();
                       if (user.emailVerified) {
                         showToast("Email verified.", "success");
-                        setDismissedVerifyBanner(true);
+                        setDismissedVerifyBanner(true); localStorage.setItem("keystone-verify-dismissed", "true");
                       } else {
-                        setDismissedVerifyBanner(true);
+                        setDismissedVerifyBanner(true); localStorage.setItem("keystone-verify-dismissed", "true");
                       }
                     }}
                     className="text-[11px] text-muted hover:text-earth transition-colors shrink-0"

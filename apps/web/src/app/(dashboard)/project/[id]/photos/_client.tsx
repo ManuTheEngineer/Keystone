@@ -415,11 +415,38 @@ export function PhotosClient() {
         ({filteredPhotos.length})
       </SectionLabel>
       {filteredPhotos.length === 0 && !showUploadForm && (
-        <EmptyState
-          icon={<Camera size={28} />}
-          title="No photos yet"
-          description="Construction photos serve three critical purposes: they verify progress for milestone payments, they document conditions before walls close up (you will never see the plumbing or wiring again once drywall goes up), and they protect you in disputes. Take photos BEFORE every concrete pour and BEFORE every inspection."
-        />
+        <div className="text-center py-12 animate-fade-in">
+          <div className="w-16 h-16 rounded-2xl bg-warm flex items-center justify-center mx-auto mb-4">
+            <Camera size={28} className="text-clay" />
+          </div>
+          <h3 className="text-[16px] text-earth mb-2" style={{ fontFamily: "var(--font-heading)" }}>
+            Document your build
+          </h3>
+          <p className="text-[12px] text-muted max-w-md mx-auto mb-4 leading-relaxed">
+            Construction photos verify progress for milestone payments, document hidden conditions before walls close up, and protect you in disputes. Take photos before every concrete pour and before every inspection.
+          </p>
+          <button
+            onClick={() => setShowUploadForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium bg-earth text-warm rounded-xl hover:bg-earth-light transition-colors"
+          >
+            <Camera size={14} />
+            Upload your first photos
+          </button>
+          <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto mt-6">
+            <div className="p-3 bg-surface border border-border rounded-xl text-center">
+              <p className="text-[18px] font-bold text-earth font-data">1</p>
+              <p className="text-[9px] text-muted mt-1">Before each phase</p>
+            </div>
+            <div className="p-3 bg-surface border border-border rounded-xl text-center">
+              <p className="text-[18px] font-bold text-earth font-data">2</p>
+              <p className="text-[9px] text-muted mt-1">During inspections</p>
+            </div>
+            <div className="p-3 bg-surface border border-border rounded-xl text-center">
+              <p className="text-[18px] font-bold text-earth font-data">3</p>
+              <p className="text-[9px] text-muted mt-1">At milestones</p>
+            </div>
+          </div>
+        </div>
       )}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 mb-5 animate-stagger">
         {filteredPhotos.map((photo, idx) => (

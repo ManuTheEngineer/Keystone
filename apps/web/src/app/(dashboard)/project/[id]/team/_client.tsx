@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import {
@@ -158,6 +158,12 @@ export function TeamClient() {
   const [editRating, setEditRating] = useState("5");
   const [editSaving, setEditSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  function openAddForm() {
+    setShowForm(true);
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -294,7 +300,7 @@ export function TeamClient() {
         title="Team"
         projectName={project?.name}
         projectId={projectId}
-        action={{ label: "Add contact", onClick: () => setShowForm(true), icon: <Plus size={14} /> }}
+        action={{ label: "Add contact", onClick: openAddForm, icon: <Plus size={14} /> }}
       />
 
       {/* Trades filled stat */}
@@ -369,13 +375,14 @@ export function TeamClient() {
         <SectionLabel>Active contractors and professionals</SectionLabel>
         <span
           className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
-          onClick={() => setShowForm(true)}
+          onClick={openAddForm}
         >
           <Plus size={12} /> Add contact
         </span>
       </div>
 
       {showForm && (
+        <div ref={formRef}>
         <Card padding="md" className="mb-3">
           <div className="space-y-4">
             <div>
@@ -492,7 +499,7 @@ export function TeamClient() {
           icon={<Users size={28} />}
           title="No team members yet"
           description="Add contractors, architects, and professionals as you build your construction team."
-          action={{ label: "Add contact", onClick: () => setShowForm(true) }}
+          action={{ label: "Add contact", onClick: openAddForm }}
         />
       ) : (
         <div className="space-y-1.5 animate-stagger">

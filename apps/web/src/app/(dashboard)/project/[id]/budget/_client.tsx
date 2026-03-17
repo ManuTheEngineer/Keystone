@@ -124,6 +124,12 @@ export function BudgetClient() {
   const [editActual, setEditActual] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const addFormRef = useRef<HTMLDivElement>(null);
+
+  function openAddForm() {
+    setShowForm(true);
+    setTimeout(() => addFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -304,7 +310,7 @@ export function BudgetClient() {
         title="Budget"
         projectName={project.name}
         projectId={projectId}
-        action={{ label: "Add item", onClick: () => setShowForm(true), icon: <Plus size={14} /> }}
+        action={{ label: "Add item", onClick: openAddForm, icon: <Plus size={14} /> }}
       />
 
       {/* ================================================================= */}
@@ -411,7 +417,7 @@ export function BudgetClient() {
           </button>
           <div className="mt-2">
             <button
-              onClick={() => setShowForm(true)}
+              onClick={openAddForm}
               className="text-[11px] text-info hover:underline cursor-pointer"
             >
               Or add items manually
@@ -443,7 +449,7 @@ export function BudgetClient() {
           )}
           <button
             className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
-            onClick={() => setShowForm(true)}
+            onClick={openAddForm}
           >
             <Plus size={12} /> Add item
           </button>
@@ -452,6 +458,7 @@ export function BudgetClient() {
 
       {/* Add item form */}
       {showForm && (
+        <div ref={addFormRef}>
         <Card padding="md" className="mb-3">
           <div className="space-y-4">
             <div>
@@ -503,6 +510,7 @@ export function BudgetClient() {
             </div>
           </div>
         </Card>
+        </div>
       )}
 
       {/* Category cards grid */}
@@ -763,7 +771,7 @@ export function BudgetClient() {
       {/* ================================================================= */}
       {/* FLOATING STICKY BAR                                               */}
       {/* ================================================================= */}
-      <div className="fixed bottom-0 right-0 z-40 bg-[#2C1810]/95 backdrop-blur-sm border-t border-[#3D2215]" style={{ left: "var(--sidebar-width, 0px)" }}>
+      <div className="fixed bottom-0 right-0 z-30 bg-[#2C1810]/95 backdrop-blur-sm border-t border-[#3D2215] pr-16" style={{ left: "var(--sidebar-width, 0px)" }}>
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3 sm:gap-6">
             <div>

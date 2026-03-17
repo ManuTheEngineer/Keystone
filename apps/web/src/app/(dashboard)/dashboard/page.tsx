@@ -1038,9 +1038,10 @@ export default function DashboardPage() {
                 const nextAction = getNextAction(p);
 
                 return (
-                  <div
+                  <Link
                     key={p.id}
-                    className="bg-surface border border-border/60 rounded-2xl shadow-[0_1px_3px_rgba(44,24,16,0.04)] p-4 card-hover flex items-center gap-4"
+                    href={`/project/${p.id}/overview`}
+                    className="block bg-surface border border-border/60 rounded-2xl shadow-[0_1px_3px_rgba(44,24,16,0.04)] p-4 card-hover flex items-center gap-4"
                   >
                     {/* Left: progress ring */}
                     <div className="shrink-0">
@@ -1081,17 +1082,16 @@ export default function DashboardPage() {
                       </div>
 
                       {/* Next action */}
-                      <Link
-                        href={nextAction.href}
+                      <span
                         className="text-[12px] text-clay hover:text-earth transition-colors leading-snug inline-flex items-center gap-1"
                       >
                         {nextAction.text}
                         <ArrowRight size={10} className="shrink-0" />
-                      </Link>
+                      </span>
                     </div>
 
                     {/* Right: kebab menu + priority indicator */}
-                    <div className="shrink-0 flex items-center gap-2">
+                    <div className="shrink-0 flex items-center gap-2" onClick={(e) => e.preventDefault()}>
                       <PriorityIndicator priority={p.priority} />
                       <ProjectKebabMenu
                         project={p}
@@ -1103,7 +1103,7 @@ export default function DashboardPage() {
                         }}
                       />
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
