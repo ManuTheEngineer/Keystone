@@ -1,28 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
-import { ref, get } from "firebase/database";
-import { db } from "@/lib/firebase";
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await request.json();
+    const { stripeCustomerId } = await request.json();
 
-    if (!userId) {
-      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
-    }
-
-    const profileSnap = await get(ref(db, `users/${userId}/profile`));
-    if (!profileSnap.exists()) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    const profile = profileSnap.val();
-    if (!profile.stripeCustomerId) {
+    if (!stripeCustomerId) {
       return NextResponse.json({ error: "No active subscription found" }, { status: 400 });
     }
 
     const session = await getStripeServer().billingPortal.sessions.create({
-      customer: profile.stripeCustomerId,
+      customer: stripeCustomerId,
       return_url: `${request.nextUrl.origin}/settings`,
     });
 

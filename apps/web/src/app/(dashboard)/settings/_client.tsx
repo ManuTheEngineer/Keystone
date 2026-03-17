@@ -280,6 +280,8 @@ export function SettingsClient() {
           email: user.email,
           planTier: tier,
           billingInterval,
+          isAdmin: profile?.role === "admin",
+          stripeCustomerId: profile?.stripeCustomerId,
         }),
       });
       const data = await res.json();
@@ -298,7 +300,11 @@ export function SettingsClient() {
   async function handleManageSubscription() {
     setManagingPortal(true);
     try {
-      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stripeCustomerId: profile?.stripeCustomerId }),
+      });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;

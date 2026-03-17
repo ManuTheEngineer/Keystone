@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
-import { ref, update, get } from "firebase/database";
-import { db } from "@/lib/firebase";
 import type Stripe from "stripe";
 
 export const runtime = "nodejs";
 
-// Disable body parsing — Stripe needs raw body
+const DB_URL = "https://keystone-21811-default-rtdb.firebaseio.com";
+
+// Update user profile via Firebase REST API (no client SDK needed in serverless)
+async function updateProfile(userId: string, data: Record<string, unknown>) {
+  const res = await fetch(`${DB_URL}/users/${userId}/profile.json`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    console.error("Firebase update failed:", await res.text());
+  }
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.text();
   const sig = request.headers.get("stripe-signature");
@@ -31,13 +42,12 @@ export async function POST(request: NextRequest) {
         const planTier = session.metadata?.planTier;
         const billingInterval = session.metadata?.billingInterval;
         if (userId && planTier) {
-          await update(ref(db, `users/${userId}/profile`), {
+          await updateProfile(userId, {
             plan: planTier,
             stripeCustomerId: session.customer as string,
             stripeSubscriptionId: session.subscription as string,
             subscriptionStatus: "active",
             billingInterval: billingInterval || "monthly",
-            // Clear any trial data
             trialExpiresAt: null,
             trialCodeUsed: null,
           });
@@ -52,9 +62,7 @@ export async function POST(request: NextRequest) {
           const sub = await getStripeServer().subscriptions.retrieve(subId);
           const userId = sub.metadata?.userId;
           if (userId) {
-            await update(ref(db, `users/${userId}/profile`), {
-              subscriptionStatus: "active",
-            });
+            await updateProfile(userId, { subscriptionStatus: "active" });
           }
         }
         break;
@@ -65,7 +73,7 @@ export async function POST(request: NextRequest) {
         const userId = sub.metadata?.userId;
         const planTier = sub.metadata?.planTier;
         if (userId) {
-          await update(ref(db, `users/${userId}/profile`), {
+          await updateProfile(userId, {
             plan: planTier || undefined,
             subscriptionStatus: sub.status === "active" ? "active" : sub.status === "past_due" ? "past_due" : "canceled",
           });
@@ -77,7 +85,7 @@ export async function POST(request: NextRequest) {
         const sub = event.data.object as Stripe.Subscription;
         const userId = sub.metadata?.userId;
         if (userId) {
-          await update(ref(db, `users/${userId}/profile`), {
+          await updateProfile(userId, {
             plan: "FOUNDATION",
             stripeSubscriptionId: null,
             subscriptionStatus: "canceled",
@@ -94,9 +102,7 @@ export async function POST(request: NextRequest) {
           const sub = await getStripeServer().subscriptions.retrieve(subId);
           const userId = sub.metadata?.userId;
           if (userId) {
-            await update(ref(db, `users/${userId}/profile`), {
-              subscriptionStatus: "past_due",
-            });
+            await updateProfile(userId, { subscriptionStatus: "past_due" });
           }
         }
         break;
