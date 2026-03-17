@@ -17,8 +17,6 @@ import { PhaseTracker } from "@/components/ui/PhaseTracker";
 import { Badge } from "@/components/ui/Badge";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { Card } from "@/components/ui/Card";
-import { formatLocation, getStateName } from "@/lib/data/geo";
-import { getCostBenchmark, formatCostPerUnit, formatMultiplier } from "@/lib/data/costs";
 
 function formatCurrency(amount: number, currency: string): string {
   if (currency === "XOF") return `CFA ${(amount / 1000000).toFixed(1)}M`;
@@ -143,22 +141,6 @@ export function OverviewClient() {
           <SectionLabel>Project details</SectionLabel>
           <Card padding="sm">
             <DetailRow label="Market" value={project.market} />
-            {project.state && (
-              <DetailRow
-                label="Location"
-                value={formatLocation(project.market, project.state, project.city, project.county)}
-              />
-            )}
-            {project.state && (() => {
-              const bm = getCostBenchmark(project.market, project.state);
-              if (!bm) return null;
-              return (
-                <DetailRow
-                  label="Cost index"
-                  value={`${formatCostPerUnit(bm)} (${formatMultiplier(bm.multiplier)})`}
-                />
-              );
-            })()}
             <DetailRow label="Purpose" value={project.purpose} />
             <DetailRow label="Type" value={project.propertyType} />
             <DetailRow label="Details" value={project.details} last />

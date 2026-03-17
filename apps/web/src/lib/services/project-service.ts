@@ -40,22 +40,6 @@ export interface ProjectData {
   openItems: number;
   subPhase: string;
   details: string;
-  /** US state code (e.g. "TX") or WA region name (e.g. "Maritime") */
-  state?: string;
-  /** US county name or WA district/prefecture */
-  county?: string;
-  /** City or town name */
-  city?: string;
-  /** US zip code (optional) */
-  zipCode?: string;
-  /** Latitude from geographic data */
-  latitude?: number;
-  /** Longitude from geographic data */
-  longitude?: number;
-  /** Regional cost benchmark per sqft or m2 */
-  costPerUnit?: number;
-  /** "sqft" or "m2" */
-  costUnit?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -386,14 +370,6 @@ export async function seedDemoProject(userId: string): Promise<string> {
     openItems: 3,
     subPhase: "Mechanical rough-in",
     details: "4 bed / 3 bath / 2,200 sf / Houston, TX",
-    state: "TX",
-    county: "Harris",
-    city: "Houston",
-    zipCode: "77001",
-    latitude: 29.76,
-    longitude: -95.37,
-    costPerUnit: 155,
-    costUnit: "sqft",
   });
 
   // Seed budget items

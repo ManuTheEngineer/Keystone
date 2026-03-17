@@ -13,14 +13,6 @@ import {
   type PropertyType,
 } from "@/lib/services/project-service";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import {
-  getUSStates,
-  getUSCitiesByState,
-  getWARegions,
-  getWACities,
-  formatLocation,
-} from "@/lib/data/geo";
-import { getCostBenchmark, formatCostPerUnit, formatMultiplier } from "@/lib/data/costs";
 
 const PHASE_LABELS: Record<number, string> = {
   0: "0 -- Define",
@@ -64,8 +56,6 @@ export function SettingsClient() {
   const [totalBudget, setTotalBudget] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
   const [currency, setCurrency] = useState("USD");
-  const [locationState, setLocationState] = useState("");
-  const [locationCity, setLocationCity] = useState("");
 
   useEffect(() => {
     const unsub = subscribeToProject(projectId, (data) => {
@@ -83,8 +73,6 @@ export function SettingsClient() {
         setTotalBudget(data.totalBudget);
         setTotalSpent(data.totalSpent);
         setCurrency(data.currency);
-        setLocationState(data.state ?? "");
-        setLocationCity(data.city ?? "");
       }
     });
     return () => unsub();
@@ -101,7 +89,6 @@ export function SettingsClient() {
     setSaving(true);
     setSaveMessage("");
     try {
-      const benchmark = locationState ? getCostBenchmark(market, locationState) : undefined;
       await updateProject(projectId, {
         name,
         details,
@@ -115,10 +102,6 @@ export function SettingsClient() {
         totalBudget,
         totalSpent,
         currency,
-        state: locationState || undefined,
-        city: locationCity || undefined,
-        costPerUnit: benchmark?.costPerUnit,
-        costUnit: benchmark?.unit,
         phaseName: `Phase ${currentPhase}: ${PHASE_LABELS[currentPhase]?.split(" -- ")[1] ?? ""}`,
       });
       setSaveMessage("Changes saved successfully.");
@@ -131,7 +114,6 @@ export function SettingsClient() {
   }, [
     project, projectId, name, details, market, purpose, propertyType,
     currentPhase, progress, currentWeek, totalWeeks, totalBudget, totalSpent, currency,
-    locationState, locationCity,
   ]);
 
   const handleDelete = useCallback(async () => {
@@ -219,65 +201,6 @@ export function SettingsClient() {
           </select>
         </div>
       </div>
-
-      {/* Location */}
-      <SectionLabel>Location</SectionLabel>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <label className={labelClass}>{market === "USA" ? "State" : "Region"}</label>
-          <select
-            className={inputClass}
-            value={locationState}
-            onChange={(e) => {
-              setLocationState(e.target.value);
-              setLocationCity("");
-            }}
-          >
-            <option value="">Select {market === "USA" ? "state" : "region"}...</option>
-            {market === "USA"
-              ? getUSStates().map((s) => (
-                  <option key={s.code} value={s.code}>{s.name}</option>
-                ))
-              : getWARegions(market).map((r) => (
-                  <option key={r.name} value={r.name}>{r.name}</option>
-                ))
-            }
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>City</label>
-          <select
-            className={inputClass}
-            value={locationCity}
-            onChange={(e) => setLocationCity(e.target.value)}
-            disabled={!locationState}
-          >
-            <option value="">Select city...</option>
-            {locationState && (
-              market === "USA"
-                ? getUSCitiesByState(locationState).map((c) => (
-                    <option key={c.name} value={c.name}>{c.name}</option>
-                  ))
-                : getWACities(market, locationState).map((c) => (
-                    <option key={c.name} value={c.name}>{c.name}</option>
-                  ))
-            )}
-          </select>
-        </div>
-      </div>
-      {locationState && (() => {
-        const benchmark = getCostBenchmark(market, locationState);
-        if (!benchmark) return null;
-        return (
-          <div className="mb-6 p-3 rounded-[var(--radius)] bg-emerald-50 border border-emerald-200">
-            <p className="text-[11px] font-semibold text-emerald-800 mb-1">Regional cost benchmark</p>
-            <p className="text-[12px] text-emerald-700 font-data">
-              {formatCostPerUnit(benchmark)} — {formatMultiplier(benchmark.multiplier)}
-            </p>
-            <p className="text-[10px] text-muted mt-1">Source: {benchmark.source} ({benchmark.lastUpdated})</p>
-          </div>
-        );
-      })()}
 
       {/* Progress */}
       <SectionLabel>Progress</SectionLabel>
