@@ -56,7 +56,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await signIn(email, password);
+      await signIn(email.trim().toLowerCase(), password);
       router.push("/dashboard");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Sign in failed";
@@ -66,8 +66,14 @@ export default function LoginPage() {
         message.includes("invalid-credential")
       ) {
         setError("Invalid email or password.");
+      } else if (message.includes("too-many-requests")) {
+        setError("Too many attempts. Please wait a few minutes and try again.");
+      } else if (message.includes("user-disabled")) {
+        setError("This account has been disabled. Please contact support.");
+      } else if (message.includes("network-request-failed")) {
+        setError("Network error. Check your connection and try again.");
       } else {
-        setError(message);
+        setError("Something went wrong. Please try again.");
       }
     } finally {
       setLoading(false);

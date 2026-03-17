@@ -46,11 +46,10 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      await resetPassword(email);
+      await resetPassword(email.trim().toLowerCase());
       setSent(true);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to send reset email";
-      setError(message);
+    } catch {
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

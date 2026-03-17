@@ -56,14 +56,20 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await registerUser(email, password, name);
+      await registerUser(email.trim().toLowerCase(), password, name.trim());
       router.push("/dashboard");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Registration failed";
       if (message.includes("email-already-in-use")) {
         setError("An account with this email already exists.");
+      } else if (message.includes("weak-password")) {
+        setError("Password is too weak. Use at least 6 characters.");
+      } else if (message.includes("invalid-email")) {
+        setError("Please enter a valid email address.");
+      } else if (message.includes("network-request-failed")) {
+        setError("Network error. Check your connection and try again.");
       } else {
-        setError(message);
+        setError("Something went wrong. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -159,9 +165,9 @@ export default function RegisterPage() {
                 />
                 <span>
                   I agree to the{" "}
-                  <a href="/terms" target="_blank" className="text-clay underline">Terms of Service</a>
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-clay underline">Terms of Service</a>
                   {" "}and{" "}
-                  <a href="/privacy" target="_blank" className="text-clay underline">Privacy Policy</a>
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-clay underline">Privacy Policy</a>
                 </span>
               </label>
 
