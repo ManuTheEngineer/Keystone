@@ -490,29 +490,33 @@ export default function NewProjectPage() {
   useEffect(() => {
     if (!state.market || !state.city || state.city.trim().length < 2) {
       setLocationData(null);
+      setLocationLoading(false);
       return;
     }
 
     // Immediate static fallback while API loads
     const staticFallback = getClosestLocation(state.city, state.market);
-    if (staticFallback && !locationData) {
+    if (staticFallback) {
       setLocationData(staticFallback);
     }
 
     // Debounced API call (500ms)
     if (locationTimerRef.current) clearTimeout(locationTimerRef.current);
+    setLocationLoading(true);
     locationTimerRef.current = setTimeout(async () => {
-      setLocationLoading(true);
       try {
         const res = await fetch(`/api/location-data?q=${encodeURIComponent(state.city.trim())}&market=${state.market}`);
         if (res.ok) {
           const json = await res.json();
           if (json.data) {
             setLocationData(json.data);
+          } else if (!staticFallback) {
+            // API returned null and no static match — show nothing
+            setLocationData(null);
           }
         }
       } catch {
-        // API failed — keep static fallback
+        // API failed — keep whatever we have (static or null)
       } finally {
         setLocationLoading(false);
       }

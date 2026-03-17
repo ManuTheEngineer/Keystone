@@ -107,13 +107,15 @@ export async function GET(request: NextRequest) {
     cbsa ? fetchBlsWageByMetro(cbsa) : Promise.resolve(null),
   ]);
 
-  // All APIs failed — try stale cache, then static
+  // All APIs failed — try stale cache, then static fallback by state
   if (!census && !hud) {
     const stale = await cacheGetStale<LocationData>("location", zip);
     if (stale) {
       return NextResponse.json({ data: stale, source: "stale-cache" });
     }
-    const staticData = getClosestLocation(q, "USA");
+    // Try original query first, then state name as fallback
+    const staticData = getClosestLocation(q, "USA")
+      ?? (state ? getClosestLocation(state, "USA") : null);
     return NextResponse.json({ data: staticData, source: "static" });
   }
 
