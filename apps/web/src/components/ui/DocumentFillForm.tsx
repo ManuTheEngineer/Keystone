@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { DocumentTemplate } from "@keystone/market-data";
 import type { ProjectData, ContactData, BudgetItemData } from "@/lib/services/project-service";
 import { X, FileText, ArrowRight, Info } from "lucide-react";
@@ -98,6 +98,12 @@ export function DocumentFillForm({
   }, [template.fields, project, contacts, budgetItems]);
 
   const [values, setValues] = useState<Record<string, string>>(initialValues);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onCancel]);
 
   function handleChange(field: string, value: string) {
     setValues((prev) => ({ ...prev, [field]: value }));

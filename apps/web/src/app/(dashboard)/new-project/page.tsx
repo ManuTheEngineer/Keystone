@@ -1493,7 +1493,7 @@ export default function NewProjectPage() {
         </button>
         <button
           onClick={handleNext}
-          disabled={!canProceed()}
+          disabled={!canProceed() || creating}
           className="px-6 py-2.5 text-[13px] rounded-[var(--radius)] btn-earth hover:bg-earth-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {step === STEP_COUNT - 1 ? (creating ? "Creating..." : "Create project") : "Next"}

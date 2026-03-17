@@ -105,7 +105,7 @@ function PriorityIndicator({ priority }: { priority: number | undefined }) {
   const colors: Record<number, string> = {
     1: "bg-danger text-white",
     2: "bg-warning text-white",
-    3: "bg-blue-500 text-white",
+    3: "bg-info text-white",
   };
   return (
     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${colors[priority] ?? "bg-muted text-white"}`}>
@@ -229,7 +229,7 @@ function ProjectKebabMenu({
                     }}
                     className={`w-full text-left px-3 py-1.5 text-[12px] rounded hover:bg-warm/50 transition-colors flex items-center gap-2 ${isActive ? "text-earth font-medium" : "text-muted"}`}
                   >
-                    <span className={`w-2 h-2 rounded-full ${level === 1 ? "bg-danger" : level === 2 ? "bg-warning" : "bg-blue-500"}`} />
+                    <span className={`w-2 h-2 rounded-full ${level === 1 ? "bg-danger" : level === 2 ? "bg-warning" : "bg-info"}`} />
                     {priorityLabels[level]}
                     {isActive && <span className="ml-auto text-[10px] text-clay">(active)</span>}
                   </button>
@@ -434,14 +434,14 @@ function urgencyDotColor(urgency: ActionItem["urgency"]): string {
   switch (urgency) {
     case "red": return "bg-danger";
     case "yellow": return "bg-warning";
-    case "blue": return "bg-blue-500";
+    case "blue": return "bg-info";
   }
 }
 
 function activityDotColor(type: ActivityItem["type"]): string {
   switch (type) {
     case "task-completed": return "bg-emerald-500";
-    case "daily-log": return "bg-blue-500";
+    case "daily-log": return "bg-info";
     case "photo-uploaded": return "bg-amber-500";
   }
 }

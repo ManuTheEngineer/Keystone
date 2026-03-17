@@ -19,7 +19,10 @@ export function GlossaryTooltip({ term, market, children }: GlossaryTooltipProps
   useEffect(() => {
     if (!open) return;
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (
+        ref.current && !ref.current.contains(e.target as Node) &&
+        (!tooltipRef.current || !tooltipRef.current.contains(e.target as Node))
+      ) {
         setOpen(false);
       }
     }

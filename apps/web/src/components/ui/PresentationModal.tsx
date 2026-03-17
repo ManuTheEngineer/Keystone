@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Briefcase,
   Users,
@@ -57,6 +57,12 @@ const OPTIONS: PresentationOption[] = [
 
 export function PresentationModal({ data, onClose }: PresentationModalProps) {
   const [loading, setLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
 
   async function handleGenerate(type: PresentationType) {
     setLoading(type);

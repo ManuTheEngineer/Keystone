@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FileText,
   Table2,
@@ -49,6 +49,12 @@ interface ExportOption {
 export function ExportModal({ project, data, onClose, userPlan, userRole }: ExportModalProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [exportError, setExportError] = useState("");
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
 
   async function handleExport(id: string, action: () => void) {
     // Check export permission (admin bypasses)

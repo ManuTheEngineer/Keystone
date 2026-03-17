@@ -60,6 +60,7 @@ export function DailyLogClient() {
   const [editCrew, setEditCrew] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -161,13 +162,16 @@ export function DailyLogClient() {
   }
 
   async function handleDeleteLog(logId: string) {
-    if (!user) return;
+    if (!user || deletingLogId) return;
+    setDeletingLogId(logId);
     try {
       await deleteDailyLog(user.uid, projectId, logId);
       setDeleteConfirmId(null);
       showToast("Daily log entry deleted", "success");
     } catch {
       showToast("Failed to delete daily log entry", "error");
+    } finally {
+      setDeletingLogId(null);
     }
   }
 
@@ -391,9 +395,10 @@ export function DailyLogClient() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleDeleteLog(entry.id!)}
-                            className="px-2 py-1 text-[10px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors"
+                            disabled={deletingLogId === entry.id}
+                            className="px-2 py-1 text-[10px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                           >
-                            Confirm
+                            {deletingLogId === entry.id ? "..." : "Confirm"}
                           </button>
                           <button
                             onClick={() => setDeleteConfirmId(null)}

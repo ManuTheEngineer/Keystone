@@ -12,6 +12,13 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Disabled buttons always show not-allowed cursor */
+button:disabled,
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
 @theme inline {
   /* === Brand Core === */
   --color-earth: #2C1810;

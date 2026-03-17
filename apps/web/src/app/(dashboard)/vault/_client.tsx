@@ -246,6 +246,7 @@ export function VaultClient() {
   const [sortOption, setSortOption] = useState<SortOption>("priority");
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -347,7 +348,8 @@ export function VaultClient() {
   }, [user, showToast]);
 
   const handleDelete = useCallback(async (projectId: string) => {
-    if (!user) return;
+    if (!user || deleting) return;
+    setDeleting(true);
     try {
       await deleteProject(user.uid, projectId);
       showToast("Project deleted", "success");
@@ -355,7 +357,8 @@ export function VaultClient() {
       showToast("Failed to delete project", "error");
     }
     setDeleteConfirm(null);
-  }, [user, showToast]);
+    setDeleting(false);
+  }, [user, deleting, showToast]);
 
   const primaryCurrency = projects.length > 0
     ? getMarketData((projects[0]?.market as Market) ?? "USA").currency
@@ -639,9 +642,10 @@ export function VaultClient() {
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm)}
-                className="px-4 py-2 text-[13px] font-medium rounded-lg bg-danger text-white hover:bg-danger/90 transition-colors"
+                disabled={deleting}
+                className="px-4 py-2 text-[13px] font-medium rounded-lg bg-danger text-white hover:bg-danger/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Delete permanently
+                {deleting ? "Deleting..." : "Delete permanently"}
               </button>
             </div>
           </div>

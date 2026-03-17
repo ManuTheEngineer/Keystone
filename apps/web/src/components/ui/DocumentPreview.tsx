@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { X, Printer, Save } from "lucide-react";
 
 interface DocumentPreviewProps {
@@ -19,6 +19,12 @@ export function DocumentPreview({
   onSave,
 }: DocumentPreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
 
   const handlePrint = useCallback(() => {
     const iframe = iframeRef.current;
