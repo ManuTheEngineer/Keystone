@@ -158,6 +158,11 @@
       }
     },
 
+    "locationCache": {
+      ".read": false,
+      ".write": false
+    },
+
     "trialCodes": {
       ".read": "auth != null && root.child('users').child(auth.uid).child('profile').child('role').val() === 'admin'",
       ".write": "auth != null && root.child('users').child(auth.uid).child('profile').child('role').val() === 'admin'",

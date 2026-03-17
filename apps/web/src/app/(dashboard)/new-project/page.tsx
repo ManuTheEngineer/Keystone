@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTopbar } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -482,10 +482,46 @@ export default function NewProjectPage() {
     );
   }, [marketData]);
 
-  // Location intelligence
-  const locationData = useMemo(() => {
-    if (!state.market || !state.city) return null;
-    return getClosestLocation(state.city, state.market);
+  // Location intelligence — async API call with debounce, static fallback
+  const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const locationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!state.market || !state.city || state.city.trim().length < 2) {
+      setLocationData(null);
+      return;
+    }
+
+    // Immediate static fallback while API loads
+    const staticFallback = getClosestLocation(state.city, state.market);
+    if (staticFallback && !locationData) {
+      setLocationData(staticFallback);
+    }
+
+    // Debounced API call (500ms)
+    if (locationTimerRef.current) clearTimeout(locationTimerRef.current);
+    locationTimerRef.current = setTimeout(async () => {
+      setLocationLoading(true);
+      try {
+        const res = await fetch(`/api/location-data?q=${encodeURIComponent(state.city.trim())}&market=${state.market}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data) {
+            setLocationData(json.data);
+          }
+        }
+      } catch {
+        // API failed — keep static fallback
+      } finally {
+        setLocationLoading(false);
+      }
+    }, 500);
+
+    return () => {
+      if (locationTimerRef.current) clearTimeout(locationTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.market, state.city]);
 
   const locationSuggestions = useMemo(() => {
@@ -781,6 +817,13 @@ export default function NewProjectPage() {
           )}
 
           {/* Location Intelligence Card */}
+          {locationLoading && !locationData && (
+            <div className="mt-4 p-3 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 text-left animate-fade-in flex items-center gap-2">
+              <div className="w-3.5 h-3.5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-[11px] text-emerald-700">Loading location data...</span>
+            </div>
+          )}
+
           {locationData && (() => {
             const inputCity = state.city.trim().toLowerCase().split(",")[0].trim();
             const isProxy = !inputCity.includes(locationData.city.toLowerCase()) && !locationData.city.toLowerCase().includes(inputCity);
