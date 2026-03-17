@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useTopbar, useDashboard } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -136,57 +137,43 @@ function ProjectKebabMenu({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
-  // Click-outside listener
+  // Calculate fixed position when menu opens — recalculate on scroll/resize
   useEffect(() => {
-    if (!open) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setShowPrioritySub(false);
-        setShowDeleteConfirm(false);
-        setDeleteNameInput("");
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open]);
-
-  // Calculate fixed position when menu opens
-  useEffect(() => {
-    if (open && buttonRef.current) {
+    if (!open || !buttonRef.current) return;
+    function updatePos() {
+      if (!buttonRef.current) return;
       const rect = buttonRef.current.getBoundingClientRect();
       const menuWidth = 220;
       const menuHeight = 280;
       let top = rect.bottom + 4;
       let left = rect.right - menuWidth;
+      // Keep menu within viewport
       if (top + menuHeight > window.innerHeight) {
         top = rect.top - menuHeight - 4;
       }
+      if (top < 8) top = 8;
       if (left < 8) left = 8;
+      if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
       setMenuPos({ top, left });
     }
+    updatePos();
+    // Recalculate if the scrollable parent scrolls or window resizes
+    window.addEventListener("scroll", updatePos, true);
+    window.addEventListener("resize", updatePos);
+    return () => {
+      window.removeEventListener("scroll", updatePos, true);
+      window.removeEventListener("resize", updatePos);
+    };
   }, [open]);
 
-  return (
-    <div className="relative" ref={menuRef}>
-      <button
-        ref={buttonRef}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setOpen(!open);
-          setShowPrioritySub(false);
-          setShowDeleteConfirm(false);
-          setDeleteNameInput("");
-        }}
-        className="p-1 rounded text-muted hover:text-earth hover:bg-warm transition-colors"
-        aria-label="Project actions"
-      >
-        <MoreVertical size={16} />
-      </button>
-      {open && (
-        <div
-          className="fixed w-[220px] bg-surface border border-border rounded-lg shadow-lg z-50 py-1"
+  const menuPortal = open ? createPortal(
+    <div ref={menuRef}>
+      <div
+        className="fixed inset-0 z-[60]"
+        onClick={() => { setOpen(false); setShowPrioritySub(false); setShowDeleteConfirm(false); setDeleteNameInput(""); }}
+      />
+      <div
+        className="fixed w-[220px] bg-surface border border-border rounded-lg shadow-lg z-[61] py-1"
           style={{ top: menuPos.top, left: menuPos.left }}
         >
           {/* View project */}
@@ -296,7 +283,28 @@ function ProjectKebabMenu({
             </div>
           )}
         </div>
-      )}
+    </div>,
+    document.body
+  ) : null;
+
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen(!open);
+          setShowPrioritySub(false);
+          setShowDeleteConfirm(false);
+          setDeleteNameInput("");
+        }}
+        className="p-1 rounded text-muted hover:text-earth hover:bg-warm transition-colors"
+        aria-label="Project actions"
+      >
+        <MoreVertical size={16} />
+      </button>
+      {menuPortal}
     </div>
   );
 }
