@@ -731,16 +731,56 @@ export function getLocationData(city: string, market: string): LocationData | nu
   return null;
 }
 
+// US state name → abbreviation mapping for fuzzy matching
+const US_STATE_NAMES: Record<string, string> = {
+  alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
+  colorado: "CO", connecticut: "CT", delaware: "DE", florida: "FL", georgia: "GA",
+  hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN", iowa: "IA",
+  kansas: "KS", kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD",
+  massachusetts: "MA", michigan: "MI", minnesota: "MN", mississippi: "MS",
+  missouri: "MO", montana: "MT", nebraska: "NE", nevada: "NV",
+  "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM", "new york": "NY",
+  "north carolina": "NC", "north dakota": "ND", ohio: "OH", oklahoma: "OK",
+  oregon: "OR", pennsylvania: "PA", "rhode island": "RI", "south carolina": "SC",
+  "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT", vermont: "VT",
+  virginia: "VA", washington: "WA", "west virginia": "WV", wisconsin: "WI",
+  wyoming: "WY", "district of columbia": "DC",
+};
+
+// Regional fallbacks: maps every US state to the closest metro in our dataset
+const US_STATE_FALLBACKS: Record<string, string> = {
+  AL: "Atlanta", AK: "Seattle", AR: "Nashville", CT: "Boston", DE: "Philadelphia",
+  HI: "Los Angeles", ID: "Denver", IA: "Kansas City", KS: "Kansas City",
+  KY: "Nashville", LA: "Houston", ME: "Boston", MD: "Washington DC",
+  MS: "Houston", MT: "Denver", NE: "Kansas City", NH: "Boston",
+  NJ: "New York", NM: "Phoenix", ND: "Minneapolis", OK: "Dallas",
+  RI: "Boston", SC: "Charlotte", SD: "Minneapolis", UT: "Denver",
+  VT: "Boston", VA: "Washington DC", WV: "Philadelphia", WI: "Chicago",
+  WY: "Denver",
+};
+
+// WA region fallbacks: maps regions to the closest city in our dataset
+const WA_REGION_FALLBACKS: Record<string, string> = {
+  // Togo regions
+  maritime: "Lome", plateaux: "Kpalime", centrale: "Sokode", kara: "Sokode", savanes: "Sokode",
+  // Ghana regions
+  "greater accra": "Accra", ashanti: "Kumasi", western: "Kumasi", eastern: "Accra",
+  central: "Accra", volta: "Accra", northern: "Kumasi",
+  // Benin regions
+  littoral: "Cotonou", atlantique: "Cotonou", oueme: "Cotonou", zou: "Cotonou",
+};
+
 /**
- * Fuzzy-matches user input against known locations. Checks if the input
- * contains a city name, state abbreviation, or partial match. Returns the
- * closest match or null if nothing reasonable is found.
+ * Fuzzy-matches user input against known locations. Checks city names,
+ * state names/abbreviations, region names, and falls back to the nearest
+ * regional proxy when no exact match is found. This means any city in any
+ * US state or WA region will get reasonable cost estimates.
  */
 export function getClosestLocation(input: string, market: string): LocationData | null {
   if (!input || !market) return null;
 
   const normalized = input.toLowerCase().trim();
-  if (normalized.length === 0) return null;
+  if (normalized.length < 2) return null;
 
   const marketUpper = market.toUpperCase();
   const pool = marketUpper === "USA" ? USA_LOCATIONS : WA_LOCATIONS.filter((l) => l.country.toUpperCase() === marketUpper || marketUpper !== "USA");
@@ -755,20 +795,85 @@ export function getClosestLocation(input: string, market: string): LocationData 
     if (normalized.includes(loc.city.toLowerCase())) return loc;
   }
 
-  // 3. City name contains input (e.g., input "san" matches "San Antonio", "San Francisco", etc.)
-  // Pick the first match with the shortest city name (closest match)
+  // 3. City name contains input (e.g., input "san" matches "San Antonio")
   const partialMatches = pool
     .filter((loc) => loc.city.toLowerCase().includes(normalized))
     .sort((a, b) => a.city.length - b.city.length);
   if (partialMatches.length > 0) return partialMatches[0];
 
-  // 4. Match by state abbreviation (USA only)
+  // 4. Match by state abbreviation (USA only, e.g., "Jacksonville FL")
   if (marketUpper === "USA") {
+    // Check for state abbreviation in input
     const stateMatches = pool.filter((loc) => {
       if (!loc.state) return false;
       return normalized.includes(loc.state.toLowerCase());
     });
     if (stateMatches.length > 0) return stateMatches[0];
+
+    // Check for full state name in input (e.g., "florida", "tennessee")
+    for (const [stateName, abbr] of Object.entries(US_STATE_NAMES)) {
+      if (normalized.includes(stateName)) {
+        // Direct match in our dataset
+        const directMatch = pool.find((l) => l.state === abbr);
+        if (directMatch) return directMatch;
+        // Fallback to regional proxy
+        const fallbackCity = US_STATE_FALLBACKS[abbr];
+        if (fallbackCity) {
+          const fallback = pool.find((l) => l.city === fallbackCity);
+          if (fallback) return fallback;
+        }
+      }
+    }
+
+    // 5. Try extracting a 2-letter state code from the end of input
+    // e.g., "Jacksonville, FL" → "FL", "Memphis TN" → "TN"
+    const stateCodeMatch = normalized.match(/\b([a-z]{2})$/);
+    if (stateCodeMatch) {
+      const code = stateCodeMatch[1].toUpperCase();
+      const directMatch = pool.find((l) => l.state === code);
+      if (directMatch) return directMatch;
+      const fallbackCity = US_STATE_FALLBACKS[code];
+      if (fallbackCity) {
+        return pool.find((l) => l.city === fallbackCity) ?? null;
+      }
+    }
+
+    // 6. Try matching comma-separated state (e.g., "Memphis, TN")
+    const commaParts = normalized.split(",").map((p) => p.trim());
+    if (commaParts.length >= 2) {
+      const statePartUpper = commaParts[commaParts.length - 1].toUpperCase().trim();
+      const directMatch = pool.find((l) => l.state === statePartUpper);
+      if (directMatch) return directMatch;
+      const fallbackCity = US_STATE_FALLBACKS[statePartUpper];
+      if (fallbackCity) {
+        return pool.find((l) => l.city === fallbackCity) ?? null;
+      }
+      // Check full state name after comma
+      const stateAfterComma = commaParts[commaParts.length - 1].trim();
+      const abbr = US_STATE_NAMES[stateAfterComma];
+      if (abbr) {
+        const match = pool.find((l) => l.state === abbr);
+        if (match) return match;
+        const fb = US_STATE_FALLBACKS[abbr];
+        if (fb) return pool.find((l) => l.city === fb) ?? null;
+      }
+    }
+  } else {
+    // WA: match by region name
+    for (const [regionName, fallbackCity] of Object.entries(WA_REGION_FALLBACKS)) {
+      if (normalized.includes(regionName)) {
+        return pool.find((l) => l.city === fallbackCity) ?? null;
+      }
+    }
+
+    // WA: fallback to capital/main city for the country
+    const countryDefaults: Record<string, string> = {
+      TOGO: "Lome", GHANA: "Accra", BENIN: "Cotonou",
+    };
+    const defaultCity = countryDefaults[marketUpper];
+    if (defaultCity && normalized.length >= 3) {
+      return pool.find((l) => l.city === defaultCity) ?? null;
+    }
   }
 
   return null;

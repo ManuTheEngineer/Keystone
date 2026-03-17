@@ -781,14 +781,25 @@ export default function NewProjectPage() {
           )}
 
           {/* Location Intelligence Card */}
-          {locationData && (
+          {locationData && (() => {
+            const inputCity = state.city.trim().toLowerCase().split(",")[0].trim();
+            const isProxy = !inputCity.includes(locationData.city.toLowerCase()) && !locationData.city.toLowerCase().includes(inputCity);
+            return (
             <div className="mt-4 p-4 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 text-left animate-fade-in">
               <div className="flex items-center gap-2 mb-3">
                 <Info size={14} className="text-emerald-700 shrink-0" />
                 <span className="text-[12px] font-semibold text-emerald-800">
-                  Location intelligence: {locationData.city}{locationData.state ? `, ${locationData.state}` : ""}
+                  {isProxy
+                    ? `Regional estimate based on ${locationData.city}${locationData.state ? `, ${locationData.state}` : ""}`
+                    : `Location intelligence: ${locationData.city}${locationData.state ? `, ${locationData.state}` : ""}`
+                  }
                 </span>
               </div>
+              {isProxy && (
+                <p className="text-[10px] text-emerald-700 mb-2">
+                  We use the nearest major metro as a proxy. You can adjust all costs later.
+                </p>
+              )}
               <div className="space-y-2 text-[11px] text-emerald-800">
                 <div className="flex justify-between">
                   <span className="text-muted">Cost index</span>
@@ -851,16 +862,8 @@ export default function NewProjectPage() {
                 <p className="text-[10px] text-emerald-700 leading-relaxed">{locationData.localNotes}</p>
               </div>
             </div>
-          )}
-
-          {/* No data message */}
-          {state.city.trim().length > 2 && !locationData && (
-            <div className="mt-4 p-3 rounded-[var(--radius)] border border-border bg-surface-alt text-left">
-              <p className="text-[11px] text-muted">
-                We do not have specific data for this area. National averages will be used for cost estimates. You can adjust costs manually in later steps.
-              </p>
-            </div>
-          )}
+            );
+          })()}
 
           <MentorTip>
             {state.market === "USA"
