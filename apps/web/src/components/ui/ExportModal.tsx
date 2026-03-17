@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { ProjectData } from "@/lib/services/project-service";
 import type { ExportData } from "@/lib/services/export-service";
+import type { FullProjectExportData } from "@/lib/services/export-data-gatherer";
 import { getPlanLimits } from "@/lib/stripe-config";
 import type { PlanTier } from "@/lib/stripe-config";
 import {
@@ -93,6 +94,74 @@ export function ExportModal({ project, data, onClose, userPlan, userRole }: Expo
     constructionMethod: marketData.phases[0]?.constructionMethod ?? "Standard construction",
   };
 
+  // Build FullProjectExportData for PDF functions from available data
+  const PHASE_NAMES = ["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"];
+  const totalEstimated = data.budgetItems.reduce((s, b) => s + b.estimated, 0);
+  const totalActual = data.budgetItems.reduce((s, b) => s + b.actual, 0);
+  const totalBudget = project.totalBudget || totalEstimated;
+  const totalSpent = project.totalSpent || totalActual;
+  const remaining = totalBudget - totalSpent;
+  const weeksElapsed = project.currentWeek || 1;
+  const burnRate = totalSpent / weeksElapsed;
+  const remainingWeeks = Math.max((project.totalWeeks || weeksElapsed) - weeksElapsed, 0);
+  const projectedFinalCost = totalSpent + burnRate * remainingWeeks;
+  const openPunch = data.punchListItems.filter((p) => p.status !== "resolved");
+
+  const fullExportData: FullProjectExportData = {
+    project,
+    currency: marketData.currency,
+    marketName: project.market,
+    constructionMethod: marketData.phases[0]?.constructionMethod ?? "Standard construction",
+    budgetItems: data.budgetItems,
+    contacts: data.contacts,
+    dailyLogs: data.dailyLogs,
+    tasks: data.tasks,
+    photos: data.photos,
+    inspectionResults: data.inspectionResults,
+    punchListItems: data.punchListItems,
+    materials: data.materials,
+    documents: data.documents,
+    vaultFiles: [],
+    financingSummary: {
+      type: project.financingType ?? "Unknown",
+      landCost: project.landCost ?? 0,
+      dealScore: project.dealScore ?? null,
+      totalBudget,
+      totalSpent,
+      remaining,
+      burnRate: Math.round(burnRate),
+      projectedFinalCost: Math.round(projectedFinalCost),
+    },
+    phaseTimeline: PHASE_NAMES.map((name, idx) => ({
+      phase: idx,
+      name,
+      status: idx < project.currentPhase ? "completed" as const : idx === project.currentPhase ? "in-progress" as const : "upcoming" as const,
+      tasksTotal: idx === project.currentPhase ? data.tasks.length : 0,
+      tasksDone: idx === project.currentPhase ? data.tasks.filter((t) => t.done).length : 0,
+    })),
+    riskAssessment: (() => {
+      const risks: FullProjectExportData["riskAssessment"] = [];
+      if (totalBudget > 0 && totalSpent > totalBudget) {
+        risks.push({ level: "critical", title: "Budget exceeded", detail: `Spent exceeds budget by ${(((totalSpent - totalBudget) / totalBudget) * 100).toFixed(1)}%.` });
+      } else if (totalBudget > 0 && totalSpent > totalBudget * 0.9) {
+        risks.push({ level: "warning", title: "Budget nearly exhausted", detail: `${((totalSpent / totalBudget) * 100).toFixed(1)}% of budget consumed.` });
+      }
+      const criticalPunch = openPunch.filter((p) => p.severity === "critical");
+      if (criticalPunch.length > 0) {
+        risks.push({ level: "critical", title: `${criticalPunch.length} critical punch list items`, detail: "Unresolved critical issues require immediate attention." });
+      } else if (openPunch.length > 5) {
+        risks.push({ level: "warning", title: `${openPunch.length} open punch list items`, detail: "A growing backlog may delay completion." });
+      }
+      if (risks.length === 0) {
+        risks.push({ level: "info", title: "No significant risks detected", detail: "Budget, schedule, and punch list metrics are within normal ranges." });
+      }
+      return risks;
+    })(),
+    aiSummary: `${project.name} is a ${project.propertyType} project in ${project.city || project.market}. Currently ${project.progress}% complete in the ${PHASE_NAMES[project.currentPhase] || "current"} phase. Budget: ${totalSpent.toLocaleString()} of ${totalBudget.toLocaleString()} (${totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0}% utilized). ${openPunch.length} punch list items remain open.`,
+    orgLogo: null,
+    generatedAt: new Date().toISOString(),
+  };
+
   const options: ExportOption[] = [
     {
       id: "pres-investor",
@@ -119,7 +188,7 @@ export function ExportModal({ project, data, onClose, userPlan, userRole }: Expo
         "Professional report with budget, timeline, team, and progress photos",
       buttonLabel: "Generate Report",
       icon: <FileText size={20} className="text-clay" />,
-      action: () => exportProjectPDF(project, data),
+      action: () => exportProjectPDF(fullExportData),
     },
     {
       id: "csv-budget",
@@ -164,7 +233,7 @@ export function ExportModal({ project, data, onClose, userPlan, userRole }: Expo
         "One-page executive summary with key metrics and status",
       buttonLabel: "Generate Summary",
       icon: <FileBarChart size={20} className="text-clay" />,
-      action: () => exportQuickSummary(project, data),
+      action: () => exportQuickSummary(fullExportData),
     },
   ];
 

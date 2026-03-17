@@ -17,6 +17,26 @@ import type {
   PunchListItemData,
   MaterialData,
 } from "./project-service";
+import type { FullProjectExportData } from "./export-data-gatherer";
+import { getExportCSS } from "./export-styles";
+import {
+  renderCoverPage,
+  renderAISummary,
+  renderMetricGrid,
+  renderBudgetTable,
+  renderDonutChart,
+  renderMaterialsTable,
+  renderPhaseTimeline,
+  renderContactsTable,
+  renderDailyLogTable,
+  renderInspectionResults,
+  renderPunchListTable,
+  renderPhotoGrid,
+  renderRiskCards,
+  renderFinancialProjections,
+  renderDocumentInventory,
+  renderDisclaimer,
+} from "./export-components";
 
 // ---------------------------------------------------------------------------
 // ExportData interface
@@ -315,366 +335,201 @@ function escapeHtml(text: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// PDF Export (full project report)
+// PDF Export (full project report) — uses shared components
 // ---------------------------------------------------------------------------
 
-export function exportProjectPDF(project: ProjectData, data: ExportData): void {
+export function exportProjectPDF(exportData: FullProjectExportData): void {
+  const { project, currency, financingSummary, phaseTimeline, riskAssessment,
+    budgetItems, contacts, dailyLogs, photos, inspectionResults,
+    punchListItems, materials, documents, vaultFiles } = exportData;
+
   const budgetUtilization =
-    project.totalBudget > 0
-      ? Math.round((project.totalSpent / project.totalBudget) * 100)
+    financingSummary.totalBudget > 0
+      ? Math.round((financingSummary.totalSpent / financingSummary.totalBudget) * 100)
       : 0;
-  const timelineProgress =
-    project.totalWeeks > 0
-      ? Math.round((project.currentWeek / project.totalWeeks) * 100)
-      : 0;
-  const remaining = project.totalBudget - project.totalSpent;
+  const remaining = financingSummary.remaining;
+  const openPunchCount = punchListItems.filter((p) => p.status !== "resolved").length;
 
-  const totalEstimated = data.budgetItems.reduce((s, b) => s + b.estimated, 0);
-  const totalActual = data.budgetItems.reduce((s, b) => s + b.actual, 0);
-
-  const openPunchList = data.punchListItems.filter((p) => p.status !== "resolved").length;
-  const completedTasks = data.tasks.filter((t) => t.done).length;
-  const totalTasks = data.tasks.length;
-  const taskPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-  // Risk alerts
-  const risks: { level: string; text: string }[] = [];
-  if (budgetUtilization > 90) {
-    risks.push({
-      level: "danger",
-      text: `Budget is ${budgetUtilization}% spent with ${100 - project.progress}% of work remaining.`,
-    });
+  // Build donut chart categories from budget items
+  const categoryMap = new Map<string, number>();
+  for (const b of budgetItems) {
+    categoryMap.set(b.category, (categoryMap.get(b.category) ?? 0) + b.actual);
   }
-  if (budgetUtilization > 75 && project.progress < 50) {
-    risks.push({
-      level: "danger",
-      text: "Spend rate exceeds progress rate. Review scope and costs.",
-    });
+  const DONUT_COLORS = [
+    "#2D6A4F", "#8B4513", "#1B4965", "#BC6C25", "#D4A574",
+    "#9B2226", "#6B4226", "#3A3A3A", "#2563eb", "#7c3aed",
+  ];
+  const donutCategories = Array.from(categoryMap.entries())
+    .filter(([, v]) => v > 0)
+    .map(([label, value], i) => ({
+      label,
+      value,
+      color: DONUT_COLORS[i % DONUT_COLORS.length],
+    }));
+
+  const sections: string[] = [];
+
+  // 1. Cover page
+  sections.push(renderCoverPage(project, "Full Project Report", exportData.orgLogo, exportData.generatedAt));
+
+  // 2. AI Summary
+  sections.push('<div class="page-break"></div>');
+  sections.push("<h2>Executive Summary</h2>");
+  sections.push(renderAISummary(exportData.aiSummary));
+
+  // 3. Metric grid (6 metrics)
+  sections.push(renderMetricGrid([
+    { label: "Progress", value: `${project.progress}%` },
+    { label: "Budget Used", value: `${budgetUtilization}%` },
+    { label: "Remaining", value: fmtCurrency(remaining, project.currency) },
+    { label: "Week", value: `${project.currentWeek}/${project.totalWeeks}` },
+    { label: "Phase", value: PHASE_LABELS[project.currentPhase] || project.phaseName },
+    { label: "Open Items", value: String(openPunchCount) },
+  ], 6));
+
+  // 4. Budget table
+  sections.push('<div class="page-break"></div>');
+  sections.push("<h2>Budget Breakdown</h2>");
+  sections.push(renderBudgetTable(budgetItems, currency, true));
+
+  // 5. Donut chart (budget by category)
+  if (donutCategories.length > 0) {
+    sections.push("<h3>Budget by Category</h3>");
+    sections.push(renderDonutChart(
+      donutCategories,
+      fmtCurrency(financingSummary.totalSpent, project.currency)
+    ));
   }
-  if (openPunchList > 5) {
-    risks.push({
-      level: "warning",
-      text: `${openPunchList} open punch list items require resolution.`,
-    });
-  }
-  if (risks.length === 0) {
-    risks.push({
-      level: "info",
-      text: "No significant risks identified at this time.",
-    });
+
+  // 6. Materials table
+  if (materials.length > 0) {
+    sections.push('<div class="page-break"></div>');
+    sections.push("<h2>Materials Tracker</h2>");
+    sections.push(renderMaterialsTable(materials, currency));
   }
 
-  // Build budget table rows
-  const budgetRowsHTML = data.budgetItems
-    .map(
-      (b) => `
-    <tr>
-      <td>${escapeHtml(b.category)}</td>
-      <td style="text-align:right; font-family: monospace;">${fmtCurrency(b.estimated, project.currency)}</td>
-      <td style="text-align:right; font-family: monospace;">${fmtCurrency(b.actual, project.currency)}</td>
-      <td style="text-align:right; font-family: monospace;">${fmtCurrency(b.estimated - b.actual, project.currency)}</td>
-      <td><span class="status-badge status-${escapeHtml(b.status)}">${escapeHtml(b.status)}</span></td>
-    </tr>`
-    )
-    .join("");
+  // 7. Phase timeline
+  sections.push('<div class="page-break"></div>');
+  sections.push("<h2>Phase Timeline</h2>");
+  sections.push(renderPhaseTimeline(phaseTimeline));
 
-  // Phase status rows
-  const phaseHTML = Array.from({ length: 9 }, (_, i) => {
-    const label = PHASE_LABELS[i] || `Phase ${i}`;
-    let status = "Not started";
-    if (i < project.currentPhase) status = "Completed";
-    else if (i === project.currentPhase) status = "In progress";
-    return `<tr><td>${escapeHtml(label)}</td><td>${status}</td></tr>`;
-  }).join("");
+  // 8. Contacts table
+  sections.push('<div class="page-break"></div>');
+  sections.push("<h2>Team Roster</h2>");
+  sections.push(renderContactsTable(contacts, true));
 
-  // Team roster
-  const teamHTML = data.contacts
-    .map(
-      (c) => `
-    <tr>
-      <td>${escapeHtml(c.name)}</td>
-      <td>${escapeHtml(c.role)}</td>
-      <td>${escapeHtml(c.phone || "N/A")}</td>
-      <td>${escapeHtml(c.email || "N/A")}</td>
-      <td>${c.rating}/5</td>
-    </tr>`
-    )
-    .join("");
+  // 9. Daily log table (limit 30)
+  sections.push('<div class="page-break"></div>');
+  sections.push("<h2>Daily Logs</h2>");
+  sections.push(renderDailyLogTable(dailyLogs, 30));
 
-  // Daily logs (last 10)
-  const recentLogs = data.dailyLogs.slice(0, 10);
-  const logsHTML = recentLogs
-    .map(
-      (l) => `
-    <div class="log-entry">
-      <div class="log-header">Day ${l.day} - ${escapeHtml(l.date)}</div>
-      <div class="log-meta">Weather: ${escapeHtml(l.weather)} | Crew: ${l.crew}</div>
-      <div style="margin-top: 4px;">${escapeHtml(l.content)}</div>
-    </div>`
-    )
-    .join("");
+  // 10. Inspection results
+  if (inspectionResults.length > 0) {
+    sections.push('<div class="page-break"></div>');
+    sections.push("<h2>Inspection Results</h2>");
+    sections.push(renderInspectionResults(inspectionResults));
+  }
 
-  // Photo gallery
-  const photosHTML = data.photos
-    .slice(0, 12)
-    .map(
-      (p) => `
-    <div>
-      <img class="photo-thumb" src="${escapeHtml(p.fileUrl)}" alt="${escapeHtml(p.caption || "Site photo")}" />
-      ${p.caption ? `<div style="font-size: 9px; color: #6A6A6A; margin-top: 2px;">${escapeHtml(p.caption)}</div>` : ""}
-    </div>`
-    )
-    .join("");
+  // 11. Punch list
+  if (punchListItems.length > 0) {
+    sections.push('<div class="page-break"></div>');
+    sections.push("<h2>Punch List</h2>");
+    sections.push(renderPunchListTable(punchListItems));
+  }
 
-  const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  // 12. Photo grid (limit 24, organized by phase)
+  if (photos.length > 0) {
+    sections.push('<div class="page-break"></div>');
+    sections.push("<h2>Photo Gallery</h2>");
+    sections.push(renderPhotoGrid(photos, 4, 24));
+  }
+
+  // 13. Risk cards
+  sections.push('<div class="page-break"></div>');
+  sections.push("<h2>Risk Assessment</h2>");
+  sections.push(renderRiskCards(riskAssessment));
+
+  // 14. Financial projections
+  sections.push('<div class="page-break"></div>');
+  sections.push("<h2>Financial Projections</h2>");
+  sections.push(renderFinancialProjections(project, financingSummary, currency));
+
+  // 15. Document inventory
+  if (documents.length > 0 || vaultFiles.length > 0) {
+    sections.push('<div class="page-break"></div>');
+    sections.push("<h2>Document Inventory</h2>");
+    sections.push(renderDocumentInventory(documents, vaultFiles));
+  }
+
+  // 16. Disclaimer
+  sections.push('<div class="page-break"></div>');
+  sections.push(renderDisclaimer());
 
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${escapeHtml(project.name)} - Project Report</title>
-  <style>${getReportCSS()}</style>
+  <title>${escapeHtml(project.name)} - Full Project Report</title>
+  <style>${getExportCSS()}</style>
 </head>
 <body>
-  <!-- Cover Page -->
-  <div class="cover">
-    <div class="branding">Keystone</div>
-    <h1>${escapeHtml(project.name)}</h1>
-    <div class="market">Market: ${escapeHtml(project.market)}</div>
-    <div class="phase">${escapeHtml(PHASE_LABELS[project.currentPhase] || project.phaseName)}</div>
-    <div class="date">Report generated: ${dateStr}</div>
-  </div>
-
-  <!-- Executive Summary -->
-  <div class="section">
-    <h2>Executive Summary</h2>
-    <div class="metric-grid">
-      <div class="metric-box">
-        <div class="value">${project.progress}%</div>
-        <div class="label">Progress</div>
-      </div>
-      <div class="metric-box">
-        <div class="value">${budgetUtilization}%</div>
-        <div class="label">Budget used</div>
-      </div>
-      <div class="metric-box">
-        <div class="value">Wk ${project.currentWeek}/${project.totalWeeks}</div>
-        <div class="label">Timeline</div>
-      </div>
-      <div class="metric-box">
-        <div class="value">${project.openItems}</div>
-        <div class="label">Open items</div>
-      </div>
-    </div>
-
-    <h3>Budget Overview</h3>
-    <table>
-      <tr>
-        <td><strong>Total Budget</strong></td>
-        <td style="font-family: monospace;">${fmtCurrency(project.totalBudget, project.currency)}</td>
-        <td><strong>Total Spent</strong></td>
-        <td style="font-family: monospace;">${fmtCurrency(project.totalSpent, project.currency)}</td>
-        <td><strong>Remaining</strong></td>
-        <td style="font-family: monospace;">${fmtCurrency(remaining, project.currency)}</td>
-      </tr>
-    </table>
-
-    <h3>Task Progress</h3>
-    <p>${completedTasks} of ${totalTasks} tasks completed (${taskPct}%)</p>
-  </div>
-
-  <!-- Budget Breakdown -->
-  <div class="section page-break">
-    <h2>Budget Breakdown</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Category</th>
-          <th style="text-align:right;">Estimated</th>
-          <th style="text-align:right;">Actual</th>
-          <th style="text-align:right;">Variance</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${budgetRowsHTML}
-        <tr style="font-weight: 700; background: #F5E6D3;">
-          <td>TOTAL</td>
-          <td style="text-align:right; font-family: monospace;">${fmtCurrency(totalEstimated, project.currency)}</td>
-          <td style="text-align:right; font-family: monospace;">${fmtCurrency(totalActual, project.currency)}</td>
-          <td style="text-align:right; font-family: monospace;">${fmtCurrency(totalEstimated - totalActual, project.currency)}</td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Timeline / Phase Status -->
-  <div class="section">
-    <h2>Timeline and Phases</h2>
-    <p style="margin-bottom: 12px;">
-      Week ${project.currentWeek} of estimated ${project.totalWeeks} weeks (${timelineProgress}% elapsed)
-    </p>
-    <table>
-      <thead>
-        <tr><th>Phase</th><th>Status</th></tr>
-      </thead>
-      <tbody>${phaseHTML}</tbody>
-    </table>
-  </div>
-
-  <!-- Team Roster -->
-  <div class="section page-break">
-    <h2>Team Roster</h2>
-    ${
-      data.contacts.length > 0
-        ? `<table>
-      <thead>
-        <tr><th>Name</th><th>Role</th><th>Phone</th><th>Email</th><th>Rating</th></tr>
-      </thead>
-      <tbody>${teamHTML}</tbody>
-    </table>`
-        : "<p>No team members added yet.</p>"
-    }
-  </div>
-
-  <!-- Daily Logs -->
-  <div class="section">
-    <h2>Recent Daily Logs</h2>
-    ${recentLogs.length > 0 ? logsHTML : "<p>No daily logs recorded yet.</p>"}
-  </div>
-
-  <!-- Photos -->
-  ${
-    data.photos.length > 0
-      ? `<div class="section page-break">
-    <h2>Photo Gallery</h2>
-    <div class="photo-grid">${photosHTML}</div>
-  </div>`
-      : ""
-  }
-
-  <!-- Risk Assessment -->
-  <div class="section">
-    <h2>Risk Assessment</h2>
-    ${risks.map((r) => `<div class="risk-alert ${r.level === "danger" ? "danger" : ""}">${escapeHtml(r.text)}</div>`).join("")}
-  </div>
-
-  <!-- Disclaimer -->
-  <div class="section">
-    <div class="disclaimer">
-      This report was generated by Keystone on ${dateStr}.
-      All financial figures are based on user-entered data and may not reflect final costs. This report is for informational
-      purposes only and does not constitute professional construction, financial, or legal advice. Consult licensed professionals
-      for decisions related to your project.
-    </div>
-  </div>
-
-  <!-- Print footer -->
-  <div class="footer">
-    <span>Keystone -- From First Idea to Final Key</span>
-    <span>${escapeHtml(project.name)} -- ${new Date().toLocaleDateString()}</span>
-  </div>
+  ${sections.join("\n")}
 </body>
 </html>`;
 
-  openPrintWindow(html, `${project.name} - Project Report`);
+  openPrintWindow(html, `${project.name} - Full Project Report`);
 }
 
 // ---------------------------------------------------------------------------
-// Quick Summary PDF (one-page)
+// Quick Summary PDF (1-2 pages) — uses shared components
 // ---------------------------------------------------------------------------
 
-export function exportQuickSummary(project: ProjectData, data: ExportData): void {
+export function exportQuickSummary(exportData: FullProjectExportData): void {
+  const { project, currency, financingSummary, riskAssessment, budgetItems } = exportData;
+
   const budgetUtilization =
-    project.totalBudget > 0
-      ? Math.round((project.totalSpent / project.totalBudget) * 100)
+    financingSummary.totalBudget > 0
+      ? Math.round((financingSummary.totalSpent / financingSummary.totalBudget) * 100)
       : 0;
-  const remaining = project.totalBudget - project.totalSpent;
-  const openPunchList = data.punchListItems.filter((p) => p.status !== "resolved").length;
-  const activeTasks = data.tasks.filter((t) => !t.done).length;
+  const openPunchCount = exportData.punchListItems.filter((p) => p.status !== "resolved").length;
 
-  const risks: string[] = [];
-  if (budgetUtilization > 90) {
-    risks.push(`Budget at ${budgetUtilization}% utilization with ${100 - project.progress}% of work remaining.`);
-  }
-  if (project.currentWeek > project.totalWeeks * 0.9 && project.progress < 90) {
-    risks.push("Timeline nearing end with significant work remaining.");
-  }
-  if (openPunchList > 0) {
-    risks.push(`${openPunchList} open punch list items.`);
-  }
+  const sections: string[] = [];
 
-  const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  // Cover page
+  sections.push(renderCoverPage(project, "Quick Summary", exportData.orgLogo, exportData.generatedAt));
+
+  // Metric grid (4 metrics)
+  sections.push('<div class="page-break"></div>');
+  sections.push(renderMetricGrid([
+    { label: "Progress", value: `${project.progress}%` },
+    { label: "Budget Used", value: `${budgetUtilization}%` },
+    { label: "Week", value: `${project.currentWeek}/${project.totalWeeks}` },
+    { label: "Open Items", value: String(openPunchCount) },
+  ], 4));
+
+  // AI summary
+  sections.push("<h2>Summary</h2>");
+  sections.push(renderAISummary(exportData.aiSummary));
+
+  // Budget summary table (top-level only, no full breakdown)
+  sections.push("<h2>Budget Summary</h2>");
+  sections.push(renderBudgetTable(budgetItems, currency, true));
+
+  // Risk cards
+  sections.push("<h2>Risk Assessment</h2>");
+  sections.push(renderRiskCards(riskAssessment));
 
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>${escapeHtml(project.name)} - Quick Summary</title>
-  <style>${getReportCSS()}
-    body { max-width: 800px; margin: 0 auto; padding: 32px; }
+  <style>${getExportCSS()}
     @page { size: letter; margin: 0.5in; }
   </style>
 </head>
 <body>
-  <div style="text-align: center; margin-bottom: 24px;">
-    <div style="font-size: 11px; color: #8B4513; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;">Keystone</div>
-    <h1 style="font-size: 24px; margin-bottom: 4px;">${escapeHtml(project.name)}</h1>
-    <div style="font-size: 12px; color: #6A6A6A;">${dateStr} | ${escapeHtml(project.market)} | ${escapeHtml(PHASE_LABELS[project.currentPhase] || project.phaseName)}</div>
-  </div>
-
-  <div class="metric-grid">
-    <div class="metric-box">
-      <div class="value">${project.progress}%</div>
-      <div class="label">Progress</div>
-    </div>
-    <div class="metric-box">
-      <div class="value">${budgetUtilization}%</div>
-      <div class="label">Budget used</div>
-    </div>
-    <div class="metric-box">
-      <div class="value">Wk ${project.currentWeek}/${project.totalWeeks}</div>
-      <div class="label">Timeline</div>
-    </div>
-    <div class="metric-box">
-      <div class="value">${activeTasks}</div>
-      <div class="label">Open tasks</div>
-    </div>
-  </div>
-
-  <h3 style="margin-top: 20px;">Budget Summary</h3>
-  <table>
-    <tr>
-      <th>Total Budget</th>
-      <th>Spent to Date</th>
-      <th>Remaining</th>
-      <th>Utilization</th>
-    </tr>
-    <tr>
-      <td style="font-family: monospace;">${fmtCurrency(project.totalBudget, project.currency)}</td>
-      <td style="font-family: monospace;">${fmtCurrency(project.totalSpent, project.currency)}</td>
-      <td style="font-family: monospace;">${fmtCurrency(remaining, project.currency)}</td>
-      <td>${budgetUtilization}%</td>
-    </tr>
-  </table>
-
-  <h3>Current Phase</h3>
-  <p style="margin-bottom: 8px;">${escapeHtml(PHASE_LABELS[project.currentPhase] || project.phaseName)}</p>
-  <div style="background: #e5e5e5; border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 16px;">
-    <div style="background: #2D6A4F; height: 100%; width: ${project.progress}%; border-radius: 4px;"></div>
-  </div>
-
-  ${
-    risks.length > 0
-      ? `<h3>Risks and Alerts</h3>
-    ${risks.map((r) => `<div class="risk-alert">${escapeHtml(r)}</div>`).join("")}`
-      : ""
-  }
-
-  <div class="disclaimer" style="margin-top: 32px;">
-    Generated by Keystone on ${new Date().toLocaleDateString()}. For informational purposes only. Consult licensed professionals for project decisions.
-  </div>
+  ${sections.join("\n")}
 </body>
 </html>`;
 

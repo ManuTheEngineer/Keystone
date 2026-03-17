@@ -74,6 +74,16 @@ export interface FullProjectExportData {
 }
 
 // ---------------------------------------------------------------------------
+// AI Summary Cache
+// ---------------------------------------------------------------------------
+
+const AI_SUMMARY_CACHE = new Map<
+  string,
+  { summary: string; timestamp: number }
+>();
+const AI_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+// ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
@@ -108,6 +118,127 @@ function snapshotToArray<T extends { id?: string }>(
   return Object.entries(val).map(
     ([key, data]) => ({ id: key, ...data } as unknown as T)
   );
+}
+
+// ---------------------------------------------------------------------------
+// AI Summary Generation
+// ---------------------------------------------------------------------------
+
+function buildTemplateSummary(data: FullProjectExportData): string {
+  const { project, financingSummary, punchListItems } = data;
+  const phaseName =
+    PHASE_NAMES[project.currentPhase] ?? `Phase ${project.currentPhase}`;
+  const utilization =
+    financingSummary.totalBudget > 0
+      ? Math.round(
+          (financingSummary.totalSpent / financingSummary.totalBudget) * 100
+        )
+      : 0;
+  const openPunchItems = punchListItems.filter(
+    (p) => p.status !== "resolved"
+  ).length;
+
+  const spent = financingSummary.totalSpent.toLocaleString();
+  const budget = financingSummary.totalBudget.toLocaleString();
+
+  return `${project.name} is a ${project.propertyType} project in ${project.city || "an unspecified location"}, ${project.market}. Currently ${project.progress}% complete in the ${phaseName} phase. Budget: ${spent} of ${budget} (${utilization}% utilized). ${openPunchItems} punch list item${openPunchItems === 1 ? "" : "s"} remain${openPunchItems === 1 ? "s" : ""} open.`;
+}
+
+export async function generateAISummary(
+  data: FullProjectExportData
+): Promise<string> {
+  const cacheKey = data.project.id ?? data.project.name;
+
+  // Check cache first
+  const cached = AI_SUMMARY_CACHE.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < AI_CACHE_TTL) {
+    return cached.summary;
+  }
+
+  // Check if Claude API key is available (server-side direct call)
+  const apiKey =
+    typeof process !== "undefined" ? process.env?.CLAUDE_API_KEY : undefined;
+
+  if (!apiKey) {
+    return buildTemplateSummary(data);
+  }
+
+  // Build prompt with project data
+  const { project, financingSummary, phaseTimeline, dailyLogs, punchListItems, tasks } =
+    data;
+
+  const phaseName =
+    PHASE_NAMES[project.currentPhase] ?? `Phase ${project.currentPhase}`;
+  const utilization =
+    financingSummary.totalBudget > 0
+      ? Math.round(
+          (financingSummary.totalSpent / financingSummary.totalBudget) * 100
+        )
+      : 0;
+  const openPunchItems = punchListItems.filter(
+    (p) => p.status !== "resolved"
+  ).length;
+  const completedTasks = tasks.filter((t) => t.done).length;
+  const taskCompletionRate =
+    tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+
+  // Recent daily log highlights (last 3)
+  const recentLogHighlights = dailyLogs
+    .slice(0, 3)
+    .map((l) => `Day ${l.day} (${l.date}): ${l.content.slice(0, 100)}`)
+    .join("; ");
+
+  const prompt = `Write a concise 3-4 sentence executive summary for a construction project report. Use plain, professional language. No emoji. No markdown.
+
+Project Data:
+- Name: ${project.name}
+- Market: ${project.market}
+- Current Phase: ${phaseName} (phase ${project.currentPhase} of 8)
+- Overall Progress: ${project.progress}%
+- Budget: ${financingSummary.totalBudget.toLocaleString()} total, ${financingSummary.totalSpent.toLocaleString()} spent (${utilization}% utilized)
+- Remaining Budget: ${financingSummary.remaining.toLocaleString()}
+- Open Punch List Items: ${openPunchItems}
+- Task Completion Rate: ${taskCompletionRate}% (${completedTasks} of ${tasks.length})
+- Recent Activity: ${recentLogHighlights || "No recent daily logs."}
+
+Summarize the project status, highlight any concerns (budget overruns, schedule risks), and note the next major milestone.`;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 300,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      return buildTemplateSummary(data);
+    }
+
+    const result = await response.json();
+    const textContent = result.content?.find(
+      (c: { type: string }) => c.type === "text"
+    );
+    const summary = textContent?.text?.trim();
+
+    if (!summary) {
+      return buildTemplateSummary(data);
+    }
+
+    // Cache the result
+    AI_SUMMARY_CACHE.set(cacheKey, { summary, timestamp: Date.now() });
+
+    return summary;
+  } catch {
+    return buildTemplateSummary(data);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -349,7 +480,7 @@ export async function gatherFullProjectData(
   }
 
   // --- Assemble final export ---
-  return {
+  const exportData: FullProjectExportData = {
     project,
     currency,
     marketName,
@@ -375,4 +506,9 @@ export async function gatherFullProjectData(
     orgLogo: orgLogo ?? null,
     generatedAt: new Date().toISOString(),
   };
+
+  // Generate AI summary (falls back to template if unavailable)
+  exportData.aiSummary = await generateAISummary(exportData);
+
+  return exportData;
 }
