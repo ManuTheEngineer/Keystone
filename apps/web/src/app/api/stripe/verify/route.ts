@@ -1,21 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
 import { verifyAuth, isAuthError } from "@/lib/api-auth";
-
-const DB_URL = "https://keystone-21811-default-rtdb.firebaseio.com";
-
-async function updateProfile(userId: string, data: Record<string, unknown>) {
-  const authParam = process.env.FIREBASE_DATABASE_SECRET ? `?auth=${process.env.FIREBASE_DATABASE_SECRET}` : "";
-  const res = await fetch(`${DB_URL}/users/${userId}/profile.json${authParam}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error("Firebase update failed:", res.status, errorText);
-  }
-}
+import { updateProfile } from "@/lib/firebase-rest";
 
 export async function POST(request: NextRequest) {
   try {

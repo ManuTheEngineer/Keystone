@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
+import { updateProfile } from "@/lib/firebase-rest";
 import type Stripe from "stripe";
 
 export const runtime = "nodejs";
-
-const DB_URL = "https://keystone-21811-default-rtdb.firebaseio.com";
 
 // Map Stripe Price IDs to plan tiers — authoritative source of truth
 const PRICE_TO_TIER: Record<string, string> = {
@@ -18,20 +17,6 @@ const PRICE_TO_TIER: Record<string, string> = {
 
 function tierFromPriceId(priceId: string): string | null {
   return PRICE_TO_TIER[priceId] || null;
-}
-
-// Update user profile via Firebase REST API (no client SDK needed in serverless)
-async function updateProfile(userId: string, data: Record<string, unknown>) {
-  const authParam = process.env.FIREBASE_DATABASE_SECRET ? `?auth=${process.env.FIREBASE_DATABASE_SECRET}` : "";
-  const res = await fetch(`${DB_URL}/users/${userId}/profile.json${authParam}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error("Firebase update failed:", res.status, errorText);
-  }
 }
 
 export async function POST(request: NextRequest) {

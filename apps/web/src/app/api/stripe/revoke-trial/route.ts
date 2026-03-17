@@ -1,32 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAuth, isAuthError } from "@/lib/api-auth";
-
-const DB_URL = "https://keystone-21811-default-rtdb.firebaseio.com";
-
-function authUrl(path: string): string {
-  const secret = process.env.FIREBASE_DATABASE_SECRET;
-  const authParam = secret ? `?auth=${secret}` : "";
-  return `${DB_URL}/${path}.json${authParam}`;
-}
-
-async function dbGet(path: string) {
-  const res = await fetch(authUrl(path));
-  if (!res.ok) return null;
-  return res.json();
-}
-
-async function dbPatch(path: string, data: Record<string, unknown>) {
-  const res = await fetch(authUrl(path), {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error("Firebase write failed:", res.status, errorText);
-    throw new Error(`Firebase write to ${path} failed: ${res.status}`);
-  }
-}
+import { dbGet, dbPatch } from "@/lib/firebase-rest";
 
 // Firebase stores JS arrays as objects with numeric keys.
 // Normalize to a proper string array regardless of shape.

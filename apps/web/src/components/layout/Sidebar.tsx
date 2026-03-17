@@ -170,6 +170,7 @@ export function Sidebar({
             }
           `}
           title={collapsed ? item.label : undefined}
+          aria-label={item.label}
         >
           <span className="flex-shrink-0">{item.icon}</span>
           {!collapsed && <span className="flex-1">{item.label}</span>}

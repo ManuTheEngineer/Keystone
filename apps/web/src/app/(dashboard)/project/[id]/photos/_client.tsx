@@ -542,7 +542,7 @@ export function PhotosClient() {
                           >
                             <img
                               src={p.fileUrl}
-                              alt=""
+                              alt={p.caption || "Project photo"}
                               className="w-full h-full object-cover"
                             />
                           </div>
