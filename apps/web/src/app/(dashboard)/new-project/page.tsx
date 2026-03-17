@@ -485,6 +485,7 @@ export default function NewProjectPage() {
   // Location intelligence — async API call with debounce, static fallback
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
+  const [locationSource, setLocationSource] = useState<string>("");
   const locationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -510,6 +511,7 @@ export default function NewProjectPage() {
           const json = await res.json();
           if (json.data) {
             setLocationData(json.data);
+            setLocationSource(json.source ?? "unknown");
           } else if (!staticFallback) {
             // API returned null and no static match — show nothing
             setLocationData(null);
@@ -845,6 +847,11 @@ export default function NewProjectPage() {
               {isProxy && (
                 <p className="text-[10px] text-emerald-700 mb-2">
                   We use the nearest major metro as a proxy. You can adjust all costs later.
+                </p>
+              )}
+              {locationSource && (
+                <p className="text-[9px] text-emerald-600/50 mb-2">
+                  Source: {locationSource === "api" ? "Live data (Census/HUD/BLS)" : locationSource === "cache" ? "Cached data" : locationSource === "curated+cpi" ? "Curated + CPI adjusted" : "Static estimates"}
                 </p>
               )}
               <div className="space-y-2 text-[11px] text-emerald-800">
