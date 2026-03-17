@@ -113,6 +113,11 @@ export function SettingsClient() {
   const [upgradingTier, setUpgradingTier] = useState<PlanTier | null>(null);
   const [managingPortal, setManagingPortal] = useState(false);
 
+  // Downgrade confirmation state
+  const [downgradeTarget, setDowngradeTarget] = useState<PlanTier | null>(null);
+  const [downgradeLoading, setDowngradeLoading] = useState(false);
+  const [subscriptionEndDate, setSubscriptionEndDate] = useState<string | null>(null);
+
   // Trial code generation state (admin)
   const [trialTier, setTrialTier] = useState<"BUILDER" | "DEVELOPER">("BUILDER");
   const [trialDuration, setTrialDuration] = useState(48);
@@ -348,6 +353,42 @@ export function SettingsClient() {
     } finally {
       setManagingPortal(false);
     }
+  }
+
+  async function handleDowngradeClick(targetTier: PlanTier) {
+    setDowngradeTarget(targetTier);
+    setDowngradeLoading(true);
+    setSubscriptionEndDate(null);
+
+    // Fetch current subscription period end from Stripe
+    if (profile?.stripeSubscriptionId) {
+      try {
+        const res = await fetch("/api/stripe/subscription", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stripeSubscriptionId: profile.stripeSubscriptionId }),
+        });
+        const data = await res.json();
+        if (data.currentPeriodEnd) {
+          setSubscriptionEndDate(
+            new Date(data.currentPeriodEnd * 1000).toLocaleDateString("en-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          );
+        }
+      } catch {
+        // If we can't fetch, still show the dialog without the date
+      }
+    }
+    setDowngradeLoading(false);
+  }
+
+  function handleDowngradeConfirm() {
+    setDowngradeTarget(null);
+    handleManageSubscription();
   }
 
   async function handleGenerateTrialCode() {
@@ -747,7 +788,7 @@ export function SettingsClient() {
                   </span>
                 ) : isFoundation && isLowerTier && hasActiveSubscription ? (
                   <button
-                    onClick={handleManageSubscription}
+                    onClick={() => handleDowngradeClick(tier)}
                     disabled={managingPortal}
                     className="w-full px-3 py-1.5 text-[11px] font-medium rounded-full transition-colors disabled:opacity-40 border border-border text-muted hover:text-earth hover:bg-surface-alt"
                   >
@@ -759,7 +800,7 @@ export function SettingsClient() {
                   </span>
                 ) : isLowerTier && hasActiveSubscription ? (
                   <button
-                    onClick={handleManageSubscription}
+                    onClick={() => handleDowngradeClick(tier)}
                     disabled={managingPortal}
                     className="w-full px-3 py-1.5 text-[11px] font-medium rounded-full transition-colors disabled:opacity-40 border border-border text-muted hover:text-earth hover:bg-surface-alt"
                   >
@@ -799,6 +840,97 @@ export function SettingsClient() {
                 className="shrink-0 px-4 py-2 text-[12px] font-medium border border-border text-earth rounded-xl hover:bg-surface-alt transition-colors disabled:opacity-40"
               >
                 {managingPortal ? "Opening..." : "Manage Subscription"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Downgrade confirmation dialog */}
+        {downgradeTarget && (
+          <div className="mt-4 p-5 rounded-2xl border-2 border-warning/30 bg-warning/5 animate-fade-in">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-9 h-9 rounded-full bg-warning/10 flex items-center justify-center shrink-0 mt-0.5">
+                <AlertTriangle size={18} className="text-warning" />
+              </div>
+              <div>
+                <p className="text-[14px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
+                  Downgrade to {downgradeTarget.charAt(0) + downgradeTarget.slice(1).toLowerCase()}
+                </p>
+                <p className="text-[11px] text-muted mt-0.5">
+                  Here is what happens when you change your plan:
+                </p>
+              </div>
+            </div>
+
+            {downgradeLoading ? (
+              <p className="text-[11px] text-muted pl-12">Loading your billing details...</p>
+            ) : (
+              <div className="space-y-3 pl-12">
+                {/* Current plan info */}
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-success/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <Check size={11} className="text-success" />
+                  </div>
+                  <p className="text-[12px] text-earth leading-relaxed">
+                    <span className="font-medium">Your current {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()} plan stays active</span>
+                    {subscriptionEndDate
+                      ? <> until <span className="font-data font-semibold">{subscriptionEndDate}</span>. You keep full access to all features until then.</>
+                      : <> until the end of your current billing period. You keep full access to all features until then.</>
+                    }
+                  </p>
+                </div>
+
+                {/* New plan info */}
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-info/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <CreditCard size={11} className="text-info" />
+                  </div>
+                  <p className="text-[12px] text-earth leading-relaxed">
+                    {downgradeTarget === "FOUNDATION" ? (
+                      <>
+                        <span className="font-medium">After that, you move to Foundation (free).</span> No further charges. You can upgrade again any time.
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-medium">After that, your new {downgradeTarget.charAt(0) + downgradeTarget.slice(1).toLowerCase()} plan begins</span> at{" "}
+                        <span className="font-data font-semibold">
+                          {formatPrice(PLAN_CONFIG[downgradeTarget as Exclude<PlanTier, "FOUNDATION">]?.monthlyPrice ?? 0)}/mo
+                        </span>{" "}
+                        (or{" "}
+                        <span className="font-data font-semibold">
+                          {formatPrice(PLAN_CONFIG[downgradeTarget as Exclude<PlanTier, "FOUNDATION">]?.annualPrice ?? 0)}/yr
+                        </span>{" "}
+                        if billed annually).
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                {/* No data loss */}
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-success/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <Check size={11} className="text-success" />
+                  </div>
+                  <p className="text-[12px] text-earth leading-relaxed">
+                    <span className="font-medium">Your projects and data are never deleted.</span> If you exceed the new plan limits, extra projects become read-only until you upgrade again.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 mt-5 pl-12">
+              <button
+                onClick={handleDowngradeConfirm}
+                disabled={managingPortal || downgradeLoading}
+                className="px-4 py-2 text-[12px] font-medium border border-border text-earth rounded-xl hover:bg-surface-alt transition-colors disabled:opacity-40"
+              >
+                {managingPortal ? "Opening..." : "Continue to billing portal"}
+              </button>
+              <button
+                onClick={() => setDowngradeTarget(null)}
+                className="px-4 py-2 text-[12px] text-muted hover:text-earth transition-colors"
+              >
+                Cancel
               </button>
             </div>
           </div>
