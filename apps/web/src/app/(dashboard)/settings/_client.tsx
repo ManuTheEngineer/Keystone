@@ -775,7 +775,11 @@ export function SettingsClient() {
                   ))}
                 </ul>
 
-                {isCurrent ? (
+                {isAdmin ? (
+                  <span className="inline-block w-full text-center px-3 py-1.5 text-[10px] font-medium text-success bg-success/10 rounded-full">
+                    Admin access
+                  </span>
+                ) : isCurrent ? (
                   <div className="text-center">
                     <span className="inline-block w-full px-3 py-1.5 text-[10px] font-medium text-success bg-success/10 rounded-full">
                       Current plan
@@ -786,10 +790,6 @@ export function SettingsClient() {
                       </p>
                     )}
                   </div>
-                ) : isAdmin ? (
-                  <span className="inline-block w-full text-center px-3 py-1.5 text-[10px] text-muted">
-                    Admin access
-                  </span>
                 ) : isFoundation && isLowerTier && hasActiveSubscription ? (
                   <button
                     onClick={() => handleDowngradeClick(tier)}
