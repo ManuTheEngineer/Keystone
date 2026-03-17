@@ -154,13 +154,16 @@ export function SettingsClient() {
         .then((data) => {
           if (data.success) {
             showToast(`Upgraded to ${data.plan} plan successfully!`, "success");
+          } else {
+            showToast("Payment received. Your plan will update shortly.", "info");
           }
+          // Wait for Firebase onValue subscription to pick up the change
+          setTimeout(() => router.replace("/settings"), 1500);
         })
         .catch(() => {
           showToast("Payment received. Your plan will update shortly.", "info");
+          setTimeout(() => router.replace("/settings"), 1500);
         });
-      // Clean URL params
-      router.replace("/settings");
     } else if (upgradeStatus === "canceled") {
       showToast("Upgrade canceled.", "info");
       router.replace("/settings");
