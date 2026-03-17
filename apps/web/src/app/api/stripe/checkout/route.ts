@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       mode: "subscription" as const,
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${request.nextUrl.origin}/settings?upgrade=success`,
+      success_url: `${request.nextUrl.origin}/settings?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${request.nextUrl.origin}/settings?upgrade=canceled`,
       metadata: { userId, planTier, billingInterval },
       subscription_data: { metadata: { userId, planTier } },

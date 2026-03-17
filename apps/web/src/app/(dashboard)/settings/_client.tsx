@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -134,9 +134,38 @@ export function SettingsClient() {
   const [resetting, setResetting] = useState(false);
   const [resetError, setResetError] = useState("");
 
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     setTopbar("Parameters");
   }, [setTopbar]);
+
+  // Verify Stripe checkout on redirect back from payment
+  useEffect(() => {
+    const upgradeStatus = searchParams.get("upgrade");
+    const sessionId = searchParams.get("session_id");
+    if (upgradeStatus === "success" && sessionId) {
+      fetch("/api/stripe/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            showToast(`Upgraded to ${data.plan} plan successfully!`, "success");
+          }
+        })
+        .catch(() => {
+          showToast("Payment received. Your plan will update shortly.", "info");
+        });
+      // Clean URL params
+      router.replace("/settings");
+    } else if (upgradeStatus === "canceled") {
+      showToast("Upgrade canceled.", "info");
+      router.replace("/settings");
+    }
+  }, [searchParams, router, showToast]);
 
   // Update form state when profile loads asynchronously
   useEffect(() => {
