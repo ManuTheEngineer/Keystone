@@ -263,6 +263,11 @@ export function OverviewClient() {
   const activeTasks = tasks.filter((t) => !t.done);
   const completedTasks = tasks.filter((t) => t.done);
 
+  // Compute real progress from tasks + phases (instead of using hardcoded project.progress)
+  const computedProgress = tasks.length > 0
+    ? Math.round((completedTasks.length / tasks.length) * 100)
+    : project.progress;
+
   const fmtCompact = (amount: number) => formatCurrencyCompact(amount, marketData.currency);
 
   // Compute phase-specific data
@@ -412,7 +417,7 @@ export function OverviewClient() {
       {/* Stat cards - always shown, collapsible for early phases */}
       <CollapsibleSection title="Your Progress" defaultOpen={phase >= 6}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1 mb-3 animate-stagger">
-          <StatCard value={`${project.progress}%`} label="Progress" />
+          <StatCard value={`${computedProgress}%`} label={tasks.length > 0 ? `${completedTasks.length}/${tasks.length} tasks` : "Progress"} />
           <StatCard
             value={fmtCompact(project.totalSpent)}
             label={`Spent of ${fmtCompact(project.totalBudget)}`}

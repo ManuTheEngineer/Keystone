@@ -68,9 +68,11 @@ import {
 interface PhotoFeedProps {
   photos: PhotoData[];
   projectId: string;
+  project: ProjectData;
+  contacts: ContactData[];
 }
 
-function PhotoFeed({ photos, projectId }: PhotoFeedProps) {
+function PhotoFeed({ photos, projectId, project, contacts }: PhotoFeedProps) {
   const [dateFilter, setDateFilter] = useState<"all" | "week" | "month">("all");
 
   const now = new Date();
@@ -167,13 +169,31 @@ function PhotoFeed({ photos, projectId }: PhotoFeedProps) {
       )}
 
       <button
-        disabled
-        className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius)] border border-dashed border-sand/40 text-[11px] text-muted opacity-60 cursor-not-allowed"
+        onClick={() => {
+          const msg = encodeURIComponent(
+            `Hi, could you send updated construction photos for the ${project.name} project? Please include photos of current progress on site. Thank you!`
+          );
+          // Try WhatsApp first, fall back to email compose
+          const firstContact = contacts.find((c) => c.whatsapp || c.phone);
+          if (firstContact?.whatsapp || firstContact?.phone) {
+            const num = (firstContact.whatsapp || firstContact.phone || "").replace(/\D/g, "");
+            window.open(`https://wa.me/${num}?text=${msg}`, "_blank");
+          } else if (firstContact?.email) {
+            window.open(`mailto:${firstContact.email}?subject=Photo Update Request - ${project.name}&body=${msg}`, "_blank");
+          } else {
+            // Copy message to clipboard as fallback
+            navigator.clipboard.writeText(decodeURIComponent(msg));
+            alert("Message copied to clipboard. Send it to your contractor via WhatsApp, SMS, or email.");
+          }
+        }}
+        className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius)] border border-sand/40 text-[11px] text-earth hover:bg-warm/50 transition-colors"
       >
         <Send size={12} />
-        Request photo update (coming soon)
+        Request photo update
       </button>
-      <p className="text-[9px] text-muted text-center mt-1">Notification features coming soon</p>
+      <p className="text-[9px] text-muted text-center mt-1">
+        {contacts.length > 0 ? "Opens WhatsApp or email to your primary contact" : "Add a contact in Team to enable requests"}
+      </p>
     </Card>
   );
 }
@@ -751,7 +771,7 @@ export function MonitorClient() {
       {/* Main content: Photo feed + Milestone tracker */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="md:col-span-3">
-          <PhotoFeed photos={photos} projectId={projectId} />
+          <PhotoFeed photos={photos} projectId={projectId} project={project} contacts={contacts} />
         </div>
         <div className="md:col-span-2">
           <MilestonePaymentTracker

@@ -493,6 +493,7 @@ export function TeamClient() {
             </div>
           </div>
         </Card>
+        </div>
       )}
       {contacts.length === 0 ? (
         <EmptyState

@@ -29,11 +29,8 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!loading && user) {
-      router.push("/dashboard");
-    }
-  }, [user, loading, router]);
+  // Don't auto-redirect — let logged-in users view landing page
+  // They can navigate to dashboard via nav button
 
   useEffect(() => {
     function handleScroll() {
@@ -84,19 +81,30 @@ export default function LandingPage() {
             >
               Learn
             </a>
-            <Link
-              href="/login"
-              className="text-[14px] text-muted hover:text-earth transition-colors"
-            >
-              Sign in
-            </Link>
+            {user ? (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center px-5 py-2 text-[14px] font-medium rounded-full btn-earth btn-hover"
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-[14px] text-muted hover:text-earth transition-colors"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center px-5 py-2 text-[14px] font-medium rounded-full btn-earth btn-hover"
+                >
+                  Start free
+                </Link>
+              </>
+            )}
             <ThemeToggle />
-            <Link
-              href="/register"
-              className="inline-flex items-center px-5 py-2 text-[14px] font-medium rounded-full btn-earth btn-hover"
-            >
-              Start free
-            </Link>
           </div>
 
           {/* Mobile hamburger */}
