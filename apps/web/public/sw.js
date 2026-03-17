@@ -1,4 +1,5 @@
-const CACHE_NAME = "keystone-v2";
+const CACHE_NAME = "keystone-v3";
+const DATA_CACHE = "keystone-data-v1";
 const PRECACHE_URLS = [
   "/",
   "/manifest.json",
@@ -16,7 +17,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME)
+          .filter((key) => key !== CACHE_NAME && key !== DATA_CACHE)
           .map((key) => caches.delete(key))
       )
     )
@@ -25,15 +26,32 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Only handle same-origin GET requests
+  // Only handle GET requests
   if (event.request.method !== "GET") return;
-  if (!event.request.url.startsWith(self.location.origin)) return;
 
-  // Skip Firebase and API calls
-  if (event.request.url.includes("firebaseio.com")) return;
-  if (event.request.url.includes("googleapis.com")) return;
-  if (event.request.url.includes("firebasestorage.app")) return;
+  const url = event.request.url;
 
+  // Firebase Realtime Database — stale-while-revalidate for offline access
+  if (url.includes("firebaseio.com") && url.includes(".json")) {
+    event.respondWith(
+      caches.open(DATA_CACHE).then((cache) =>
+        fetch(event.request)
+          .then((response) => {
+            if (response.ok) cache.put(event.request, response.clone());
+            return response;
+          })
+          .catch(() => cache.match(event.request).then((cached) =>
+            cached || new Response("{}", { headers: { "Content-Type": "application/json" } })
+          ))
+      )
+    );
+    return;
+  }
+
+  // Skip other external APIs
+  if (!url.startsWith(self.location.origin)) return;
+
+  // Same-origin: network-first with cache fallback
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -48,7 +66,6 @@ self.addEventListener("fetch", (event) => {
       .catch(() =>
         caches.match(event.request).then((cached) => {
           if (cached) return cached;
-          // Return a basic offline fallback for navigation requests
           if (event.request.mode === "navigate") {
             return caches.match("/");
           }
