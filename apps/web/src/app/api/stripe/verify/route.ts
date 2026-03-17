@@ -4,13 +4,15 @@ import { getStripeServer } from "@/lib/stripe";
 const DB_URL = "https://keystone-21811-default-rtdb.firebaseio.com";
 
 async function updateProfile(userId: string, data: Record<string, unknown>) {
-  const res = await fetch(`${DB_URL}/users/${userId}/profile.json`, {
+  const authParam = process.env.FIREBASE_DATABASE_SECRET ? `?auth=${process.env.FIREBASE_DATABASE_SECRET}` : "";
+  const res = await fetch(`${DB_URL}/users/${userId}/profile.json${authParam}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
   if (!res.ok) {
-    console.error("Firebase update failed:", await res.text());
+    const errorText = await res.text();
+    console.error("Firebase update failed:", res.status, errorText);
   }
 }
 
