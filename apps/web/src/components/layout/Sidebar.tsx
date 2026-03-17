@@ -26,6 +26,7 @@ import {
   LogOut,
   Globe,
   ChevronLeft,
+  ChevronDown,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
@@ -119,6 +120,7 @@ export function Sidebar({
     if (typeof window === "undefined") return false;
     return localStorage.getItem("keystone-sidebar-collapsed") === "true";
   });
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   // Sync with keyboard shortcut (Ctrl+B) from layout
   useEffect(() => {
@@ -200,7 +202,7 @@ export function Sidebar({
       <aside
         className={`
           fixed top-0 left-0 bottom-0 ${sidebarWidth} ${C.bg} text-[#D4A574] z-40
-          flex flex-col overflow-y-auto overflow-x-hidden
+          flex flex-col overflow-hidden
           transition-all duration-300 ease-out
           lg:translate-x-0
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
@@ -230,8 +232,8 @@ export function Sidebar({
           )}
         </div>
 
-        {/* Main navigation */}
-        <nav className="py-3">
+        {/* Main navigation — fixed at top */}
+        <nav className="py-3 shrink-0">
           {!collapsed && (
             <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium">
               Main
@@ -242,35 +244,50 @@ export function Sidebar({
 
         {/* Separator between main nav and project nav */}
         {projectName && (
-          <div className="mx-5 h-px bg-gradient-to-r from-transparent via-[#D4A574]/15 to-transparent" />
+          <div className="mx-5 h-px bg-gradient-to-r from-transparent via-[#D4A574]/15 to-transparent shrink-0" />
         )}
 
-        {/* Project navigation */}
+        {/* Project navigation — scrollable middle section */}
         {projectName && (
-          <nav className="py-3">
+          <nav className="py-3 flex-1 min-h-0 overflow-y-auto overflow-x-hidden sidebar-scroll">
             {!collapsed && (
               <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium truncate">
                 {projectName}
               </p>
             )}
-            {projectNavGroups.map((group) => (
-              <div key={group.label}>
-                {!collapsed && (
-                  <p className="px-5 mt-3 mb-1 text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium">
-                    {group.label}
-                  </p>
-                )}
-                {group.items.map((itemId) => {
-                  const item = projectNavMap.get(itemId);
-                  return item ? renderNavItem(item) : null;
-                })}
-              </div>
-            ))}
+            {projectNavGroups.map((group) => {
+              const isGroupOpen = !collapsedGroups.has(group.label);
+              return (
+                <div key={group.label}>
+                  {!collapsed && (
+                    <button
+                      onClick={() => setCollapsedGroups((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(group.label)) next.delete(group.label);
+                        else next.add(group.label);
+                        return next;
+                      })}
+                      className="w-full px-5 mt-3 mb-1 flex items-center justify-between text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium hover:text-[#D4A574]/50 transition-colors"
+                    >
+                      {group.label}
+                      <ChevronDown
+                        size={12}
+                        className={`transition-transform duration-200 ${isGroupOpen ? "" : "-rotate-90"}`}
+                      />
+                    </button>
+                  )}
+                  {(collapsed || isGroupOpen) && group.items.map((itemId) => {
+                    const item = projectNavMap.get(itemId);
+                    return item ? renderNavItem(item) : null;
+                  })}
+                </div>
+              );
+            })}
           </nav>
         )}
 
-        {/* Spacer */}
-        <div className="flex-1" />
+        {/* Spacer when no project nav */}
+        {!projectName && <div className="flex-1" />}
 
         {/* Language indicator */}
         {showLangBadge && (
