@@ -367,8 +367,17 @@ export function SettingsClient() {
   async function handleRevokeTrialCode(code: string) {
     setRevokingCode(code);
     try {
-      await revokeTrialCode(code);
-      showToast("Trial code revoked.", "success");
+      const result = await revokeTrialCode(code);
+      if (result.warning) {
+        showToast(`Code revoked. ${result.warning}`, "info");
+      } else {
+        showToast(
+          result.revokedUsers > 0
+            ? `Trial code revoked. ${result.revokedUsers} user(s) downgraded to Foundation.`
+            : "Trial code revoked.",
+          "success"
+        );
+      }
     } catch {
       showToast("Failed to revoke code.", "error");
     } finally {
@@ -684,7 +693,7 @@ export function SettingsClient() {
             return (
               <div
                 key={tier}
-                className={`relative p-4 rounded-2xl border transition-shadow ${
+                className={`relative p-4 rounded-2xl border transition-shadow flex flex-col ${
                   isCurrent
                     ? "border-success/40 bg-success/5 shadow-sm"
                     : isDeveloper
@@ -712,7 +721,7 @@ export function SettingsClient() {
                   </p>
                 )}
 
-                <ul className="space-y-1.5 mb-4">
+                <ul className="space-y-1.5 mb-4 flex-1">
                   {features.map((f, i) => (
                     <li key={i} className="flex items-start gap-1.5 text-[10px] text-muted">
                       <Check size={10} className="text-success mt-0.5 shrink-0" />

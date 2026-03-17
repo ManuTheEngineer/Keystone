@@ -139,33 +139,20 @@ export function subscribeToTrialCodes(
 }
 
 // Revoke a trial code and revert all users who redeemed it (admin only)
-export async function revokeTrialCode(code: string): Promise<void> {
-  // Get the code data to find users who redeemed it
-  const codeSnap = await get(ref(db, `trialCodes/${code}`));
-  if (codeSnap.exists()) {
-    const codeData = codeSnap.val();
-    const usedBy: string[] = codeData.usedBy || [];
-    // Revert each user who used this code back to Foundation
-    // (only if they're still on a trial, not if they've since paid)
-    for (const uid of usedBy) {
-      const profileSnap = await get(ref(db, `users/${uid}/profile`));
-      if (profileSnap.exists()) {
-        const profile = profileSnap.val();
-        if (profile.subscriptionStatus === "trialing" && profile.trialCodeUsed === code) {
-          await update(ref(db, `users/${uid}/profile`), {
-            plan: "FOUNDATION",
-            trialExpiresAt: null,
-            trialCodeUsed: null,
-            subscriptionStatus: null,
-          });
-        }
-      }
-    }
-  }
-  // Mark the code as revoked
-  await update(ref(db, `trialCodes/${code}`), {
-    revokedAt: new Date().toISOString(),
+// Uses an API route to bypass Firebase security rules for cross-user writes
+export async function revokeTrialCode(
+  code: string
+): Promise<{ revokedUsers: number; warning?: string }> {
+  const res = await fetch("/api/stripe/revoke-trial", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
   });
+  const data = await res.json();
+  if (!res.ok && res.status !== 207) {
+    throw new Error(data.error || "Failed to revoke trial code");
+  }
+  return { revokedUsers: data.revokedUsers, warning: data.warning };
 }
 
 // Check if user's trial has expired and revert to Foundation

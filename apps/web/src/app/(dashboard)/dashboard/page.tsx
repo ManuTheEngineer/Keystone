@@ -858,86 +858,148 @@ export default function DashboardPage() {
   /* ================================================================ */
 
   if (!hasProjects) {
+    const JOURNEY_PHASES = [
+      { label: "Define", icon: Lightbulb },
+      { label: "Finance", icon: DollarSign },
+      { label: "Design", icon: ClipboardCheck },
+      { label: "Build", icon: FolderOpen },
+      { label: "Operate", icon: CheckCircle2 },
+    ];
+
     return (
       <>
         {showTour && tourChecked && (
           <OnboardingTour onComplete={handleTourComplete} />
         )}
 
-        <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-16 animate-fade-in">
-          <KeystoneHouseIllustration />
-          <h1
-            className="text-[28px] text-earth mb-3 leading-tight"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
-            Your development journey starts here
-          </h1>
-          <p className="text-[14px] text-muted mb-8 leading-relaxed max-w-md">
-            Keystone guides you through every phase of building a property, from
-            initial concept through financing, construction, and operations.
-          </p>
-
-          <p className="text-[13px] text-earth font-medium mb-4">Not sure where to start? We recommend this:</p>
-
-          <div className="w-full max-w-lg mb-4">
-            <Link
-              href="/learn"
-              className="bg-surface border-2 border-emerald-300 rounded-xl p-6 text-left card-hover group block shadow-sm"
+        <div className="animate-fade-in">
+          {/* Hero greeting */}
+          <div className="mb-8">
+            <h1
+              className="text-[28px] text-earth leading-tight"
+              style={{ fontFamily: "var(--font-heading)" }}
             >
-              <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-4">
-                <BookOpen size={24} className="text-clay" />
-              </div>
-              <div className="flex items-center gap-2 mb-1">
-                <div
-                  className="text-[16px] text-earth"
-                  style={{ fontFamily: "var(--font-heading)" }}
-                >
-                  Learn the Fundamentals
-                </div>
-                <Badge variant="emerald">Recommended</Badge>
-              </div>
-              <p className="text-[12px] text-muted leading-relaxed">
-                New to construction? Start here. Learn the basics of building, financing, and managing a construction project before you invest a dollar.
-              </p>
-            </Link>
+              {getGreeting()}, {firstName}
+            </h1>
+            <p className="text-[13px] text-muted mt-1">{getFormattedDate()}</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg mb-6">
+          {/* Journey progress teaser */}
+          <div className="bg-surface border border-border rounded-2xl p-5 mb-6 shadow-[0_1px_3px_rgba(44,24,16,0.04)]">
+            <p className="text-[11px] font-medium text-muted uppercase tracking-wider mb-4">Your building journey</p>
+            <div className="flex items-center justify-between gap-1">
+              {JOURNEY_PHASES.map((phase, i) => {
+                const Icon = phase.icon;
+                return (
+                  <div key={phase.label} className="flex items-center flex-1">
+                    <div className="flex flex-col items-center flex-1">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                        i === 0 ? "bg-clay/10 border-2 border-clay" : "bg-surface-alt border border-border"
+                      }`}>
+                        <Icon size={16} className={i === 0 ? "text-clay" : "text-muted/50"} />
+                      </div>
+                      <span className={`text-[10px] mt-1.5 font-medium ${
+                        i === 0 ? "text-clay" : "text-muted/50"
+                      }`}>{phase.label}</span>
+                    </div>
+                    {i < JOURNEY_PHASES.length - 1 && (
+                      <div className="h-px flex-1 bg-border mx-1 mt-[-14px]" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-muted mt-4 text-center">
+              Create your first project to begin tracking progress across all phases.
+            </p>
+          </div>
+
+          {/* Main action cards */}
+          <SectionLabel>Get started</SectionLabel>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2 mb-6">
+            {/* Learn */}
             <Link
-              href="/new-project"
-              className="bg-surface border border-border rounded-xl p-6 text-left card-hover group block"
+              href="/learn"
+              className="bg-surface border-2 border-emerald-300/70 rounded-2xl p-5 text-left card-hover group block shadow-[0_1px_3px_rgba(44,24,16,0.04)] relative overflow-hidden"
             >
-              <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-4">
-                <TrendingUp size={24} className="text-clay" />
+              <div className="absolute top-3 right-3">
+                <Badge variant="emerald">Recommended</Badge>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mb-3">
+                <BookOpen size={20} className="text-emerald-600" />
               </div>
               <div
-                className="text-[16px] text-earth mb-1"
+                className="text-[15px] text-earth mb-1"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                Learn the Fundamentals
+              </div>
+              <p className="text-[11px] text-muted leading-relaxed">
+                New to construction? Start here. Learn the basics of building, financing, and project management.
+              </p>
+              <div className="flex items-center gap-1 mt-3 text-[11px] text-emerald-600 font-medium group-hover:gap-2 transition-all">
+                Start learning <ArrowRight size={12} />
+              </div>
+            </Link>
+
+            {/* Evaluate */}
+            <Link
+              href="/new-project"
+              className="bg-surface border border-border rounded-2xl p-5 text-left card-hover group block shadow-[0_1px_3px_rgba(44,24,16,0.04)]"
+            >
+              <div className="w-10 h-10 rounded-xl bg-warm flex items-center justify-center mb-3">
+                <TrendingUp size={20} className="text-clay" />
+              </div>
+              <div
+                className="text-[15px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
                 Evaluate a Deal
               </div>
-              <p className="text-[12px] text-muted leading-relaxed">
-                Analyze a property opportunity with market-specific cost benchmarks and financial modeling, then create your project.
+              <p className="text-[11px] text-muted leading-relaxed">
+                Analyze a property opportunity with market-specific cost benchmarks and financial modeling.
               </p>
+              <div className="flex items-center gap-1 mt-3 text-[11px] text-clay font-medium group-hover:gap-2 transition-all">
+                Run analysis <ArrowRight size={12} />
+              </div>
             </Link>
 
+            {/* Create project */}
             <Link
               href="/new-project?skip=true"
-              className="bg-surface border border-border rounded-xl p-6 text-left card-hover group block"
+              className="bg-surface border border-border rounded-2xl p-5 text-left card-hover group block shadow-[0_1px_3px_rgba(44,24,16,0.04)]"
             >
-              <div className="w-12 h-12 rounded-full bg-warm flex items-center justify-center mb-4">
-                <Plus size={24} className="text-clay" />
+              <div className="w-10 h-10 rounded-xl bg-warm flex items-center justify-center mb-3">
+                <Plus size={20} className="text-clay" />
               </div>
               <div
-                className="text-[16px] text-earth mb-1"
+                className="text-[15px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
                 I Have a Project in Mind
               </div>
-              <p className="text-[12px] text-muted leading-relaxed">
-                Already know what you want to build? Jump straight into project setup and start tracking your build.
+              <p className="text-[11px] text-muted leading-relaxed">
+                Already know what you want to build? Jump straight into project setup and start tracking.
               </p>
+              <div className="flex items-center gap-1 mt-3 text-[11px] text-clay font-medium group-hover:gap-2 transition-all">
+                Create project <ArrowRight size={12} />
+              </div>
             </Link>
+          </div>
+
+          {/* Quick facts */}
+          <div className="bg-surface border border-border rounded-2xl p-5 shadow-[0_1px_3px_rgba(44,24,16,0.04)]">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-warm flex items-center justify-center shrink-0 mt-0.5">
+                <Lightbulb size={16} className="text-clay" />
+              </div>
+              <div>
+                <p className="text-[12px] font-medium text-earth mb-1">Did you know?</p>
+                <p className="text-[11px] text-muted leading-relaxed">
+                  Keystone supports both U.S. and West African construction markets. Whether you are building with wood-frame in the States or reinforced concrete block in Togo, Ghana, or Benin, every tool adapts to your market — from cost benchmarks to inspection checklists.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </>
