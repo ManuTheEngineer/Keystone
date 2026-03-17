@@ -10,6 +10,7 @@ import { WifiOff, Clock, Mail } from "lucide-react";
 import Link from "next/link";
 import { checkAndRevertExpiredTrial } from "@/lib/services/trial-service";
 import { usePWA } from "@/lib/hooks/use-pwa";
+import { useToast } from "@/components/ui/Toast";
 import { signOut, resendVerificationEmail } from "@/lib/services/auth-service";
 import { subscribeToUserProjects, subscribeToPunchListItems, subscribeToTasks, subscribeToDailyLogs, type ProjectData, type PunchListItemData, type TaskData, type DailyLogData } from "@/lib/services/project-service";
 import { LocaleContext } from "@/lib/hooks/use-locale";
@@ -67,6 +68,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { isOnline } = usePWA();
+  const { showToast } = useToast();
+  const [dismissedVerifyBanner, setDismissedVerifyBanner] = useState(false);
   const { user, profile } = useAuth();
 
   // Check and revert expired trials
@@ -297,17 +300,39 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   You are offline. Changes will sync when connection is restored.
                 </div>
               )}
-              {user && !user.emailVerified && (
+              {user && !user.emailVerified && !dismissedVerifyBanner && (
                 <div className="mx-5 mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warning-bg border border-warning/20 text-[12px]">
                   <Mail size={14} className="text-warning shrink-0" />
                   <span className="text-earth">
                     Please verify your email address. Check your inbox for a confirmation link.
                   </span>
                   <button
-                    onClick={() => resendVerificationEmail().catch(() => {})}
+                    onClick={async () => {
+                      try {
+                        await resendVerificationEmail();
+                        showToast("Verification email sent. Check your inbox.", "success");
+                      } catch {
+                        showToast("Could not send verification email. Try again later.", "error");
+                      }
+                    }}
                     className="ml-auto text-[11px] font-medium text-clay hover:text-earth transition-colors shrink-0"
                   >
                     Resend
+                  </button>
+                  <button
+                    onClick={async () => {
+                      // Refresh the user's token to check if they verified
+                      await user.reload();
+                      if (user.emailVerified) {
+                        showToast("Email verified.", "success");
+                        setDismissedVerifyBanner(true);
+                      } else {
+                        setDismissedVerifyBanner(true);
+                      }
+                    }}
+                    className="text-[11px] text-muted hover:text-earth transition-colors shrink-0"
+                  >
+                    Dismiss
                   </button>
                 </div>
               )}
