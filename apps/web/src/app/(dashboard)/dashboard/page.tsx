@@ -914,75 +914,55 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Main action cards */}
+          {/* Action cards — 2-column */}
           <SectionLabel>Get started</SectionLabel>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 mb-6">
             {/* Learn */}
             <Link
               href="/learn"
-              className="bg-surface border-2 border-emerald-300/70 rounded-2xl p-5 text-left card-hover group block shadow-[0_1px_3px_rgba(44,24,16,0.04)] relative overflow-hidden"
+              className="bg-surface border border-border rounded-2xl p-6 text-left card-hover group block shadow-[0_1px_3px_rgba(44,24,16,0.04)] relative overflow-hidden"
             >
-              <div className="absolute top-3 right-3">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center">
+                  <BookOpen size={22} className="text-emerald-600" />
+                </div>
                 <Badge variant="emerald">Recommended</Badge>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mb-3">
-                <BookOpen size={20} className="text-emerald-600" />
-              </div>
               <div
-                className="text-[15px] text-earth mb-1"
+                className="text-[17px] text-earth mb-1.5"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
                 Learn the Fundamentals
               </div>
-              <p className="text-[11px] text-muted leading-relaxed">
-                New to construction? Start here. Learn the basics of building, financing, and project management.
+              <p className="text-[12px] text-muted leading-relaxed mb-4">
+                New to construction? Start here. Learn the basics of building, financing, and managing a project before you invest a dollar.
               </p>
-              <div className="flex items-center gap-1 mt-3 text-[11px] text-emerald-600 font-medium group-hover:gap-2 transition-all">
-                Start learning <ArrowRight size={12} />
+              <div className="flex items-center gap-1.5 text-[12px] text-emerald-600 font-medium group-hover:gap-2.5 transition-all">
+                Start learning <ArrowRight size={13} />
               </div>
             </Link>
 
-            {/* Evaluate */}
+            {/* Start a project */}
             <Link
               href="/new-project"
-              className="bg-surface border border-border rounded-2xl p-5 text-left card-hover group block shadow-[0_1px_3px_rgba(44,24,16,0.04)]"
+              className="bg-surface border border-border rounded-2xl p-6 text-left card-hover group block shadow-[0_1px_3px_rgba(44,24,16,0.04)]"
             >
-              <div className="w-10 h-10 rounded-xl bg-warm flex items-center justify-center mb-3">
-                <TrendingUp size={20} className="text-clay" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-11 h-11 rounded-xl bg-warm flex items-center justify-center">
+                  <Plus size={22} className="text-clay" />
+                </div>
               </div>
               <div
-                className="text-[15px] text-earth mb-1"
+                className="text-[17px] text-earth mb-1.5"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                Evaluate a Deal
+                Start a Project
               </div>
-              <p className="text-[11px] text-muted leading-relaxed">
-                Analyze a property opportunity with market-specific cost benchmarks and financial modeling.
+              <p className="text-[12px] text-muted leading-relaxed mb-4">
+                Set up your first build with market-specific cost benchmarks, financial modeling, and a step-by-step project tracker.
               </p>
-              <div className="flex items-center gap-1 mt-3 text-[11px] text-clay font-medium group-hover:gap-2 transition-all">
-                Run analysis <ArrowRight size={12} />
-              </div>
-            </Link>
-
-            {/* Create project */}
-            <Link
-              href="/new-project?skip=true"
-              className="bg-surface border border-border rounded-2xl p-5 text-left card-hover group block shadow-[0_1px_3px_rgba(44,24,16,0.04)]"
-            >
-              <div className="w-10 h-10 rounded-xl bg-warm flex items-center justify-center mb-3">
-                <Plus size={20} className="text-clay" />
-              </div>
-              <div
-                className="text-[15px] text-earth mb-1"
-                style={{ fontFamily: "var(--font-heading)" }}
-              >
-                I Have a Project in Mind
-              </div>
-              <p className="text-[11px] text-muted leading-relaxed">
-                Already know what you want to build? Jump straight into project setup and start tracking.
-              </p>
-              <div className="flex items-center gap-1 mt-3 text-[11px] text-clay font-medium group-hover:gap-2 transition-all">
-                Create project <ArrowRight size={12} />
+              <div className="flex items-center gap-1.5 text-[12px] text-clay font-medium group-hover:gap-2.5 transition-all">
+                Create project <ArrowRight size={13} />
               </div>
             </Link>
           </div>
