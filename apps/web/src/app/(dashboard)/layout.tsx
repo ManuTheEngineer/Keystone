@@ -298,8 +298,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </div>
               )}
               {user && !user.emailVerified && (
-                <div className="mx-5 mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warm border border-sand/30 text-[12px]">
-                  <Mail size={14} className="text-clay shrink-0" />
+                <div className="mx-5 mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warning-bg border border-warning/20 text-[12px]">
+                  <Mail size={14} className="text-warning shrink-0" />
                   <span className="text-earth">
                     Please verify your email address. Check your inbox for a confirmation link.
                   </span>

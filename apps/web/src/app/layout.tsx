@@ -5,7 +5,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "",
+  title: "Keystone",
   description:
     "Construction project lifecycle management for owner-builders. Guides you from initial idea through financing, design, construction, and occupancy.",
   openGraph: {
@@ -43,8 +43,6 @@ export const viewport: Viewport = {
   themeColor: "#2C1810",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export default function RootLayout({

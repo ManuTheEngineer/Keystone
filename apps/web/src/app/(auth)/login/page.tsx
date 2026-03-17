@@ -100,6 +100,7 @@ export default function LoginPage() {
             <div className="mb-8">
               <h1
                 className="text-[28px] text-earth leading-tight"
+                style={{ fontFamily: "var(--font-heading)" }}
               >
                 Welcome back
               </h1>

@@ -153,15 +153,17 @@ export default function RegisterPage() {
                   className="w-full px-4 py-3.5 text-[14px] border border-border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
                   placeholder="Min. 6 characters"
                 />
-                {password.length === 0 ? (
-                  <p className="text-[11px] text-muted/60 mt-1.5">Minimum 6 characters</p>
-                ) : password.length < 6 ? (
-                  <p className="text-[11px] text-danger mt-1.5">Too short — need at least 6 characters</p>
-                ) : password.length < 10 ? (
-                  <p className="text-[11px] text-warning mt-1.5">Fair — consider adding numbers or symbols for a stronger password</p>
-                ) : (
-                  <p className="text-[11px] text-success mt-1.5">Strong password</p>
-                )}
+                <div className="h-5 mt-1.5">
+                  {password.length === 0 ? (
+                    <p className="text-[11px] text-muted/60">Minimum 6 characters</p>
+                  ) : password.length < 6 ? (
+                    <p className="text-[11px] text-danger">Too short — {6 - password.length} more needed</p>
+                  ) : password.length < 10 ? (
+                    <p className="text-[11px] text-warning">Fair — add numbers or symbols for a stronger password</p>
+                  ) : (
+                    <p className="text-[11px] text-success">Strong password</p>
+                  )}
+                </div>
               </div>
 
               <label className="flex items-start gap-2.5 text-[12px] text-muted">
