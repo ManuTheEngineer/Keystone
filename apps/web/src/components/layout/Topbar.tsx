@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Menu } from "lucide-react";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import type { AppNotification } from "@/lib/notifications";
@@ -21,7 +22,7 @@ const badgeStyles = {
   danger: "bg-danger/10 text-danger border border-danger/20",
 };
 
-export function Topbar({
+export const Topbar = memo(function Topbar({
   title,
   badge,
   badgeVariant = "info",
@@ -58,4 +59,4 @@ export function Topbar({
       </div>
     </header>
   );
-}
+});

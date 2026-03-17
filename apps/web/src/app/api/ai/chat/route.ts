@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuth, isAuthError } from "@/lib/api-auth";
 
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 
@@ -26,34 +27,9 @@ function checkRateLimit(ip: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  // Verify Firebase ID token from Authorization header
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const idToken = authHeader.split("Bearer ")[1];
-
-  // Verify Firebase ID token using Google's tokeninfo endpoint
-  // This validates the signature, audience, expiry, and issuer server-side
-  try {
-    const verifyRes = await fetch(
-      `https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? ""}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      }
-    );
-    if (!verifyRes.ok) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    const verifyData = await verifyRes.json();
-    if (!verifyData.users || verifyData.users.length === 0) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-  } catch {
-    return NextResponse.json({ error: "Token verification failed" }, { status: 401 });
-  }
+  // Verify Firebase ID token via shared auth helper
+  const authResult = await verifyAuth(req);
+  if (isAuthError(authResult)) return authResult;
 
   // Rate limit by IP
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";

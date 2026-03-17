@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import { Bell, X, Check } from "lucide-react";
 import type { AppNotification } from "@/lib/notifications";
 
@@ -37,7 +37,7 @@ function formatNotificationTime(timestamp: string): string {
   return `${diffDays}d ago`;
 }
 
-export function NotificationBell({ notifications, onDismiss, onDismissAll }: NotificationBellProps) {
+export const NotificationBell = memo(function NotificationBell({ notifications, onDismiss, onDismissAll }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -171,4 +171,4 @@ export function NotificationBell({ notifications, onDismiss, onDismissAll }: Not
       )}
     </div>
   );
-}
+});

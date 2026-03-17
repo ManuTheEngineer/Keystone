@@ -3,6 +3,7 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
   onAuthStateChanged,
   type User,
@@ -53,7 +54,17 @@ export async function registerUser(
 
   await set(ref(db, `users/${user.uid}/profile`), profile);
 
+  // Send email verification (non-blocking — don't fail registration if it errors)
+  try { await sendEmailVerification(user); } catch {}
+
   return user;
+}
+
+export async function resendVerificationEmail(): Promise<void> {
+  const user = auth.currentUser;
+  if (user && !user.emailVerified) {
+    await sendEmailVerification(user);
+  }
 }
 
 export async function signIn(email: string, password: string): Promise<User> {
