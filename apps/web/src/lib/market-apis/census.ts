@@ -18,10 +18,10 @@ export const NATIONAL_MEDIANS = {
 
 export async function fetchCensusDataByZip(zip: string): Promise<CensusData | null> {
   const key = process.env.CENSUS_API_KEY;
-  if (!key) return null;
-
+  // Census API works without key (500 req/day limit) — key just raises the limit
   const vars = "B25077_001E,B25064_001E,B25103_001E,B25001_001E,B25018_001E";
-  const url = `${CENSUS_BASE}?get=${vars}&for=zip%20code%20tabulation%20area:${zip}&key=${key}`;
+  const keyParam = key ? `&key=${key}` : "";
+  const url = `${CENSUS_BASE}?get=${vars}&for=zip+code+tabulation+area:${zip}${keyParam}`;
 
   try {
     const res = await fetch(url);
