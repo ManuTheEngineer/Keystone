@@ -1055,6 +1055,46 @@ export function SettingsClient() {
       )}
 
       {/* ================================================================= */}
+      {/* Admin: Market Data Cache Management                                */}
+      {/* ================================================================= */}
+      {isAdmin && (
+        <>
+          <SectionLabel>Market Data Cache</SectionLabel>
+          <Card padding="md" className="mb-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
+                <Database size={20} className="text-clay" />
+              </div>
+              <div>
+                <p className="text-[13px] font-medium text-earth">Location Data Cache</p>
+                <p className="text-[11px] text-muted">Census, HUD, BLS, and FRED data cached for 7-30 days</p>
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                try {
+                  const { getAuthHeaders } = await import("@/lib/api-client");
+                  const headers = await getAuthHeaders();
+                  const res = await fetch("/api/location-data/clear-cache/", { method: "POST", headers });
+                  const data = await res.json();
+                  if (data.success) {
+                    showToast("Location cache cleared. Next lookups will fetch fresh data.", "success");
+                  } else {
+                    showToast(data.error || "Failed to clear cache.", "error");
+                  }
+                } catch {
+                  showToast("Failed to clear cache.", "error");
+                }
+              }}
+              className="px-4 py-2 text-[12px] font-medium border border-warning text-warning rounded-xl hover:bg-warning/5 transition-colors"
+            >
+              Clear all cached location data
+            </button>
+          </Card>
+        </>
+      )}
+
+      {/* ================================================================= */}
       {/* Admin Trial Code Management                                        */}
       {/* ================================================================= */}
       {isAdmin && (

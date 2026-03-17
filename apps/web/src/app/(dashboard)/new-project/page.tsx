@@ -877,9 +877,31 @@ export default function NewProjectPage() {
                 </p>
               )}
               {locationSource && (
-                <p className="text-[9px] text-emerald-600/50 mb-2">
-                  Source: {locationSource === "api" ? "Live data (Census/HUD/BLS)" : locationSource === "cache" ? "Cached data" : locationSource === "curated+cpi" ? "Curated + CPI adjusted" : "Static estimates"}
-                </p>
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="text-[9px] text-emerald-600/50">
+                    {locationSource === "api" ? "Live data (Census/HUD/BLS)" : locationSource === "cache" ? "Cached data" : locationSource === "curated+cpi" ? "Curated + CPI adjusted" : "Static estimates"}
+                  </p>
+                  {(locationSource === "cache" || locationSource === "static" || locationSource === "stale-cache") && (
+                    <button
+                      onClick={async () => {
+                        setLocationLoading(true);
+                        try {
+                          const res = await fetch(`/api/location-data?q=${encodeURIComponent(state.city.trim())}&market=${state.market}&fresh=1`);
+                          if (res.ok) {
+                            const json = await res.json();
+                            if (json.data) {
+                              setLocationData(json.data);
+                              setLocationSource(json.source ?? "unknown");
+                            }
+                          }
+                        } catch {} finally { setLocationLoading(false); }
+                      }}
+                      className="text-[9px] text-emerald-600 hover:text-emerald-800 underline transition-colors"
+                    >
+                      Refresh
+                    </button>
+                  )}
+                </div>
               )}
               <div className="space-y-2 text-[11px] text-emerald-800">
                 <div className="flex justify-between">

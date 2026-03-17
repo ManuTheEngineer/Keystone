@@ -84,6 +84,7 @@ export function FinancialsClient() {
   const [loanDebts, setLoanDebts] = useState("450");
   const [loanDown, setLoanDown] = useState("20");
   const [loanRate, setLoanRate] = useState("7.25");
+  const [liveRate, setLiveRate] = useState<number | null>(null);
   const [loanTerm, setLoanTerm] = useState("30");
   const [loanResult, setLoanResult] = useState<ReturnType<typeof calculateLoanQualification> | null>(null);
 
@@ -132,6 +133,20 @@ export function FinancialsClient() {
       );
     }
   }, [project, setTopbar]);
+
+  // Fetch live 30-year mortgage rate from FRED
+  useEffect(() => {
+    if (project?.market !== "USA") return;
+    fetch("/api/location-data/mortgage-rate/")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.rate) {
+          setLiveRate(data.rate);
+          setLoanRate(String(data.rate));
+        }
+      })
+      .catch(() => {});
+  }, [project?.market]);
 
   // ---------------------------------------------------------------------------
   // Guard
@@ -502,7 +517,7 @@ export function FinancialsClient() {
                   className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full font-data"
                 />
                 <p className="text-[10px] text-muted mt-0.5">
-                  Annual mortgage interest rate offered by lender
+                  {liveRate ? `Current 30-year fixed: ${liveRate}% (FRED/Freddie Mac)` : "Annual mortgage interest rate offered by lender"}
                 </p>
               </div>
               <div>

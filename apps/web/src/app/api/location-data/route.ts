@@ -12,6 +12,7 @@ import type { LocationData } from "@keystone/market-data";
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";
   const market = (request.nextUrl.searchParams.get("market") ?? "USA").toUpperCase();
+  const fresh = request.nextUrl.searchParams.get("fresh") === "1";
 
   if (!q) {
     return NextResponse.json({ error: "Missing query parameter" }, { status: 400 });
@@ -90,10 +91,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: staticData, source: "static" });
   }
 
-  // Check cache
-  const cached = await cacheGet<LocationData>("location", zip);
-  if (cached) {
-    return NextResponse.json({ data: cached, source: "cache" });
+  // Check cache (skip if fresh=1 requested)
+  if (!fresh) {
+    const cached = await cacheGet<LocationData>("location", zip);
+    if (cached) {
+      return NextResponse.json({ data: cached, source: "cache" });
+    }
   }
 
   // Determine state + CBSA
