@@ -6,6 +6,20 @@ export const runtime = "nodejs";
 
 const DB_URL = "https://keystone-21811-default-rtdb.firebaseio.com";
 
+// Map Stripe Price IDs to plan tiers — authoritative source of truth
+const PRICE_TO_TIER: Record<string, string> = {
+  [process.env.NEXT_PUBLIC_STRIPE_BUILDER_MONTHLY ?? ""]: "BUILDER",
+  [process.env.NEXT_PUBLIC_STRIPE_BUILDER_ANNUAL ?? ""]: "BUILDER",
+  [process.env.NEXT_PUBLIC_STRIPE_DEVELOPER_MONTHLY ?? ""]: "DEVELOPER",
+  [process.env.NEXT_PUBLIC_STRIPE_DEVELOPER_ANNUAL ?? ""]: "DEVELOPER",
+  [process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_MONTHLY ?? ""]: "ENTERPRISE",
+  [process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_ANNUAL ?? ""]: "ENTERPRISE",
+};
+
+function tierFromPriceId(priceId: string): string | null {
+  return PRICE_TO_TIER[priceId] || null;
+}
+
 // Update user profile via Firebase REST API (no client SDK needed in serverless)
 async function updateProfile(userId: string, data: Record<string, unknown>) {
   const authParam = process.env.FIREBASE_DATABASE_SECRET ? `?auth=${process.env.FIREBASE_DATABASE_SECRET}` : "";
@@ -41,8 +55,22 @@ export async function POST(request: NextRequest) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.userId;
-        const planTier = session.metadata?.planTier;
         const billingInterval = session.metadata?.billingInterval;
+
+        // Determine the plan tier from the actual Price ID (not metadata)
+        let planTier: string | null = null;
+        if (session.subscription) {
+          try {
+            const sub = await getStripeServer().subscriptions.retrieve(session.subscription as string) as any;
+            const priceId = sub.items?.data?.[0]?.price?.id;
+            if (priceId) planTier = tierFromPriceId(priceId);
+          } catch {
+            // Fall through to metadata
+          }
+        }
+        // Fallback to metadata only if price lookup fails
+        if (!planTier) planTier = session.metadata?.planTier ?? null;
+
         if (userId && planTier) {
           await updateProfile(userId, {
             plan: planTier,

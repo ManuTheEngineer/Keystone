@@ -90,7 +90,13 @@ export async function redeemTrialCode(
   }
 
   // Check if user already used this code
-  const usedBy = data.usedBy || [];
+  // Firebase may store arrays as objects with numeric keys — normalize
+  const rawUsedBy = data.usedBy;
+  const usedBy: string[] = !rawUsedBy
+    ? []
+    : Array.isArray(rawUsedBy)
+    ? rawUsedBy
+    : Object.values(rawUsedBy as Record<string, string>);
   if (usedBy.includes(userId)) {
     return { success: false, error: "You have already used this code." };
   }
@@ -168,6 +174,9 @@ export async function checkAndRevertExpiredTrial(userId: string): Promise<boolea
   if (profile.subscriptionStatus !== "trialing") return false;
 
   if (new Date(profile.trialExpiresAt) < new Date()) {
+    // Don't revert if user has since paid for a subscription
+    if (profile.stripeSubscriptionId) return false;
+
     await update(profileRef, {
       plan: "FOUNDATION",
       trialExpiresAt: null,
