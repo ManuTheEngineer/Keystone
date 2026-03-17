@@ -28,6 +28,8 @@ import {
   Copy,
   Trash2,
   Crown,
+  Upload,
+  Image,
 } from "lucide-react";
 import { PLAN_CONFIG, formatPrice, getAnnualSavings, type PlanTier, type BillingInterval } from "@/lib/stripe-config";
 import { getAuthHeaders } from "@/lib/api-client";
@@ -945,6 +947,75 @@ export function SettingsClient() {
           </div>
         )}
       </Card>
+
+      {/* ================================================================= */}
+      {/* Enterprise Logo Upload                                             */}
+      {/* ================================================================= */}
+      {currentPlan === "ENTERPRISE" && (
+        <>
+          <SectionLabel>Organization Branding</SectionLabel>
+          <Card padding="md" className="mb-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
+                <Image size={20} className="text-clay" />
+              </div>
+              <div>
+                <p className="text-[13px] font-medium text-earth">Organization Logo</p>
+                <p className="text-[11px] text-muted">Your logo will appear on all exported reports and presentations</p>
+              </div>
+            </div>
+
+            {profile?.orgLogo ? (
+              <div className="flex items-center gap-4 p-3 border border-border rounded-xl bg-surface-alt">
+                <img
+                  src={profile.orgLogo}
+                  alt="Organization logo"
+                  className="max-h-12 max-w-[160px] object-contain"
+                />
+                <div className="flex-1">
+                  <p className="text-[11px] text-success font-medium">Logo uploaded</p>
+                  <p className="text-[10px] text-muted">Appears on all exports</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!user) return;
+                    await update(ref(db, `users/${user.uid}/profile`), { orgLogo: null });
+                    showToast("Logo removed.", "success");
+                  }}
+                  className="px-3 py-1.5 text-[11px] border border-border text-muted rounded-lg hover:text-danger hover:border-danger transition-colors"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-clay/40 hover:bg-warm/30 transition-colors">
+                <Upload size={24} className="text-muted" />
+                <span className="text-[12px] text-muted">Click to upload logo (PNG or SVG, max 500KB)</span>
+                <input
+                  type="file"
+                  accept="image/png,image/svg+xml"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !user) return;
+                    if (file.size > 500 * 1024) {
+                      showToast("Logo must be under 500KB.", "error");
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                      const dataUrl = reader.result as string;
+                      await update(ref(db, `users/${user.uid}/profile`), { orgLogo: dataUrl });
+                      showToast("Logo uploaded.", "success");
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </label>
+            )}
+          </Card>
+        </>
+      )}
 
       {/* ================================================================= */}
       {/* Trial Code Redemption (non-admin users)                            */}
