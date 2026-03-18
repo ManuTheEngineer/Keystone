@@ -32,6 +32,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [market, setMarket] = useState("USA");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -81,7 +82,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await registerUser(email.trim().toLowerCase(), password, name.trim());
+      await registerUser(email.trim().toLowerCase(), password, name.trim(), market);
       router.push("/dashboard");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Registration failed";
@@ -199,6 +200,34 @@ export default function RegisterPage() {
                     <p className="text-[11px] text-success">{t("auth.strong", browserLocale)}</p>
                   )}
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[13px] font-medium text-earth mb-1.5">
+                  Where are you building?
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { id: "USA", label: "USA", flag: "US" },
+                    { id: "TOGO", label: "Togo", flag: "TG" },
+                    { id: "GHANA", label: "Ghana", flag: "GH" },
+                    { id: "BENIN", label: "Benin", flag: "BJ" },
+                  ].map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setMarket(m.id)}
+                      className={`py-2.5 text-[12px] font-medium rounded-lg border transition-colors ${
+                        market === m.id
+                          ? "border-emerald-500 bg-emerald-50 text-earth"
+                          : "border-border bg-surface text-muted hover:border-sand"
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted mt-1">Sets your default currency and language</p>
               </div>
 
               <label className="flex items-start gap-2.5 text-[12px] text-muted">

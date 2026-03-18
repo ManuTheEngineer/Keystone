@@ -32,23 +32,33 @@ export interface UserProfile {
   createdAt: string;
 }
 
+const MARKET_DEFAULTS: Record<string, { locale: string; currency: string }> = {
+  USA: { locale: "en", currency: "USD" },
+  TOGO: { locale: "fr", currency: "XOF" },
+  BENIN: { locale: "fr", currency: "XOF" },
+  GHANA: { locale: "en", currency: "GHS" },
+};
+
 export async function registerUser(
   email: string,
   password: string,
-  name: string
+  name: string,
+  market?: string
 ): Promise<User> {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   const user = credential.user;
 
   await updateProfile(user, { displayName: name });
 
+  const defaults = MARKET_DEFAULTS[market ?? "USA"] ?? MARKET_DEFAULTS.USA;
+
   const profile: UserProfile = {
     uid: user.uid,
     email,
     name,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    locale: "en",
-    currency: "USD",
+    locale: defaults.locale,
+    currency: defaults.currency,
     plan: "FOUNDATION",
     createdAt: new Date().toISOString(),
   };
