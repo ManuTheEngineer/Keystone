@@ -101,6 +101,9 @@ import {
   Check,
   XCircle,
   Clock,
+  Package,
+  Lock,
+  ListChecks,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
 import { PresentationModal } from "@/components/ui/PresentationModal";
@@ -240,6 +243,8 @@ export function OverviewClient() {
   const [rejectingTaskId, setRejectingTaskId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [reviewLoading, setReviewLoading] = useState<string | null>(null);
+  const [taskDependsOn, setTaskDependsOn] = useState<string[]>([]);
+  const [showMilestoneDropdown, setShowMilestoneDropdown] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -294,6 +299,17 @@ export function OverviewClient() {
     ? Math.round((project.totalSpent / project.totalBudget) * 100)
     : 0;
 
+  function isTaskBlocked(task: TaskData, allTasks: TaskData[]): { blocked: boolean; blockedBy: string[] } {
+    if (!task.dependsOn || task.dependsOn.length === 0) return { blocked: false, blockedBy: [] };
+    const incomplete = task.dependsOn
+      .map(depId => allTasks.find(t => t.id === depId))
+      .filter(t => t && !t.done);
+    return {
+      blocked: incomplete.length > 0,
+      blockedBy: incomplete.map(t => t!.label),
+    };
+  }
+
   function resetTaskForm() {
     setNewTaskLabel("");
     setTaskDescription("");
@@ -303,6 +319,7 @@ export function OverviewClient() {
     setRequireApproval(false);
     setTaskPrice("");
     setTaskDueDate("");
+    setTaskDependsOn([]);
     setShowAddTask(false);
   }
 
@@ -328,6 +345,7 @@ export function OverviewClient() {
         currency: marketData?.currency?.code || "USD",
         dueDate: taskDueDate || undefined,
         sourceType: "custom",
+        dependsOn: taskDependsOn.length > 0 ? taskDependsOn : undefined,
       });
       resetTaskForm();
       showToast("Task added.", "success");
@@ -355,6 +373,34 @@ export function OverviewClient() {
       showToast("Task updated.", "success");
     } catch {
       showToast("Failed to update task.", "error");
+    }
+  }
+
+  async function handleBulkCreateFromMilestones(selectedMilestones: { name: string; order: number }[]) {
+    if (!user || selectedMilestones.length === 0) return;
+    try {
+      const sorted = [...selectedMilestones].sort((a, b) => a.order - b.order);
+      const createdTaskIds: string[] = [];
+      for (let i = 0; i < sorted.length; i++) {
+        const ms = sorted[i];
+        const taskId = await addTask(user.uid, {
+          projectId,
+          label: ms.name,
+          status: "upcoming",
+          done: false,
+          order: tasks.length + i,
+          sourceType: "milestone",
+          sourceMilestone: ms.name,
+          requiresApproval: true,
+          dependsOn: createdTaskIds.length > 0 ? [createdTaskIds[createdTaskIds.length - 1]] : undefined,
+          currency: marketData?.currency?.code || "USD",
+        });
+        createdTaskIds.push(taskId);
+      }
+      setShowMilestoneDropdown(false);
+      showToast(`${sorted.length} milestone task${sorted.length !== 1 ? "s" : ""} created.`, "success");
+    } catch {
+      showToast("Failed to create milestone tasks.", "error");
     }
   }
 
@@ -719,6 +765,77 @@ export function OverviewClient() {
         );
       })()}
 
+      {/* Materials Summary */}
+      {materials.length > 0 && (
+        <div className="mb-4">
+          <SectionLabel>Materials Summary</SectionLabel>
+          <Card padding="sm">
+            {(() => {
+              const byStatus = {
+                ordered: materials.filter((m) => m.status === "ordered"),
+                partial: materials.filter((m) => m.status === "partial"),
+                delivered: materials.filter((m) => m.status === "delivered"),
+                verified: materials.filter((m) => m.status === "verified"),
+              };
+              const totalCost = materials.reduce((s, m) => s + m.quantityOrdered * m.unitPrice, 0);
+              const cur = marketData?.currency;
+              return (
+                <>
+                  <div className="flex items-center gap-2 mb-3 px-1">
+                    <Package size={14} className="text-clay" />
+                    <span className="text-[12px] font-medium text-earth">{materials.length} materials tracked</span>
+                    <span className="ml-auto text-[12px] font-data font-semibold text-earth">
+                      {cur ? formatCurrencyCompact(totalCost, cur) : `$${totalCost.toLocaleString()}`}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    <div className="p-2 rounded-lg bg-warning-bg/50">
+                      <div className="text-[14px] font-data font-semibold text-warning">{byStatus.ordered.length}</div>
+                      <div className="text-[9px] text-muted uppercase tracking-wider">Ordered</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-info-bg/50">
+                      <div className="text-[14px] font-data font-semibold text-info">{byStatus.partial.length}</div>
+                      <div className="text-[9px] text-muted uppercase tracking-wider">Partial</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-success-bg/50">
+                      <div className="text-[14px] font-data font-semibold text-success">{byStatus.delivered.length}</div>
+                      <div className="text-[9px] text-muted uppercase tracking-wider">Delivered</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-emerald-50">
+                      <div className="text-[14px] font-data font-semibold text-emerald-700">{byStatus.verified.length}</div>
+                      <div className="text-[9px] text-muted uppercase tracking-wider">Verified</div>
+                    </div>
+                  </div>
+                  {/* Show materials with pending delivery */}
+                  {(byStatus.ordered.length > 0 || byStatus.partial.length > 0) && (
+                    <div className="mt-3 space-y-1.5">
+                      {[...byStatus.ordered, ...byStatus.partial].slice(0, 5).map((mat) => (
+                        <div key={mat.id} className="flex items-center justify-between px-2 py-1.5 border border-border rounded-lg text-[11px]">
+                          <div>
+                            <span className="font-medium text-earth">{mat.name}</span>
+                            {mat.supplier && <span className="text-muted ml-1.5">({mat.supplier})</span>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-data text-muted">{mat.quantityDelivered}/{mat.quantityOrdered}</span>
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${
+                              mat.status === "ordered"
+                                ? "bg-warning-bg text-warning"
+                                : "bg-info-bg text-info"
+                            }`}>
+                              {mat.status === "ordered" ? "Ordered" : "Partial"}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </Card>
+        </div>
+      )}
+
       {/* Location Context Card */}
       {(() => {
         if (!project.city) return null;
@@ -985,12 +1102,30 @@ export function OverviewClient() {
           <Card padding="md" className="mb-5">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-[12px] font-semibold text-earth">Next Steps</h4>
-              <button
-                onClick={() => setShowAddTask(true)}
-                className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
-              >
-                <Plus size={12} /> Add task
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <button
+                    onClick={() => setShowMilestoneDropdown(!showMilestoneDropdown)}
+                    className="flex items-center gap-1 text-[11px] text-clay hover:underline cursor-pointer"
+                  >
+                    <ListChecks size={12} /> From milestones
+                  </button>
+                  {showMilestoneDropdown && (
+                    <MilestoneDropdown
+                      milestones={phaseDef?.milestones ?? []}
+                      existingTasks={tasks}
+                      onClose={() => setShowMilestoneDropdown(false)}
+                      onCreate={handleBulkCreateFromMilestones}
+                    />
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowAddTask(true)}
+                  className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
+                >
+                  <Plus size={12} /> Add task
+                </button>
+              </div>
             </div>
             {showAddTask && (
               <div className="mb-3 space-y-2 border border-border rounded-[var(--radius)] p-3 bg-surface">

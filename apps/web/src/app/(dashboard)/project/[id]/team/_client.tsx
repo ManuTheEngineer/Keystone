@@ -6,11 +6,13 @@ import { useTopbar } from "../../../layout";
 import {
   subscribeToContacts,
   subscribeToProject,
+  subscribeToTasks,
   addContact,
   updateContact,
   deleteContact,
   type ContactData,
   type ProjectData,
+  type TaskData,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
@@ -19,7 +21,7 @@ import { useTranslation } from "@/lib/hooks/use-translation";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { Plus, Phone, Mail, MessageCircle, Wrench, AlertCircle, Users, Pencil, Trash2, Link2 } from "lucide-react";
+import { Plus, Phone, Mail, MessageCircle, Wrench, AlertCircle, Users, Pencil, Trash2, Link2, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { generateContractorLink, getProjectContractorLinks, revokeContractorLink, type ContractorLink } from "@/lib/services/contractor-service";
 import { StarRating } from "@/components/ui/StarRating";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -142,6 +144,7 @@ export function TeamClient() {
   const projectId = params.id as string;
   const [contacts, setContacts] = useState<ContactData[]>([]);
   const [project, setProject] = useState<ProjectData | null>(null);
+  const [tasks, setTasks] = useState<TaskData[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
@@ -179,6 +182,54 @@ export function TeamClient() {
     const unsub = subscribeToProject(user.uid, projectId, setProject);
     return unsub;
   }, [user, projectId]);
+
+  useEffect(() => {
+    if (!user) return;
+    const unsub = subscribeToTasks(user.uid, projectId, setTasks);
+    return unsub;
+  }, [user, projectId]);
+
+  // Compute per-contact performance stats from tasks
+  const contactPerformance = useMemo(() => {
+    const perfMap = new Map<string, {
+      total: number;
+      completed: number;
+      pendingReview: number;
+      rejected: number;
+      avgCompletionDays: number | null;
+    }>();
+    // Group tasks by assignedTo contact ID
+    for (const task of tasks) {
+      if (!task.assignedTo) continue;
+      const existing = perfMap.get(task.assignedTo) || {
+        total: 0,
+        completed: 0,
+        pendingReview: 0,
+        rejected: 0,
+        avgCompletionDays: null,
+      };
+      existing.total++;
+      if (task.status === "done") existing.completed++;
+      if (task.status === "pending-review") existing.pendingReview++;
+      if ((task.rejectionCount ?? 0) > 0) existing.rejected++;
+      perfMap.set(task.assignedTo, existing);
+    }
+    // Calculate avg completion time for completed tasks
+    for (const [contactId, perf] of perfMap.entries()) {
+      const contactTasks = tasks.filter(
+        (t) => t.assignedTo === contactId && t.status === "done" && t.completedAt && t.startDate
+      );
+      if (contactTasks.length > 0) {
+        const totalDays = contactTasks.reduce((sum, t) => {
+          const start = new Date(t.startDate!).getTime();
+          const end = new Date(t.completedAt!).getTime();
+          return sum + Math.max(0, (end - start) / (1000 * 60 * 60 * 24));
+        }, 0);
+        perf.avgCompletionDays = Math.round((totalDays / contactTasks.length) * 10) / 10;
+      }
+    }
+    return perfMap;
+  }, [tasks]);
 
   useEffect(() => {
     setTopbar(t("project.team"), `${contacts.length} contacts`, "info");
@@ -557,6 +608,33 @@ export function TeamClient() {
                         )}
                       </div>
                     )}
+                    {/* Contractor performance stats */}
+                    {c.id && contactPerformance.has(c.id) && (() => {
+                      const perf = contactPerformance.get(c.id!)!;
+                      const rejectionRate = perf.total > 0 ? Math.round((perf.rejected / perf.total) * 100) : 0;
+                      return (
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          <span className="flex items-center gap-0.5 text-[9px] text-success">
+                            <CheckCircle2 size={9} /> {perf.completed}/{perf.total} done
+                          </span>
+                          {perf.pendingReview > 0 && (
+                            <span className="flex items-center gap-0.5 text-[9px] text-warning">
+                              <Clock size={9} /> {perf.pendingReview} review
+                            </span>
+                          )}
+                          {perf.avgCompletionDays !== null && (
+                            <span className="text-[9px] text-muted font-data">
+                              avg {perf.avgCompletionDays}d
+                            </span>
+                          )}
+                          {rejectionRate > 0 && (
+                            <span className="flex items-center gap-0.5 text-[9px] text-danger">
+                              <XCircle size={9} /> {rejectionRate}% rejected
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <StarRating value={c.rating} readonly size={12} />
                 </button>
