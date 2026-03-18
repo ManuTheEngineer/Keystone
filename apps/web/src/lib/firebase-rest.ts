@@ -15,7 +15,9 @@ function authUrl(path: string): string {
 
 export async function dbGet(path: string) {
   const res = await fetch(authUrl(path));
-  if (!res.ok) return null;
+  if (!res.ok) {
+    throw new Error(`Firebase read from ${path} failed: ${res.status}`);
+  }
   return res.json();
 }
 

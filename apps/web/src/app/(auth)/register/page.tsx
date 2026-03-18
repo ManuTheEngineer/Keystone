@@ -7,6 +7,7 @@ import { registerUser } from "@/lib/services/auth-service";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
 import { AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { t, type Locale } from "@/lib/i18n";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const quotes = [
   {
@@ -25,6 +26,14 @@ const quotes = [
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/dashboard");
+    }
+  }, [user, authLoading, router]);
+
   // Detect browser language for unauthenticated pages
   const browserLocale: Locale = typeof navigator !== "undefined"
     ? (navigator.language.startsWith("fr") ? "fr" : navigator.language.startsWith("es") ? "es" : "en")

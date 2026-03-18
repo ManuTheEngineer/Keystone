@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTopbar, useDashboard } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import { useToast } from "@/components/ui/Toast";
 import {
   ref as dbRef,
   get as dbGet,
@@ -167,7 +168,7 @@ function ProjectKebabMenu({
     };
   }, [open]);
 
-  const menuPortal = open ? createPortal(
+  const menuPortal = open && typeof document !== "undefined" ? createPortal(
     <div ref={menuRef}>
       <div
         className="fixed inset-0 z-[60]"
@@ -547,6 +548,7 @@ export default function DashboardPage() {
   const { setTopbar } = useTopbar();
   const { user, profile } = useAuth();
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [showTour, setShowTour] = useState(false);
@@ -844,10 +846,11 @@ export default function DashboardPage() {
     if (!user) return;
     try {
       await deleteProject(user.uid, projectId);
+      showToast("Project deleted.", "success");
     } catch {
-      // Silently fail
+      showToast("Failed to delete project.", "error");
     }
-  }, [user]);
+  }, [user, showToast]);
 
   const userName = profile?.name ?? user?.displayName ?? "there";
   const firstName = getFirstName(userName);

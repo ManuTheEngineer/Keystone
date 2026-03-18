@@ -558,7 +558,7 @@ export default function NewProjectPage() {
     switch (step) {
       case 0: return state.goal !== "";
       case 1: return state.market !== "";
-      case 2: return state.market === "USA" ? /^\d{5}$/.test(state.city.trim()) : state.city.trim().length > 0;
+      case 2: return state.market === "USA" ? /^\d{5}(-\d{4})?$/.test(state.city.trim()) : state.city.trim().length > 0;
       case 3: return state.propertyType !== "";
       case 4: return state.sizeCategory === "custom" ? state.customSize > 0 : true;
       case 5: return state.landOption !== "";
@@ -804,10 +804,10 @@ export default function NewProjectPage() {
               <input
                 type="text"
                 inputMode="numeric"
-                maxLength={5}
+                maxLength={10}
                 value={state.city}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, "").slice(0, 5);
+                  const val = e.target.value.replace(/[^\d-]/g, "").slice(0, 10);
                   update("city", val);
                 }}
                 placeholder="Enter 5-digit ZIP code (e.g., 95350)"

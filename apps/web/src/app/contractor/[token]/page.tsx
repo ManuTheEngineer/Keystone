@@ -688,6 +688,36 @@ export default function ContractorPage() {
                           }}
                         />
 
+                        {/* Existing comments */}
+                        {task.comments && Object.keys(task.comments).length > 0 && (
+                          <div style={{ marginBottom: 8 }}>
+                            <span style={{ ...label, fontSize: 8, display: "block", marginBottom: 4 }}>Comments</span>
+                            <div style={{
+                              display: "flex", flexDirection: "column", gap: 4,
+                              maxHeight: 120, overflowY: "auto",
+                            }}>
+                              {Object.entries(task.comments as unknown as Record<string, { content?: string; text?: string; authorName?: string; author?: string; createdAt: string }>)
+                                .sort(([, a], [, b]) => (a.createdAt || "").localeCompare(b.createdAt || ""))
+                                .map(([cId, c]) => (
+                                  <div key={cId} style={{
+                                    padding: "4px 8px", borderRadius: 4,
+                                    background: "var(--card)", border: "1px solid var(--b1)",
+                                  }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                                      <span style={{ fontSize: 9, fontWeight: 600, color: "var(--t1)" }}>{c.authorName || c.author}</span>
+                                      {c.createdAt && (
+                                        <span style={{ ...mono, fontSize: 8, color: "var(--t3)" }}>
+                                          {new Date(c.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p style={{ fontSize: 10, color: "var(--t2)", lineHeight: 1.4, margin: 0 }}>{c.content || c.text}</p>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Comment input */}
                         <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
                           <input

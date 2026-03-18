@@ -50,6 +50,7 @@ import {
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCard } from "@/components/ui/StatCard";
 import { PhaseTracker } from "@/components/ui/PhaseTracker";
@@ -215,6 +216,7 @@ export function OverviewClient() {
   const { setTopbar } = useTopbar();
   const { user, profile } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const router = useRouter();
   const projectId = params.id as string;
 
@@ -293,9 +295,9 @@ export function OverviewClient() {
 
   useEffect(() => {
     if (project) {
-      setTopbar(project.name, project.phaseName, project.currentPhase >= 5 ? "warning" : "info");
+      setTopbar(project.name, `${t("project.overview")} — ${project.phaseName}`, project.currentPhase >= 5 ? "warning" : "info");
     }
-  }, [project, setTopbar]);
+  }, [project, setTopbar, t]);
 
   if (!project) {
     return <p className="text-muted text-sm">Loading project...</p>;
