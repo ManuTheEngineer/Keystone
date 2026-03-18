@@ -163,6 +163,14 @@
       ".write": false
     },
 
+    "contractorLinks": {
+      ".read": true,
+      ".write": "auth != null",
+      "$token": {
+        ".validate": "newData.hasChildren(['token', 'userId', 'projectId', 'contactId'])"
+      }
+    },
+
     "trialCodes": {
       ".read": "auth != null && root.child('users').child(auth.uid).child('profile').child('role').val() === 'admin'",
       ".write": "auth != null && root.child('users').child(auth.uid).child('profile').child('role').val() === 'admin'",

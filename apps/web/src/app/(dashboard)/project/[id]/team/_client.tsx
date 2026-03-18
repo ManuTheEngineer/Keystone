@@ -19,7 +19,8 @@ import { useTranslation } from "@/lib/hooks/use-translation";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { Plus, Phone, Mail, MessageCircle, Wrench, AlertCircle, Users, Pencil, Trash2 } from "lucide-react";
+import { Plus, Phone, Mail, MessageCircle, Wrench, AlertCircle, Users, Pencil, Trash2, Link2 } from "lucide-react";
+import { generateContractorLink, getProjectContractorLinks, revokeContractorLink, type ContractorLink } from "@/lib/services/contractor-service";
 import { StarRating } from "@/components/ui/StarRating";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AIInsight } from "@/components/ui/AIInsight";
@@ -135,7 +136,7 @@ function TradeRequirementList({
 export function TeamClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { showToast } = useToast();
   const { t } = useTranslation();
   const projectId = params.id as string;
@@ -676,6 +677,24 @@ export function TeamClient() {
                             className="flex items-center gap-1 px-3 py-1.5 text-[11px] border border-border rounded-[var(--radius)] text-earth hover:bg-surface-alt transition-colors"
                           >
                             <Pencil size={12} /> Edit
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (!user || !profile) return;
+                              const result = await generateContractorLink(
+                                user.uid, projectId, c.id!, c.name, c.role, profile.plan
+                              );
+                              if ("error" in result) {
+                                showToast(result.error, "error");
+                              } else {
+                                const url = `${window.location.origin}/contractor/${result.token}`;
+                                navigator.clipboard.writeText(url);
+                                showToast("Access link copied. Share it with your contractor.", "success");
+                              }
+                            }}
+                            className="flex items-center gap-1 px-3 py-1.5 text-[11px] border border-emerald-300 rounded-[var(--radius)] text-emerald-700 hover:bg-emerald-50 transition-colors"
+                          >
+                            <Link2 size={12} /> Share access
                           </button>
                           {deleteConfirmId === c.id ? (
                             <div className="flex items-center gap-1.5">
