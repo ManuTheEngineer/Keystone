@@ -362,10 +362,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 {children}
               </main>
             </div>
-            <AIMentor
-              page={activeSection}
-              project={currentProject ?? undefined}
-            />
+            {/* Hide Mentor during onboarding tour to reduce first-load clutter */}
+            {profile?.tourCompleted !== false && (
+              <AIMentor
+                page={activeSection}
+                project={currentProject ?? undefined}
+              />
+            )}
           </div>
         </div>
         </LocaleContext.Provider>
