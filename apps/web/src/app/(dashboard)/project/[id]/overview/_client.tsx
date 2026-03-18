@@ -1267,11 +1267,12 @@ export function OverviewClient() {
               <Card padding="sm">
                 {[
                   { label: "Define your goals and building purpose", done: !!project.purpose },
-                  { label: "Choose your target market (USA / West Africa)", done: !!project.market },
-                  { label: "Set an initial budget range", done: project.totalBudget > 0 },
-                  { label: "Research local construction costs", done: budgetItems.length > 0 },
-                  { label: "Determine financing strategy", done: phase >= 1 },
-                  { label: market === "USA" ? "Check loan pre-qualification" : "Plan savings schedule", done: false },
+                  { label: "Choose your target market", done: !!project.market },
+                  { label: `Set location${project.city ? ` (${project.city})` : ""}`, done: !!project.city },
+                  { label: "Set an initial budget", done: project.totalBudget > 0 },
+                  { label: "Generate budget breakdown", done: budgetItems.length > 0 },
+                  { label: "Determine financing strategy", done: !!project.financingType },
+                  { label: market === "USA" ? "Check loan pre-qualification" : "Plan savings schedule", done: phase >= 1 },
                 ].map((item, i, arr) => (
                   <div
                     key={i}

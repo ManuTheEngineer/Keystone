@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTopbar } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { createProject, getUserProjects, generateBudgetFromSpecs, type Market, type BuildPurpose, type PropertyType } from "@/lib/services/project-service";
+import { createProject, getUserProjects, generateBudgetFromSpecs, seedInitialTasks, type Market, type BuildPurpose, type PropertyType } from "@/lib/services/project-service";
 import { getPlanLimits } from "@/lib/stripe-config";
 import type { PlanTier } from "@/lib/stripe-config";
 import {
@@ -703,13 +703,22 @@ export default function NewProjectPage() {
         features: state.features.length > 0 ? state.features : undefined,
       });
 
-      // Auto-generate budget line items from project specs
-      try {
-        await generateBudgetFromSpecs(user.uid, projectId, costs.total, market, state.features);
-      } catch (budgetErr) {
-        console.warn("Budget auto-generation failed:", budgetErr);
-        // Non-blocking: project still created successfully
-      }
+      // Auto-generate budget + seed initial tasks in parallel
+      await Promise.allSettled([
+        generateBudgetFromSpecs(user.uid, projectId, costs.total, market, state.features),
+        seedInitialTasks(user.uid, projectId, {
+          market,
+          purpose: purpose,
+          propertyType: propertyType,
+          city: state.city.trim(),
+          financingType: state.financingType,
+          totalBudget: costs.total,
+          bedrooms: state.bedrooms,
+          bathrooms: state.bathrooms,
+          features: state.features,
+          fromAnalyzer: state.fromAnalyzer,
+        }),
+      ]);
 
       router.push(`/project/${projectId}/overview`);
     } catch (err) {
