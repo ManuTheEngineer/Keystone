@@ -120,7 +120,13 @@ export function Sidebar({
     if (typeof window === "undefined") return false;
     return localStorage.getItem("keystone-sidebar-collapsed") === "true";
   });
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const stored = localStorage.getItem("keystone-collapsed-groups");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
 
   // Sync with keyboard shortcut (Ctrl+B) from layout
   useEffect(() => {
@@ -265,7 +271,7 @@ export function Sidebar({
         {projectName && (
           <nav className="py-3 flex-1 min-h-0 overflow-y-auto overflow-x-hidden sidebar-scroll">
             {!collapsed && (
-              <p className="pl-4 pr-3 mb-1.5 text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium truncate">
+              <p className="pl-4 pr-3 mb-1.5 text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium truncate" title={projectName}>
                 {projectName}
               </p>
             )}
@@ -279,6 +285,7 @@ export function Sidebar({
                         const next = new Set(prev);
                         if (next.has(group.label)) next.delete(group.label);
                         else next.add(group.label);
+                        try { localStorage.setItem("keystone-collapsed-groups", JSON.stringify([...next])); } catch {}
                         return next;
                       })}
                       className="w-full pl-4 pr-3 mt-3 mb-1 flex items-center justify-between text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium hover:text-[#D4A574]/50 transition-colors"

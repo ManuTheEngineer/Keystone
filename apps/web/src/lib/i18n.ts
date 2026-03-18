@@ -141,6 +141,16 @@ const translations: Record<string, Record<Locale, string>> = {
     fr: "D\u00e9passement de budget",
     es: "Sobre presupuesto",
   },
+  "status.underBudget": {
+    en: "Under budget",
+    fr: "Sous le budget",
+    es: "Bajo presupuesto",
+  },
+  "status.notStarted": {
+    en: "Not started",
+    fr: "Non commenc\u00e9",
+    es: "No iniciado",
+  },
   "status.open": {
     en: "Open",
     fr: "Ouvert",

@@ -272,7 +272,12 @@ export function VaultClient() {
   }
 
   if (!project) {
-    return <p className="text-muted text-sm">Loading project...</p>;
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <div className="w-6 h-6 border-2 border-clay border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-[12px] text-muted">Loading...</p>
+      </div>
+    );
   }
 
   return (
@@ -455,6 +460,7 @@ export function VaultClient() {
       </div>
 
       {/* File list */}
+      {/* TODO: Replace inline empty state below with shared <EmptyState> component for consistency */}
       {filteredFiles.length === 0 ? (
         <Card padding="md">
           <div className="text-center py-6">

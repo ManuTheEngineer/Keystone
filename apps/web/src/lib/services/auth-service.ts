@@ -68,7 +68,9 @@ export async function registerUser(
   await set(ref(db, `users/${user.uid}/profile`), profile);
 
   // Send email verification (non-blocking — don't fail registration if it errors)
-  try { await sendEmailVerification(user); } catch {}
+  try { await sendEmailVerification(user); } catch (err) {
+    console.warn("Email verification send failed:", err);
+  }
 
   return user;
 }

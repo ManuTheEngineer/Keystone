@@ -89,6 +89,7 @@
                 ".validate": "newData.hasChildren(['label'])",
                 "label": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500" },
                 "done": { ".validate": "newData.isBoolean()" },
+                "status": { ".validate": "newData.isString() && (newData.val() === 'upcoming' || newData.val() === 'in-progress' || newData.val() === 'done' || newData.val() === 'pending-review' || newData.val() === 'rejected' || newData.val() === 'cancelled')" },
                 "order": { ".validate": "newData.isNumber() && newData.val() >= 0" }
               }
             },

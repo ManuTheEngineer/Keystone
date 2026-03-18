@@ -349,6 +349,7 @@ export function FinancialsClient() {
         {/* ── Budget vs Actuals ── */}
         <SectionLabel>Budget vs actuals</SectionLabel>
       <Card padding="sm" className="mb-5">
+        {/* TODO: Replace inline empty state below with shared <EmptyState> component for consistency */}
         {items.length === 0 ? (
           <p className="text-[12px] text-muted py-3 text-center">
             No budget items yet. Add items on the Budget page to see comparisons here.

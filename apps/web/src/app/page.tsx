@@ -77,6 +77,12 @@ export default function LandingPage() {
             >
               How it works
             </a>
+            <a
+              href="#about"
+              className="text-[14px] text-muted hover:text-earth transition-colors"
+            >
+              About
+            </a>
             {user ? (
               <Link
                 href="/dashboard"
@@ -126,6 +132,13 @@ export default function LandingPage() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 How it works
+              </a>
+              <a
+                href="#about"
+                className="block text-[14px] text-muted hover:text-earth py-2 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                About
               </a>
               <Link
                 href="/login"
@@ -746,8 +759,8 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
-                  <a href="#how-it-works" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
-                    How it works
+                  <a href="#about" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                    About
                   </a>
                 </li>
               </ul>

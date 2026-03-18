@@ -93,11 +93,13 @@ function getCategoryIcon(category: string): React.ElementType {
   return Hammer;
 }
 
-function getStatusInfo(item: BudgetItemData): { label: string; variant: "success" | "danger" | "info" | "warning" } {
-  if (item.status === "over") return { label: "Over budget", variant: "danger" };
-  if (item.status === "on-track") return { label: "On track", variant: "success" };
-  if (item.status === "under") return { label: "Under budget", variant: "info" };
-  return { label: "Not started", variant: "warning" };
+// NOTE: Status labels use i18n keys; the t() function is called inside the component.
+// This helper returns raw keys — the component translates them before rendering.
+function getStatusInfo(item: BudgetItemData): { labelKey: string; fallback: string; variant: "success" | "danger" | "info" | "warning" } {
+  if (item.status === "over") return { labelKey: "status.overBudget", fallback: "Over budget", variant: "danger" };
+  if (item.status === "on-track") return { labelKey: "status.onTrack", fallback: "On track", variant: "success" };
+  if (item.status === "under") return { labelKey: "status.underBudget", fallback: "Under budget", variant: "info" };
+  return { labelKey: "status.notStarted", fallback: "Not started", variant: "warning" };
 }
 
 // ---------------------------------------------------------------------------
@@ -557,7 +559,7 @@ export function BudgetClient() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="text-[12px] font-medium text-earth">{item.category}</span>
-                        <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+                        <Badge variant={statusInfo.variant}>{t(statusInfo.labelKey) || statusInfo.fallback}</Badge>
                       </div>
                     </div>
                   </div>

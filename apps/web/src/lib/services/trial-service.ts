@@ -104,6 +104,8 @@ export async function redeemTrialCode(
   // Calculate trial expiry for this user
   const trialExpiresAt = new Date(Date.now() + data.durationHours * 60 * 60 * 1000).toISOString();
 
+  // NOTE: Potential race condition if two users redeem the same code simultaneously.
+  // Risk is low given code usage patterns. Consider server-side validation for production.
   // Update code usage
   await update(codeRef, {
     usedCount: data.usedCount + 1,

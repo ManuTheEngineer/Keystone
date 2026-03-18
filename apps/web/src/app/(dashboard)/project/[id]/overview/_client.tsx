@@ -1,3 +1,4 @@
+// TODO: Many hardcoded strings need t() wrapping
 "use client";
 
 import { useEffect, useState } from "react";
@@ -300,7 +301,12 @@ export function OverviewClient() {
   }, [project, setTopbar, t]);
 
   if (!project) {
-    return <p className="text-muted text-sm">Loading project...</p>;
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <div className="w-6 h-6 border-2 border-clay border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-[12px] text-muted">Loading...</p>
+      </div>
+    );
   }
 
   const market = project.market as Market;

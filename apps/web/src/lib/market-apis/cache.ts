@@ -36,8 +36,9 @@ export async function cacheSet(category: CacheCategory, key: string, data: unkno
       data,
       fetchedAt: new Date().toISOString(),
     });
-  } catch {
-    // Cache write failure is non-fatal
+  } catch (err) {
+    // Cache write failure is non-fatal but logged for debugging
+    if (typeof console !== "undefined") console.warn("Cache write failed:", err);
   }
 }
 

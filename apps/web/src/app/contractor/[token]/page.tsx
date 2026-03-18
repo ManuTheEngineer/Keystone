@@ -109,6 +109,8 @@ export default function ContractorPage() {
     fileInputRef.current?.click();
   }
 
+  // NOTE: Photos stored as base64 data URLs in Firebase. For production,
+  // migrate to S3/R2 persistent storage via vault-upload-service.
   function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     const taskId = activePhotoTaskId;
@@ -122,14 +124,21 @@ export default function ContractorPage() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
+            let lat: number | undefined = position.coords.latitude;
+            let lon: number | undefined = position.coords.longitude;
+            if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+              // Invalid coordinates, treat as no GPS
+              lat = undefined;
+              lon = undefined;
+            }
             setTaskPhotos((prev) => ({
               ...prev,
               [taskId]: [
                 ...(prev[taskId] || []),
                 {
                   url: dataUrl,
-                  latitude: position.coords.latitude,
-                  longitude: position.coords.longitude,
+                  latitude: lat,
+                  longitude: lon,
                   timestamp,
                 },
               ],
@@ -271,14 +280,14 @@ export default function ContractorPage() {
     }
   }
 
-  function isTaskBlocked(task: TaskData): { blocked: boolean; blockedBy: string[] } {
+  function isTaskBlocked(task: TaskData, allTasks: TaskData[]): { blocked: boolean; blockedBy: string[] } {
     if (!task.dependsOn || task.dependsOn.length === 0) return { blocked: false, blockedBy: [] };
     const incomplete = task.dependsOn
-      .map(depId => tasks.find(t => t.id === depId))
-      .filter(t => t && !t.done);
+      .map(depId => allTasks.find(t => t.id === depId))
+      .filter((t): t is TaskData => t != null && !t.done);
     return {
       blocked: incomplete.length > 0,
-      blockedBy: incomplete.map(t => t!.label),
+      blockedBy: incomplete.map(t => t.label),
     };
   }
 
@@ -436,7 +445,7 @@ export default function ContractorPage() {
               borderRadius: 8, overflow: "hidden",
             }}>
               {todoTasks.map((task, idx) => {
-                const blockInfo = isTaskBlocked(task);
+                const blockInfo = isTaskBlocked(task, tasks);
                 const isExpanded = activeTaskId === task.id;
                 const isLast = idx === todoTasks.length - 1;
 
@@ -893,7 +902,7 @@ export default function ContractorPage() {
       {/* ── Footer ── */}
       <footer style={{ padding: "16px 0", textAlign: "center" }}>
         <a
-          href="https://keystonebuild.vercel.app"
+          href="/"
           style={{
             display: "inline-flex", alignItems: "center", gap: 4,
             fontSize: 9, color: "var(--t3)", textDecoration: "none",

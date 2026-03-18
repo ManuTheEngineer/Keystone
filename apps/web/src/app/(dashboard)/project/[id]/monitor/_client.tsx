@@ -107,6 +107,7 @@ function PhotoFeed({ photos, projectId, project, contacts }: PhotoFeedProps) {
         </div>
       </div>
 
+      {/* TODO: Replace inline empty state below with shared <EmptyState> component for consistency */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 text-muted">
           <Camera size={24} className="mb-2 opacity-40" />

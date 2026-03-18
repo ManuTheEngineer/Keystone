@@ -34,6 +34,8 @@ const TYPE_LABELS = {
   photo: "Photo",
 };
 
+const MAX_RESULTS = 20;
+
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -305,5 +307,5 @@ async function searchAllData(userId: string, query: string): Promise<SearchResul
   }
 
   // Limit results
-  return results.slice(0, 15);
+  return results.slice(0, MAX_RESULTS);
 }

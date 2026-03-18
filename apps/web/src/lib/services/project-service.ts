@@ -824,6 +824,8 @@ export function subscribeToAllMilestoneProgress(
   });
 }
 
+// NOTE: Potential race condition on concurrent milestone toggles.
+// Risk is low for single-user projects. Consider Firebase transactions for multi-user.
 export async function toggleMilestoneProgress(
   userId: string,
   projectId: string,

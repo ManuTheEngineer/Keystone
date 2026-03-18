@@ -54,8 +54,13 @@ export default function ForgotPasswordPage() {
     try {
       await resetPassword(email.trim().toLowerCase());
       setSent(true);
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("network-request-failed")) {
+        setError("Network error. Check your connection and try again.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

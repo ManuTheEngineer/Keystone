@@ -690,7 +690,7 @@ function getMentorGuidance(
 // --- Component ---
 
 export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps) {
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(() => getCollapsed());
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const [showWhy, setShowWhy] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -698,7 +698,6 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
 
   useEffect(() => {
     setMounted(true);
-    setCollapsed(getCollapsed());
     setDismissedIds(getActiveDismissedIds());
   }, []);
 

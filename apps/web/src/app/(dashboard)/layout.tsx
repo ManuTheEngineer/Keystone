@@ -1,3 +1,4 @@
+// TODO: Translate offline banner, email verify banner, trial banner
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef, createContext, useContext, type ReactNode } from "react";
@@ -363,7 +364,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </main>
             </div>
             {/* Hide Mentor during onboarding tour to reduce first-load clutter */}
-            {profile?.tourCompleted !== false && (
+            {profile?.tourCompleted === true && (
               <AIMentor
                 page={activeSection}
                 project={currentProject ?? undefined}

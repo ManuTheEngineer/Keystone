@@ -108,6 +108,7 @@ export const NotificationBell = memo(function NotificationBell({ notifications, 
             {notifications.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <Bell size={24} className="mx-auto text-muted/40 mb-2" />
+                {/* TODO: Translate empty-state text when useTranslation is added to this component */}
                 <p className="text-[12px] text-muted">
                   No new notifications. Your projects are on track.
                 </p>

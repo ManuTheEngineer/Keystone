@@ -14,6 +14,8 @@ export async function verifyAuth(
   const idToken = authHeader.split("Bearer ")[1];
 
   try {
+    // NOTE: Uses deprecated v3 endpoint. Migrate to Firebase Admin SDK
+    // (verifyIdToken) when server-side service account is configured.
     const res = await fetch(
       `https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? ""}`,
       {
