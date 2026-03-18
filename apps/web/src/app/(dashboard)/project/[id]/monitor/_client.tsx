@@ -698,7 +698,7 @@ export function MonitorClient() {
 
   useEffect(() => {
     if (project) {
-      setTopbar(t("project.monitor"), project.phaseName, "info");
+      setTopbar(project.name, `${t("project.monitor")} — ${project.phaseName}`, "info");
     }
   }, [project, setTopbar]);
 

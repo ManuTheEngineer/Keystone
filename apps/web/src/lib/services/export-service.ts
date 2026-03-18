@@ -724,3 +724,156 @@ export function exportProjectJSON(project: ProjectData, data: ExportData): void 
   const filename = `${safeFilename(project.name)}_backup_${safeDateStr()}.json`;
   downloadFile(json, filename, "application/json");
 }
+
+// ---------------------------------------------------------------------------
+// Deal Analysis PDF Export
+// ---------------------------------------------------------------------------
+
+interface AnalysisExportData {
+  name: string;
+  input: {
+    goal: string;
+    market: string;
+    city: string;
+    propertyType: string;
+    sizeCategory: string;
+    bedrooms: number;
+    bathrooms: number;
+    stories: number;
+    features: string[];
+    landOption: string;
+    financingType: string;
+    timelineMonths: number;
+  };
+  results: {
+    dealScore: number;
+    dealScoreSummary: string;
+    totalCost: number;
+    constructionCost: number;
+    landCost: number;
+    softCosts: number;
+    financingCosts: number;
+    contingency: number;
+    monthlyCost: number;
+    roi: number;
+    dtiRatio: number | null;
+    ltvRatio: number;
+    costPerUnit: number;
+    riskFlags: { level: string; title: string; detail: string }[];
+  };
+  currency: { code: string; symbol: string };
+  sizeUnit: string;
+  buildSize: number;
+}
+
+export function exportAnalysisPDF(data: AnalysisExportData): void {
+  const { name, input, results, currency, sizeUnit, buildSize } = data;
+  const sym = currency.symbol;
+  const fmtNum = (n: number) => n.toLocaleString();
+
+  const scoreColor = results.dealScore >= 80 ? "#2D6A4F" : results.dealScore >= 65 ? "#059669" : results.dealScore >= 50 ? "#BC6C25" : results.dealScore >= 35 ? "#EA580C" : "#9B2226";
+
+  const sections: string[] = [];
+
+  // Cover
+  sections.push(`
+    <div style="text-align:center; padding:40px 0 30px;">
+      <h1 style="font-size:22px; color:#2C1810; margin:0;">Deal Analysis Report</h1>
+      <p style="font-size:14px; color:#6A6A6A; margin:6px 0 0;">${name || "Untitled Analysis"}</p>
+      <p style="font-size:11px; color:#999; margin:4px 0 0;">Generated ${new Date().toLocaleDateString()} by Keystone</p>
+    </div>
+  `);
+
+  // Deal Score
+  sections.push(`
+    <div style="text-align:center; padding:20px; margin:0 auto 20px; max-width:300px; border:2px solid ${scoreColor}; border-radius:12px;">
+      <div style="font-size:48px; font-weight:bold; color:${scoreColor};">${results.dealScore}</div>
+      <div style="font-size:13px; font-weight:600; color:${scoreColor}; margin-bottom:6px;">${results.dealScore >= 80 ? "Strong Deal" : results.dealScore >= 65 ? "Good Deal" : results.dealScore >= 50 ? "Fair Deal" : results.dealScore >= 35 ? "Caution" : "High Risk"}</div>
+      <div style="font-size:11px; color:#6A6A6A;">${results.dealScoreSummary}</div>
+    </div>
+  `);
+
+  // Property Overview
+  sections.push(`
+    <h2 style="font-size:15px; color:#2C1810; border-bottom:1px solid #ddd; padding-bottom:6px;">Property Overview</h2>
+    <table style="width:100%; font-size:12px; border-collapse:collapse; margin-bottom:16px;">
+      <tr><td style="padding:4px 8px; color:#6A6A6A;">Goal</td><td style="padding:4px 8px; font-weight:500;">${input.goal}</td>
+          <td style="padding:4px 8px; color:#6A6A6A;">Market</td><td style="padding:4px 8px; font-weight:500;">${input.market}</td></tr>
+      <tr><td style="padding:4px 8px; color:#6A6A6A;">Location</td><td style="padding:4px 8px; font-weight:500;">${input.city || "Not specified"}</td>
+          <td style="padding:4px 8px; color:#6A6A6A;">Type</td><td style="padding:4px 8px; font-weight:500;">${input.propertyType}</td></tr>
+      <tr><td style="padding:4px 8px; color:#6A6A6A;">Size</td><td style="padding:4px 8px; font-weight:500;">${fmtNum(buildSize)} ${sizeUnit}</td>
+          <td style="padding:4px 8px; color:#6A6A6A;">Bedrooms</td><td style="padding:4px 8px; font-weight:500;">${input.bedrooms}</td></tr>
+      <tr><td style="padding:4px 8px; color:#6A6A6A;">Bathrooms</td><td style="padding:4px 8px; font-weight:500;">${input.bathrooms}</td>
+          <td style="padding:4px 8px; color:#6A6A6A;">Stories</td><td style="padding:4px 8px; font-weight:500;">${input.stories}</td></tr>
+      <tr><td style="padding:4px 8px; color:#6A6A6A;">Financing</td><td style="padding:4px 8px; font-weight:500;">${input.financingType || "Not specified"}</td>
+          <td style="padding:4px 8px; color:#6A6A6A;">Timeline</td><td style="padding:4px 8px; font-weight:500;">${input.timelineMonths} months</td></tr>
+    </table>
+  `);
+
+  // Cost Breakdown
+  const costItems = [
+    { label: "Construction", value: results.constructionCost },
+    { label: "Land", value: results.landCost },
+    { label: "Soft costs (permits, design)", value: results.softCosts },
+    { label: "Contingency", value: results.contingency },
+    ...(results.financingCosts > 0 ? [{ label: "Financing costs", value: results.financingCosts }] : []),
+  ];
+  sections.push(`
+    <h2 style="font-size:15px; color:#2C1810; border-bottom:1px solid #ddd; padding-bottom:6px;">Cost Breakdown</h2>
+    <table style="width:100%; font-size:12px; border-collapse:collapse; margin-bottom:8px;">
+      ${costItems.map((c) => `<tr><td style="padding:4px 8px; color:#6A6A6A;">${c.label}</td><td style="padding:4px 8px; text-align:right; font-family:monospace;">${sym}${fmtNum(c.value)}</td></tr>`).join("")}
+      <tr style="border-top:2px solid #2C1810; font-weight:bold;">
+        <td style="padding:6px 8px;">Total Project Cost</td>
+        <td style="padding:6px 8px; text-align:right; font-family:monospace;">${sym}${fmtNum(results.totalCost)}</td>
+      </tr>
+    </table>
+  `);
+
+  // Financial Metrics
+  sections.push(`
+    <h2 style="font-size:15px; color:#2C1810; border-bottom:1px solid #ddd; padding-bottom:6px;">Financial Metrics</h2>
+    <table style="width:100%; font-size:12px; border-collapse:collapse; margin-bottom:16px;">
+      <tr><td style="padding:4px 8px; color:#6A6A6A;">Cost per ${sizeUnit}</td><td style="padding:4px 8px; font-family:monospace;">${sym}${fmtNum(results.costPerUnit)}</td></tr>
+      ${results.monthlyCost > 0 ? `<tr><td style="padding:4px 8px; color:#6A6A6A;">Monthly payment</td><td style="padding:4px 8px; font-family:monospace;">${sym}${fmtNum(results.monthlyCost)}</td></tr>` : ""}
+      ${results.dtiRatio !== null ? `<tr><td style="padding:4px 8px; color:#6A6A6A;">Debt-to-income ratio</td><td style="padding:4px 8px; font-family:monospace; ${results.dtiRatio > 43 ? "color:#9B2226;" : ""}">${results.dtiRatio}%</td></tr>` : ""}
+      <tr><td style="padding:4px 8px; color:#6A6A6A;">Loan-to-value ratio</td><td style="padding:4px 8px; font-family:monospace;">${results.ltvRatio}%</td></tr>
+      ${results.roi !== 0 ? `<tr><td style="padding:4px 8px; color:#6A6A6A;">${input.goal === "rent" ? "Annual rental yield" : "Expected ROI"}</td><td style="padding:4px 8px; font-family:monospace; color:${results.roi > 0 ? "#2D6A4F" : "#9B2226"};">${results.roi}%</td></tr>` : ""}
+    </table>
+  `);
+
+  // Risk Flags
+  if (results.riskFlags.length > 0) {
+    const flagColors: Record<string, string> = { critical: "#9B2226", warning: "#BC6C25", info: "#1B4965" };
+    sections.push(`
+      <h2 style="font-size:15px; color:#2C1810; border-bottom:1px solid #ddd; padding-bottom:6px;">Risk Analysis</h2>
+      ${results.riskFlags.map((f) => `
+        <div style="padding:8px 12px; margin-bottom:6px; border-left:3px solid ${flagColors[f.level] || "#999"}; background:#fafafa; border-radius:4px;">
+          <div style="font-size:12px; font-weight:600; color:${flagColors[f.level] || "#333"};">${f.title}</div>
+          <div style="font-size:11px; color:#6A6A6A; margin-top:2px;">${f.detail}</div>
+        </div>
+      `).join("")}
+    `);
+  }
+
+  // Features
+  if (input.features.length > 0) {
+    sections.push(`
+      <h2 style="font-size:15px; color:#2C1810; border-bottom:1px solid #ddd; padding-bottom:6px;">Selected Features</h2>
+      <p style="font-size:12px; color:#3A3A3A;">${input.features.join(", ")}</p>
+    `);
+  }
+
+  // Disclaimer
+  sections.push(`
+    <div style="margin-top:30px; padding:12px; background:#f5f5f5; border-radius:6px; font-size:10px; color:#999; line-height:1.5;">
+      This report is for educational guidance only. Actual costs vary significantly by location,
+      materials, labor availability, and market conditions. Consult licensed professionals before
+      making financial commitments. Generated by Keystone (keystonebuild.vercel.app).
+    </div>
+  `);
+
+  const css = getExportCSS();
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Deal Analysis - ${name}</title><style>${css}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#2C1810;max-width:700px;margin:0 auto;padding:20px;}</style></head><body>${sections.join("")}</body></html>`;
+
+  openPrintWindow(html, `Deal Analysis - ${name || "Untitled"}`);
+}

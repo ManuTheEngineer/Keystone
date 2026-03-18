@@ -61,6 +61,7 @@ function makeNav(items: { id: string; label: string; Icon: React.ComponentType<{
 const mainNav = makeNav([
   { id: "dashboard", label: "Dashboard", Icon: LayoutGrid },
   { id: "portfolio", label: "Portfolio", Icon: FolderOpen },
+  { id: "analyze", label: "Deal Analyzer", Icon: Calculator },
   { id: "new-project", label: "New project", Icon: Plus },
 ]);
 
@@ -159,6 +160,7 @@ export function Sidebar({
   // Map nav item IDs to i18n keys
   const NAV_I18N: Record<string, string> = {
     dashboard: "nav.dashboard", portfolio: "project.portfolio",
+    analyze: "nav.dealAnalyzer",
     "new-project": "project.newProject", learn: "nav.learn",
     overview: "nav.overview", budget: "nav.budget", schedule: "nav.schedule",
     financials: "nav.financials", team: "nav.team", documents: "nav.documents",

@@ -144,11 +144,11 @@ export function DocumentsClient() {
 
   useEffect(() => {
     setTopbar(
-      t("project.documents"),
-      `${docs.length} files${generatedCount > 0 ? ` / ${generatedCount} generated` : ""}`,
+      project?.name || t("project.documents"),
+      `${t("project.documents")} — ${docs.length} files${generatedCount > 0 ? ` / ${generatedCount} generated` : ""}`,
       "info"
     );
-  }, [setTopbar, docs.length, generatedCount]);
+  }, [setTopbar, docs.length, generatedCount, project]);
 
   const market = (project?.market ?? "USA") as Market;
   const currentPhaseKey: ProjectPhase = PHASE_ORDER[project?.currentPhase ?? 0];

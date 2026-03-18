@@ -778,8 +778,8 @@ export function TeamClient() {
 
   // Topbar
   useEffect(() => {
-    setTopbar(t("project.team"), `${contacts.length} contacts`, "info");
-  }, [setTopbar, contacts.length, t]);
+    if (project) setTopbar(project.name, `${t("project.team")} — ${contacts.length} contacts`, "info");
+  }, [setTopbar, contacts.length, t, project]);
 
   // Market + phase
   const market = (project?.market ?? "USA") as Market;

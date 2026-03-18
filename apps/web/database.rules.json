@@ -150,6 +150,13 @@
           }
         },
 
+        "analyses": {
+          "$analysisId": {
+            ".validate": "newData.hasChildren(['userId', 'name', 'input', 'results', 'createdAt'])",
+            "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200" }
+          }
+        },
+
         "aiUsage": {
           "$date": {
             ".validate": "newData.hasChildren(['count'])",

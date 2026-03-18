@@ -12,6 +12,11 @@ const translations: Record<string, Record<Locale, string>> = {
     fr: "Nouveau projet",
     es: "Nuevo proyecto",
   },
+  "nav.dealAnalyzer": {
+    en: "Deal Analyzer",
+    fr: "Analyse de projet",
+    es: "Analizador de trato",
+  },
   "nav.learn": {
     en: "Learn",
     fr: "Apprendre",

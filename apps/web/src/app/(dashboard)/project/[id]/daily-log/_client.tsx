@@ -78,8 +78,8 @@ export function DailyLogClient() {
 
   useEffect(() => {
     const latestDay = logs.length > 0 ? logs[0].day : 0;
-    setTopbar(t("project.dailyLog"), latestDay > 0 ? `Day ${latestDay}` : "No entries", "info");
-  }, [setTopbar, logs]);
+    setTopbar(project?.name || t("project.dailyLog"), `${t("project.dailyLog")} — ${latestDay > 0 ? `Day ${latestDay}` : "No entries"}`, "info");
+  }, [setTopbar, logs, project]);
 
   const market = (project?.market ?? "USA") as Market;
   const isUSAMarket = market === "USA";

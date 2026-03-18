@@ -78,8 +78,8 @@ export function PhotosClient() {
   }, [user, projectId]);
 
   useEffect(() => {
-    setTopbar(t("project.photos"), `${photos.length} photos`, "info");
-  }, [setTopbar, photos.length]);
+    setTopbar(project?.name || t("project.photos"), `${t("project.photos")} — ${photos.length} photos`, "info");
+  }, [setTopbar, photos.length, project]);
 
   // Market data and phases
   const market = (project?.market ?? "USA") as Market;

@@ -86,11 +86,11 @@ export function PunchListClient() {
 
   useEffect(() => {
     setTopbar(
-      t("project.punchList"),
-      items.length > 0 ? `${openCount} open` : "No items",
+      project?.name || t("project.punchList"),
+      `${t("project.punchList")} — ${items.length > 0 ? `${openCount} open` : "No items"}`,
       openCount > 0 ? "warning" : "success"
     );
-  }, [setTopbar, items, openCount]);
+  }, [setTopbar, items, openCount, project]);
 
   // Filter and sort items
   const filteredItems = useMemo(() => {

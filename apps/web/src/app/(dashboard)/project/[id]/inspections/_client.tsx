@@ -110,10 +110,10 @@ export function InspectionsClient() {
 
   useEffect(() => {
     setTopbar(
-      t("project.inspections"),
-      currentPhaseInspections.length > 0
+      project?.name || t("project.inspections"),
+      `${t("project.inspections")} — ${currentPhaseInspections.length > 0
         ? `${passedCount}/${currentPhaseInspections.length} passed`
-        : "No inspections",
+        : "No inspections"}`,
       passedCount === currentPhaseInspections.length && currentPhaseInspections.length > 0
         ? "success"
         : "info"

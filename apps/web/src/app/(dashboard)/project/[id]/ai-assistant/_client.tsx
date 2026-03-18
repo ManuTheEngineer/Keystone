@@ -169,7 +169,7 @@ export function AIAssistantClient() {
   }, [user, projectId]);
 
   useEffect(() => {
-    setTopbar(t("project.aiAssistant"), project ? `Context: ${project.name}` : t("project.aiAssistant"), "info");
+    setTopbar(project?.name || t("project.aiAssistant"), `${t("project.aiAssistant")}${project ? ` — ${project.phaseName}` : ""}`, "info");
   }, [setTopbar, project]);
 
   useEffect(() => {

@@ -129,8 +129,8 @@ export function FinancialsClient() {
     if (project) {
       const marketData = getMarketData(project.market as Market);
       setTopbar(
-        t("project.financials"),
-        `${formatCurrencyCompact(project.totalSpent, marketData.currency)} / ${formatCurrencyCompact(project.totalBudget, marketData.currency)}`,
+        project.name,
+        `${t("project.financials")} — ${formatCurrencyCompact(project.totalSpent, marketData.currency)} / ${formatCurrencyCompact(project.totalBudget, marketData.currency)}`,
         "success"
       );
     }

@@ -37,11 +37,15 @@ export default function LoginPage() {
   const { user, profile, loading: authLoading } = useAuth();
   const locale = (profile?.locale as Locale) || "en";
 
+  const redirectTo = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("redirect") || "/dashboard"
+    : "/dashboard";
+
   useEffect(() => {
     if (!authLoading && user) {
-      router.replace("/dashboard");
+      router.replace(redirectTo);
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, redirectTo]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -69,7 +73,7 @@ export default function LoginPage() {
 
     try {
       await signIn(email.trim().toLowerCase(), password);
-      router.push("/dashboard");
+      router.push(redirectTo);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Sign in failed";
       if (

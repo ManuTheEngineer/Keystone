@@ -577,6 +577,47 @@ export function OverviewClient() {
         </div>
       </CollapsibleSection>
 
+      {/* Deal Analysis Snapshot */}
+      {project.dealScore != null && project.dealScore > 0 && (
+        <div className="mb-5 p-4 bg-surface border border-border rounded-xl">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
+              Original Deal Analysis
+            </h4>
+            <Link
+              href="/analyze"
+              className="text-[11px] text-clay hover:underline"
+            >
+              Re-analyze
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <p className="text-[10px] text-muted uppercase tracking-wide">Deal Score</p>
+              <p className={`text-[18px] font-bold font-data ${
+                project.dealScore >= 65 ? "text-success" : project.dealScore >= 50 ? "text-warning" : "text-danger"
+              }`}>{project.dealScore}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted uppercase tracking-wide">Budget Variance</p>
+              <p className={`text-[18px] font-bold font-data ${
+                project.totalSpent <= project.totalBudget ? "text-success" : "text-danger"
+              }`}>
+                {project.totalBudget > 0
+                  ? `${project.totalSpent <= project.totalBudget ? "" : "+"}${Math.round(((project.totalSpent - project.totalBudget) / project.totalBudget) * 100)}%`
+                  : "N/A"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted uppercase tracking-wide">Remaining</p>
+              <p className="text-[18px] font-bold font-data text-earth">
+                {fmtCompact(Math.max(0, project.totalBudget - project.totalSpent))}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Pending Review Queue */}
       {pendingReviewTasks.length > 0 && (
         <div className="mb-5">

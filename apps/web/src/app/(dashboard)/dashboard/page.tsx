@@ -26,6 +26,7 @@ import {
   type TaskData,
   type PunchListItemData,
 } from "@/lib/services/project-service";
+import { getUserAnalyses, type SavedAnalysis } from "@/lib/services/analysis-service";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -52,6 +53,7 @@ import {
   Eye,
   Trash2,
   ChevronRight,
+  Calculator,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -555,6 +557,13 @@ export default function DashboardPage() {
   const [tourChecked, setTourChecked] = useState(false);
   const [projectTasks, setProjectTasks] = useState<Record<string, TaskData[]>>({});
   const [projectPunchList, setProjectPunchList] = useState<Record<string, PunchListItemData[]>>({});
+  const [savedAnalyses, setSavedAnalyses] = useState<SavedAnalysis[]>([]);
+
+  // Load saved analyses
+  useEffect(() => {
+    if (!user?.uid) return;
+    getUserAnalyses(user.uid).then((a) => setSavedAnalyses(a.slice(0, 3))).catch(() => {});
+  }, [user?.uid]);
 
   // Check if onboarding tour should be shown
   useEffect(() => {
@@ -955,6 +964,30 @@ export default function DashboardPage() {
               </div>
             </Link>
 
+            {/* Analyze a deal */}
+            <Link
+              href="/analyze"
+              className="bg-surface border border-border rounded-2xl p-6 text-left card-hover group block shadow-[0_1px_3px_rgba(44,24,16,0.04)]"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-11 h-11 rounded-xl bg-clay/10 flex items-center justify-center">
+                  <TrendingUp size={22} className="text-clay" />
+                </div>
+              </div>
+              <div
+                className="text-[17px] text-earth mb-1.5"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                Analyze a Deal
+              </div>
+              <p className="text-[12px] text-muted leading-relaxed mb-4">
+                Run the numbers before you commit. Get a deal score, cost breakdown, risk analysis, and cross-market comparison.
+              </p>
+              <div className="flex items-center gap-1.5 text-[12px] text-clay font-medium group-hover:gap-2.5 transition-all">
+                Open Deal Analyzer <ArrowRight size={13} />
+              </div>
+            </Link>
+
             {/* Start a project */}
             <Link
               href="/new-project"
@@ -1271,15 +1304,15 @@ export default function DashboardPage() {
               </Link>
 
               <Link
-                href="/new-project"
+                href="/analyze"
                 className="flex items-center gap-3 bg-surface border border-border/60 rounded-2xl px-4 py-3 card-hover"
               >
                 <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
                   <TrendingUp size={18} className="text-clay" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[13px] font-semibold text-earth">Evaluate a Deal</div>
-                  <div className="text-[11px] text-muted">Analyze and start a new project</div>
+                  <div className="text-[13px] font-semibold text-earth">Deal Analyzer</div>
+                  <div className="text-[11px] text-muted">Evaluate costs, score, and risks before you build</div>
                 </div>
               </Link>
 
@@ -1310,6 +1343,40 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
+
+          {/* Saved Analyses */}
+          {savedAnalyses.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <SectionLabel>Recent Analyses</SectionLabel>
+                <Link href="/analyze" className="text-[11px] text-clay hover:underline">View all</Link>
+              </div>
+              <div className="space-y-2">
+                {savedAnalyses.map((analysis) => (
+                  <Link
+                    key={analysis.id}
+                    href="/analyze"
+                    className="flex items-center gap-3 bg-surface border border-border/60 rounded-2xl px-4 py-3 card-hover"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-clay/10 flex items-center justify-center shrink-0">
+                      <Calculator size={16} className="text-clay" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-medium text-earth truncate">{analysis.name}</div>
+                      <div className="text-[11px] text-muted">
+                        Score: <span className={`font-data font-semibold ${
+                          (analysis.results?.dealScore ?? 0) >= 65 ? "text-success" : (analysis.results?.dealScore ?? 0) >= 50 ? "text-warning" : "text-danger"
+                        }`}>{analysis.results?.dealScore ?? "N/A"}</span>
+                        <span className="mx-1">-</span>
+                        {analysis.input?.market} / {analysis.input?.city || "No location"}
+                      </div>
+                    </div>
+                    <ChevronRight size={14} className="text-muted shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Recent Activity */}
           <div>

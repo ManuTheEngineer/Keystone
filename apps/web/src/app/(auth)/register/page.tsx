@@ -28,11 +28,16 @@ export default function RegisterPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
+  // Support ?redirect= param for post-registration routing
+  const redirectTo = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("redirect") || "/dashboard"
+    : "/dashboard";
+
   useEffect(() => {
     if (!authLoading && user) {
-      router.replace("/dashboard");
+      router.replace(redirectTo);
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, redirectTo]);
 
   // Detect browser language for unauthenticated pages
   const browserLocale: Locale = typeof navigator !== "undefined"
@@ -92,7 +97,7 @@ export default function RegisterPage() {
 
     try {
       await registerUser(email.trim().toLowerCase(), password, name.trim(), market);
-      router.push("/dashboard");
+      router.push(redirectTo);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Registration failed";
       if (message.includes("email-already-in-use")) {

@@ -42,6 +42,11 @@ export interface ProjectData {
   openItems: number;
   subPhase: string;
   details: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  stories?: number;
+  features?: string[];
+  analysisId?: string; // Link back to the Deal Analyzer analysis
   isDemo?: boolean;
   priority?: number; // 1, 2, 3 (1 = highest)
   pinned?: boolean;
@@ -280,6 +285,108 @@ export async function addBudgetItem(userId: string, data: Omit<BudgetItemData, "
   const itemRef = push(ref(db, `users/${userId}/projects/${data.projectId}/budgetItems`));
   await set(itemRef, data);
   return itemRef.key!;
+}
+
+/**
+ * Auto-generate budget line items for a new project based on its specs.
+ * Uses the total budget and market to create proportional category breakdowns.
+ */
+export async function generateBudgetFromSpecs(
+  userId: string,
+  projectId: string,
+  totalBudget: number,
+  market: Market,
+  features?: string[],
+): Promise<void> {
+  const isUSA = market === "USA";
+
+  // Standard budget category percentages
+  const categories: { category: string; pct: number }[] = isUSA ? [
+    { category: "Site Preparation", pct: 5 },
+    { category: "Foundation", pct: 10 },
+    { category: "Framing / Structure", pct: 15 },
+    { category: "Roofing", pct: 6 },
+    { category: "Exterior (Siding, Windows, Doors)", pct: 8 },
+    { category: "Plumbing", pct: 8 },
+    { category: "Electrical", pct: 7 },
+    { category: "HVAC", pct: 5 },
+    { category: "Insulation / Drywall", pct: 6 },
+    { category: "Interior Finishes (Flooring, Paint, Trim)", pct: 10 },
+    { category: "Kitchen / Cabinets", pct: 6 },
+    { category: "Permits / Design / Architecture", pct: 7 },
+    { category: "Contingency", pct: 7 },
+  ] : [
+    { category: "Site Preparation / Clearing", pct: 4 },
+    { category: "Foundation (Semelle + Soubassement)", pct: 12 },
+    { category: "Walls (Block / Poteau-Poutre)", pct: 18 },
+    { category: "Roofing (Charpente + Tole)", pct: 8 },
+    { category: "Plumbing", pct: 7 },
+    { category: "Electrical", pct: 6 },
+    { category: "Plastering / Enduit", pct: 5 },
+    { category: "Flooring / Carrelage", pct: 6 },
+    { category: "Doors / Windows (Menuiserie)", pct: 7 },
+    { category: "Painting", pct: 4 },
+    { category: "Kitchen / Bathroom Fixtures", pct: 5 },
+    { category: "Perimeter Wall / Cloture", pct: 6 },
+    { category: "Permits / Design", pct: 5 },
+    { category: "Contingency", pct: 7 },
+  ];
+
+  // Add feature-specific line items
+  const featureItems: { category: string; amount: number }[] = [];
+  if (features && features.length > 0) {
+    const featureCosts: Record<string, { label: string; usd: number; cfa: number }> = {
+      "garage-single": { label: "Garage (Single)", usd: 15000, cfa: 2500000 },
+      "garage-double": { label: "Garage (Double)", usd: 28000, cfa: 4500000 },
+      "pool": { label: "Swimming Pool", usd: 40000, cfa: 12000000 },
+      "solar": { label: "Solar Panels", usd: 18000, cfa: 5000000 },
+      "fence": { label: isUSA ? "Fencing" : "Perimeter Wall", usd: 6000, cfa: 2000000 },
+      "basement": { label: "Basement", usd: 35000, cfa: 0 },
+      "guest-house": { label: "Guest House", usd: 0, cfa: 15000000 },
+      "water-tank": { label: "Water Tank / Reservoir", usd: 0, cfa: 2500000 },
+      "generator-house": { label: "Generator House", usd: 0, cfa: 1500000 },
+    };
+    for (const fid of features) {
+      const fc = featureCosts[fid];
+      if (fc) {
+        const amt = isUSA ? fc.usd : fc.cfa;
+        if (amt > 0) featureItems.push({ category: fc.label, amount: amt });
+      }
+    }
+  }
+
+  // Calculate total from features to subtract from base budget
+  const featureTotal = featureItems.reduce((s, f) => s + f.amount, 0);
+  const baseBudget = Math.max(0, totalBudget - featureTotal);
+
+  const budgetRef = ref(db, `users/${userId}/projects/${projectId}/budgetItems`);
+
+  // Write all items in a single update for efficiency
+  const items: Record<string, Omit<BudgetItemData, "id">> = {};
+
+  for (const cat of categories) {
+    const key = push(budgetRef).key!;
+    items[key] = {
+      projectId,
+      category: cat.category,
+      estimated: Math.round(baseBudget * cat.pct / 100),
+      actual: 0,
+      status: "not-started",
+    };
+  }
+
+  for (const feat of featureItems) {
+    const key = push(budgetRef).key!;
+    items[key] = {
+      projectId,
+      category: feat.category,
+      estimated: feat.amount,
+      actual: 0,
+      status: "not-started",
+    };
+  }
+
+  await update(budgetRef, items);
 }
 
 export function subscribeToBudgetItems(

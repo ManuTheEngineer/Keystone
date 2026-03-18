@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTopbar } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { createProject, getUserProjects, type Market, type BuildPurpose, type PropertyType } from "@/lib/services/project-service";
+import { createProject, getUserProjects, generateBudgetFromSpecs, type Market, type BuildPurpose, type PropertyType } from "@/lib/services/project-service";
 import { getPlanLimits } from "@/lib/stripe-config";
 import type { PlanTier } from "@/lib/stripe-config";
 import {
@@ -21,6 +22,20 @@ import {
   AlertTriangle,
   BookOpen,
   Shield,
+  Bed,
+  Bath,
+  Layers,
+  Car,
+  Trees,
+  Waves,
+  Fence,
+  Sun,
+  Zap,
+  Droplets,
+  ShieldCheck,
+  Sparkles,
+  Calculator,
+  ArrowRight,
 } from "lucide-react";
 import { LearnTooltip } from "@/components/ui/LearnTooltip";
 import {
@@ -53,6 +68,10 @@ interface WizardState {
   propertyType: PropertyType | "";
   sizeCategory: SizeCategory;
   customSize: number;
+  bedrooms: number;
+  bathrooms: number;
+  stories: number;
+  features: string[];
   landOption: LandOption;
   landPrice: number;
   financingType: FinancingType;
@@ -62,6 +81,7 @@ interface WizardState {
   targetSalePrice: number;
   monthlyRent: number;
   projectName: string;
+  fromAnalyzer: boolean;
 }
 
 interface ScoreFactor {
@@ -83,6 +103,10 @@ const INITIAL_STATE: WizardState = {
   propertyType: "",
   sizeCategory: "standard",
   customSize: 0,
+  bedrooms: 3,
+  bathrooms: 2,
+  stories: 1,
+  features: [],
   landOption: "",
   landPrice: 0,
   financingType: "",
@@ -92,6 +116,7 @@ const INITIAL_STATE: WizardState = {
   targetSalePrice: 0,
   monthlyRent: 0,
   projectName: "",
+  fromAnalyzer: false,
 };
 
 const STEP_COUNT = 10;
@@ -107,6 +132,31 @@ const STEP_LABELS = [
   "Financials",
   "Score",
   "Name",
+];
+
+const US_FEATURES = [
+  { id: "garage-single", label: "Single garage", Icon: Car },
+  { id: "garage-double", label: "Double garage", Icon: Car },
+  { id: "porch-patio", label: "Porch / Patio", Icon: Trees },
+  { id: "pool", label: "Pool", Icon: Waves },
+  { id: "fence", label: "Fencing", Icon: Fence },
+  { id: "solar", label: "Solar panels", Icon: Sun },
+  { id: "outdoor-kitchen", label: "Outdoor kitchen", Icon: Zap },
+  { id: "basement", label: "Basement", Icon: Layers },
+  { id: "sprinkler", label: "Sprinkler system", Icon: Droplets },
+];
+
+const WA_FEATURES = [
+  { id: "garage-single", label: "Single garage", Icon: Car },
+  { id: "garage-double", label: "Double garage", Icon: Car },
+  { id: "porch-patio", label: "Veranda / Terrace", Icon: Trees },
+  { id: "pool", label: "Pool", Icon: Waves },
+  { id: "fence", label: "Perimeter wall", Icon: Fence },
+  { id: "solar", label: "Solar panels", Icon: Sun },
+  { id: "guest-house", label: "Guest house", Icon: Home },
+  { id: "water-tank", label: "Water tank", Icon: Droplets },
+  { id: "generator-house", label: "Generator house", Icon: Zap },
+  { id: "security-post", label: "Security post", Icon: ShieldCheck },
 ];
 
 const MARKET_MAP: Record<string, Market> = { USA: "USA", TOGO: "TOGO", GHANA: "GHANA", BENIN: "BENIN" };
@@ -436,7 +486,35 @@ export default function NewProjectPage() {
   const { user, profile } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [state, setState] = useState<WizardState>(INITIAL_STATE);
+  const [state, setState] = useState<WizardState>(() => {
+    // Pre-fill from Deal Analyzer URL params
+    if (typeof window === "undefined") return INITIAL_STATE;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("from") === "analyzer") {
+      return {
+        ...INITIAL_STATE,
+        fromAnalyzer: true,
+        goal: (params.get("goal") || "") as BuildGoal,
+        market: (params.get("market") || "") as MarketType | "",
+        city: params.get("city") || "",
+        propertyType: (params.get("type") || "") as PropertyType | "",
+        sizeCategory: (params.get("size") || "standard") as SizeCategory,
+        bedrooms: Number(params.get("beds")) || 3,
+        bathrooms: Number(params.get("baths")) || 2,
+        stories: Number(params.get("stories")) || 1,
+        features: params.get("feat") ? params.get("feat")!.split(",").filter(Boolean) : [],
+        financingType: (params.get("financing") || "") as FinancingType,
+        landOption: (params.get("land") || "") as LandOption,
+        landPrice: Number(params.get("landprice")) || 0,
+        downPaymentPct: Number(params.get("dp")) || 20,
+        loanRate: Number(params.get("rate")) || 8,
+        timelineMonths: Number(params.get("months")) || 12,
+        monthlyRent: Number(params.get("rent")) || 0,
+        targetSalePrice: Number(params.get("sale")) || 0,
+      };
+    }
+    return INITIAL_STATE;
+  });
   const [creating, setCreating] = useState(false);
   const [projectCount, setProjectCount] = useState(0);
   const [planError, setPlanError] = useState("");
@@ -619,7 +697,20 @@ export default function NewProjectPage() {
         openItems: 0,
         subPhase: "Getting started",
         details: `${propertyType} / ${market} / ${state.city.trim()}`,
+        bedrooms: state.bedrooms,
+        bathrooms: state.bathrooms,
+        stories: state.stories,
+        features: state.features.length > 0 ? state.features : undefined,
       });
+
+      // Auto-generate budget line items from project specs
+      try {
+        await generateBudgetFromSpecs(user.uid, projectId, costs.total, market, state.features);
+      } catch (budgetErr) {
+        console.warn("Budget auto-generation failed:", budgetErr);
+        // Non-blocking: project still created successfully
+      }
+
       router.push(`/project/${projectId}/overview`);
     } catch (err) {
       console.error("Failed to create project:", err);
@@ -704,6 +795,16 @@ export default function NewProjectPage() {
         <MentorTip>
           Your goal shapes everything. Building to sell requires tighter cost control for profit margins. Building to rent means optimizing for long-term cash flow. Building to occupy lets you prioritize what matters most to you.
         </MentorTip>
+
+        {!state.fromAnalyzer && (
+          <div className="mt-4 p-3 rounded-xl border border-clay/20 bg-clay/5 text-left">
+            <Link href="/analyze" className="flex items-center gap-2 text-[12px] text-clay font-medium hover:underline">
+              <Calculator size={14} />
+              Want to analyze costs and risks first? Try the Deal Analyzer
+              <ArrowRight size={12} />
+            </Link>
+          </div>
+        )}
       </div>
     );
   }
@@ -1093,6 +1194,63 @@ export default function NewProjectPage() {
               />
             </div>
           )}
+
+          {/* Beds, Baths, Stories */}
+          <div className="grid grid-cols-3 gap-3 mt-4">
+            <div className="p-3 rounded-xl border border-border bg-surface text-center">
+              <Bed size={16} className="mx-auto text-clay mb-1" />
+              <p className="text-[10px] text-muted mb-1">Bedrooms</p>
+              <div className="flex items-center justify-center gap-1.5">
+                <button onClick={() => update("bedrooms", Math.max(1, state.bedrooms - 1))} className="w-7 h-7 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[13px]">-</button>
+                <span className="w-6 text-center font-data text-[15px] font-semibold text-earth">{state.bedrooms}</span>
+                <button onClick={() => update("bedrooms", Math.min(8, state.bedrooms + 1))} className="w-7 h-7 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[13px]">+</button>
+              </div>
+            </div>
+            <div className="p-3 rounded-xl border border-border bg-surface text-center">
+              <Bath size={16} className="mx-auto text-clay mb-1" />
+              <p className="text-[10px] text-muted mb-1">Bathrooms</p>
+              <div className="flex items-center justify-center gap-1.5">
+                <button onClick={() => update("bathrooms", Math.max(1, state.bathrooms - 1))} className="w-7 h-7 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[13px]">-</button>
+                <span className="w-6 text-center font-data text-[15px] font-semibold text-earth">{state.bathrooms}</span>
+                <button onClick={() => update("bathrooms", Math.min(6, state.bathrooms + 1))} className="w-7 h-7 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[13px]">+</button>
+              </div>
+            </div>
+            <div className="p-3 rounded-xl border border-border bg-surface text-center">
+              <Layers size={16} className="mx-auto text-clay mb-1" />
+              <p className="text-[10px] text-muted mb-1">Stories</p>
+              <div className="flex items-center justify-center gap-1.5">
+                <button onClick={() => update("stories", Math.max(1, state.stories - 1))} className="w-7 h-7 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[13px]">-</button>
+                <span className="w-6 text-center font-data text-[15px] font-semibold text-earth">{state.stories}</span>
+                <button onClick={() => update("stories", Math.min(3, state.stories + 1))} className="w-7 h-7 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[13px]">+</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Features */}
+          <div className="mt-4">
+            <p className="text-[12px] font-semibold text-earth mb-2">Features & Extras</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(state.market === "USA" ? US_FEATURES : WA_FEATURES).map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => {
+                    const next = state.features.includes(f.id)
+                      ? state.features.filter((x) => x !== f.id)
+                      : [...state.features, f.id];
+                    update("features", next);
+                  }}
+                  className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border text-[11px] transition-all ${
+                    state.features.includes(f.id)
+                      ? "border-emerald-500 bg-emerald-50/30 text-emerald-700"
+                      : "border-border/50 text-muted hover:bg-warm/20"
+                  }`}
+                >
+                  <f.Icon size={12} />
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {constructionCostNow > 0 && (
@@ -1572,6 +1730,16 @@ export default function NewProjectPage() {
       <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-clay/60 text-center mb-1">
         Step {step + 1} of {STEP_COUNT}
       </p>
+
+      {/* Pre-filled from Deal Analyzer banner */}
+      {state.fromAnalyzer && step < 8 && (
+        <div className="flex items-center gap-2 px-4 py-2.5 mb-4 rounded-xl border border-emerald-200 bg-emerald-50/50 text-left">
+          <Sparkles size={14} className="text-emerald-600 shrink-0" />
+          <p className="text-[12px] text-emerald-800">
+            Pre-filled from your Deal Analyzer results. Review and adjust each step, then continue.
+          </p>
+        </div>
+      )}
 
       {/* Step content */}
       <div className="text-center">

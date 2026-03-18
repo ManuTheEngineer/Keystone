@@ -250,7 +250,7 @@ export function ScheduleClient() {
 
   useEffect(() => {
     if (project) {
-      setTopbar(t("project.schedule"), `Week ${project.currentWeek} of ${project.totalWeeks}`, "info");
+      setTopbar(project.name, `${t("project.schedule")} — Week ${project.currentWeek} of ${project.totalWeeks}`, "info");
     }
   }, [project, setTopbar]);
 

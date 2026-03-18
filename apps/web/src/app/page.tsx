@@ -191,12 +191,13 @@ export default function LandingPage() {
                   Start your project
                   <ArrowRight size={16} className="ml-2" />
                 </Link>
-                <a
-                  href="#how-it-works"
-                  className="inline-flex items-center px-8 py-4 text-[15px] font-medium rounded-full border border-earth text-earth hover:bg-earth hover:text-warm transition-colors btn-hover"
+                <Link
+                  href="/register?redirect=/analyze"
+                  className="inline-flex items-center px-8 py-4 text-[15px] font-medium rounded-full border border-clay text-clay hover:bg-clay hover:text-white transition-colors btn-hover"
                 >
-                  See how it works
-                </a>
+                  Analyze a deal
+                  <Calculator size={16} className="ml-2" />
+                </Link>
               </div>
             </div>
 
