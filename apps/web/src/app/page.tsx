@@ -657,7 +657,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <a
-                href="mailto:support@keystone.build"
+                href="mailto:ManuTheEngineer@outlook.com?subject=Keystone Support"
                 className="block w-full text-center py-3 text-[14px] font-medium rounded-full border border-earth text-earth hover:bg-earth hover:text-warm transition-colors"
               >
                 Contact us
@@ -667,7 +667,52 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Section 7: Footer -- stays dark in both modes */}
+      {/* Section 7: About */}
+      <section id="about" className="py-16 sm:py-24 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-[11px] font-semibold uppercase tracking-[3px] text-clay mb-3">
+              About
+            </p>
+            <h2
+              className="text-[28px] sm:text-[36px] text-earth leading-tight"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
+              Built by a builder, for builders
+            </h2>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+            {/* Photo placeholder */}
+            <div className="w-28 h-28 rounded-2xl bg-warm flex items-center justify-center shrink-0">
+              <span className="text-[32px] font-bold text-clay font-data">EA</span>
+            </div>
+
+            <div className="flex-1 text-center md:text-left">
+              <h3
+                className="text-[20px] text-earth mb-1"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                Emmanuel Abok
+              </h3>
+              <p className="text-[13px] text-clay font-medium mb-4">Founder & Lead Developer</p>
+              <div className="space-y-3 text-[14px] text-muted leading-relaxed">
+                <p>
+                  Keystone was born from a personal need. As a software engineer with roots in West Africa, I watched family and friends navigate the overwhelming complexity of building homes across two continents — managing contractors remotely, tracking budgets across currencies, and making high-stakes decisions with zero construction experience.
+                </p>
+                <p>
+                  The existing tools were built for professional contractors, not for the first-time owner-builder. There was nothing that combined education, project management, financial modeling, and remote monitoring in one platform — and certainly nothing that understood both the U.S. construction market and the realities of building in Togo, Ghana, or Benin.
+                </p>
+                <p>
+                  Keystone is that tool. Every feature is designed to guide someone with zero construction knowledge through every phase of building a home, whether they are on-site or watching from thousands of miles away. The AI advisor, the dual-market intelligence, the phase-based learning system — these exist because I built what I wished existed when my own family started building.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 8: Footer -- stays dark in both modes */}
       <footer className="landing-footer py-12 sm:py-16 px-4 sm:px-6 bg-earth">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
@@ -723,8 +768,8 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
-                  <a href="mailto:support@keystone.build" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
-                    Contact
+                  <a href="mailto:ManuTheEngineer@outlook.com?subject=Keystone Support" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                    support@keystone.build
                   </a>
                 </li>
               </ul>
