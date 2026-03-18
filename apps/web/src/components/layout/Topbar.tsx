@@ -3,6 +3,7 @@
 import { memo } from "react";
 import { Menu } from "lucide-react";
 import { NotificationBell } from "@/components/ui/NotificationBell";
+import { GlobalSearch } from "@/components/ui/GlobalSearch";
 import type { AppNotification } from "@/lib/notifications";
 
 interface TopbarProps {
@@ -44,6 +45,7 @@ export const Topbar = memo(function Topbar({
         <h3 style={{ fontFamily: "var(--font-heading)" }} className="text-[17px] text-earth">{title}</h3>
       </div>
       <div className="flex items-center gap-2">
+        <GlobalSearch />
         {badge && (
           <span
             className={`text-[10px] px-3 py-1 rounded-full font-medium ${badgeStyles[badgeVariant]}`}

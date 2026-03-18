@@ -30,6 +30,7 @@ import {
   Crown,
   Upload,
   Image,
+  Bell,
 } from "lucide-react";
 import { PLAN_CONFIG, formatPrice, getAnnualSavings, type PlanTier, type BillingInterval } from "@/lib/stripe-config";
 import { getAuthHeaders } from "@/lib/api-client";
@@ -1241,6 +1242,67 @@ export function SettingsClient() {
           </Card>
         </>
       )}
+
+      {/* ================================================================= */}
+      {/* Notification Preferences                                           */}
+      {/* ================================================================= */}
+      <SectionLabel>Notifications</SectionLabel>
+      <Card padding="md" className="mb-5">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
+            <Bell size={20} className="text-clay" />
+          </div>
+          <div>
+            <p className="text-[13px] font-medium text-earth">Notification Preferences</p>
+            <p className="text-[11px] text-muted">Control what notifications you receive</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {[
+            { id: "budget_alerts", label: "Budget alerts", desc: "When spending exceeds thresholds", defaultOn: true },
+            { id: "milestone_reminders", label: "Milestone reminders", desc: "Upcoming milestones and inspections", defaultOn: true },
+            { id: "daily_summary", label: "Daily activity summary", desc: "End-of-day recap of project activity", defaultOn: false },
+            { id: "punch_list", label: "Punch list updates", desc: "When punch list items are added or resolved", defaultOn: true },
+            { id: "weekly_digest", label: "Weekly project digest", desc: "Weekly email summary of all projects", defaultOn: false, requiresPlan: "BUILDER" as const },
+          ].map((pref) => {
+            const locked = pref.requiresPlan && ["FOUNDATION"].includes(currentPlan);
+            return (
+              <div key={pref.id} className="flex items-center justify-between py-1.5">
+                <div>
+                  <p className="text-[12px] text-earth font-medium">{pref.label}</p>
+                  <p className="text-[10px] text-muted">{pref.desc}</p>
+                </div>
+                {locked ? (
+                  <span className="text-[9px] text-muted bg-surface-alt px-2 py-1 rounded-full">
+                    Builder+
+                  </span>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      if (!user) return;
+                      const path = `users/${user.uid}/profile/notifications/${pref.id}`;
+                      const current = (profile as any)?.notifications?.[pref.id] ?? pref.defaultOn;
+                      await update(ref(db, `users/${user.uid}/profile`), {
+                        [`notifications/${pref.id}`]: !current,
+                      });
+                    }}
+                    className={`relative w-9 h-5 rounded-full transition-colors ${
+                      ((profile as any)?.notifications?.[pref.id] ?? pref.defaultOn)
+                        ? "bg-success" : "bg-border"
+                    }`}
+                  >
+                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                      ((profile as any)?.notifications?.[pref.id] ?? pref.defaultOn)
+                        ? "translate-x-4" : "translate-x-0.5"
+                    }`} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
 
       {/* ================================================================= */}
       {/* Data Section                                                       */}
