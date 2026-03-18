@@ -189,8 +189,8 @@ function getMentorGuidance(
         "Every successful development starts with a clear vision. Before you pick up a hammer, you need to answer three questions: What am I building? Who am I building it for? And does the math work? Let me help you figure that out.",
       whyItMatters:
         "Most first-time builders jump straight into construction without a plan. That is how budgets explode and timelines collapse. The define phase exists to prevent that.",
-      nextStepLabel: "Start your first project",
-      nextStepHref: "/new-project",
+      nextStepLabel: undefined,
+      nextStepHref: undefined,
     });
     tips.push({
       id: "dashboard-no-projects-2",
