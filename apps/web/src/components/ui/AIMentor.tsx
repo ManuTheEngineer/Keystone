@@ -861,13 +861,28 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
               <ArrowRight size={11} />
             </a>
           ) : project?.id ? (
+            <div className="flex items-center gap-3">
+              <a
+                href="/learn"
+                className="text-[10px] text-muted hover:text-clay transition-colors"
+              >
+                Learn more
+              </a>
+              <a
+                href={`/project/${project.id}/ai-assistant`}
+                className="text-[10px] text-muted hover:text-clay transition-colors"
+              >
+                Ask AI Assistant
+              </a>
+            </div>
+          ) : (
             <a
-              href={`/project/${project.id}/ai-assistant`}
+              href="/learn"
               className="text-[10px] text-muted hover:text-clay transition-colors"
             >
-              Ask AI Assistant
+              Learn more
             </a>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
