@@ -12,6 +12,13 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Prevent iOS zoom on input focus (iOS zooms when font < 16px) */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* Disabled buttons always show not-allowed cursor */
 button:disabled,
 input:disabled,
