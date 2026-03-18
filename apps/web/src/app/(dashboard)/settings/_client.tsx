@@ -150,7 +150,7 @@ export function SettingsClient() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    setTopbar("Parameters");
+    setTopbar(t("settings.title"));
   }, [setTopbar]);
 
   // Verify Stripe checkout on redirect back from payment
@@ -481,7 +481,7 @@ export function SettingsClient() {
 
   return (
     <div className="animate-stagger">
-      <PageHeader title="Parameters" />
+      <PageHeader title={t("settings.title")} />
 
       {/* Tab navigation */}
       <div className="flex gap-1 mb-5 border-b border-border overflow-x-auto">
