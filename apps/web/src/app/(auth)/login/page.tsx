@@ -6,6 +6,8 @@ import Link from "next/link";
 import { signIn } from "@/lib/services/auth-service";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
 import { AlertTriangle, Eye, EyeOff } from "lucide-react";
+import { t, type Locale } from "@/lib/i18n";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const quotes = [
   {
@@ -32,6 +34,8 @@ const quotes = [
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user, profile } = useAuth();
+  const locale = (profile?.locale as Locale) || "en";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -103,10 +107,10 @@ export default function LoginPage() {
                 className="text-[28px] text-earth leading-tight"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                Welcome back
+                {t("auth.welcomeBack", locale)}
               </h1>
               <p className="text-[14px] text-muted mt-1.5">
-                Sign in to continue building
+                {t("auth.signInContinue", locale)}
               </p>
             </div>
 
@@ -120,7 +124,7 @@ export default function LoginPage() {
 
               <div>
                 <label className="block text-[13px] font-medium text-earth mb-1.5">
-                  Email address
+                  {t("auth.email", locale)}
                 </label>
                 <input
                   type="email"
@@ -139,7 +143,7 @@ export default function LoginPage() {
                     href="/forgot-password"
                     className="text-[12px] text-clay hover:text-clay-light transition-colors"
                   >
-                    Forgot password?
+                    {t("auth.forgotPassword", locale)}
                   </Link>
                 </div>
                 <div className="relative">
@@ -149,7 +153,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="w-full px-4 py-3.5 pr-12 text-[14px] border border-border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
-                  placeholder="Your password"
+                  placeholder={t("auth.yourPassword", locale)}
                 />
                 <button
                   type="button"
@@ -167,14 +171,14 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full py-3.5 text-[15px] font-medium rounded-xl btn-earth active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:active:scale-100"
               >
-                {loading ? "Signing in..." : "Sign in"}
+                {loading ? t("auth.signingIn", locale) : t("auth.signIn", locale)}
               </button>
             </form>
 
             <p className="text-center text-[13px] text-muted mt-7">
-              New to Keystone?{" "}
+              {t("auth.noAccount", locale)}{" "}
               <Link href="/register" className="text-clay hover:text-clay-light font-medium transition-colors">
-                Create an account
+                {t("auth.createAccount", locale)}
               </Link>
             </p>
           </div>

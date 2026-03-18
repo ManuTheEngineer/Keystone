@@ -292,17 +292,17 @@ const translations: Record<string, Record<Locale, string>> = {
     es: "Registrarse",
   },
   "auth.forgotPassword": {
-    en: "Forgot password",
-    fr: "Mot de passe oubli\u00e9",
-    es: "Olvid\u00e9 mi contrase\u00f1a",
+    en: "Forgot password?",
+    fr: "Mot de passe oubli\u00e9 ?",
+    es: "\u00bfOlvidaste tu contrase\u00f1a?",
   },
   "auth.createAccount": {
-    en: "Create account",
+    en: "Create an account",
     fr: "Cr\u00e9er un compte",
-    es: "Crear cuenta",
+    es: "Crear una cuenta",
   },
   "auth.email": {
-    en: "Email",
+    en: "Email address",
     fr: "Adresse e-mail",
     es: "Correo electr\u00f3nico",
   },
@@ -312,9 +312,9 @@ const translations: Record<string, Record<Locale, string>> = {
     es: "Contrase\u00f1a",
   },
   "auth.name": {
-    en: "Name",
-    fr: "Nom",
-    es: "Nombre",
+    en: "Full name",
+    fr: "Nom complet",
+    es: "Nombre completo",
   },
   "auth.confirmPassword": {
     en: "Confirm password",
@@ -324,42 +324,122 @@ const translations: Record<string, Record<Locale, string>> = {
   "auth.welcomeBack": {
     en: "Welcome back",
     fr: "Bon retour",
-    es: "Bienvenido de nuevo",
+    es: "Bienvenido",
+  },
+  "auth.signInContinue": {
+    en: "Sign in to continue building",
+    fr: "Connectez-vous pour continuer",
+    es: "Inicia sesi\u00f3n para continuar",
   },
   "auth.getStarted": {
     en: "Get started",
     fr: "Commencer",
     es: "Comenzar",
   },
-  "auth.resetPassword": {
-    en: "Reset password",
-    fr: "R\u00e9initialiser le mot de passe",
-    es: "Restablecer contrase\u00f1a",
+  "auth.buildFirst": {
+    en: "Start your first build today",
+    fr: "Commencez votre premier projet aujourd'hui",
+    es: "Comienza tu primer proyecto hoy",
+  },
+  "auth.minChars": {
+    en: "Minimum 6 characters",
+    fr: "Minimum 6 caract\u00e8res",
+    es: "M\u00ednimo 6 caracteres",
+  },
+  "auth.tooShort": {
+    en: "Too short",
+    fr: "Trop court",
+    es: "Muy corta",
+  },
+  "auth.fair": {
+    en: "Fair \u2014 add numbers or symbols for a stronger password",
+    fr: "Correct \u2014 ajoutez des chiffres ou symboles",
+    es: "Regular \u2014 a\u00f1ade n\u00fameros o s\u00edmbolos",
+  },
+  "auth.strong": {
+    en: "Strong password",
+    fr: "Mot de passe fort",
+    es: "Contrase\u00f1a fuerte",
+  },
+  "auth.agreeTerms": {
+    en: "I agree to the",
+    fr: "J'accepte les",
+    es: "Acepto los",
+  },
+  "auth.terms": {
+    en: "Terms of Service",
+    fr: "Conditions d'utilisation",
+    es: "T\u00e9rminos de servicio",
+  },
+  "auth.and": {
+    en: "and",
+    fr: "et",
+    es: "y",
+  },
+  "auth.privacy": {
+    en: "Privacy Policy",
+    fr: "Politique de confidentialit\u00e9",
+    es: "Pol\u00edtica de privacidad",
+  },
+  "auth.creating": {
+    en: "Creating account...",
+    fr: "Cr\u00e9ation du compte...",
+    es: "Creando cuenta...",
+  },
+  "auth.signingIn": {
+    en: "Signing in...",
+    fr: "Connexion...",
+    es: "Iniciando sesi\u00f3n...",
   },
   "auth.noAccount": {
-    en: "Don't have an account?",
-    fr: "Vous n'avez pas de compte\u00a0?",
-    es: "\u00bfNo tienes una cuenta?",
+    en: "New to Keystone?",
+    fr: "Nouveau sur Keystone ?",
+    es: "\u00bfNuevo en Keystone?",
   },
   "auth.haveAccount": {
     en: "Already have an account?",
-    fr: "Vous avez d\u00e9j\u00e0 un compte\u00a0?",
+    fr: "Vous avez d\u00e9j\u00e0 un compte ?",
     es: "\u00bfYa tienes una cuenta?",
   },
-  "auth.agreeTerms": {
-    en: "I agree to the terms and conditions",
-    fr: "J'accepte les conditions g\u00e9n\u00e9rales d'utilisation",
-    es: "Acepto los t\u00e9rminos y condiciones",
+  "auth.resetPassword": {
+    en: "Reset your password",
+    fr: "R\u00e9initialiser votre mot de passe",
+    es: "Restablecer contrase\u00f1a",
+  },
+  "auth.resetInstructions": {
+    en: "Enter your email and we'll send you a link to reset your password.",
+    fr: "Entrez votre e-mail et nous vous enverrons un lien de r\u00e9initialisation.",
+    es: "Ingresa tu correo y te enviaremos un enlace para restablecer tu contrase\u00f1a.",
   },
   "auth.sendResetLink": {
     en: "Send reset link",
-    fr: "Envoyer le lien de r\u00e9initialisation",
-    es: "Enviar enlace de restablecimiento",
+    fr: "Envoyer le lien",
+    es: "Enviar enlace",
+  },
+  "auth.sending": {
+    en: "Sending...",
+    fr: "Envoi...",
+    es: "Enviando...",
   },
   "auth.checkInbox": {
     en: "Check your inbox",
     fr: "V\u00e9rifiez votre bo\u00eete de r\u00e9ception",
     es: "Revisa tu bandeja de entrada",
+  },
+  "auth.resetSent": {
+    en: "If an account exists for that email, you'll receive a password reset link.",
+    fr: "Si un compte existe pour cet e-mail, vous recevrez un lien de r\u00e9initialisation.",
+    es: "Si existe una cuenta con ese correo, recibir\u00e1s un enlace de restablecimiento.",
+  },
+  "auth.backToSignIn": {
+    en: "Back to sign in",
+    fr: "Retour \u00e0 la connexion",
+    es: "Volver a iniciar sesi\u00f3n",
+  },
+  "auth.yourPassword": {
+    en: "Your password",
+    fr: "Votre mot de passe",
+    es: "Tu contrase\u00f1a",
   },
 
   // ── Dashboard ────────────────────────────────────────────────────────
@@ -407,6 +487,11 @@ const translations: Record<string, Record<Locale, string>> = {
     en: "No projects yet",
     fr: "Aucun projet pour le moment",
     es: "A\u00fan no hay proyectos",
+  },
+  "dashboard.activeProjects": {
+    en: "Active Projects",
+    fr: "Projets actifs",
+    es: "Proyectos activos",
   },
 
   // ── Settings ─────────────────────────────────────────────────────────
@@ -653,6 +738,55 @@ const translations: Record<string, Record<Locale, string>> = {
     en: "New project",
     fr: "Nouveau projet",
     es: "Nuevo proyecto",
+  },
+
+  // ── Not Found ───────────────────────────────────────────────────────
+  "notfound.title": {
+    en: "Page not found",
+    fr: "Page non trouv\u00e9e",
+    es: "P\u00e1gina no encontrada",
+  },
+  "notfound.message": {
+    en: "The page you are looking for does not exist or has been moved. Let us get you back on track.",
+    fr: "La page que vous recherchez n'existe pas ou a \u00e9t\u00e9 d\u00e9plac\u00e9e.",
+    es: "La p\u00e1gina que buscas no existe o ha sido movida.",
+  },
+  "notfound.dashboard": {
+    en: "Go to Dashboard",
+    fr: "Aller au tableau de bord",
+    es: "Ir al panel",
+  },
+  "notfound.home": {
+    en: "Home",
+    fr: "Accueil",
+    es: "Inicio",
+  },
+
+  // ── Search ─────────────────────────────────────────────────────────
+  "search.placeholder": {
+    en: "Search projects, contacts, budget items, tasks...",
+    fr: "Rechercher projets, contacts, budget, t\u00e2ches...",
+    es: "Buscar proyectos, contactos, presupuesto, tareas...",
+  },
+  "search.noResults": {
+    en: "No results found for",
+    fr: "Aucun r\u00e9sultat pour",
+    es: "Sin resultados para",
+  },
+  "search.navigate": {
+    en: "Arrow keys to navigate",
+    fr: "Fl\u00e8ches pour naviguer",
+    es: "Flechas para navegar",
+  },
+  "search.select": {
+    en: "Enter to select",
+    fr: "Entr\u00e9e pour s\u00e9lectionner",
+    es: "Enter para seleccionar",
+  },
+  "search.close": {
+    en: "Esc to close",
+    fr: "\u00c9chap pour fermer",
+    es: "Esc para cerrar",
   },
 
   // ── Notifications ────────────────────────────────────────────────────

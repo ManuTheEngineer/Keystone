@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useTopbar, useDashboard } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import {
   ref as dbRef,
   get as dbGet,
@@ -396,11 +397,11 @@ interface ActionItem {
 /*  Time helpers                                                      */
 /* ------------------------------------------------------------------ */
 
-function getGreeting(): string {
+function getGreeting(t: (key: string) => string): string {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return t("dashboard.greeting.morning");
+  if (hour < 17) return t("dashboard.greeting.afternoon");
+  return t("dashboard.greeting.evening");
 }
 
 function getFormattedDate(): string {
@@ -545,6 +546,7 @@ function marketDotColor(market: string): string {
 export default function DashboardPage() {
   const { setTopbar } = useTopbar();
   const { user, profile } = useAuth();
+  const { t } = useTranslation();
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [showTour, setShowTour] = useState(false);
@@ -887,14 +889,14 @@ export default function DashboardPage() {
               className="text-[28px] text-earth leading-tight"
               style={{ fontFamily: "var(--font-heading)" }}
             >
-              {getGreeting()}, {firstName}
+              {getGreeting(t)}, {firstName}
             </h1>
             <p className="text-[13px] text-muted mt-1">{getFormattedDate()}</p>
           </div>
 
           {/* Journey progress teaser */}
           <div className="bg-surface border border-border rounded-2xl p-5 mb-6 shadow-[0_1px_3px_rgba(44,24,16,0.04)]">
-            <p className="text-[11px] font-medium text-muted uppercase tracking-wider mb-4">Your building journey</p>
+            <p className="text-[11px] font-medium text-muted uppercase tracking-wider mb-4">{t("dashboard.yourJourney")}</p>
             <div className="flex items-center justify-between gap-1">
               {JOURNEY_PHASES.map((phase, i) => {
                 const Icon = phase.icon;
@@ -918,7 +920,7 @@ export default function DashboardPage() {
               })}
             </div>
             <p className="text-[11px] text-muted mt-4 text-center">
-              Create your first project to begin tracking progress across all phases.
+              {t("dashboard.noProjects")}
             </p>
           </div>
 
@@ -940,13 +942,13 @@ export default function DashboardPage() {
                 className="text-[17px] text-earth mb-1.5"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                Learn the Fundamentals
+                {t("dashboard.learnFundamentals")}
               </div>
               <p className="text-[12px] text-muted leading-relaxed mb-4">
                 New to construction? Start here. Learn the basics of building, financing, and managing a project before you invest a dollar.
               </p>
               <div className="flex items-center gap-1.5 text-[12px] text-emerald-600 font-medium group-hover:gap-2.5 transition-all">
-                Start learning <ArrowRight size={13} />
+                {t("dashboard.getStarted")} <ArrowRight size={13} />
               </div>
             </Link>
 
@@ -964,13 +966,13 @@ export default function DashboardPage() {
                 className="text-[17px] text-earth mb-1.5"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                Start a Project
+                {t("dashboard.startProject")}
               </div>
               <p className="text-[12px] text-muted leading-relaxed mb-4">
                 Set up your first build with market-specific cost benchmarks, financial modeling, and a step-by-step project tracker.
               </p>
               <div className="flex items-center gap-1.5 text-[12px] text-clay font-medium group-hover:gap-2.5 transition-all">
-                Create project <ArrowRight size={13} />
+                {t("project.newProject")} <ArrowRight size={13} />
               </div>
             </Link>
           </div>
@@ -982,7 +984,7 @@ export default function DashboardPage() {
                 <Lightbulb size={16} className="text-clay" />
               </div>
               <div>
-                <p className="text-[12px] font-medium text-earth mb-1">Did you know?</p>
+                <p className="text-[12px] font-medium text-earth mb-1">{t("dashboard.didYouKnow")}</p>
                 <p className="text-[11px] text-muted leading-relaxed">
                   Keystone supports both U.S. and West African construction markets. Whether you are building with wood-frame in the States or reinforced concrete block in Togo, Ghana, or Benin, every tool adapts to your market — from cost benchmarks to inspection checklists.
                 </p>
@@ -1017,7 +1019,7 @@ export default function DashboardPage() {
               className="text-[24px] text-earth leading-tight"
               style={{ fontFamily: "var(--font-heading)" }}
             >
-              {getGreeting()}, {firstName}
+              {getGreeting(t)}, {firstName}
             </h1>
             <p className="text-[13px] text-muted mt-1">{getFormattedDate()}</p>
           </div>
@@ -1025,7 +1027,7 @@ export default function DashboardPage() {
           {/* Active Projects */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
-              <SectionLabel>Active Projects</SectionLabel>
+              <SectionLabel>{t("dashboard.activeProjects")}</SectionLabel>
               <Badge variant="emerald" className="rounded-full ml-1">
                 {stats.activeCount}
               </Badge>

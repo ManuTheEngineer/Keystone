@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { t } from "@/lib/i18n";
 
 export default function NotFound() {
   return (
@@ -10,23 +11,23 @@ export default function NotFound() {
         className="text-[24px] text-earth mb-3"
         style={{ fontFamily: "Georgia, serif" }}
       >
-        Page not found
+        {t("notfound.title")}
       </h1>
       <p className="text-[14px] text-muted mb-8 max-w-md leading-relaxed">
-        The page you are looking for does not exist or has been moved. Let us get you back on track.
+        {t("notfound.message")}
       </p>
       <div className="flex items-center gap-3">
         <Link
           href="/dashboard"
           className="px-6 py-2.5 text-[14px] font-medium bg-earth text-warm rounded-xl hover:bg-earth-light transition-colors"
         >
-          Go to Dashboard
+          {t("notfound.dashboard")}
         </Link>
         <Link
           href="/"
           className="px-6 py-2.5 text-[14px] font-medium border border-border text-earth rounded-xl hover:bg-surface-alt transition-colors"
         >
-          Home
+          {t("notfound.home")}
         </Link>
       </div>
     </div>

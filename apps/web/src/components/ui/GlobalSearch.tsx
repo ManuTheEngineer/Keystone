@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X, FolderOpen, DollarSign, Users, FileText, ClipboardList, Camera } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { ref, get } from "firebase/database";
 import { db } from "@/lib/firebase";
 
@@ -43,6 +44,7 @@ export function GlobalSearch() {
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   // Keyboard shortcut: Ctrl/Cmd + K
   useEffect(() => {
@@ -120,7 +122,7 @@ export function GlobalSearch() {
         aria-label="Search"
       >
         <Search size={13} />
-        <span className="hidden sm:inline">Search</span>
+        <span className="hidden sm:inline">{t("common.search")}</span>
         <kbd className="hidden sm:inline text-[9px] text-muted/50 ml-1 px-1 py-0.5 rounded bg-surface-alt border border-border">
           Ctrl K
         </kbd>
@@ -151,7 +153,7 @@ export function GlobalSearch() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Search projects, contacts, budget items, tasks..."
+              placeholder={t("search.placeholder")}
               className="flex-1 text-[14px] text-earth bg-transparent placeholder:text-muted/50 focus:outline-none"
             />
             {query && (
@@ -174,7 +176,7 @@ export function GlobalSearch() {
 
             {!searching && query.length >= 2 && results.length === 0 && (
               <div className="px-4 py-6 text-center">
-                <p className="text-[12px] text-muted">No results found for &quot;{query}&quot;</p>
+                <p className="text-[12px] text-muted">{t("search.noResults")} &quot;{query}&quot;</p>
               </div>
             )}
 
@@ -203,9 +205,9 @@ export function GlobalSearch() {
 
           {/* Footer hint */}
           <div className="px-4 py-2 border-t border-border bg-surface-alt/50 flex items-center gap-4 text-[9px] text-muted/50">
-            <span>Arrow keys to navigate</span>
-            <span>Enter to select</span>
-            <span>Esc to close</span>
+            <span>{t("search.navigate")}</span>
+            <span>{t("search.select")}</span>
+            <span>{t("search.close")}</span>
           </div>
         </div>
       </div>
