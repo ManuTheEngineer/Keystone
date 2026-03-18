@@ -20,6 +20,67 @@ import {
 
 const PHASE_NAMES = ["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"];
 
+/* ── CSS Variables ── */
+const cssVars: Record<string, string> = {
+  "--bg": "#FDFBF7",
+  "--card": "#FFFFFF",
+  "--t1": "#2C1810",
+  "--t2": "#5A5A5A",
+  "--t3": "#9A9590",
+  "--b1": "#E0D5C8",
+  "--clay": "#8B4513",
+  "--sand": "#D4A574",
+  "--success": "#2D6A4F",
+  "--success-bg": "#EDF7ED",
+  "--warning": "#BC6C25",
+  "--warning-bg": "#FFF8E7",
+  "--danger": "#9B2226",
+  "--danger-bg": "#FDEDED",
+  "--info": "#1B4965",
+  "--info-bg": "#E8F0F5",
+};
+
+/* ── Inline style helpers ── */
+const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono', monospace" };
+const serif: React.CSSProperties = { fontFamily: "'Georgia', 'Times New Roman', serif" };
+const label: React.CSSProperties = {
+  fontSize: 8, fontWeight: 500, textTransform: "uppercase",
+  letterSpacing: "2px", color: "var(--t3)",
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { bg: string; color: string; text: string }> = {
+    "upcoming":       { bg: "var(--info-bg)",    color: "var(--info)",    text: "To do" },
+    "rejected":       { bg: "var(--danger-bg)",  color: "var(--danger)",  text: "Returned" },
+    "in-progress":    { bg: "var(--warning-bg)", color: "var(--warning)", text: "In progress" },
+    "pending-review": { bg: "var(--warning-bg)", color: "var(--warning)", text: "Awaiting review" },
+    "done":           { bg: "var(--success-bg)", color: "var(--success)", text: "Done" },
+  };
+  const s = map[status] || map["upcoming"];
+  return (
+    <span style={{
+      fontSize: 8, fontWeight: 500, padding: "2px 8px", borderRadius: 12,
+      background: s.bg, color: s.color, whiteSpace: "nowrap",
+    }}>
+      {s.text}
+    </span>
+  );
+}
+
+function SectionLabel({ children, count }: { children: React.ReactNode; count?: number }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 8,
+      marginBottom: 8, marginTop: 16,
+    }}>
+      <span style={{ ...label, flexShrink: 0 }}>
+        {children}{count != null ? ` (${count})` : ""}
+      </span>
+      <span style={{ flex: 1, height: 0.5, background: "var(--b1)" }} />
+    </div>
+  );
+}
+
 export default function ContractorPage() {
   const params = useParams();
   const token = params.token as string;
@@ -34,7 +95,7 @@ export default function ContractorPage() {
   const [submitting, setSubmitting] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [toast, setToast] = useState("");
-  const [taskPhotos, setTaskPhotos] = useState<Record<string, {url: string; latitude?: number; longitude?: number; timestamp: string}[]>>({});
+  const [taskPhotos, setTaskPhotos] = useState<Record<string, { url: string; latitude?: number; longitude?: number; timestamp: string }[]>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activePhotoTaskId, setActivePhotoTaskId] = useState<string | null>(null);
 
@@ -58,7 +119,6 @@ export default function ContractorPage() {
       const dataUrl = reader.result as string;
       const timestamp = new Date().toISOString();
 
-      // Attempt GPS capture (non-blocking)
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -76,7 +136,6 @@ export default function ContractorPage() {
             }));
           },
           () => {
-            // GPS failed — still store photo without coordinates
             setTaskPhotos((prev) => ({
               ...prev,
               [taskId]: [
@@ -88,7 +147,6 @@ export default function ContractorPage() {
           { timeout: 5000, enableHighAccuracy: true }
         );
       } else {
-        // No geolocation API — store without coordinates
         setTaskPhotos((prev) => ({
           ...prev,
           [taskId]: [
@@ -99,8 +157,6 @@ export default function ContractorPage() {
       }
     };
     reader.readAsDataURL(file);
-
-    // Reset the input so the same file can be re-selected
     e.target.value = "";
   }
 
@@ -130,7 +186,6 @@ export default function ContractorPage() {
         const tasksSnap = await get(ref(db, `users/${validated.userId}/projects/${validated.projectId}/tasks`));
         if (tasksSnap.exists()) {
           const data = tasksSnap.val() as Record<string, TaskData>;
-          // Only show tasks assigned to this contractor
           const myTasks = Object.entries(data)
             .map(([id, t]) => ({ ...t, id }))
             .filter((t) => t.assignedTo === validated.contactId || !t.assignedTo)
@@ -192,7 +247,6 @@ export default function ContractorPage() {
       } : t));
       setCompletionNote("");
       setActiveTaskId(null);
-      // Clear photos for this task after successful submit
       setTaskPhotos((prev) => {
         const next = { ...prev };
         delete next[task.id!];
@@ -228,300 +282,594 @@ export default function ContractorPage() {
     };
   }
 
-  // --- Error ---
+  /* ── Error state ── */
   if (error) {
     return (
-      <div className="min-h-screen bg-[#FDF8F0] flex flex-col items-center justify-center px-6 text-center">
-        <AlertTriangle size={48} className="text-[#BC6C25] mb-4" />
-        <h1 className="text-[22px] text-[#2C1810] mb-2" style={{ fontFamily: "Georgia, serif" }}>
+      <div style={{
+        ...cssVarsAsStyle(),
+        minHeight: "100vh", background: "var(--bg)",
+        display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", padding: "0 24px", textAlign: "center",
+      }}>
+        <AlertTriangle size={36} style={{ color: "var(--warning)", marginBottom: 12 }} />
+        <h1 style={{ ...serif, fontSize: 18, color: "var(--t1)", marginBottom: 6 }}>
           Link unavailable
         </h1>
-        <p className="text-[14px] text-[#6A6A6A] max-w-md">{error}</p>
+        <p style={{ fontSize: 12, color: "var(--t2)", maxWidth: 320 }}>{error}</p>
       </div>
     );
   }
 
-  // --- Loading ---
+  /* ── Loading state ── */
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FDF8F0] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#8B4513] border-t-transparent rounded-full animate-spin" />
+      <div style={{
+        ...cssVarsAsStyle(),
+        minHeight: "100vh", background: "var(--bg)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <div style={{
+          width: 20, height: 20,
+          border: "2px solid var(--clay)", borderTopColor: "transparent",
+          borderRadius: "50%", animation: "spin 0.6s linear infinite",
+        }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
   const phaseName = PHASE_NAMES[project?.currentPhase ?? 0] || "Build";
+
+  /* ── Task groups ── */
   const todoTasks = tasks.filter((t) => t.status === "upcoming" || t.status === "rejected");
   const inProgress = tasks.filter((t) => t.status === "in-progress");
   const pendingReview = tasks.filter((t) => t.status === "pending-review");
   const doneTasks = tasks.filter((t) => t.done);
 
+  /* ── Summary stats ── */
+  const totalTasks = tasks.length;
+  const completedCount = doneTasks.length;
+  const pendingCount = todoTasks.length + inProgress.length + pendingReview.length;
+  const earnings = doneTasks.reduce((sum, t) => sum + (t.price || 0), 0);
+  const currency = tasks[0]?.currency ?? "$";
+
   return (
-    <div className="min-h-screen bg-[#FDF8F0]">
-      {/* Hidden file input for photo capture */}
+    <div style={{ ...cssVarsAsStyle(), minHeight: "100vh", background: "var(--bg)" }}>
+      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
         capture="environment"
-        className="hidden"
+        style={{ display: "none" }}
         onChange={handleFileSelected}
       />
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 bg-[#2D6A4F] text-white text-[13px] rounded-xl shadow-lg">
+        <div style={{
+          position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)",
+          zIndex: 50, padding: "6px 16px", background: "var(--success)",
+          color: "#fff", fontSize: 11, borderRadius: 6,
+          boxShadow: "0 4px 12px rgba(0,0,0,.15)",
+        }}>
           {toast}
         </div>
       )}
 
-      {/* Header */}
-      <header className="bg-[#2C1810] text-[#D4A574] px-4 py-4">
-        <div className="max-w-lg mx-auto">
-          <div className="flex items-center gap-2 mb-3">
-            <KeystoneIcon size={20} className="text-[#D4A574]" />
-            <span className="text-[13px] font-semibold text-[#F5E6D3]">Keystone</span>
+      {/* ── Header ── */}
+      <header style={{
+        background: "var(--t1)", color: "var(--sand)",
+        padding: "0 16px", maxHeight: 80,
+      }}>
+        <div style={{ maxWidth: 480, margin: "0 auto", padding: "12px 0" }}>
+          {/* Top row: logo + project name */}
+          <div style={{
+            display: "flex", alignItems: "center",
+            justifyContent: "space-between", marginBottom: 6,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <KeystoneIcon size={16} className="text-[#D4A574]" />
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#F5E6D3" }}>Keystone</span>
+            </div>
+            <span style={{
+              ...serif, fontSize: 14, color: "#F5E6D3", fontWeight: 400,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              maxWidth: 220, textAlign: "right",
+            }}>
+              {project?.name || "Project"}
+            </span>
           </div>
-          <h1 className="text-[20px] text-[#F5E6D3] font-semibold" style={{ fontFamily: "Georgia, serif" }}>
-            {project?.name || "Project"}
-          </h1>
-          <div className="flex items-center gap-3 mt-2 flex-wrap">
-            <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-[#D4A574]/20 text-[#D4A574] rounded-full">
+          {/* Bottom row: contractor info */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            flexWrap: "wrap",
+          }}>
+            <span style={{ fontSize: 11, color: "var(--sand)", opacity: 0.7 }}>
+              {link?.contactName}
+            </span>
+            <span style={{
+              fontSize: 8, fontWeight: 500, padding: "2px 8px", borderRadius: 12,
+              background: "rgba(212,165,116,0.15)", color: "var(--sand)",
+              textTransform: "uppercase", letterSpacing: "1px",
+            }}>
               {link?.contactRole}
             </span>
-            <span className="text-[11px] text-[#D4A574]/60">
+            <span style={{ fontSize: 9, color: "var(--sand)", opacity: 0.4 }}>
               {phaseName} phase
             </span>
           </div>
-          <p className="text-[12px] text-[#D4A574]/50 mt-1">{link?.contactName}</p>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
+      <main style={{ maxWidth: 480, margin: "0 auto", padding: "12px 12px 24px" }}>
 
-        {/* --- To Do --- */}
+        {/* ── Summary Stats Grid ── */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8,
+          marginBottom: 8,
+        }}>
+          {[
+            { value: totalTasks, lbl: "My tasks" },
+            { value: completedCount, lbl: "Completed" },
+            { value: pendingCount, lbl: "Pending" },
+            { value: `${currency}${earnings.toLocaleString()}`, lbl: "Earnings" },
+          ].map((s, i) => (
+            <div key={i} style={{
+              background: "var(--card)", border: "1px solid var(--b1)",
+              borderRadius: 8, padding: 10, textAlign: "center",
+            }}>
+              <div style={{ ...mono, fontSize: 15, fontWeight: 500, color: "var(--t1)" }}>
+                {s.value}
+              </div>
+              <div style={{ ...label, marginTop: 3, fontSize: 8 }}>{s.lbl}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── To Do ── */}
         {todoTasks.length > 0 && (
           <section>
-            <h2 className="text-[13px] font-semibold text-[#2C1810] uppercase tracking-wider mb-3">
-              To Do ({todoTasks.length})
-            </h2>
-            <div className="space-y-2">
-              {todoTasks.map((task) => {
+            <SectionLabel count={todoTasks.length}>To do</SectionLabel>
+            <div style={{
+              background: "var(--card)", border: "1px solid var(--b1)",
+              borderRadius: 8, overflow: "hidden",
+            }}>
+              {todoTasks.map((task, idx) => {
                 const blockInfo = isTaskBlocked(task);
-                return blockInfo.blocked ? (
-                  <div key={task.id} className="bg-white border border-[#e8e0d4] rounded-xl p-4 opacity-60">
-                    <div className="flex items-center gap-3">
-                      <Lock size={18} className="text-[#6A6A6A]/50 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] text-[#2C1810] font-medium">{task.label}</p>
-                        <p className="text-[10px] text-[#6A6A6A] mt-0.5">Blocked by: {blockInfo.blockedBy.join(", ")}</p>
-                      </div>
+                const isExpanded = activeTaskId === task.id;
+                const isLast = idx === todoTasks.length - 1;
+
+                if (blockInfo.blocked) {
+                  return (
+                    <div key={task.id} style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "0 12px", height: 32, opacity: 0.4,
+                      borderBottom: isLast ? "none" : "1px solid var(--b1)",
+                    }}>
+                      <Lock size={12} style={{ color: "var(--t3)", flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: 11, color: "var(--t2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {task.label}
+                      </span>
+                      <span style={{ fontSize: 8, color: "var(--t3)", whiteSpace: "nowrap" }}>
+                        Blocked
+                      </span>
                     </div>
+                  );
+                }
+
+                return (
+                  <div key={task.id}>
+                    <button
+                      onClick={() => setActiveTaskId(isExpanded ? null : task.id!)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 10,
+                        padding: "0 12px", height: 32, width: "100%",
+                        background: "transparent", border: "none", cursor: "pointer",
+                        borderBottom: (isLast && !isExpanded) ? "none" : "1px solid var(--b1)",
+                        textAlign: "left",
+                      }}
+                    >
+                      <Circle size={13} style={{ color: "var(--sand)", flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: 11, color: "var(--t2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {task.label}
+                      </span>
+                      {task.price != null && (
+                        <span style={{ ...mono, fontSize: 10, color: "var(--t3)", flexShrink: 0 }}>
+                          {task.currency ?? "$"}{task.price.toLocaleString()}
+                        </span>
+                      )}
+                      {task.dueDate && (
+                        <span style={{ ...mono, fontSize: 9, color: "var(--t3)", flexShrink: 0 }}>
+                          {new Date(task.dueDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </span>
+                      )}
+                      <StatusBadge status={task.status} />
+                      {isExpanded
+                        ? <ChevronUp size={12} style={{ color: "var(--t3)" }} />
+                        : <ChevronDown size={12} style={{ color: "var(--t3)" }} />
+                      }
+                    </button>
+
+                    {/* Expanded detail */}
+                    {isExpanded && (
+                      <TaskExpandedToDo
+                        task={task}
+                        submitting={submitting}
+                        onStart={() => handleStart(task.id!)}
+                      />
+                    )}
                   </div>
-                ) : (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    expanded={activeTaskId === task.id}
-                    onToggle={() => setActiveTaskId(activeTaskId === task.id ? null : task.id!)}
-                    onStart={() => handleStart(task.id!)}
-                    submitting={submitting}
-                  />
                 );
               })}
             </div>
           </section>
         )}
 
-        {/* --- In Progress --- */}
+        {/* ── In Progress ── */}
         {inProgress.length > 0 && (
           <section>
-            <h2 className="text-[13px] font-semibold text-[#1B4965] uppercase tracking-wider mb-3">
-              In Progress ({inProgress.length})
-            </h2>
-            <div className="space-y-2">
-              {inProgress.map((task) => (
-                <div key={task.id} className="bg-white border border-[#e8e0d4] rounded-xl overflow-hidden">
-                  <button
-                    className="w-full flex items-center gap-3 p-4 text-left"
-                    onClick={() => setActiveTaskId(activeTaskId === task.id ? null : task.id!)}
-                  >
-                    <div className="w-2 h-2 rounded-full bg-[#1B4965] shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-[#2C1810] font-medium">{task.label}</p>
-                      {task.price && (
-                        <p className="text-[11px] text-[#2D6A4F] font-mono">{task.currency ?? "$"}{task.price.toLocaleString()}</p>
-                      )}
-                      {task.rejectionReason && (
-                        <p className="text-[11px] text-[#9B2226] mt-1">Returned: {task.rejectionReason}</p>
-                      )}
-                    </div>
-                    {activeTaskId === task.id ? <ChevronUp size={16} className="text-[#6A6A6A]" /> : <ChevronDown size={16} className="text-[#6A6A6A]" />}
-                  </button>
+            <SectionLabel count={inProgress.length}>In progress</SectionLabel>
+            <div style={{
+              background: "var(--card)", border: "1px solid var(--b1)",
+              borderRadius: 8, overflow: "hidden",
+            }}>
+              {inProgress.map((task, idx) => {
+                const isExpanded = activeTaskId === task.id;
+                const isLast = idx === inProgress.length - 1;
+                const photos = taskPhotos[task.id!] || [];
 
-                  {activeTaskId === task.id && (
-                    <div className="px-4 pb-4 border-t border-[#e8e0d4] space-y-3">
-                      {task.description && (
-                        <p className="text-[12px] text-[#6A6A6A] pt-3">{task.description}</p>
+                return (
+                  <div key={task.id}>
+                    <button
+                      onClick={() => setActiveTaskId(isExpanded ? null : task.id!)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 10,
+                        padding: "0 12px", height: 32, width: "100%",
+                        background: "transparent", border: "none", cursor: "pointer",
+                        borderBottom: (isLast && !isExpanded) ? "none" : "1px solid var(--b1)",
+                        textAlign: "left",
+                      }}
+                    >
+                      <div style={{
+                        width: 8, height: 8, borderRadius: "50%",
+                        background: "var(--info)", flexShrink: 0,
+                      }} />
+                      <span style={{ flex: 1, fontSize: 11, color: "var(--t2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {task.label}
+                      </span>
+                      {task.price != null && (
+                        <span style={{ ...mono, fontSize: 10, color: "var(--t3)", flexShrink: 0 }}>
+                          {task.currency ?? "$"}{task.price.toLocaleString()}
+                        </span>
                       )}
+                      {task.dueDate && (
+                        <span style={{ ...mono, fontSize: 9, color: "var(--t3)", flexShrink: 0 }}>
+                          {new Date(task.dueDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </span>
+                      )}
+                      <StatusBadge status={task.status} />
+                      {isExpanded
+                        ? <ChevronUp size={12} style={{ color: "var(--t3)" }} />
+                        : <ChevronDown size={12} style={{ color: "var(--t3)" }} />
+                      }
+                    </button>
 
-                      <textarea
-                        value={completionNote}
-                        onChange={(e) => setCompletionNote(e.target.value)}
-                        placeholder="Add a note about the work completed..."
-                        className="w-full px-3 py-2 text-[12px] border border-[#e8e0d4] rounded-lg bg-white resize-none h-20 focus:outline-none focus:border-[#8B4513]"
-                      />
+                    {/* Expanded detail for in-progress tasks */}
+                    {isExpanded && (
+                      <div style={{
+                        padding: "10px 12px", borderBottom: isLast ? "none" : "1px solid var(--b1)",
+                        background: "var(--bg)",
+                      }}>
+                        {/* Description */}
+                        {task.description && (
+                          <p style={{ fontSize: 11, color: "var(--t2)", lineHeight: 1.5, marginBottom: 8 }}>
+                            {task.description}
+                          </p>
+                        )}
 
-                      {/* Photo upload section */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handlePhotoUploadClick(task.id!)}
-                            className="flex items-center gap-2 px-3 py-2 text-[12px] font-medium border border-[#e8e0d4] rounded-lg bg-white hover:bg-[#F5E6D3]/40 transition-colors"
-                          >
-                            <Camera size={16} className="text-[#8B4513]" />
-                            Add photo
-                          </button>
-                          {(taskPhotos[task.id!] || []).length > 0 && (
-                            <span className="text-[11px] text-[#2D6A4F] font-medium">
-                              {(taskPhotos[task.id!] || []).length} photo{(taskPhotos[task.id!] || []).length !== 1 ? "s" : ""} attached
-                            </span>
+                        {/* Rejection reason */}
+                        {task.rejectionReason && (
+                          <div style={{
+                            fontSize: 10, color: "var(--danger)", background: "var(--danger-bg)",
+                            padding: "4px 8px", borderRadius: 4, marginBottom: 8,
+                          }}>
+                            Returned: {task.rejectionReason}
+                          </div>
+                        )}
+
+                        {/* Requirement badges */}
+                        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
+                          {task.requiresPhoto && (
+                            <span style={{
+                              fontSize: 8, fontWeight: 500, padding: "2px 6px", borderRadius: 10,
+                              background: "var(--warning-bg)", color: "var(--warning)",
+                            }}>Photo required</span>
                           )}
-                          {task.requiresPhoto && (taskPhotos[task.id!] || []).length === 0 && (
-                            <span className="text-[11px] text-[#BC6C25] font-medium flex items-center gap-1">
-                              <AlertTriangle size={12} />
-                              Photo required
+                          {task.requiresApproval && (
+                            <span style={{
+                              fontSize: 8, fontWeight: 500, padding: "2px 6px", borderRadius: 10,
+                              background: "var(--info-bg)", color: "var(--info)",
+                            }}>Needs approval</span>
+                          )}
+                          {(task.priority === "urgent" || task.priority === "critical") && (
+                            <span style={{
+                              fontSize: 8, fontWeight: 600, padding: "2px 6px", borderRadius: 10,
+                              background: task.priority === "critical" ? "var(--danger-bg)" : "var(--warning-bg)",
+                              color: task.priority === "critical" ? "var(--danger)" : "var(--warning)",
+                            }}>
+                              {task.priority === "critical" ? "Critical" : "Urgent"}
                             </span>
                           )}
                         </div>
 
-                        {/* Photo thumbnails */}
-                        {(taskPhotos[task.id!] || []).length > 0 && (
-                          <div className="flex gap-2 overflow-x-auto pb-1">
-                            {(taskPhotos[task.id!] || []).map((photo, idx) => (
-                              <div key={idx} className="relative shrink-0 w-[60px] h-[60px] rounded-lg overflow-hidden border border-[#e8e0d4] group">
-                                <img
-                                  src={photo.url}
-                                  alt={`Photo ${idx + 1}`}
-                                  className="w-full h-full object-cover"
-                                />
-                                {/* GPS indicator */}
-                                <div className={`absolute bottom-0 left-0 px-1 py-0.5 text-[8px] font-semibold ${photo.latitude != null ? "bg-[#2D6A4F]/80 text-white" : "bg-[#6A6A6A]/80 text-white"}`}>
-                                  <span className="flex items-center gap-0.5">
-                                    <MapPin size={7} />
-                                    {photo.latitude != null ? "GPS" : "No GPS"}
-                                  </span>
-                                </div>
-                                {/* Remove button */}
-                                <button
-                                  type="button"
-                                  onClick={() => removePhoto(task.id!, idx)}
-                                  className="absolute top-0 right-0 p-0.5 bg-[#9B2226]/80 text-white rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <X size={10} />
-                                </button>
-                              </div>
-                            ))}
+                        {/* Photo upload */}
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <button
+                              type="button"
+                              onClick={() => handlePhotoUploadClick(task.id!)}
+                              style={{
+                                display: "flex", alignItems: "center", gap: 4,
+                                padding: "4px 10px", fontSize: 9, fontWeight: 500,
+                                border: "1px solid var(--b1)", borderRadius: 4,
+                                background: "var(--card)", cursor: "pointer",
+                                color: "var(--t1)",
+                              }}
+                            >
+                              <Camera size={12} style={{ color: "var(--clay)" }} />
+                              Add photo
+                            </button>
+                            {photos.length > 0 && (
+                              <span style={{ fontSize: 9, color: "var(--success)", fontWeight: 500 }}>
+                                {photos.length} attached
+                              </span>
+                            )}
+                            {task.requiresPhoto && photos.length === 0 && (
+                              <span style={{ fontSize: 9, color: "var(--warning)", display: "flex", alignItems: "center", gap: 2 }}>
+                                <AlertTriangle size={10} /> Required
+                              </span>
+                            )}
                           </div>
-                        )}
-                      </div>
 
-                      {/* Comment thread */}
-                      <div className="flex items-center gap-2">
+                          {/* Photo thumbnails */}
+                          {photos.length > 0 && (
+                            <div style={{ display: "flex", gap: 4, marginTop: 6, overflowX: "auto" }}>
+                              {photos.map((photo, idx) => (
+                                <div key={idx} style={{
+                                  position: "relative", flexShrink: 0, width: 50, height: 50,
+                                  borderRadius: 4, overflow: "hidden", border: "1px solid var(--b1)",
+                                }}>
+                                  <img
+                                    src={photo.url}
+                                    alt={`Photo ${idx + 1}`}
+                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  />
+                                  <div style={{
+                                    position: "absolute", bottom: 0, left: 0,
+                                    padding: "1px 3px", fontSize: 7, fontWeight: 600,
+                                    background: photo.latitude != null ? "rgba(45,106,79,0.8)" : "rgba(106,106,106,0.8)",
+                                    color: "#fff",
+                                  }}>
+                                    <span style={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                      <MapPin size={6} />
+                                      {photo.latitude != null ? "GPS" : "No GPS"}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removePhoto(task.id!, idx)}
+                                    style={{
+                                      position: "absolute", top: 0, right: 0,
+                                      padding: 2, background: "rgba(155,34,38,0.8)",
+                                      color: "#fff", border: "none", cursor: "pointer",
+                                      borderBottomLeftRadius: 4, lineHeight: 0,
+                                    }}
+                                  >
+                                    <X size={8} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Completion note */}
                         <input
                           type="text"
-                          value={commentText}
-                          onChange={(e) => setCommentText(e.target.value)}
-                          placeholder="Message the owner..."
-                          className="flex-1 px-3 py-2 text-[12px] border border-[#e8e0d4] rounded-lg focus:outline-none focus:border-[#8B4513]"
+                          value={completionNote}
+                          onChange={(e) => setCompletionNote(e.target.value)}
+                          placeholder="Completion note..."
+                          style={{
+                            width: "100%", padding: "5px 8px", fontSize: 10,
+                            border: "1px solid var(--b1)", borderRadius: 4,
+                            background: "var(--card)", outline: "none",
+                            color: "var(--t1)", marginBottom: 6,
+                          }}
                         />
+
+                        {/* Comment input */}
+                        <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+                          <input
+                            type="text"
+                            value={commentText}
+                            onChange={(e) => setCommentText(e.target.value)}
+                            placeholder="Message the owner..."
+                            style={{
+                              flex: 1, padding: "5px 8px", fontSize: 10,
+                              border: "1px solid var(--b1)", borderRadius: 4,
+                              outline: "none", color: "var(--t1)",
+                              background: "var(--card)",
+                            }}
+                          />
+                          <button
+                            onClick={() => handleComment(task.id!)}
+                            disabled={!commentText.trim()}
+                            style={{
+                              padding: "4px 8px", background: "var(--t1)",
+                              color: "var(--sand)", border: "none", borderRadius: 4,
+                              cursor: commentText.trim() ? "pointer" : "default",
+                              opacity: commentText.trim() ? 1 : 0.3,
+                              lineHeight: 0,
+                            }}
+                          >
+                            <MessageCircle size={11} />
+                          </button>
+                        </div>
+
+                        {/* Submit button */}
                         <button
-                          onClick={() => handleComment(task.id!)}
-                          disabled={!commentText.trim()}
-                          className="p-2 bg-[#2C1810] text-[#D4A574] rounded-lg hover:bg-[#3D2215] transition-colors disabled:opacity-30"
+                          onClick={() => handleSubmit(task)}
+                          disabled={submitting || (task.requiresPhoto === true && photos.length === 0)}
+                          style={{
+                            width: "100%", padding: "6px 0", fontSize: 9,
+                            fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px",
+                            background: "var(--success)", color: "#fff",
+                            border: "none", borderRadius: 4, cursor: "pointer",
+                            opacity: (submitting || (task.requiresPhoto === true && photos.length === 0)) ? 0.5 : 1,
+                          }}
                         >
-                          <MessageCircle size={14} />
+                          {task.requiresPhoto && photos.length === 0
+                            ? "Photo proof required"
+                            : submitting
+                              ? "Submitting..."
+                              : task.requiresApproval
+                                ? "Submit for review"
+                                : "Mark complete"}
                         </button>
                       </div>
-
-                      <button
-                        onClick={() => handleSubmit(task)}
-                        disabled={submitting || (task.requiresPhoto === true && (taskPhotos[task.id!] || []).length === 0)}
-                        className="w-full py-2.5 text-[13px] font-medium bg-[#2D6A4F] text-white rounded-lg hover:bg-[#2D6A4F]/90 transition-colors disabled:opacity-50"
-                      >
-                        {task.requiresPhoto && (taskPhotos[task.id!] || []).length === 0
-                          ? "Photo proof required"
-                          : submitting
-                            ? "Submitting..."
-                            : task.requiresApproval
-                              ? "Submit for review"
-                              : "Mark complete"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* --- Pending Review --- */}
-        {pendingReview.length > 0 && (
-          <section>
-            <h2 className="text-[13px] font-semibold text-[#BC6C25] uppercase tracking-wider mb-3">
-              Pending Review ({pendingReview.length})
-            </h2>
-            <div className="space-y-2">
-              {pendingReview.map((task) => (
-                <div key={task.id} className="flex items-center gap-3 p-4 bg-[#fffbeb] border border-[#BC6C25]/20 rounded-xl">
-                  <Clock size={18} className="text-[#BC6C25] shrink-0" />
-                  <div>
-                    <p className="text-[13px] text-[#2C1810] font-medium">{task.label}</p>
-                    <p className="text-[10px] text-[#6A6A6A]">Waiting for owner approval</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* --- Done --- */}
-        {doneTasks.length > 0 && (
-          <section>
-            <h2 className="text-[13px] font-semibold text-[#6A6A6A] uppercase tracking-wider mb-3">
-              Completed ({doneTasks.length})
-            </h2>
-            <div className="space-y-2">
-              {doneTasks.map((task) => (
-                <div key={task.id} className="flex items-center gap-3 p-3 bg-[#F5E6D3]/30 border border-[#e8e0d4] rounded-xl opacity-60">
-                  <CheckCircle2 size={18} className="text-[#2D6A4F] shrink-0" />
-                  <div>
-                    <p className="text-[13px] text-[#2C1810] line-through">{task.label}</p>
-                    {task.price && (
-                      <p className="text-[10px] text-[#2D6A4F] font-mono">{task.currency ?? "$"}{task.price.toLocaleString()}</p>
                     )}
                   </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ── Awaiting Review ── */}
+        {pendingReview.length > 0 && (
+          <section>
+            <SectionLabel count={pendingReview.length}>Awaiting review</SectionLabel>
+            <div style={{
+              background: "var(--card)", border: "1px solid var(--b1)",
+              borderRadius: 8, overflow: "hidden",
+            }}>
+              {pendingReview.map((task, idx) => (
+                <div key={task.id} style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "0 12px", height: 32,
+                  borderBottom: idx === pendingReview.length - 1 ? "none" : "1px solid var(--b1)",
+                }}>
+                  <Clock size={12} style={{ color: "var(--warning)", flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 11, color: "var(--t2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {task.label}
+                  </span>
+                  {task.price != null && (
+                    <span style={{ ...mono, fontSize: 10, color: "var(--t3)", flexShrink: 0 }}>
+                      {task.currency ?? "$"}{task.price.toLocaleString()}
+                    </span>
+                  )}
+                  <StatusBadge status={task.status} />
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* --- Empty --- */}
+        {/* ── Completed ── */}
+        {doneTasks.length > 0 && (
+          <section>
+            <SectionLabel count={doneTasks.length}>Completed</SectionLabel>
+            <div style={{
+              background: "var(--card)", border: "1px solid var(--b1)",
+              borderRadius: 8, overflow: "hidden",
+            }}>
+              {doneTasks.map((task, idx) => (
+                <div key={task.id} style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "0 12px", height: 32, opacity: 0.45,
+                  borderBottom: idx === doneTasks.length - 1 ? "none" : "1px solid var(--b1)",
+                }}>
+                  <CheckCircle2 size={12} style={{ color: "var(--success)", flexShrink: 0 }} />
+                  <span style={{
+                    flex: 1, fontSize: 11, color: "var(--t2)",
+                    textDecoration: "line-through",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>
+                    {task.label}
+                  </span>
+                  {task.price != null && (
+                    <span style={{ ...mono, fontSize: 10, color: "var(--success)", flexShrink: 0 }}>
+                      {task.currency ?? "$"}{task.price.toLocaleString()}
+                    </span>
+                  )}
+                  <StatusBadge status="done" />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Empty state ── */}
         {tasks.length === 0 && (
-          <div className="text-center py-12">
-            <Circle size={32} className="text-[#D4A574] mx-auto mb-3" />
-            <p className="text-[14px] text-[#6A6A6A]">No tasks assigned yet.</p>
-            <p className="text-[12px] text-[#6A6A6A]/60 mt-1">Your project owner will assign tasks here.</p>
+          <div style={{ textAlign: "center", padding: "48px 0" }}>
+            <Circle size={24} style={{ color: "var(--sand)", margin: "0 auto 8px" }} />
+            <p style={{ fontSize: 12, color: "var(--t2)" }}>No tasks assigned yet.</p>
+            <p style={{ fontSize: 10, color: "var(--t3)", marginTop: 4 }}>
+              Your project owner will assign tasks here.
+            </p>
           </div>
+        )}
+
+        {/* ── Recent activity placeholder ── */}
+        {tasks.length > 0 && (
+          <section>
+            <SectionLabel>Recent updates</SectionLabel>
+            <div style={{
+              background: "var(--card)", border: "1px solid var(--b1)",
+              borderRadius: 8, padding: "0 12px", overflow: "hidden",
+            }}>
+              {doneTasks.slice(0, 5).map((task, idx) => (
+                <div key={task.id} style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  height: 28,
+                  borderBottom: idx === Math.min(doneTasks.length, 5) - 1 ? "none" : "1px solid var(--b1)",
+                }}>
+                  <span style={{ ...mono, fontSize: 9, color: "var(--t3)", flexShrink: 0 }}>
+                    {task.completedAt
+                      ? new Date(task.completedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                      : "--"
+                    }
+                  </span>
+                  <CheckCircle2 size={10} style={{ color: "var(--success)", flexShrink: 0 }} />
+                  <span style={{
+                    flex: 1, fontSize: 10, color: "var(--t2)",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>
+                    {task.label}
+                  </span>
+                </div>
+              ))}
+              {doneTasks.length === 0 && (
+                <div style={{ height: 28, display: "flex", alignItems: "center" }}>
+                  <span style={{ fontSize: 10, color: "var(--t3)" }}>No recent activity</span>
+                </div>
+              )}
+            </div>
+          </section>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="py-6 text-center">
-        <a href="https://keystonebuild.vercel.app" className="inline-flex items-center gap-1.5 text-[11px] text-[#6A6A6A] hover:text-[#8B4513] transition-colors">
-          <KeystoneIcon size={14} className="text-[#D4A574]" />
+      {/* ── Footer ── */}
+      <footer style={{ padding: "16px 0", textAlign: "center" }}>
+        <a
+          href="https://keystonebuild.vercel.app"
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 4,
+            fontSize: 9, color: "var(--t3)", textDecoration: "none",
+          }}
+        >
+          <KeystoneIcon size={11} className="text-[#D4A574]" />
           Powered by Keystone
         </a>
       </footer>
@@ -529,58 +877,68 @@ export default function ContractorPage() {
   );
 }
 
-// --- Task Card (for To Do status) ---
-function TaskCard({ task, expanded, onToggle, onStart, submitting }: {
+/* ── Expanded "To Do" task detail ── */
+function TaskExpandedToDo({ task, submitting, onStart }: {
   task: TaskData;
-  expanded: boolean;
-  onToggle: () => void;
-  onStart: () => void;
   submitting: boolean;
+  onStart: () => void;
 }) {
   return (
-    <div className="bg-white border border-[#e8e0d4] rounded-xl overflow-hidden">
-      <button className="w-full flex items-center gap-3 p-4 text-left" onClick={onToggle}>
-        <Circle size={18} className="text-[#D4A574] shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] text-[#2C1810] font-medium">{task.label}</p>
-          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            {task.price && (
-              <span className="text-[10px] text-[#2D6A4F] font-mono">{task.currency ?? "$"}{task.price.toLocaleString()}</span>
-            )}
-            {task.dueDate && (
-              <span className="text-[10px] text-[#6A6A6A]">Due {new Date(task.dueDate).toLocaleDateString()}</span>
-            )}
-            {task.requiresPhoto && (
-              <span className="text-[9px] px-1.5 py-0.5 bg-[#BC6C25]/10 text-[#BC6C25] rounded-full">Photo required</span>
-            )}
-            {task.requiresApproval && (
-              <span className="text-[9px] px-1.5 py-0.5 bg-[#1B4965]/10 text-[#1B4965] rounded-full">Needs approval</span>
-            )}
-            {task.priority === "urgent" && (
-              <span className="text-[9px] px-1.5 py-0.5 bg-[#BC6C25]/10 text-[#BC6C25] rounded-full font-semibold">Urgent</span>
-            )}
-            {task.priority === "critical" && (
-              <span className="text-[9px] px-1.5 py-0.5 bg-[#9B2226]/10 text-[#9B2226] rounded-full font-semibold">Critical</span>
-            )}
-          </div>
-        </div>
-        {expanded ? <ChevronUp size={16} className="text-[#6A6A6A]" /> : <ChevronDown size={16} className="text-[#6A6A6A]" />}
-      </button>
-      {expanded && (
-        <div className="px-4 pb-4 border-t border-[#e8e0d4]">
-          {task.description && (
-            <p className="text-[12px] text-[#6A6A6A] pt-3 mb-3">{task.description}</p>
-          )}
-          <button
-            onClick={onStart}
-            disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium bg-[#2C1810] text-[#F5E6D3] rounded-lg hover:bg-[#3D2215] transition-colors disabled:opacity-50"
-          >
-            <Play size={14} />
-            {submitting ? "Starting..." : "Start task"}
-          </button>
-        </div>
+    <div style={{
+      padding: "10px 12px", borderBottom: "1px solid var(--b1)",
+      background: "var(--bg)",
+    }}>
+      {task.description && (
+        <p style={{ fontSize: 11, color: "var(--t2)", lineHeight: 1.5, marginBottom: 8 }}>
+          {task.description}
+        </p>
       )}
+
+      {/* Requirement badges */}
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
+        {task.requiresPhoto && (
+          <span style={{
+            fontSize: 8, fontWeight: 500, padding: "2px 6px", borderRadius: 10,
+            background: "var(--warning-bg)", color: "var(--warning)",
+          }}>Photo required</span>
+        )}
+        {task.requiresApproval && (
+          <span style={{
+            fontSize: 8, fontWeight: 500, padding: "2px 6px", borderRadius: 10,
+            background: "var(--info-bg)", color: "var(--info)",
+          }}>Needs approval</span>
+        )}
+        {(task.priority === "urgent" || task.priority === "critical") && (
+          <span style={{
+            fontSize: 8, fontWeight: 600, padding: "2px 6px", borderRadius: 10,
+            background: task.priority === "critical" ? "var(--danger-bg)" : "var(--warning-bg)",
+            color: task.priority === "critical" ? "var(--danger)" : "var(--warning)",
+          }}>
+            {task.priority === "critical" ? "Critical" : "Urgent"}
+          </span>
+        )}
+      </div>
+
+      <button
+        onClick={onStart}
+        disabled={submitting}
+        style={{
+          width: "100%", padding: "6px 0", fontSize: 9,
+          fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+          background: "var(--t1)", color: "#F5E6D3",
+          border: "none", borderRadius: 4, cursor: "pointer",
+          opacity: submitting ? 0.5 : 1,
+        }}
+      >
+        <Play size={10} />
+        {submitting ? "Starting..." : "Start task"}
+      </button>
     </div>
   );
+}
+
+/* ── Helper: convert cssVars map to inline style ── */
+function cssVarsAsStyle(): React.CSSProperties {
+  return cssVars as unknown as React.CSSProperties;
 }
