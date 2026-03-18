@@ -485,8 +485,10 @@ export default function NewProjectPage() {
   const { setTopbar } = useTopbar();
   const { user, profile } = useAuth();
   const router = useRouter();
-  const isFromAnalyzer = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("from") === "analyzer";
-  const [step, setStep] = useState(isFromAnalyzer ? 9 : 0); // Skip to Name step when coming from analyzer
+  const [step, setStep] = useState(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("from") === "analyzer") return 9;
+    return 0;
+  });
   const [state, setState] = useState<WizardState>(() => {
     // Pre-fill from Deal Analyzer URL params
     if (typeof window === "undefined") return INITIAL_STATE;
@@ -737,7 +739,7 @@ export default function NewProjectPage() {
   }
 
   function handleBack() {
-    if (isFromAnalyzer && step === 9) {
+    if (state.fromAnalyzer && step === 9) {
       // Go back to analyzer instead of stepping through pre-filled wizard
       router.back();
     } else if (step > 0) {
