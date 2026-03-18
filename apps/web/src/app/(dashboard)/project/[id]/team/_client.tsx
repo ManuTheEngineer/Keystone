@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -136,6 +137,7 @@ export function TeamClient() {
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const projectId = params.id as string;
   const [contacts, setContacts] = useState<ContactData[]>([]);
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -178,7 +180,7 @@ export function TeamClient() {
   }, [user, projectId]);
 
   useEffect(() => {
-    setTopbar("Team", `${contacts.length} contacts`, "info");
+    setTopbar(t("project.team"), `${contacts.length} contacts`, "info");
   }, [setTopbar, contacts.length]);
 
   const market = (project?.market ?? "USA") as Market;
@@ -297,7 +299,7 @@ export function TeamClient() {
   return (
     <>
       <PageHeader
-        title="Team"
+        title={t("project.team")}
         projectName={project?.name}
         projectId={projectId}
         action={{ label: "Add contact", onClick: openAddForm, icon: <Plus size={14} /> }}

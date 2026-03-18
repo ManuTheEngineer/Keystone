@@ -44,6 +44,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AIInsight } from "@/components/ui/AIInsight";
 import { LearnTooltip } from "@/components/ui/LearnTooltip";
@@ -108,6 +109,7 @@ export function BudgetClient() {
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [items, setItems] = useState<BudgetItemData[]>([]);
@@ -173,7 +175,7 @@ export function BudgetClient() {
     if (project) {
       const marketData = getMarketData(project.market as Market);
       setTopbar(
-        "Budget",
+        t("project.budget"),
         `${formatCurrencyCompact(project.totalSpent, marketData.currency)} / ${formatCurrencyCompact(project.totalBudget, marketData.currency)}`,
         "success"
       );
@@ -307,7 +309,7 @@ export function BudgetClient() {
   return (
     <>
       <PageHeader
-        title="Budget"
+        title={t("project.budget")}
         projectName={project.name}
         projectId={projectId}
         action={{ label: "Add item", onClick: openAddForm, icon: <Plus size={14} /> }}

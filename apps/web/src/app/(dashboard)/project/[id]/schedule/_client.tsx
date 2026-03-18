@@ -27,6 +27,7 @@ import {
 } from "@keystone/market-data";
 import type { Market, ProjectPhase, PhaseDefinition } from "@keystone/market-data";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import {
   Check,
   Circle,
@@ -227,6 +228,7 @@ export function ScheduleClient() {
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
@@ -248,7 +250,7 @@ export function ScheduleClient() {
 
   useEffect(() => {
     if (project) {
-      setTopbar("Schedule", `Week ${project.currentWeek} of ${project.totalWeeks}`, "info");
+      setTopbar(t("project.schedule"), `Week ${project.currentWeek} of ${project.totalWeeks}`, "info");
     }
   }, [project, setTopbar]);
 
@@ -340,7 +342,7 @@ export function ScheduleClient() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Schedule"
+        title={t("project.schedule")}
         projectName={project.name}
         projectId={projectId}
         subtitle="Construction timeline"

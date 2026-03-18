@@ -35,6 +35,7 @@ import {
 import { PLAN_CONFIG, formatPrice, getAnnualSavings, type PlanTier, type BillingInterval } from "@/lib/stripe-config";
 import { getAuthHeaders } from "@/lib/api-client";
 import { useToast } from "@/components/ui/Toast";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import {
   generateTrialCode,
   redeemTrialCode,
@@ -138,6 +139,7 @@ export function SettingsClient() {
   const [redeeming, setRedeeming] = useState(false);
 
   const { showToast } = useToast();
+  const { t } = useTranslation();
 
   // Data management state
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -484,10 +486,10 @@ export function SettingsClient() {
       {/* Tab navigation */}
       <div className="flex gap-1 mb-5 border-b border-border overflow-x-auto">
         {([
-          { id: "profile" as const, label: "Profile" },
-          { id: "plan" as const, label: "Plan & Billing" },
-          { id: "notifications" as const, label: "Notifications" },
-          { id: "data" as const, label: "Data" },
+          { id: "profile" as const, label: t("settings.profile") },
+          { id: "plan" as const, label: t("settings.plan") },
+          { id: "notifications" as const, label: t("settings.notifications") },
+          { id: "data" as const, label: t("settings.data") },
         ]).map((tab) => (
           <button
             key={tab.id}
@@ -508,7 +510,7 @@ export function SettingsClient() {
       {/* ================================================================= */}
       {settingsTab === "profile" && (
       <>
-      <SectionLabel>Profile</SectionLabel>
+      <SectionLabel>{t("settings.profile")}</SectionLabel>
       <Card padding="md" className="mb-5">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
@@ -522,7 +524,7 @@ export function SettingsClient() {
 
         <div className="space-y-3">
           <div>
-            <label className="block text-[11px] text-muted font-medium mb-1">Display name</label>
+            <label className="block text-[11px] text-muted font-medium mb-1">{t("settings.displayName")}</label>
             <input
               type="text"
               value={displayName}
@@ -532,7 +534,7 @@ export function SettingsClient() {
           </div>
 
           <div>
-            <label className="block text-[11px] text-muted font-medium mb-1">Email</label>
+            <label className="block text-[11px] text-muted font-medium mb-1">{t("auth.email")}</label>
             <input
               type="text"
               value={user?.email ?? ""}
@@ -543,7 +545,7 @@ export function SettingsClient() {
           </div>
 
           <div>
-            <label className="block text-[11px] text-muted font-medium mb-1">Timezone</label>
+            <label className="block text-[11px] text-muted font-medium mb-1">{t("settings.timezone")}</label>
             <select
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
@@ -556,7 +558,7 @@ export function SettingsClient() {
           </div>
 
           <div>
-            <label className="block text-[11px] text-muted font-medium mb-1">Currency preference</label>
+            <label className="block text-[11px] text-muted font-medium mb-1">{t("settings.currency")}</label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
@@ -569,7 +571,7 @@ export function SettingsClient() {
           </div>
 
           <div>
-            <label className="block text-[11px] text-muted font-medium mb-1">Language</label>
+            <label className="block text-[11px] text-muted font-medium mb-1">{t("settings.language")}</label>
             <select
               value={profile?.locale ?? "en"}
               onChange={async (e) => {
@@ -595,7 +597,7 @@ export function SettingsClient() {
               disabled={profileSaving}
               className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 btn-hover"
             >
-              {profileSaving ? "Saving..." : "Save changes"}
+              {profileSaving ? t("label.loading") : t("settings.saveChanges")}
             </button>
             {profileSuccess && (
               <span className="flex items-center gap-1 text-[11px] text-success">
@@ -612,7 +614,7 @@ export function SettingsClient() {
       {/* ================================================================= */}
       {/* Security Section                                                   */}
       {/* ================================================================= */}
-      <SectionLabel>Security</SectionLabel>
+      <SectionLabel>{t("settings.security")}</SectionLabel>
       <Card padding="md" className="mb-5">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
@@ -635,7 +637,7 @@ export function SettingsClient() {
             onClick={() => setShowPasswordForm(true)}
             className="flex items-center gap-1 text-[12px] text-info hover:underline cursor-pointer"
           >
-            Change password
+            {t("settings.changePassword")}
             <ChevronDown size={14} />
           </button>
         ) : (
@@ -1480,7 +1482,7 @@ export function SettingsClient() {
               onClick={() => setShowDeleteConfirm(true)}
               className="px-4 py-2 text-[12px] border border-danger text-danger rounded-[var(--radius)] hover:bg-danger/5 transition-colors"
             >
-              Delete account
+              {t("settings.deleteAccount")}
             </button>
           ) : (
             <div className="p-3 border border-danger rounded-[var(--radius)] bg-danger/5">

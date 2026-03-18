@@ -16,6 +16,7 @@ import {
   type PunchListItemData,
 } from "@/lib/services/project-service";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -42,6 +43,7 @@ export function PunchListClient() {
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [items, setItems] = useState<PunchListItemData[]>([]);
@@ -84,7 +86,7 @@ export function PunchListClient() {
 
   useEffect(() => {
     setTopbar(
-      "Punch list",
+      t("project.punchList"),
       items.length > 0 ? `${openCount} open` : "No items",
       openCount > 0 ? "warning" : "success"
     );
@@ -151,7 +153,7 @@ export function PunchListClient() {
   return (
     <>
       <PageHeader
-        title="Punch List"
+        title={t("project.punchList")}
         projectName={project?.name}
         projectId={projectId}
         action={{ label: "Add item", onClick: () => setShowForm(true), icon: <Plus size={14} /> }}

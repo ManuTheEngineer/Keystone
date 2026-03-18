@@ -6,6 +6,7 @@ import Link from "next/link";
 import { registerUser } from "@/lib/services/auth-service";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
 import { AlertTriangle, Eye, EyeOff } from "lucide-react";
+import { t, type Locale } from "@/lib/i18n";
 
 const quotes = [
   {
@@ -24,6 +25,10 @@ const quotes = [
 
 export default function RegisterPage() {
   const router = useRouter();
+  // Detect browser language for unauthenticated pages
+  const browserLocale: Locale = typeof navigator !== "undefined"
+    ? (navigator.language.startsWith("fr") ? "fr" : navigator.language.startsWith("es") ? "es" : "en")
+    : "en";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -117,10 +122,10 @@ export default function RegisterPage() {
               <h1
                 className="text-[28px] text-earth leading-tight"
               >
-                Create your account
+                {t("auth.getStarted", browserLocale)}
               </h1>
               <p className="text-[14px] text-muted mt-1.5">
-                Start building with confidence
+                {t("auth.buildFirst", browserLocale)}
               </p>
             </div>
 
@@ -134,7 +139,7 @@ export default function RegisterPage() {
 
               <div>
                 <label className="block text-[13px] font-medium text-earth mb-1.5">
-                  Full name
+                  {t("auth.name", browserLocale)}
                 </label>
                 <input
                   type="text"
@@ -148,7 +153,7 @@ export default function RegisterPage() {
 
               <div>
                 <label className="block text-[13px] font-medium text-earth mb-1.5">
-                  Email address
+                  {t("auth.email", browserLocale)}
                 </label>
                 <input
                   type="email"
@@ -162,7 +167,7 @@ export default function RegisterPage() {
 
               <div>
                 <label className="block text-[13px] font-medium text-earth mb-1.5">
-                  Password
+                  {t("auth.password", browserLocale)}
                 </label>
                 <div className="relative">
                   <input
@@ -172,7 +177,7 @@ export default function RegisterPage() {
                     required
                     minLength={6}
                     className="w-full px-4 py-3.5 pr-12 text-[14px] border border-border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
-                    placeholder="Min. 6 characters"
+                    placeholder={t("auth.minChars", browserLocale)}
                   />
                   <button
                     type="button"
@@ -185,13 +190,13 @@ export default function RegisterPage() {
                 </div>
                 <div className="h-5 mt-1.5">
                   {password.length === 0 ? (
-                    <p className="text-[11px] text-muted/60">Minimum 6 characters</p>
+                    <p className="text-[11px] text-muted/60">{t("auth.minChars", browserLocale)}</p>
                   ) : password.length < 6 ? (
-                    <p className="text-[11px] text-danger">Too short — {6 - password.length} more needed</p>
+                    <p className="text-[11px] text-danger">{t("auth.tooShort", browserLocale)}</p>
                   ) : password.length < 10 ? (
-                    <p className="text-[11px] text-warning">Fair — add numbers or symbols for a stronger password</p>
+                    <p className="text-[11px] text-warning">{t("auth.fair", browserLocale)}</p>
                   ) : (
-                    <p className="text-[11px] text-success">Strong password</p>
+                    <p className="text-[11px] text-success">{t("auth.strong", browserLocale)}</p>
                   )}
                 </div>
               </div>
@@ -204,10 +209,10 @@ export default function RegisterPage() {
                   className="mt-0.5 w-4 h-4 rounded border-border accent-emerald-500"
                 />
                 <span>
-                  I agree to the{" "}
-                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-clay underline">Terms of Service</a>
-                  {" "}and{" "}
-                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-clay underline">Privacy Policy</a>
+                  {t("auth.agreeTerms", browserLocale)}{" "}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-clay underline">{t("auth.terms", browserLocale)}</a>
+                  {" "}{t("auth.and", browserLocale)}{" "}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-clay underline">{t("auth.privacy", browserLocale)}</a>
                 </span>
               </label>
 
@@ -216,14 +221,14 @@ export default function RegisterPage() {
                 disabled={loading || !agreedToTerms}
                 className="w-full py-3.5 text-[15px] font-medium rounded-xl btn-earth active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:active:scale-100"
               >
-                {loading ? "Creating account..." : "Create account"}
+                {loading ? t("auth.creating", browserLocale) : t("auth.createAccount", browserLocale)}
               </button>
             </form>
 
             <p className="text-center text-[13px] text-muted mt-7">
-              Already have an account?{" "}
+              {t("auth.haveAccount", browserLocale)}{" "}
               <Link href="/login" className="text-clay hover:text-clay-light font-medium transition-colors">
-                Sign in
+                {t("auth.signIn", browserLocale)}
               </Link>
             </p>
           </div>

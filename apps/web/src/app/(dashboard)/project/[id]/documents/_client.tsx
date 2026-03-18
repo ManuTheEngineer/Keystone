@@ -20,6 +20,7 @@ import { getPlanLimits } from "@/lib/stripe-config";
 import type { PlanTier } from "@/lib/stripe-config";
 import { generateDocument } from "@/lib/services/document-generator";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { DocumentFillForm } from "@/components/ui/DocumentFillForm";
@@ -94,6 +95,7 @@ export function DocumentsClient() {
   const { setTopbar } = useTopbar();
   const { user, profile } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const projectId = params.id as string;
 
   const [docs, setDocs] = useState<DocumentData[]>([]);
@@ -142,7 +144,7 @@ export function DocumentsClient() {
 
   useEffect(() => {
     setTopbar(
-      "Documents",
+      t("project.documents"),
       `${docs.length} files${generatedCount > 0 ? ` / ${generatedCount} generated` : ""}`,
       "info"
     );
@@ -232,7 +234,7 @@ export function DocumentsClient() {
   return (
     <>
       <PageHeader
-        title="Documents"
+        title={t("project.documents")}
         projectName={project?.name}
         projectId={projectId}
         subtitle={`${docs.length} document${docs.length !== 1 ? "s" : ""}`}

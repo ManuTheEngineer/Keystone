@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { Plus, ClipboardList, Pencil, Trash2 } from "lucide-react";
 import { VoiceNote } from "@/components/ui/VoiceNote";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -45,6 +46,7 @@ export function DailyLogClient() {
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const projectId = params.id as string;
   const [logs, setLogs] = useState<DailyLogData[]>([]);
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -76,7 +78,7 @@ export function DailyLogClient() {
 
   useEffect(() => {
     const latestDay = logs.length > 0 ? logs[0].day : 0;
-    setTopbar("Daily log", latestDay > 0 ? `Day ${latestDay}` : "No entries", "info");
+    setTopbar(t("project.dailyLog"), latestDay > 0 ? `Day ${latestDay}` : "No entries", "info");
   }, [setTopbar, logs]);
 
   const market = (project?.market ?? "USA") as Market;
@@ -178,7 +180,7 @@ export function DailyLogClient() {
   return (
     <>
       <PageHeader
-        title="Daily Log"
+        title={t("project.dailyLog")}
         projectName={project?.name}
         projectId={projectId}
         action={{ label: "Add entry", onClick: () => setShowForm(true), icon: <Plus size={14} /> }}

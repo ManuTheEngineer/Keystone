@@ -16,6 +16,7 @@ import {
   type InspectionResultData,
 } from "@/lib/services/project-service";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -33,6 +34,7 @@ export function InspectionsClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const projectId = params.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [results, setResults] = useState<InspectionResultData[]>([]);
@@ -108,7 +110,7 @@ export function InspectionsClient() {
 
   useEffect(() => {
     setTopbar(
-      "Inspections",
+      t("project.inspections"),
       currentPhaseInspections.length > 0
         ? `${passedCount}/${currentPhaseInspections.length} passed`
         : "No inspections",
@@ -164,7 +166,7 @@ export function InspectionsClient() {
   return (
     <>
       <PageHeader
-        title="Inspections"
+        title={t("project.inspections")}
         projectName={project?.name}
         projectId={projectId}
       />

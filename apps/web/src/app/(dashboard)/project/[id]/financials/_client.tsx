@@ -35,6 +35,7 @@ import {
 } from "@keystone/market-data";
 import type { Market, LocationData } from "@keystone/market-data";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -74,6 +75,7 @@ export function FinancialsClient() {
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -127,7 +129,7 @@ export function FinancialsClient() {
     if (project) {
       const marketData = getMarketData(project.market as Market);
       setTopbar(
-        "Financials",
+        t("project.financials"),
         `${formatCurrencyCompact(project.totalSpent, marketData.currency)} / ${formatCurrencyCompact(project.totalBudget, marketData.currency)}`,
         "success"
       );
@@ -304,7 +306,7 @@ export function FinancialsClient() {
   return (
     <>
       <PageHeader
-        title="Financials"
+        title={t("project.financials")}
         projectName={project.name}
         projectId={projectId}
         subtitle="Calculators and projections"

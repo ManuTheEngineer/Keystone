@@ -26,6 +26,7 @@ import {
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { Card } from "@/components/ui/Card";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Badge } from "@/components/ui/Badge";
@@ -665,6 +666,7 @@ export function MonitorClient() {
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
   const { isOnline } = usePWA();
+  const { t } = useTranslation();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -693,7 +695,7 @@ export function MonitorClient() {
 
   useEffect(() => {
     if (project) {
-      setTopbar("Remote Monitor", project.phaseName, "info");
+      setTopbar(t("project.monitor"), project.phaseName, "info");
     }
   }, [project, setTopbar]);
 
@@ -714,7 +716,7 @@ export function MonitorClient() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Remote Monitor"
+        title={t("project.monitor")}
         projectName={project.name}
         projectId={projectId}
         subtitle="Diaspora oversight panel"

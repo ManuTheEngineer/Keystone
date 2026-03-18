@@ -15,6 +15,7 @@ import {
 } from "@/lib/services/project-service";
 import { uploadVaultFile } from "@/lib/services/vault-upload-service";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -125,6 +126,7 @@ export function VaultClient() {
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -152,7 +154,7 @@ export function VaultClient() {
 
   useEffect(() => {
     if (project) {
-      setTopbar(project.name, "File Vault", "info");
+      setTopbar(project.name, t("project.fileVault"), "info");
     }
   }, [project, setTopbar]);
 
@@ -276,7 +278,7 @@ export function VaultClient() {
   return (
     <>
       <PageHeader
-        title="File Vault"
+        title={t("project.fileVault")}
         projectName={project.name}
         projectId={projectId}
         subtitle="Store and organize all project files"

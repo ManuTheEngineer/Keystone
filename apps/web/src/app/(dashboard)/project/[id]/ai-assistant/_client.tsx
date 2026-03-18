@@ -21,6 +21,7 @@ import {
 } from "@keystone/market-data";
 import type { Market, ProjectPhase } from "@keystone/market-data";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { Send, Loader2, AlertTriangle, Zap, Trash2, RotateCcw } from "lucide-react";
 import { VoiceNote } from "@/components/ui/VoiceNote";
 
@@ -133,6 +134,7 @@ export function AIAssistantClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const projectId = params.id as string;
 
   const [project, setProject] = useState<ProjectData | null>(null);
@@ -167,7 +169,7 @@ export function AIAssistantClient() {
   }, [user, projectId]);
 
   useEffect(() => {
-    setTopbar("AI assistant", project ? `Context: ${project.name}` : "AI assistant", "info");
+    setTopbar(t("project.aiAssistant"), project ? `Context: ${project.name}` : t("project.aiAssistant"), "info");
   }, [setTopbar, project]);
 
   useEffect(() => {
@@ -312,7 +314,7 @@ export function AIAssistantClient() {
   return (
     <div className="flex flex-col h-[calc(100vh-130px)]">
       <PageHeader
-        title="AI Assistant"
+        title={t("project.aiAssistant")}
         projectName={project?.name}
         projectId={projectId}
         subtitle="Ask anything about your project"

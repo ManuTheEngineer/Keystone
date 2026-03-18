@@ -22,6 +22,7 @@ import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import { getMarketData, getPhaseDefinition, PHASE_ORDER, PHASE_NAMES } from "@keystone/market-data";
 import type { Market, ProjectPhase } from "@keystone/market-data";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { useTranslation } from "@/lib/hooks/use-translation";
 import { ImageIcon, Plus, Loader2, X, ChevronLeft, ChevronRight, MapPin, Calendar, Camera } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -30,6 +31,7 @@ export function PhotosClient() {
   const { setTopbar } = useTopbar();
   const { user, profile } = useAuth();
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const projectId = params.id as string;
 
   const [photos, setPhotos] = useState<PhotoData[]>([]);
@@ -76,7 +78,7 @@ export function PhotosClient() {
   }, [user, projectId]);
 
   useEffect(() => {
-    setTopbar("Photos", `${photos.length} photos`, "info");
+    setTopbar(t("project.photos"), `${photos.length} photos`, "info");
   }, [setTopbar, photos.length]);
 
   // Market data and phases
@@ -211,7 +213,7 @@ export function PhotosClient() {
   return (
     <>
       <PageHeader
-        title="Photos"
+        title={t("project.photos")}
         projectName={project?.name}
         projectId={projectId}
         subtitle={`${photos.length} photo${photos.length !== 1 ? "s" : ""}`}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { resetPassword } from "@/lib/services/auth-service";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
 import { AlertTriangle, CheckCircle } from "lucide-react";
+import { t, type Locale } from "@/lib/i18n";
 
 const quotes = [
   {
@@ -22,6 +23,11 @@ const quotes = [
 ];
 
 export default function ForgotPasswordPage() {
+  // Detect browser language for unauthenticated pages
+  const browserLocale: Locale = typeof navigator !== "undefined"
+    ? (navigator.language.startsWith("fr") ? "fr" : navigator.language.startsWith("es") ? "es" : "en")
+    : "en";
+
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
@@ -76,10 +82,10 @@ export default function ForgotPasswordPage() {
               <h1
                 className="text-[28px] text-earth leading-tight"
               >
-                Reset your password
+                {t("auth.resetPassword", browserLocale)}
               </h1>
               <p className="text-[14px] text-muted mt-1.5">
-                Enter your email and we will send you a reset link
+                {t("auth.resetInstructions", browserLocale)}
               </p>
             </div>
 
@@ -87,12 +93,11 @@ export default function ForgotPasswordPage() {
               <div>
                 <div className="flex items-center gap-2.5 px-4 py-3.5 rounded-xl bg-success-bg text-success text-[14px]">
                   <CheckCircle size={18} />
-                  Check your inbox for a reset link
+                  {t("auth.checkInbox", browserLocale)}
                 </div>
                 <p className="text-center text-[13px] text-muted mt-7">
-                  Remember your password?{" "}
                   <Link href="/login" className="text-clay hover:text-clay-light font-medium transition-colors">
-                    Sign in
+                    {t("auth.backToSignIn", browserLocale)}
                   </Link>
                 </p>
               </div>
@@ -108,7 +113,7 @@ export default function ForgotPasswordPage() {
 
                   <div>
                     <label className="block text-[13px] font-medium text-earth mb-1.5">
-                      Email address
+                      {t("auth.email", browserLocale)}
                     </label>
                     <input
                       type="email"
@@ -125,14 +130,13 @@ export default function ForgotPasswordPage() {
                     disabled={loading}
                     className="w-full py-3.5 text-[15px] font-medium rounded-xl btn-earth active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:active:scale-100"
                   >
-                    {loading ? "Sending..." : "Send reset link"}
+                    {loading ? t("auth.sending", browserLocale) : t("auth.sendResetLink", browserLocale)}
                   </button>
                 </form>
 
                 <p className="text-center text-[13px] text-muted mt-7">
-                  Remember your password?{" "}
                   <Link href="/login" className="text-clay hover:text-clay-light font-medium transition-colors">
-                    Sign in
+                    {t("auth.backToSignIn", browserLocale)}
                   </Link>
                 </p>
               </>
