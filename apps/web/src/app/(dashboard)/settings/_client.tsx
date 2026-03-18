@@ -202,9 +202,11 @@ export function SettingsClient() {
         currency,
       });
       setProfileSuccess(true);
+      showToast("Settings saved.", "success");
       setTimeout(() => setProfileSuccess(false), 3000);
     } catch {
       setProfileMessage("Failed to save changes. Please try again.");
+      showToast("Failed to save changes.", "error");
     } finally {
       setProfileSaving(false);
     }

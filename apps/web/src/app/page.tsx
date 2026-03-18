@@ -79,7 +79,7 @@ export default function LandingPage() {
               href="#how-it-works"
               className="text-[14px] text-muted hover:text-earth transition-colors"
             >
-              Learn
+              How it works
             </a>
             {user ? (
               <Link
@@ -129,7 +129,7 @@ export default function LandingPage() {
                 className="block text-[14px] text-muted hover:text-earth py-2 transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Learn
+                How it works
               </a>
               <Link
                 href="/login"
@@ -704,9 +704,9 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
-                  <Link href="/learn" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
-                    Learning center
-                  </Link>
+                  <a href="#how-it-works" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                    How it works
+                  </a>
                 </li>
               </ul>
             </div>
@@ -718,9 +718,9 @@ export default function LandingPage() {
               </h4>
               <ul className="space-y-2.5">
                 <li>
-                  <Link href="/learn" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
-                    Documentation
-                  </Link>
+                  <a href="#pricing" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                    Pricing
+                  </a>
                 </li>
                 <li>
                   <a href="mailto:support@keystone.build" className="text-[13px] text-sand/70 hover:text-warm transition-colors">

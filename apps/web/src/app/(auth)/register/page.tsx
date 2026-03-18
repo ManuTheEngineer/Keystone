@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { registerUser } from "@/lib/services/auth-service";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff } from "lucide-react";
 
 const quotes = [
   {
@@ -30,6 +30,7 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [fadeIn, setFadeIn] = useState(true);
 
@@ -48,8 +49,27 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
 
+    // Validate all fields (Bug #2: empty form shows no error)
+    if (!name.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+    if (!email.trim()) {
+      setError("Please enter your email address.");
+      return;
+    }
+    // Bug #1: validate email format before sending to Firebase
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Please enter a valid email address.");
+      return;
+    }
     if (password.length < 6) {
       setError("Password must be at least 6 characters.");
+      return;
+    }
+    // Bug #3: don't reset checkbox — just validate it
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms of Service and Privacy Policy.");
       return;
     }
 
@@ -144,15 +164,25 @@ export default function RegisterPage() {
                 <label className="block text-[13px] font-medium text-earth mb-1.5">
                   Password
                 </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  className="w-full px-4 py-3.5 text-[14px] border border-border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
-                  placeholder="Min. 6 characters"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className="w-full px-4 py-3.5 pr-12 text-[14px] border border-border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
+                    placeholder="Min. 6 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted hover:text-earth transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 <div className="h-5 mt-1.5">
                   {password.length === 0 ? (
                     <p className="text-[11px] text-muted/60">Minimum 6 characters</p>
