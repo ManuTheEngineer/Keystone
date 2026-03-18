@@ -107,13 +107,74 @@ export interface PhotoData {
   longitude?: number;
 }
 
+export interface CompletionPhoto {
+  url: string;
+  caption?: string;
+  latitude?: number;
+  longitude?: number;
+  timestamp?: string;
+}
+
+export interface TaskComment {
+  id: string;
+  authorName: string;
+  authorRole: "owner" | "contractor";
+  content: string;
+  photoUrl?: string;
+  createdAt: string;
+  pinned?: boolean;
+}
+
 export interface TaskData {
   id?: string;
   projectId: string;
   label: string;
-  status: "done" | "in-progress" | "upcoming";
+  description?: string;
+  status: "upcoming" | "in-progress" | "done" | "pending-review" | "rejected" | "cancelled";
   done: boolean;
   order: number;
+  priority?: "normal" | "urgent" | "critical";
+
+  // Assignment
+  assignedTo?: string;        // contactId
+  assignedName?: string;      // denormalized contractor name
+  trade?: string;             // electrician, mason, plumber, etc.
+
+  // Requirements (set by owner)
+  requiresPhoto?: boolean;
+  requiresApproval?: boolean;
+  minimumPhotos?: number;
+
+  // Financials
+  price?: number;
+  currency?: string;
+  paymentStatus?: "unpaid" | "authorized" | "released" | "confirmed";
+
+  // Scheduling
+  dueDate?: string;
+  startDate?: string;
+  dependsOn?: string[];       // task IDs that must complete first
+
+  // Origin
+  sourceType?: "custom" | "milestone";
+  sourceMilestone?: string;
+
+  // Completion (filled by contractor)
+  completedBy?: string;
+  completedAt?: string;
+  completionPhotos?: CompletionPhoto[];
+  completionNote?: string;
+  timeSpent?: number;
+
+  // Review (filled by owner)
+  reviewedAt?: string;
+  reviewedBy?: string;
+  reviewNote?: string;
+  rejectionReason?: string;
+  rejectionCount?: number;
+
+  // Comments
+  comments?: TaskComment[];
 }
 
 // --- Project CRUD ---
@@ -333,6 +394,94 @@ export async function updateTask(
   data: Partial<TaskData>
 ): Promise<void> {
   await update(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`), data);
+}
+
+// --- Task Workflow (Contractor Portal) ---
+
+/** Assign a task to a contractor contact */
+export async function assignTask(
+  userId: string,
+  projectId: string,
+  taskId: string,
+  contact: { id: string; name: string; role: string }
+): Promise<void> {
+  await update(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`), {
+    assignedTo: contact.id,
+    assignedName: contact.name,
+    trade: contact.role,
+  });
+}
+
+/** Contractor submits task completion (goes to pending-review or done) */
+export async function submitTaskCompletion(
+  userId: string,
+  projectId: string,
+  taskId: string,
+  data: {
+    completedBy: string;
+    completionNote?: string;
+    completionPhotos?: CompletionPhoto[];
+    timeSpent?: number;
+  },
+  requiresApproval: boolean
+): Promise<void> {
+  await update(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`), {
+    ...data,
+    completedAt: new Date().toISOString(),
+    status: requiresApproval ? "pending-review" : "done",
+    done: !requiresApproval,
+  });
+}
+
+/** Owner approves a task in pending-review */
+export async function approveTask(
+  userId: string,
+  projectId: string,
+  taskId: string,
+  reviewNote?: string
+): Promise<void> {
+  await update(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`), {
+    status: "done",
+    done: true,
+    reviewedAt: new Date().toISOString(),
+    reviewedBy: userId,
+    reviewNote: reviewNote || "Approved",
+  });
+}
+
+/** Owner rejects a task — goes back to in-progress */
+export async function rejectTask(
+  userId: string,
+  projectId: string,
+  taskId: string,
+  rejectionReason: string,
+  currentRejectionCount: number
+): Promise<void> {
+  await update(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`), {
+    status: "rejected",
+    done: false,
+    reviewedAt: new Date().toISOString(),
+    reviewedBy: userId,
+    rejectionReason,
+    rejectionCount: currentRejectionCount + 1,
+    completedAt: null,
+    completionPhotos: null,
+    completionNote: null,
+  });
+}
+
+/** Add a comment to a task thread */
+export async function addTaskComment(
+  userId: string,
+  projectId: string,
+  taskId: string,
+  comment: Omit<TaskComment, "id" | "createdAt">
+): Promise<void> {
+  const commentsRef = ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}/comments`);
+  await push(commentsRef, {
+    ...comment,
+    createdAt: new Date().toISOString(),
+  });
 }
 
 // --- Documents ---

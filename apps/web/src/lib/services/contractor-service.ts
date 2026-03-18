@@ -149,29 +149,79 @@ export async function validateContractorToken(
 }
 
 /**
- * Contractor: mark a task as complete.
+ * Contractor: submit task completion with optional photos and note.
+ * If task requires approval, goes to "pending-review". Otherwise "done".
  */
-export async function contractorCompleteTask(
+export async function contractorSubmitTask(
   token: string,
   userId: string,
   projectId: string,
-  taskId: string
+  taskId: string,
+  data: {
+    completionNote?: string;
+    completionPhotos?: { url: string; caption?: string; latitude?: number; longitude?: number; timestamp?: string }[];
+    timeSpent?: number;
+  },
+  requiresApproval: boolean
 ): Promise<void> {
-  // Validate token first
   const link = await validateContractorToken(token);
   if (!link || link.userId !== userId || link.projectId !== projectId) {
     throw new Error("Invalid or expired link");
   }
   await update(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`), {
-    done: true,
-    status: "done",
     completedBy: link.contactName,
     completedAt: new Date().toISOString(),
+    completionNote: data.completionNote || null,
+    completionPhotos: data.completionPhotos || null,
+    timeSpent: data.timeSpent || null,
+    status: requiresApproval ? "pending-review" : "done",
+    done: !requiresApproval,
   });
 }
 
 /**
- * Contractor: upload a photo reference.
+ * Contractor: start working on a task (move to in-progress).
+ */
+export async function contractorStartTask(
+  token: string,
+  userId: string,
+  projectId: string,
+  taskId: string
+): Promise<void> {
+  const link = await validateContractorToken(token);
+  if (!link || link.userId !== userId || link.projectId !== projectId) {
+    throw new Error("Invalid or expired link");
+  }
+  await update(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`), {
+    status: "in-progress",
+  });
+}
+
+/**
+ * Contractor: add a comment to a task thread.
+ */
+export async function contractorAddComment(
+  token: string,
+  userId: string,
+  projectId: string,
+  taskId: string,
+  content: string
+): Promise<void> {
+  const link = await validateContractorToken(token);
+  if (!link || link.userId !== userId || link.projectId !== projectId) {
+    throw new Error("Invalid or expired link");
+  }
+  const commentsRef = ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}/comments`);
+  await push(commentsRef, {
+    authorName: link.contactName,
+    authorRole: "contractor",
+    content,
+    createdAt: new Date().toISOString(),
+  });
+}
+
+/**
+ * Contractor: upload a photo to the project.
  */
 export async function contractorAddPhoto(
   token: string,
@@ -181,6 +231,8 @@ export async function contractorAddPhoto(
     fileUrl: string;
     caption: string;
     phase?: string;
+    latitude?: number;
+    longitude?: number;
   }
 ): Promise<void> {
   const link = await validateContractorToken(token);
