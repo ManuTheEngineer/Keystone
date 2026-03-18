@@ -27,6 +27,8 @@ import {
   addTask,
   deleteTask,
   deleteProject,
+  approveTask,
+  rejectTask,
   type ProjectData,
   type TaskData,
   type BudgetItemData,
@@ -96,6 +98,9 @@ import {
   ArrowRight,
   ChevronDown,
   Share2,
+  Check,
+  XCircle,
+  Clock,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
 import { PresentationModal } from "@/components/ui/PresentationModal";
@@ -220,11 +225,21 @@ export function OverviewClient() {
   const [showPresentationModal, setShowPresentationModal] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskLabel, setNewTaskLabel] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskPriority, setTaskPriority] = useState<"normal" | "urgent" | "critical">("normal");
+  const [selectedContactId, setSelectedContactId] = useState("");
+  const [requirePhoto, setRequirePhoto] = useState(false);
+  const [requireApproval, setRequireApproval] = useState(false);
+  const [taskPrice, setTaskPrice] = useState("");
+  const [taskDueDate, setTaskDueDate] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskLabel, setEditingTaskLabel] = useState("");
   const [showDeleteProject, setShowDeleteProject] = useState(false);
   const [deleteProjectName, setDeleteProjectName] = useState("");
   const [deletingProject, setDeletingProject] = useState(false);
+  const [rejectingTaskId, setRejectingTaskId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [reviewLoading, setReviewLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -265,6 +280,7 @@ export function OverviewClient() {
 
   const activeTasks = tasks.filter((t) => !t.done);
   const completedTasks = tasks.filter((t) => t.done);
+  const pendingReviewTasks = tasks.filter((t) => t.status === "pending-review");
 
   // Compute real progress from tasks + phases (instead of using hardcoded project.progress)
   const computedProgress = tasks.length > 0
@@ -278,18 +294,42 @@ export function OverviewClient() {
     ? Math.round((project.totalSpent / project.totalBudget) * 100)
     : 0;
 
+  function resetTaskForm() {
+    setNewTaskLabel("");
+    setTaskDescription("");
+    setTaskPriority("normal");
+    setSelectedContactId("");
+    setRequirePhoto(false);
+    setRequireApproval(false);
+    setTaskPrice("");
+    setTaskDueDate("");
+    setShowAddTask(false);
+  }
+
+  const selectedContact = contacts.find((c) => c.id === selectedContactId);
+
   async function handleAddTask() {
     if (!newTaskLabel.trim() || !user) return;
     try {
       await addTask(user.uid, {
         projectId,
         label: newTaskLabel.trim(),
+        description: taskDescription || undefined,
         status: "upcoming",
         done: false,
         order: tasks.length,
+        priority: taskPriority,
+        assignedTo: selectedContact?.id || undefined,
+        assignedName: selectedContact?.name || undefined,
+        trade: selectedContact?.role || undefined,
+        requiresPhoto: requirePhoto,
+        requiresApproval: requireApproval,
+        price: taskPrice ? Number(taskPrice) : undefined,
+        currency: marketData?.currency?.code || "USD",
+        dueDate: taskDueDate || undefined,
+        sourceType: "custom",
       });
-      setNewTaskLabel("");
-      setShowAddTask(false);
+      resetTaskForm();
       showToast("Task added.", "success");
     } catch {
       showToast("Failed to add task.", "error");
@@ -457,6 +497,174 @@ export function OverviewClient() {
           <StatCard value={String(project.openItems)} label="Open items" />
         </div>
       </CollapsibleSection>
+
+      {/* Pending Review Queue */}
+      {pendingReviewTasks.length > 0 && (
+        <div className="mb-5">
+          <div className="flex items-center gap-2 mb-3">
+            <SectionLabel>Pending Review</SectionLabel>
+            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-warning/15 text-warning text-[11px] font-data font-semibold">
+              {pendingReviewTasks.length}
+            </span>
+          </div>
+          <div className="space-y-3">
+            {pendingReviewTasks.map((task) => (
+              <Card key={task.id} padding="sm" className="border-l-3 border-l-warning">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-sm font-medium text-earth">{task.label}</span>
+                      {task.trade && (
+                        <Badge variant="muted" size="sm">{task.trade}</Badge>
+                      )}
+                    </div>
+                    {task.assignedName && (
+                      <p className="text-xs text-muted mb-1">
+                        Submitted by {task.assignedName}
+                      </p>
+                    )}
+                    {task.completionNote && (
+                      <p className="text-xs text-slate bg-warm/50 rounded px-2 py-1.5 mb-2">
+                        {task.completionNote}
+                      </p>
+                    )}
+                    {task.completionPhotos && task.completionPhotos.length > 0 && (
+                      <div className="flex gap-2 mb-2 flex-wrap">
+                        {task.completionPhotos.map((photo, idx) => (
+                          <a
+                            key={idx}
+                            href={photo.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block w-14 h-14 rounded overflow-hidden border border-border hover:border-clay transition-colors"
+                          >
+                            <img
+                              src={photo.url}
+                              alt={photo.caption || `Photo ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 text-[11px] text-muted">
+                      {task.completedAt && (
+                        <span className="flex items-center gap-1">
+                          <Clock size={12} />
+                          {new Date(task.completedAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      )}
+                      {task.price != null && (
+                        <span className="font-data font-medium text-earth">
+                          {project.currency === "XOF"
+                            ? `${task.price.toLocaleString()} FCFA`
+                            : `$${task.price.toLocaleString()}`}
+                        </span>
+                      )}
+                      {(task.rejectionCount ?? 0) > 0 && (
+                        <span className="text-danger font-medium">
+                          Rejected {task.rejectionCount}x previously
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                {rejectingTaskId === task.id ? (
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <label className="block text-xs font-medium text-earth mb-1">
+                      Rejection reason (minimum 10 characters)
+                    </label>
+                    <textarea
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="Explain what needs to be corrected..."
+                      className="w-full rounded border border-border bg-white px-3 py-2 text-sm text-slate placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-clay/30 resize-none"
+                      rows={3}
+                    />
+                    <div className="flex items-center gap-2 mt-2">
+                      <button
+                        disabled={rejectionReason.trim().length < 10 || reviewLoading === task.id}
+                        onClick={async () => {
+                          if (!user || !task.id) return;
+                          setReviewLoading(task.id);
+                          try {
+                            await rejectTask(
+                              user.uid,
+                              projectId,
+                              task.id,
+                              rejectionReason.trim(),
+                              task.rejectionCount ?? 0
+                            );
+                            showToast("Task rejected and sent back to contractor", "success");
+                            setRejectingTaskId(null);
+                            setRejectionReason("");
+                          } catch {
+                            showToast("Failed to reject task", "error");
+                          } finally {
+                            setReviewLoading(null);
+                          }
+                        }}
+                        className="px-3 py-1.5 text-xs font-medium rounded border border-danger text-danger hover:bg-danger/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {reviewLoading === task.id ? "Rejecting..." : "Confirm Reject"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setRejectingTaskId(null);
+                          setRejectionReason("");
+                        }}
+                        className="px-3 py-1.5 text-xs font-medium rounded text-muted hover:text-earth transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+                    <button
+                      disabled={reviewLoading === task.id}
+                      onClick={async () => {
+                        if (!user || !task.id) return;
+                        setReviewLoading(task.id);
+                        try {
+                          await approveTask(user.uid, projectId, task.id);
+                          showToast("Task approved", "success");
+                        } catch {
+                          showToast("Failed to approve task", "error");
+                        } finally {
+                          setReviewLoading(null);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-success text-white hover:bg-success/90 disabled:opacity-40 transition-colors"
+                    >
+                      <Check size={14} />
+                      {reviewLoading === task.id ? "Approving..." : "Approve"}
+                    </button>
+                    <button
+                      disabled={reviewLoading === task.id}
+                      onClick={() => {
+                        setRejectingTaskId(task.id!);
+                        setRejectionReason("");
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border border-danger text-danger hover:bg-danger/10 disabled:opacity-40 transition-colors"
+                    >
+                      <XCircle size={14} />
+                      Reject
+                    </button>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Location Context Card */}
       {(() => {
@@ -732,29 +940,105 @@ export function OverviewClient() {
               </button>
             </div>
             {showAddTask && (
-              <div className="flex items-center gap-2 mb-2">
+              <div className="mb-3 space-y-2 border border-border rounded-[var(--radius)] p-3 bg-surface">
                 <input
                   type="text"
                   value={newTaskLabel}
                   onChange={(e) => setNewTaskLabel(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
-                  placeholder="Task description"
-                  className="flex-1 px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
+                  placeholder="Task name"
+                  className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
                   autoFocus
                 />
-                <button
-                  onClick={handleAddTask}
-                  disabled={!newTaskLabel.trim()}
-                  className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
-                >
-                  Add
-                </button>
-                <button
-                  onClick={() => { setShowAddTask(false); setNewTaskLabel(""); }}
-                  className="p-1 text-muted hover:text-earth transition-colors"
-                >
-                  <X size={14} />
-                </button>
+                <textarea
+                  value={taskDescription}
+                  onChange={(e) => setTaskDescription(e.target.value)}
+                  placeholder="Detailed instructions for the contractor"
+                  rows={2}
+                  className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 resize-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] text-muted mb-0.5">Assign to</label>
+                    <select
+                      value={selectedContactId}
+                      onChange={(e) => setSelectedContactId(e.target.value)}
+                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="">Unassigned</option>
+                      {contacts.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}{c.role ? ` (${c.role})` : ""}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-muted mb-0.5">Priority</label>
+                    <select
+                      value={taskPriority}
+                      onChange={(e) => setTaskPriority(e.target.value as "normal" | "urgent" | "critical")}
+                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="normal">Normal</option>
+                      <option value="urgent">Urgent</option>
+                      <option value="critical">Critical</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-muted mb-0.5">Price ({marketData?.currency?.symbol || "$"})</label>
+                    <input
+                      type="number"
+                      value={taskPrice}
+                      onChange={(e) => setTaskPrice(e.target.value)}
+                      placeholder="0"
+                      min="0"
+                      step="any"
+                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-muted mb-0.5">Due date</label>
+                    <input
+                      type="date"
+                      value={taskDueDate}
+                      onChange={(e) => setTaskDueDate(e.target.value)}
+                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex items-center gap-2 text-[11px] text-earth cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={requirePhoto}
+                      onChange={(e) => setRequirePhoto(e.target.checked)}
+                      className="rounded border-border text-emerald-600 focus:ring-emerald-500"
+                    />
+                    Require photo proof
+                  </label>
+                  <label className="flex items-center gap-2 text-[11px] text-earth cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={requireApproval}
+                      onChange={(e) => setRequireApproval(e.target.checked)}
+                      className="rounded border-border text-emerald-600 focus:ring-emerald-500"
+                    />
+                    Require my approval
+                  </label>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={handleAddTask}
+                    disabled={!newTaskLabel.trim()}
+                    className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                  >
+                    Add
+                  </button>
+                  <button
+                    onClick={resetTaskForm}
+                    className="p-1 text-muted hover:text-earth transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               </div>
             )}
             <div className="space-y-2">
