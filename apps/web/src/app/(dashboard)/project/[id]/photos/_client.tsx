@@ -446,6 +446,9 @@ export function PhotosClient() {
               <p className="text-[9px] text-muted mt-1">At milestones</p>
             </div>
           </div>
+          <p className="text-[10px] text-muted mt-4 max-w-sm mx-auto">
+            Photos are automatically tagged with the date and organized by phase. GPS coordinates are captured when available for location verification — essential for remote monitoring.
+          </p>
         </div>
       )}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 mb-5 animate-stagger">

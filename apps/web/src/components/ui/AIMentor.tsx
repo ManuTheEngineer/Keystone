@@ -852,13 +852,20 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
               </div>
             )}
           </div>
-          {currentTip.nextStepHref && (
+          {currentTip.nextStepHref ? (
             <a
               href={currentTip.nextStepHref}
               className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
             >
               {currentTip.nextStepLabel ?? "Next step"}
               <ArrowRight size={11} />
+            </a>
+          ) : (
+            <a
+              href={`/project/${(typeof window !== "undefined" ? window.location.pathname.match(/\/project\/([^/]+)/)?.[1] : "") || ""}/ai-assistant`}
+              className="text-[10px] text-muted hover:text-clay transition-colors"
+            >
+              Ask AI Assistant
             </a>
           )}
         </div>
