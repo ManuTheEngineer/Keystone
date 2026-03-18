@@ -11,6 +11,7 @@ import type {
   BudgetItemData,
   ContactData,
   DailyLogData,
+  TaskData,
   PhotoData,
   PunchListItemData,
   InspectionResultData,
@@ -817,4 +818,36 @@ export function renderFinancialProjections(
   }
 
   return html;
+}
+
+/** Render tasks table — shows all tasks grouped by status */
+export function renderTasksTable(tasks: TaskData[]): string {
+  if (!tasks || tasks.length === 0) return "";
+  const done = tasks.filter((t) => t.done);
+  const pending = tasks.filter((t) => !t.done);
+  const rows = (list: TaskData[]) =>
+    list.map((t) => `
+      <tr>
+        <td>${escapeHtml(t.label)}</td>
+        <td>${t.assignedName ? escapeHtml(t.assignedName) : "<span class='muted'>Unassigned</span>"}</td>
+        <td>${t.trade ? escapeHtml(t.trade) : ""}</td>
+        <td><span class="status status-${t.status === "done" ? "on-track" : t.status === "pending-review" ? "in-progress" : t.status === "rejected" ? "critical" : "not-started"}">${escapeHtml(t.status)}</span></td>
+        <td class="currency">${t.price ? `${t.currency ?? "$"}${t.price.toLocaleString()}` : ""}</td>
+        <td>${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : ""}</td>
+      </tr>`).join("");
+
+  return `
+    <h2>Tasks (${done.length} of ${tasks.length} complete)</h2>
+    ${pending.length > 0 ? `
+      <h3>Active and Upcoming (${pending.length})</h3>
+      <table>
+        <thead><tr><th>Task</th><th>Assigned To</th><th>Trade</th><th>Status</th><th>Price</th><th>Due</th></tr></thead>
+        <tbody>${rows(pending)}</tbody>
+      </table>` : ""}
+    ${done.length > 0 ? `
+      <h3>Completed (${done.length})</h3>
+      <table>
+        <thead><tr><th>Task</th><th>Completed By</th><th>Trade</th><th>Status</th><th>Price</th><th>Due</th></tr></thead>
+        <tbody>${rows(done)}</tbody>
+      </table>` : ""}`;
 }

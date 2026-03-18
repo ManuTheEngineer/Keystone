@@ -35,6 +35,7 @@ import {
   renderRiskCards,
   renderFinancialProjections,
   renderDocumentInventory,
+  renderTasksTable,
   renderDisclaimer,
 } from "./export-components";
 
@@ -340,7 +341,7 @@ function escapeHtml(text: string): string {
 
 export function exportProjectPDF(exportData: FullProjectExportData): void {
   const { project, currency, financingSummary, phaseTimeline, riskAssessment,
-    budgetItems, contacts, dailyLogs, photos, inspectionResults,
+    budgetItems, contacts, dailyLogs, tasks, photos, inspectionResults,
     punchListItems, materials, documents, vaultFiles } = exportData;
 
   const budgetUtilization =
@@ -412,6 +413,12 @@ export function exportProjectPDF(exportData: FullProjectExportData): void {
   sections.push('<div class="page-break"></div>');
   sections.push("<h2>Phase Timeline</h2>");
   sections.push(renderPhaseTimeline(phaseTimeline));
+
+  // 7b. Tasks table
+  if (tasks.length > 0) {
+    sections.push('<div class="page-break"></div>');
+    sections.push(renderTasksTable(tasks));
+  }
 
   // 8. Contacts table
   sections.push('<div class="page-break"></div>');

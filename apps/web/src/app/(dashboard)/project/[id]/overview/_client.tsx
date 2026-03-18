@@ -2428,6 +2428,7 @@ export function OverviewClient() {
           onClose={() => setShowExportModal(false)}
           userPlan={profile?.plan}
           userRole={profile?.role}
+          orgLogo={profile?.orgLogo}
         />
       )}
 

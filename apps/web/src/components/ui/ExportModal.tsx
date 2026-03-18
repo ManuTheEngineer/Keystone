@@ -36,6 +36,7 @@ interface ExportModalProps {
   onClose: () => void;
   userPlan?: string;
   userRole?: string;
+  orgLogo?: string | null;
 }
 
 interface ExportOption {
@@ -47,7 +48,7 @@ interface ExportOption {
   action: () => void;
 }
 
-export function ExportModal({ project, data, onClose, userPlan, userRole }: ExportModalProps) {
+export function ExportModal({ project, data, onClose, userPlan, userRole, orgLogo }: ExportModalProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [exportError, setExportError] = useState("");
 
@@ -158,7 +159,7 @@ export function ExportModal({ project, data, onClose, userPlan, userRole }: Expo
       return risks;
     })(),
     aiSummary: `${project.name} is a ${project.propertyType} project in ${project.city || project.market}. Currently ${project.progress}% complete in the ${PHASE_NAMES[project.currentPhase] || "current"} phase. Budget: ${totalSpent.toLocaleString()} of ${totalBudget.toLocaleString()} (${totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0}% utilized). ${openPunch.length} punch list items remain open.`,
-    orgLogo: null,
+    orgLogo: orgLogo ?? null,
     generatedAt: new Date().toISOString(),
   };
 
