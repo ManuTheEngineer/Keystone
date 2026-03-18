@@ -426,6 +426,7 @@ function ActivityLog({ logs, photos }: ActivityLogProps) {
   return (
     <Card padding="md">
       <SectionLabel>Activity log</SectionLabel>
+      {/* TODO: Replace inline empty state below with shared <EmptyState> component for consistency */}
       {recent.length === 0 ? (
         <p className="text-[11px] text-muted text-center py-4">No activity recorded yet</p>
       ) : (
@@ -595,6 +596,7 @@ function MaterialTracker({ materials, projectId, userId }: MaterialTrackerProps)
       )}
 
       {/* Table */}
+      {/* TODO: Replace inline empty state below with shared <EmptyState> component for consistency */}
       {materials.length === 0 ? (
         <div className="flex flex-col items-center py-6 text-muted">
           <Package size={20} className="mb-1.5 opacity-40" />
