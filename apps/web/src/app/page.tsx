@@ -496,7 +496,7 @@ export default function LandingPage() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* Foundation */}
-            <div className="bg-surface rounded-xl p-6 border border-border card-hover">
+            <div className="bg-surface rounded-xl p-6 border border-border card-hover flex flex-col">
               <h3
                 className="text-[18px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
@@ -513,7 +513,7 @@ export default function LandingPage() {
                 </span>
                 <span className="text-[14px] text-muted">/mo</span>
               </div>
-              <ul className="space-y-2.5 mb-6">
+              <ul className="space-y-2.5 mb-6 flex-1">
                 {[
                   "1 project",
                   "10 AI queries per day",
@@ -536,7 +536,7 @@ export default function LandingPage() {
             </div>
 
             {/* Builder */}
-            <div className="bg-surface rounded-2xl p-6 border border-border card-hover">
+            <div className="bg-surface rounded-2xl p-6 border border-border card-hover flex flex-col">
               <h3
                 className="text-[18px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
@@ -554,7 +554,7 @@ export default function LandingPage() {
                 <span className="text-[14px] text-muted">/mo</span>
               </div>
               <p className="text-[11px] text-muted mb-5">or $182/yr (save 20%)</p>
-              <ul className="space-y-2.5 mb-6">
+              <ul className="space-y-2.5 mb-6 flex-1">
                 {[
                   "3 active projects",
                   "50 AI queries per day",
@@ -578,7 +578,7 @@ export default function LandingPage() {
             </div>
 
             {/* Developer - highlighted */}
-            <div className="bg-surface rounded-2xl p-6 border-2 border-emerald-500 relative card-hover">
+            <div className="bg-surface rounded-2xl p-6 border-2 border-emerald-500 relative card-hover flex flex-col">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-emerald-500 text-white text-[11px] font-medium rounded-full">
                 Most popular
               </div>
@@ -599,7 +599,7 @@ export default function LandingPage() {
                 <span className="text-[14px] text-muted">/mo</span>
               </div>
               <p className="text-[11px] text-muted mb-5">or $470/yr (save 20%)</p>
-              <ul className="space-y-2.5 mb-6">
+              <ul className="space-y-2.5 mb-6 flex-1">
                 {[
                   "Unlimited projects",
                   "Unlimited AI queries",
@@ -623,7 +623,7 @@ export default function LandingPage() {
             </div>
 
             {/* Enterprise */}
-            <div className="bg-surface rounded-2xl p-6 border border-border card-hover">
+            <div className="bg-surface rounded-2xl p-6 border border-border card-hover flex flex-col">
               <h3
                 className="text-[18px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
@@ -641,7 +641,7 @@ export default function LandingPage() {
                 <span className="text-[14px] text-muted">/mo</span>
               </div>
               <p className="text-[11px] text-muted mb-5">or $1,430/yr (save 20%)</p>
-              <ul className="space-y-2.5 mb-6">
+              <ul className="space-y-2.5 mb-6 flex-1">
                 {[
                   "Everything in Developer",
                   "Team collaboration",

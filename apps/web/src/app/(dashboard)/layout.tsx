@@ -266,7 +266,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const isProjectRoute = pathname.includes("/project/");
   const projectName = isProjectRoute ? (currentProject?.name ?? "Project") : undefined;
-  const locale = currentProject ? getLocaleForMarket(currentProject.market ?? "") : "en";
+  // User's explicit language preference takes priority over market-derived locale
+  const locale = (profile?.locale as "en" | "fr" | "es") || (currentProject ? getLocaleForMarket(currentProject.market ?? "") : "en");
 
   return (
     <AuthGuard>
