@@ -408,11 +408,6 @@ export function AIAssistantClient() {
               }`}
             >
               {renderMarkdown(msg.content)}
-              {msg.role === "assistant" && (
-                <div className="mt-2 pt-2 border-t border-border text-[10px] text-muted/60 italic">
-                  This is educational guidance. Consult a licensed professional for your specific situation.
-                </div>
-              )}
             </div>
             {msg.role === "user" && (
               <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold bg-earth text-sand">
