@@ -29,6 +29,10 @@ import {
   deleteProject,
   approveTask,
   rejectTask,
+  addContractorRating,
+  createChangeOrder,
+  resolveChangeOrder,
+  subscribeToChangeOrders,
   type ProjectData,
   type TaskData,
   type BudgetItemData,
@@ -42,6 +46,7 @@ import {
   type VaultFileData,
   type PhaseStepCompletion,
   type StepDecision,
+  type ChangeOrder,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
@@ -104,6 +109,8 @@ import {
   Package,
   Lock,
   ListChecks,
+  Star,
+  FilePlus,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
 import { PresentationModal } from "@/components/ui/PresentationModal";
@@ -246,6 +253,23 @@ export function OverviewClient() {
   const [taskDependsOn, setTaskDependsOn] = useState<string[]>([]);
   const [showMilestoneDropdown, setShowMilestoneDropdown] = useState(false);
 
+  // Contractor rating state
+  const [ratingTaskId, setRatingTaskId] = useState<string | null>(null);
+  const [ratingStars, setRatingStars] = useState(5);
+  const [ratingComment, setRatingComment] = useState("");
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+
+  // Change order state
+  const [changeOrders, setChangeOrders] = useState<ChangeOrder[]>([]);
+  const [showAddChangeOrder, setShowAddChangeOrder] = useState(false);
+  const [coDescription, setCoDescription] = useState("");
+  const [coReason, setCoReason] = useState("");
+  const [coPriceImpact, setCoPriceImpact] = useState("");
+  const [coScheduleImpact, setCoScheduleImpact] = useState("");
+  const [coSubmitting, setCoSubmitting] = useState(false);
+  const [coResolvingId, setCoResolvingId] = useState<string | null>(null);
+  const [coResolveNote, setCoResolveNote] = useState("");
+
   useEffect(() => {
     if (!user) return;
     const unsubs = [
@@ -262,6 +286,7 @@ export function OverviewClient() {
       subscribeToAllMilestoneProgress(user.uid, projectId, setAllMilestoneProgress),
       subscribeToPhaseSteps(user.uid, projectId, setPhaseStepCompletions),
       subscribeToVaultFiles(user.uid, projectId, setVaultFiles),
+      subscribeToChangeOrders(user.uid, projectId, setChangeOrders),
     ];
     return () => unsubs.forEach((u) => u());
   }, [user, projectId]);
@@ -686,6 +711,12 @@ export function OverviewClient() {
                             showToast(`Task approved. Payment of ${task.currency ?? "$"}${task.price.toLocaleString()} authorized.`, "success");
                           } else {
                             showToast("Task approved.", "success");
+                          }
+                          // Prompt rating if task was assigned to a contractor
+                          if (task.assignedTo) {
+                            setRatingTaskId(task.id);
+                            setRatingStars(5);
+                            setRatingComment("");
                           }
                         } catch {
                           showToast("Failed to approve task", "error");
@@ -1212,6 +1243,27 @@ export function OverviewClient() {
                     Require my approval
                   </label>
                 </div>
+                {tasks.filter(t => !t.done && t.id).length > 0 && (
+                  <div>
+                    <label className="block text-[10px] text-muted mb-0.5">Depends on (prerequisites)</label>
+                    <div className="max-h-[100px] overflow-y-auto border border-border rounded-[var(--radius)] bg-white p-1.5 space-y-1">
+                      {tasks.filter(t => !t.done && t.id).map(t => (
+                        <label key={t.id} className="flex items-center gap-2 text-[11px] text-earth cursor-pointer hover:bg-warm/30 rounded px-1 py-0.5">
+                          <input
+                            type="checkbox"
+                            checked={taskDependsOn.includes(t.id!)}
+                            onChange={(e) => {
+                              if (e.target.checked) setTaskDependsOn(prev => [...prev, t.id!]);
+                              else setTaskDependsOn(prev => prev.filter(id => id !== t.id!));
+                            }}
+                            className="rounded border-border text-emerald-600 focus:ring-emerald-500"
+                          />
+                          {t.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 pt-1">
                   <button
                     onClick={handleAddTask}
@@ -1230,46 +1282,62 @@ export function OverviewClient() {
               </div>
             )}
             <div className="space-y-2">
-              {activeTasks.slice(0, 4).map((task, i) => (
-                <div key={task.id} className="flex items-center gap-2 text-[12px]">
-                  <div
-                    className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
-                    onClick={() => user && updateTask(user.uid, projectId, task.id!, { done: true, status: "done" })}
-                  />
-                  {editingTaskId === task.id ? (
-                    <input
-                      type="text"
-                      value={editingTaskLabel}
-                      onChange={(e) => setEditingTaskLabel(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleEditTaskSave(task.id!);
-                        if (e.key === "Escape") { setEditingTaskId(null); setEditingTaskLabel(""); }
-                      }}
-                      onBlur={() => handleEditTaskSave(task.id!)}
-                      className="flex-1 px-2 py-0.5 text-[12px] border border-border rounded bg-surface text-earth focus:outline-none focus:border-emerald-500"
-                      autoFocus
-                    />
-                  ) : (
-                    <span
-                      className="text-muted cursor-pointer hover:text-earth transition-colors"
-                      onClick={() => { setEditingTaskId(task.id!); setEditingTaskLabel(task.label); }}
-                      title="Click to edit"
+              {activeTasks.slice(0, 4).map((task, i) => {
+                const blockInfo = isTaskBlocked(task, tasks);
+                return (
+                <div key={task.id} className="space-y-0.5">
+                  <div className="flex items-center gap-2 text-[12px]">
+                    {blockInfo.blocked ? (
+                      <Lock size={14} className="text-muted/50 shrink-0" />
+                    ) : (
+                      <div
+                        className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
+                        onClick={() => user && updateTask(user.uid, projectId, task.id!, { done: true, status: "done" })}
+                      />
+                    )}
+                    {editingTaskId === task.id ? (
+                      <input
+                        type="text"
+                        value={editingTaskLabel}
+                        onChange={(e) => setEditingTaskLabel(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleEditTaskSave(task.id!);
+                          if (e.key === "Escape") { setEditingTaskId(null); setEditingTaskLabel(""); }
+                        }}
+                        onBlur={() => handleEditTaskSave(task.id!)}
+                        className="flex-1 px-2 py-0.5 text-[12px] border border-border rounded bg-surface text-earth focus:outline-none focus:border-emerald-500"
+                        autoFocus
+                      />
+                    ) : (
+                      <span
+                        className={`cursor-pointer hover:text-earth transition-colors ${blockInfo.blocked ? "text-muted/50" : "text-muted"}`}
+                        onClick={() => { setEditingTaskId(task.id!); setEditingTaskLabel(task.label); }}
+                        title="Click to edit"
+                      >
+                        {task.label}
+                      </span>
+                    )}
+                    {blockInfo.blocked ? (
+                      <Badge variant="default">Blocked</Badge>
+                    ) : (
+                      <Badge variant={task.status === "in-progress" ? "warning" : "info"}>
+                        {task.status === "in-progress" ? "In progress" : "Upcoming"}
+                      </Badge>
+                    )}
+                    <button
+                      onClick={() => handleDeleteTask(task.id!)}
+                      className="p-0.5 text-muted hover:text-danger transition-colors shrink-0"
+                      title="Delete task"
                     >
-                      {task.label}
-                    </span>
+                      <X size={12} />
+                    </button>
+                  </div>
+                  {blockInfo.blocked && (
+                    <p className="text-[10px] text-muted/60 pl-6">Blocked by: {blockInfo.blockedBy.join(", ")}</p>
                   )}
-                  <Badge variant={task.status === "in-progress" ? "warning" : "info"}>
-                    {task.status === "in-progress" ? "In progress" : "Upcoming"}
-                  </Badge>
-                  <button
-                    onClick={() => handleDeleteTask(task.id!)}
-                    className="p-0.5 text-muted hover:text-danger transition-colors shrink-0"
-                    title="Delete task"
-                  >
-                    <X size={12} />
-                  </button>
                 </div>
-              ))}
+                );
+              })}
               {activeTasks.length === 0 && !showAddTask && (
                 <p className="text-[11px] text-muted">No active tasks. Add tasks to plan your next steps.</p>
               )}
@@ -1401,6 +1469,22 @@ export function OverviewClient() {
             <SectionLabel>Active Tasks</SectionLabel>
             <div className="flex items-center gap-3">
               <span className="text-[10px] text-muted font-data">{activeTasks.length} open</span>
+              <div className="relative">
+                <button
+                  onClick={() => setShowMilestoneDropdown(!showMilestoneDropdown)}
+                  className="flex items-center gap-1 text-[11px] text-clay hover:underline cursor-pointer"
+                >
+                  <ListChecks size={12} /> From milestones
+                </button>
+                {showMilestoneDropdown && (
+                  <MilestoneDropdown
+                    milestones={phaseDef?.milestones ?? []}
+                    existingTasks={tasks}
+                    onClose={() => setShowMilestoneDropdown(false)}
+                    onCreate={handleBulkCreateFromMilestones}
+                  />
+                )}
+              </div>
               <button
                 onClick={() => setShowAddTask(true)}
                 className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
@@ -1497,6 +1581,27 @@ export function OverviewClient() {
                     Require my approval
                   </label>
                 </div>
+                {tasks.filter(t => !t.done && t.id).length > 0 && (
+                  <div>
+                    <label className="block text-[10px] text-muted mb-0.5">Depends on (prerequisites)</label>
+                    <div className="max-h-[100px] overflow-y-auto border border-border rounded-[var(--radius)] bg-white p-1.5 space-y-1">
+                      {tasks.filter(t => !t.done && t.id).map(t => (
+                        <label key={t.id} className="flex items-center gap-2 text-[11px] text-earth cursor-pointer hover:bg-warm/30 rounded px-1 py-0.5">
+                          <input
+                            type="checkbox"
+                            checked={taskDependsOn.includes(t.id!)}
+                            onChange={(e) => {
+                              if (e.target.checked) setTaskDependsOn(prev => [...prev, t.id!]);
+                              else setTaskDependsOn(prev => prev.filter(id => id !== t.id!));
+                            }}
+                            className="rounded border-border text-emerald-600 focus:ring-emerald-500"
+                          />
+                          {t.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 pt-1">
                   <button
                     onClick={handleAddTask}
@@ -1518,51 +1623,67 @@ export function OverviewClient() {
 
           {activeTasks.length > 0 && (
             <Card padding="sm" className="mb-4">
-              {activeTasks.slice(0, 6).map((task, i) => (
+              {activeTasks.slice(0, 6).map((task, i) => {
+                const blockInfo = isTaskBlocked(task, tasks);
+                return (
                 <div
                   key={task.id}
-                  className={`flex items-center gap-2.5 py-1.5 text-[12px] ${
+                  className={`py-1.5 text-[12px] ${
                     i < Math.min(activeTasks.length, 6) - 1 ? "border-b border-border" : ""
                   }`}
                 >
-                  <div
-                    className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
-                    onClick={() => user && updateTask(user.uid, projectId, task.id!, { done: true, status: "done" })}
-                  />
-                  {editingTaskId === task.id ? (
-                    <input
-                      type="text"
-                      value={editingTaskLabel}
-                      onChange={(e) => setEditingTaskLabel(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleEditTaskSave(task.id!);
-                        if (e.key === "Escape") { setEditingTaskId(null); setEditingTaskLabel(""); }
-                      }}
-                      onBlur={() => handleEditTaskSave(task.id!)}
-                      className="flex-1 px-2 py-0.5 text-[12px] border border-border rounded bg-surface text-earth focus:outline-none focus:border-emerald-500"
-                      autoFocus
-                    />
-                  ) : (
-                    <span
-                      className="flex-1 text-muted cursor-pointer hover:text-earth transition-colors"
-                      onClick={() => { setEditingTaskId(task.id!); setEditingTaskLabel(task.label); }}
-                      title="Click to edit"
+                  <div className="flex items-center gap-2.5">
+                    {blockInfo.blocked ? (
+                      <Lock size={14} className="text-muted/50 shrink-0" />
+                    ) : (
+                      <div
+                        className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
+                        onClick={() => user && updateTask(user.uid, projectId, task.id!, { done: true, status: "done" })}
+                      />
+                    )}
+                    {editingTaskId === task.id ? (
+                      <input
+                        type="text"
+                        value={editingTaskLabel}
+                        onChange={(e) => setEditingTaskLabel(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleEditTaskSave(task.id!);
+                          if (e.key === "Escape") { setEditingTaskId(null); setEditingTaskLabel(""); }
+                        }}
+                        onBlur={() => handleEditTaskSave(task.id!)}
+                        className="flex-1 px-2 py-0.5 text-[12px] border border-border rounded bg-surface text-earth focus:outline-none focus:border-emerald-500"
+                        autoFocus
+                      />
+                    ) : (
+                      <span
+                        className={`flex-1 cursor-pointer hover:text-earth transition-colors ${blockInfo.blocked ? "text-muted/50" : "text-muted"}`}
+                        onClick={() => { setEditingTaskId(task.id!); setEditingTaskLabel(task.label); }}
+                        title="Click to edit"
+                      >
+                        {task.label}
+                      </span>
+                    )}
+                    {blockInfo.blocked ? (
+                      <Badge variant="default">Blocked</Badge>
+                    ) : (
+                      <Badge variant={task.status === "in-progress" ? "warning" : "info"}>
+                        {task.status === "in-progress" ? "In progress" : "Upcoming"}
+                      </Badge>
+                    )}
+                    <button
+                      onClick={() => handleDeleteTask(task.id!)}
+                      className="p-0.5 text-muted hover:text-danger transition-colors shrink-0"
+                      title="Delete task"
                     >
-                      {task.label}
-                    </span>
+                      <X size={12} />
+                    </button>
+                  </div>
+                  {blockInfo.blocked && (
+                    <p className="text-[10px] text-muted/60 pl-6 mt-0.5">Blocked by: {blockInfo.blockedBy.join(", ")}</p>
                   )}
-                  <Badge variant={task.status === "in-progress" ? "warning" : "info"}>
-                    {task.status === "in-progress" ? "In progress" : "Upcoming"}
-                  </Badge>
-                  <button
-                    onClick={() => handleDeleteTask(task.id!)}
-                    className="p-0.5 text-muted hover:text-danger transition-colors shrink-0"
-                    title="Delete task"
-                  >
-                    <X size={12} />
-                  </button>
                 </div>
-              ))}
+                );
+              })}
             </Card>
           )}
 
@@ -1960,6 +2081,87 @@ export function OverviewClient() {
       </div>
       </CollapsibleSection>
 
+      {/* Contractor Rating Prompt */}
+      {ratingTaskId && (() => {
+        const ratedTask = tasks.find((t) => t.id === ratingTaskId) ?? completedTasks.find((t) => t.id === ratingTaskId);
+        if (!ratedTask) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-earth/50 backdrop-blur-sm" onClick={() => setRatingTaskId(null)} />
+            <div className="relative bg-surface border border-border rounded-xl shadow-lg max-w-sm w-full p-5">
+              <h3 className="text-[14px] font-semibold text-earth mb-1">Rate contractor</h3>
+              <p className="text-[12px] text-muted mb-3">
+                How did <strong className="text-earth">{ratedTask.assignedName}</strong> perform on <strong className="text-earth">{ratedTask.label}</strong>?
+              </p>
+              <div className="flex items-center gap-1 mb-3">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setRatingStars(star)}
+                    className="p-0.5 transition-colors"
+                    title={`${star} star${star !== 1 ? "s" : ""}`}
+                  >
+                    <Star
+                      size={24}
+                      className={star <= ratingStars ? "text-warning fill-warning" : "text-border"}
+                    />
+                  </button>
+                ))}
+                <span className="ml-2 text-[12px] font-data text-earth">{ratingStars}/5</span>
+              </div>
+              <textarea
+                value={ratingComment}
+                onChange={(e) => setRatingComment(e.target.value)}
+                placeholder="Optional comment..."
+                rows={2}
+                className="w-full px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 resize-none mb-3"
+              />
+              <div className="flex items-center gap-2 justify-end">
+                <button
+                  onClick={() => {
+                    setRatingTaskId(null);
+                    setRatingStars(5);
+                    setRatingComment("");
+                  }}
+                  className="px-3 py-1.5 text-[12px] text-muted hover:text-earth transition-colors"
+                >
+                  Skip
+                </button>
+                <button
+                  disabled={ratingSubmitting}
+                  onClick={async () => {
+                    if (!user || !ratedTask.assignedTo) return;
+                    setRatingSubmitting(true);
+                    try {
+                      await addContractorRating(user.uid, {
+                        projectId,
+                        contactId: ratedTask.assignedTo,
+                        contactName: ratedTask.assignedName || "Unknown",
+                        taskId: ratedTask.id!,
+                        taskLabel: ratedTask.label,
+                        overall: ratingStars,
+                        comment: ratingComment.trim() || undefined,
+                      });
+                      showToast("Rating submitted.", "success");
+                    } catch {
+                      showToast("Failed to submit rating.", "error");
+                    } finally {
+                      setRatingSubmitting(false);
+                      setRatingTaskId(null);
+                      setRatingStars(5);
+                      setRatingComment("");
+                    }
+                  }}
+                  className="px-4 py-1.5 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                >
+                  {ratingSubmitting ? "Submitting..." : "Submit rating"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Export Modal */}
       {showExportModal && (
         <ExportModal
@@ -2046,6 +2248,91 @@ function DetailRow({ label, value, last }: { label: string; value: React.ReactNo
     <div className={`flex justify-between items-center py-1.5 text-[11px] ${last ? "" : "border-b border-border"}`}>
       <span className="text-muted">{label}</span>
       <span className="text-earth font-medium">{typeof value === "string" ? value : value}</span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// MilestoneDropdown — bulk create tasks from phase milestones
+// ---------------------------------------------------------------------------
+
+function MilestoneDropdown({
+  milestones,
+  existingTasks,
+  onClose,
+  onCreate,
+}: {
+  milestones: { name: string; order: number }[];
+  existingTasks: { label: string }[];
+  onClose: () => void;
+  onCreate: (selected: { name: string; order: number }[]) => void;
+}) {
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+
+  // Filter out milestones that already exist as tasks
+  const existingLabels = new Set(existingTasks.map(t => t.label.toLowerCase()));
+  const available = milestones.filter(m => !existingLabels.has(m.name.toLowerCase()));
+
+  if (available.length === 0) {
+    return (
+      <div className="absolute right-0 top-full mt-1 z-50 w-64 bg-white border border-border rounded-[var(--radius)] shadow-lg p-3">
+        <p className="text-[11px] text-muted mb-2">All milestones for this phase have already been added as tasks.</p>
+        <button onClick={onClose} className="text-[11px] text-info hover:underline">Close</button>
+      </div>
+    );
+  }
+
+  function toggleAll() {
+    if (selected.size === available.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(available.map((_, i) => i)));
+    }
+  }
+
+  return (
+    <div className="absolute right-0 top-full mt-1 z-50 w-72 bg-white border border-border rounded-[var(--radius)] shadow-lg p-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] font-semibold text-earth">Create tasks from milestones</span>
+        <button onClick={onClose} className="p-0.5 text-muted hover:text-earth">
+          <X size={12} />
+        </button>
+      </div>
+      <p className="text-[10px] text-muted mb-2">
+        Selected milestones become tasks with auto-suggested sequential dependencies.
+      </p>
+      <button onClick={toggleAll} className="text-[10px] text-info hover:underline mb-1.5">
+        {selected.size === available.length ? "Deselect all" : "Select all"}
+      </button>
+      <div className="max-h-[180px] overflow-y-auto space-y-1 mb-2">
+        {available.map((ms, i) => (
+          <label key={ms.order} className="flex items-center gap-2 text-[11px] text-earth cursor-pointer hover:bg-warm/30 rounded px-1 py-0.5">
+            <input
+              type="checkbox"
+              checked={selected.has(i)}
+              onChange={(e) => {
+                const next = new Set(selected);
+                if (e.target.checked) next.add(i);
+                else next.delete(i);
+                setSelected(next);
+              }}
+              className="rounded border-border text-emerald-600 focus:ring-emerald-500"
+            />
+            <span className="flex-1">{ms.name}</span>
+            <span className="text-[9px] text-muted">#{ms.order + 1}</span>
+          </label>
+        ))}
+      </div>
+      <button
+        onClick={() => {
+          const items = available.filter((_, i) => selected.has(i));
+          onCreate(items);
+        }}
+        disabled={selected.size === 0}
+        className="w-full py-1.5 text-[11px] font-medium bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+      >
+        Create {selected.size} task{selected.size !== 1 ? "s" : ""}
+      </button>
     </div>
   );
 }

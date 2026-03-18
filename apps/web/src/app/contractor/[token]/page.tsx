@@ -15,7 +15,7 @@ import type { ProjectData, TaskData } from "@/lib/services/project-service";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
 import {
   CheckCircle2, Circle, Clock, AlertTriangle, Play,
-  Send, Camera, ChevronDown, ChevronUp, MessageCircle, X, MapPin,
+  Send, Camera, ChevronDown, ChevronUp, MessageCircle, X, MapPin, Lock,
 } from "lucide-react";
 
 const PHASE_NAMES = ["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"];
@@ -217,6 +217,17 @@ export default function ContractorPage() {
     }
   }
 
+  function isTaskBlocked(task: TaskData): { blocked: boolean; blockedBy: string[] } {
+    if (!task.dependsOn || task.dependsOn.length === 0) return { blocked: false, blockedBy: [] };
+    const incomplete = task.dependsOn
+      .map(depId => tasks.find(t => t.id === depId))
+      .filter(t => t && !t.done);
+    return {
+      blocked: incomplete.length > 0,
+      blockedBy: incomplete.map(t => t!.label),
+    };
+  }
+
   // --- Error ---
   if (error) {
     return (
@@ -295,16 +306,29 @@ export default function ContractorPage() {
               To Do ({todoTasks.length})
             </h2>
             <div className="space-y-2">
-              {todoTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  expanded={activeTaskId === task.id}
-                  onToggle={() => setActiveTaskId(activeTaskId === task.id ? null : task.id!)}
-                  onStart={() => handleStart(task.id!)}
-                  submitting={submitting}
-                />
-              ))}
+              {todoTasks.map((task) => {
+                const blockInfo = isTaskBlocked(task);
+                return blockInfo.blocked ? (
+                  <div key={task.id} className="bg-white border border-[#e8e0d4] rounded-xl p-4 opacity-60">
+                    <div className="flex items-center gap-3">
+                      <Lock size={18} className="text-[#6A6A6A]/50 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] text-[#2C1810] font-medium">{task.label}</p>
+                        <p className="text-[10px] text-[#6A6A6A] mt-0.5">Blocked by: {blockInfo.blockedBy.join(", ")}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    expanded={activeTaskId === task.id}
+                    onToggle={() => setActiveTaskId(activeTaskId === task.id ? null : task.id!)}
+                    onStart={() => handleStart(task.id!)}
+                    submitting={submitting}
+                  />
+                );
+              })}
             </div>
           </section>
         )}

@@ -1062,6 +1062,107 @@ export async function seedDemoProject(userId: string): Promise<string> {
   return projectId;
 }
 
+// --- Contractor Ratings ---
+
+export interface ContractorRating {
+  id?: string;
+  projectId: string;
+  contactId: string;
+  contactName: string;
+  taskId: string;
+  taskLabel: string;
+  overall: number;        // 1-5 stars
+  quality?: number;       // 1-5
+  timeliness?: number;    // 1-5
+  communication?: number; // 1-5
+  comment?: string;
+  createdAt: string;
+}
+
+export async function addContractorRating(
+  userId: string,
+  data: Omit<ContractorRating, "id" | "createdAt">
+): Promise<void> {
+  const ratingsRef = ref(db, `users/${userId}/contractorRatings`);
+  await push(ratingsRef, { ...data, createdAt: new Date().toISOString() });
+}
+
+export function subscribeToContractorRatings(
+  userId: string,
+  callback: (ratings: ContractorRating[]) => void
+): Unsubscribe {
+  return onValue(ref(db, `users/${userId}/contractorRatings`), (snapshot) => {
+    const ratings: ContractorRating[] = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        ratings.push({ id: child.key!, ...child.val() });
+      });
+    }
+    callback(ratings);
+  }, (error) => {
+    console.error("Subscription error (contractor ratings):", error);
+  });
+}
+
+// --- Change Orders ---
+
+export interface ChangeOrder {
+  id?: string;
+  projectId: string;
+  taskId?: string;
+  description: string;
+  reason: string;
+  priceImpact: number;    // positive = additional cost, negative = credit
+  scheduleImpact: number; // additional days
+  initiatedBy: "owner" | "contractor";
+  initiatorName: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+  resolvedAt?: string;
+  resolvedNote?: string;
+}
+
+export async function createChangeOrder(
+  userId: string,
+  data: Omit<ChangeOrder, "id" | "createdAt">
+): Promise<string> {
+  const coRef = push(ref(db, `users/${userId}/projects/${data.projectId}/changeOrders`));
+  await set(coRef, { ...data, createdAt: new Date().toISOString() });
+  return coRef.key!;
+}
+
+export async function resolveChangeOrder(
+  userId: string,
+  projectId: string,
+  changeOrderId: string,
+  status: "approved" | "rejected",
+  note?: string
+): Promise<void> {
+  await update(ref(db, `users/${userId}/projects/${projectId}/changeOrders/${changeOrderId}`), {
+    status,
+    resolvedAt: new Date().toISOString(),
+    resolvedNote: note || null,
+  });
+}
+
+export function subscribeToChangeOrders(
+  userId: string,
+  projectId: string,
+  callback: (orders: ChangeOrder[]) => void
+): Unsubscribe {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/changeOrders`), (snapshot) => {
+    const orders: ChangeOrder[] = [];
+    if (snapshot.exists()) {
+      snapshot.forEach((child) => {
+        orders.push({ id: child.key!, ...child.val() });
+      });
+    }
+    callback(orders);
+  }, (error) => {
+    console.error("Subscription error (change orders):", error);
+  });
+}
+
 // --- Phase Step Completions ---
 
 export interface StepDecision {
