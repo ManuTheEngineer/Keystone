@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useTopbar } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -14,6 +14,7 @@ import {
   type SavedAnalysis,
 } from "@/lib/services/analysis-service";
 import { exportAnalysisPDF } from "@/lib/services/export-service";
+import { createProject, generateBudgetFromSpecs, seedInitialTasks, type Market as ProjMarket, type BuildPurpose, type PropertyType as ProjPropType } from "@/lib/services/project-service";
 import {
   calculateAnalysis,
   getCostBreakdown,
@@ -22,7 +23,6 @@ import {
   type AnalysisInput,
   type AnalysisResults,
   type CostBreakdownItem,
-  type RiskFlag,
 } from "@/lib/services/deal-analyzer-engine";
 import {
   getMarketData,
@@ -33,50 +33,19 @@ import {
   getCostComparisonText,
   getClimateLabel,
   formatMonthList,
-  getCostBenchmarks,
 } from "@keystone/market-data";
 import type { Market as MarketType, CurrencyConfig, LocationData } from "@keystone/market-data";
 import {
-  Globe,
-  MapPin,
-  Home,
-  Ruler,
-  TrendingUp,
-  AlertTriangle,
-  AlertCircle,
-  Info,
-  ChevronDown,
-  ChevronUp,
-  Calculator,
-  ArrowRight,
-  Save,
-  FileDown,
-  Share2,
-  RotateCcw,
-  DollarSign,
-  Building2,
-  Bed,
-  Bath,
-  Layers,
-  Zap,
-  Droplets,
-  Sun,
-  Trees,
-  Car,
-  Fence,
-  Waves,
-  ShieldCheck,
-  Plus,
-  FolderOpen,
-  X,
-  Sliders,
+  Globe, MapPin, Home, Ruler, TrendingUp, AlertTriangle, AlertCircle,
+  Info, ChevronRight, ChevronLeft, Calculator, ArrowRight, Save, FileDown,
+  Share2, RotateCcw, DollarSign, Building2, Bed, Bath, Layers, Zap,
+  Droplets, Sun, Trees, Car, Fence, Waves, ShieldCheck, Plus, FolderOpen,
+  X, Check, Target, CreditCard, Clock, Thermometer,
 } from "lucide-react";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type Tab = "analyze" | "reverse";
+// ============================================================================
+// Types & Constants
+// ============================================================================
 
 interface InputState {
   goal: "occupy" | "rent" | "sell" | "mixed-use" | "";
@@ -107,299 +76,166 @@ interface InputState {
   commercialPct: number;
 }
 
-const INITIAL_INPUT: InputState = {
-  goal: "",
-  market: "",
-  city: "",
-  zipCode: "",
-  propertyType: "SFH",
-  sizeCategory: "standard",
-  customSize: 0,
-  bedrooms: 3,
-  bathrooms: 2,
-  stories: 1,
-  features: [],
-  landOption: "",
-  landPrice: 0,
-  titreFoncierStatus: "",
-  financingType: "",
-  downPaymentPct: 20,
-  downPaymentAmount: 0,
-  loanRate: 7.5,
-  loanTerm: 30,
-  monthlyIncome: 0,
-  existingDebts: 0,
-  creditScoreRange: "",
-  timelineMonths: 12,
-  targetSalePrice: 0,
-  monthlyRent: 0,
-  commercialPct: 30,
+const INITIAL: InputState = {
+  goal: "", market: "", city: "", zipCode: "", propertyType: "SFH",
+  sizeCategory: "standard", customSize: 0, bedrooms: 3, bathrooms: 2,
+  stories: 1, features: [], landOption: "", landPrice: 0,
+  titreFoncierStatus: "", financingType: "", downPaymentPct: 20,
+  downPaymentAmount: 0, loanRate: 7.5, loanTerm: 30, monthlyIncome: 0,
+  existingDebts: 0, creditScoreRange: "", timelineMonths: 12,
+  targetSalePrice: 0, monthlyRent: 0, commercialPct: 30,
 };
 
-// ---------------------------------------------------------------------------
-// Feature definitions
-// ---------------------------------------------------------------------------
+const STEPS = [
+  { id: "goal", label: "Goal", icon: Target },
+  { id: "location", label: "Location", icon: MapPin },
+  { id: "property", label: "Property", icon: Home },
+  { id: "land", label: "Land", icon: Ruler },
+  { id: "finance", label: "Finance", icon: CreditCard },
+  { id: "timeline", label: "Timeline", icon: Clock },
+];
 
 const US_FEATURES = [
-  { id: "garage-single", label: "Single garage", Icon: Car },
-  { id: "garage-double", label: "Double garage", Icon: Car },
-  { id: "garage-carport", label: "Carport", Icon: Car },
+  { id: "garage-single", label: "Garage", Icon: Car },
+  { id: "garage-double", label: "2-car garage", Icon: Car },
   { id: "porch-patio", label: "Porch / Patio", Icon: Trees },
   { id: "pool", label: "Pool", Icon: Waves },
   { id: "fence", label: "Fencing", Icon: Fence },
-  { id: "solar", label: "Solar panels", Icon: Sun },
+  { id: "solar", label: "Solar", Icon: Sun },
   { id: "outdoor-kitchen", label: "Outdoor kitchen", Icon: Zap },
   { id: "basement", label: "Basement", Icon: Layers },
-  { id: "sprinkler", label: "Sprinkler system", Icon: Droplets },
+  { id: "sprinkler", label: "Sprinkler", Icon: Droplets },
 ];
 
 const WA_FEATURES = [
-  { id: "garage-single", label: "Single garage", Icon: Car },
-  { id: "garage-double", label: "Double garage", Icon: Car },
-  { id: "garage-carport", label: "Carport", Icon: Car },
-  { id: "porch-patio", label: "Veranda / Terrace", Icon: Trees },
+  { id: "garage-single", label: "Garage", Icon: Car },
+  { id: "garage-double", label: "2-car garage", Icon: Car },
+  { id: "porch-patio", label: "Veranda", Icon: Trees },
   { id: "pool", label: "Pool", Icon: Waves },
-  { id: "fence", label: "Perimeter wall", Icon: Fence },
-  { id: "solar", label: "Solar panels", Icon: Sun },
+  { id: "fence", label: "Wall", Icon: Fence },
+  { id: "solar", label: "Solar", Icon: Sun },
   { id: "guest-house", label: "Guest house", Icon: Home },
   { id: "water-tank", label: "Water tank", Icon: Droplets },
-  { id: "generator-house", label: "Generator house", Icon: Zap },
-  { id: "security-post", label: "Security post", Icon: ShieldCheck },
+  { id: "generator-house", label: "Generator", Icon: Zap },
+  { id: "security-post", label: "Security", Icon: ShieldCheck },
 ];
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+const EXCHANGE_RATES: Record<string, number> = { TOGO: 615, GHANA: 15.5, BENIN: 615 };
 
-function getCurrency(market: MarketType | ""): CurrencyConfig {
+type ResultTab = "summary" | "breakdown" | "location" | "scenarios";
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function getCurr(market: MarketType | ""): CurrencyConfig {
   if (!market) return { code: "USD", symbol: "$", locale: "en-US", decimals: 0, groupSeparator: ",", position: "prefix" as const };
   return getMarketData(market).currency;
 }
 
-function fmt(amount: number, currency: CurrencyConfig): string {
-  return formatCurrency(amount, currency);
-}
+function fmt(n: number, c: CurrencyConfig) { return formatCurrency(n, c); }
+function fmtC(n: number, c: CurrencyConfig) { return formatCurrencyCompact(n, c); }
 
-function fmtCompact(amount: number, currency: CurrencyConfig): string {
-  return formatCurrencyCompact(amount, currency);
+function scoreGradient(s: number) {
+  if (s >= 80) return "from-emerald-500 to-emerald-600";
+  if (s >= 65) return "from-emerald-400 to-emerald-500";
+  if (s >= 50) return "from-amber-400 to-amber-500";
+  if (s >= 35) return "from-orange-400 to-orange-500";
+  return "from-red-500 to-red-600";
 }
-
-function scoreColor(score: number): string {
-  if (score >= 80) return "text-success";
-  if (score >= 65) return "text-emerald-600 dark:text-emerald-400";
-  if (score >= 50) return "text-warning";
-  if (score >= 35) return "text-orange-600 dark:text-orange-400";
-  return "text-danger";
-}
-
-function scoreBg(score: number): string {
-  if (score >= 80) return "bg-success";
-  if (score >= 65) return "bg-emerald-500";
-  if (score >= 50) return "bg-warning";
-  if (score >= 35) return "bg-orange-500";
-  return "bg-danger";
-}
-
-function scoreLabel(score: number): string {
-  if (score >= 80) return "Strong";
-  if (score >= 65) return "Good";
-  if (score >= 50) return "Fair";
-  if (score >= 35) return "Caution";
+function scoreText(s: number) {
+  if (s >= 80) return "Strong Deal";
+  if (s >= 65) return "Good Deal";
+  if (s >= 50) return "Fair";
+  if (s >= 35) return "Caution";
   return "High Risk";
 }
 
-function riskIcon(level: string) {
-  if (level === "critical") return <AlertCircle size={14} className="text-danger shrink-0" />;
-  if (level === "warning") return <AlertTriangle size={14} className="text-warning shrink-0" />;
-  return <Info size={14} className="text-blue-500 shrink-0" />;
-}
+// ============================================================================
+// Reusable UI
+// ============================================================================
 
-// ---------------------------------------------------------------------------
-// Section wrapper component
-// ---------------------------------------------------------------------------
-
-function Section({ title, subtitle, children, defaultOpen = true }: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
+function Pill({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
   return (
-    <div className="border border-border rounded-xl overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-warm/30 hover:bg-warm/50 transition-colors text-left"
-      >
-        <div>
-          <h3 className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>{title}</h3>
-          {subtitle && <p className="text-[11px] text-muted mt-0.5">{subtitle}</p>}
-        </div>
-        {open ? <ChevronUp size={16} className="text-muted" /> : <ChevronDown size={16} className="text-muted" />}
-      </button>
-      {open && <div className="p-4 space-y-3">{children}</div>}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Input field components
-// ---------------------------------------------------------------------------
-
-function Label({ children, tooltip }: { children: React.ReactNode; tooltip?: string }) {
-  return (
-    <label className="flex items-center gap-1.5 text-[12px] font-medium text-earth mb-1">
+    <button onClick={onClick} className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-all ${active ? "bg-earth text-white shadow-sm" : "text-muted hover:text-earth hover:bg-warm/40"}`}>
       {children}
-      {tooltip && (
-        <LearnTooltip term={String(children)} explanation={tooltip}>
-          <span className="inline-flex text-muted/50 hover:text-muted cursor-help"><Info size={12} /></span>
-        </LearnTooltip>
-      )}
-    </label>
+    </button>
   );
 }
 
-function Select({ value, onChange, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { children: React.ReactNode }) {
+function Choice({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <select
-      value={value}
-      onChange={onChange}
-      className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/30 focus:border-clay transition-colors"
-      {...props}
-    >
-      {children}
-    </select>
+    <button onClick={onClick} className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 text-left transition-all ${selected ? "border-clay bg-clay/5 shadow-sm" : "border-transparent bg-warm/20 hover:bg-warm/40"}`}>
+      <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${selected ? "border-clay bg-clay" : "border-muted/30"}`}>
+        {selected && <Check size={10} className="text-white" />}
+      </div>
+      <div className="flex-1 min-w-0">{children}</div>
+    </button>
   );
 }
 
-function NumberInput({ value, onChange, prefix, suffix, ...props }: Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange"> & {
-  value: number;
-  onChange: (v: number) => void;
-  prefix?: string;
-  suffix?: string;
-}) {
+function NumField({ value, onChange, label, prefix, suffix, tooltip, ...rest }: {
+  value: number; onChange: (v: number) => void; label: string; prefix?: string; suffix?: string; tooltip?: string;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange">) {
   return (
-    <div className="relative">
-      {prefix && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12px] text-muted">{prefix}</span>}
-      <input
-        type="number"
-        value={value || ""}
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
-        className={`w-full px-3 py-2 bg-surface border border-border rounded-lg text-[13px] text-earth font-data focus:outline-none focus:ring-2 focus:ring-clay/30 focus:border-clay transition-colors ${prefix ? "pl-7" : ""} ${suffix ? "pr-12" : ""}`}
-        {...props}
-      />
-      {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-muted">{suffix}</span>}
+    <div>
+      <div className="flex items-center gap-1 mb-1">
+        <span className="text-[11px] font-medium text-earth">{label}</span>
+        {tooltip && <LearnTooltip term={label} explanation={tooltip}><span className="text-muted/40 hover:text-muted cursor-help"><Info size={10} /></span></LearnTooltip>}
+      </div>
+      <div className="relative">
+        {prefix && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-muted">{prefix}</span>}
+        <input type="number" value={value || ""} onChange={(e) => onChange(Number(e.target.value) || 0)}
+          className={`w-full px-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth font-data focus:outline-none focus:ring-2 focus:ring-clay/20 focus:border-clay/40 ${prefix ? "pl-7" : ""} ${suffix ? "pr-10" : ""}`} {...rest} />
+        {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted">{suffix}</span>}
+      </div>
     </div>
   );
 }
 
-function OptionGrid({ options, value, onChange, columns = 2 }: {
-  options: { id: string; label: string; Icon?: React.ComponentType<{ size: number }> }[];
-  value: string;
-  onChange: (v: string) => void;
-  columns?: number;
-}) {
+function Stepper({ value, onChange, min, max, label }: { value: number; onChange: (v: number) => void; min: number; max: number; label: string }) {
   return (
-    <div className={`grid gap-2 ${columns === 3 ? "grid-cols-3" : columns === 4 ? "grid-cols-4" : "grid-cols-2"}`}>
-      {options.map((opt) => (
-        <button
-          key={opt.id}
-          onClick={() => onChange(opt.id)}
-          className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-[12px] font-medium transition-all ${
-            value === opt.id
-              ? "border-clay bg-clay/10 text-clay ring-1 ring-clay/20"
-              : "border-border text-earth hover:bg-warm/30"
-          }`}
-        >
-          {opt.Icon && <opt.Icon size={14} />}
-          {opt.label}
-        </button>
-      ))}
+    <div className="flex flex-col items-center gap-1">
+      <span className="text-[10px] text-muted uppercase tracking-wider">{label}</span>
+      <div className="flex items-center gap-0.5">
+        <button onClick={() => onChange(Math.max(min, value - 1))} className="w-7 h-7 rounded-lg bg-warm/40 hover:bg-warm text-earth flex items-center justify-center text-[14px] font-medium transition-colors">-</button>
+        <span className="w-8 text-center text-[16px] font-data font-bold text-earth">{value}</span>
+        <button onClick={() => onChange(Math.min(max, value + 1))} className="w-7 h-7 rounded-lg bg-warm/40 hover:bg-warm text-earth flex items-center justify-center text-[14px] font-medium transition-colors">+</button>
+      </div>
     </div>
   );
 }
 
-function FeatureToggle({ features, selected, onChange, market }: {
-  features: typeof US_FEATURES;
-  selected: string[];
-  onChange: (features: string[]) => void;
-  market: string;
-}) {
-  const toggle = (id: string) => {
-    onChange(selected.includes(id) ? selected.filter((f) => f !== id) : [...selected, id]);
-  };
-  return (
-    <div className="grid grid-cols-2 gap-1.5">
-      {features.map((f) => (
-        <button
-          key={f.id}
-          onClick={() => toggle(f.id)}
-          className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border text-[11px] transition-all ${
-            selected.includes(f.id)
-              ? "border-clay bg-clay/10 text-clay"
-              : "border-border/50 text-muted hover:bg-warm/20"
-          }`}
-        >
-          <f.Icon size={12} />
-          {f.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Donut chart component (SVG)
-// ---------------------------------------------------------------------------
+// ============================================================================
+// Donut Chart
+// ============================================================================
 
 function DonutChart({ items, currency }: { items: CostBreakdownItem[]; currency: CurrencyConfig }) {
   const total = items.reduce((s, i) => s + i.amount, 0);
-  const size = 160;
-  const cx = size / 2;
-  const cy = size / 2;
-  const radius = 60;
-  const stroke = 20;
-
-  let offset = 0;
-  const circumference = 2 * Math.PI * radius;
-
+  const r = 54, stroke = 16, size = 148, cx = size / 2, cy = size / 2;
+  const circ = 2 * Math.PI * r;
+  let off = 0;
   return (
-    <div className="flex flex-col items-center gap-3">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <div className="flex flex-col items-center gap-4">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Cost breakdown chart">
         {items.map((item, i) => {
           const pct = item.amount / total;
-          const dashLength = circumference * pct;
-          const dashOffset = -offset;
-          offset += dashLength;
-          return (
-            <circle
-              key={i}
-              cx={cx}
-              cy={cy}
-              r={radius}
-              fill="none"
-              stroke={item.color}
-              strokeWidth={stroke}
-              strokeDasharray={`${dashLength} ${circumference - dashLength}`}
-              strokeDashoffset={dashOffset}
-              transform={`rotate(-90 ${cx} ${cy})`}
-              className="transition-all duration-500"
-            />
-          );
+          const dash = circ * pct;
+          const d = -off;
+          off += dash;
+          return <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={item.color} strokeWidth={stroke}
+            strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={d}
+            transform={`rotate(-90 ${cx} ${cy})`} className="transition-all duration-700" />;
         })}
-        <text x={cx} y={cy - 6} textAnchor="middle" className="fill-earth text-[11px] font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
-          Total
-        </text>
-        <text x={cx} y={cy + 10} textAnchor="middle" className="fill-earth text-[13px] font-bold font-data">
-          {fmtCompact(total, currency)}
-        </text>
+        <text x={cx} y={cy - 4} textAnchor="middle" className="fill-muted text-[9px]" style={{ fontFamily: "var(--font-heading)" }}>Total</text>
+        <text x={cx} y={cy + 12} textAnchor="middle" className="fill-earth text-[14px] font-bold font-data">{fmtC(total, currency)}</text>
       </svg>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+      <div className="w-full grid grid-cols-2 gap-x-3 gap-y-1.5">
         {items.map((item, i) => (
-          <div key={i} className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-            <span className="text-[10px] text-muted">{item.category}</span>
-            <span className="text-[10px] font-data text-earth ml-auto">{item.percentage}%</span>
+          <div key={i} className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: item.color }} />
+            <span className="text-[10px] text-muted flex-1 truncate">{item.category}</span>
+            <span className="text-[10px] font-data text-earth tabular-nums">{item.percentage}%</span>
           </div>
         ))}
       </div>
@@ -407,299 +243,175 @@ function DonutChart({ items, currency }: { items: CostBreakdownItem[]; currency:
   );
 }
 
-// ---------------------------------------------------------------------------
-// Deal Score Gauge
-// ---------------------------------------------------------------------------
+// ============================================================================
+// Score Ring
+// ============================================================================
 
-function ScoreGauge({ score }: { score: number }) {
-  const angle = (score / 100) * 180; // 0-180 degree arc
-  const radius = 70;
-  const cx = 85;
-  const cy = 80;
-
-  // Arc path for background
-  const describeArc = (startAngle: number, endAngle: number) => {
-    const start = {
-      x: cx + radius * Math.cos(Math.PI * (1 + startAngle / 180)),
-      y: cy + radius * Math.sin(Math.PI * (1 + startAngle / 180)),
-    };
-    const end = {
-      x: cx + radius * Math.cos(Math.PI * (1 + endAngle / 180)),
-      y: cy + radius * Math.sin(Math.PI * (1 + endAngle / 180)),
-    };
-    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`;
-  };
-
+function ScoreRing({ score }: { score: number }) {
+  const r = 44, stroke = 8, size = 120, cx = size / 2, cy = size / 2;
+  const circ = 2 * Math.PI * r;
+  const dashLen = circ * (score / 100);
   return (
-    <div className="flex flex-col items-center">
-      <svg width={170} height={100} viewBox="0 0 170 100">
-        {/* Background arc */}
-        <path d={describeArc(0, 180)} fill="none" stroke="currentColor" strokeWidth={12} className="text-border" strokeLinecap="round" />
-        {/* Score arc */}
-        {score > 0 && (
-          <path d={describeArc(0, angle)} fill="none" stroke="currentColor" strokeWidth={12}
-            className={scoreColor(score)} strokeLinecap="round"
-            style={{ transition: "all 0.6s ease-out" }}
-          />
-        )}
-        {/* Score text */}
-        <text x={cx} y={cy - 8} textAnchor="middle" className="fill-earth text-[28px] font-bold font-data">
-          {score}
-        </text>
-        <text x={cx} y={cy + 8} textAnchor="middle" className={`text-[12px] font-semibold ${scoreColor(score)}`}>
-          {scoreLabel(score)}
-        </text>
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 -rotate-90">
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="currentColor" strokeWidth={stroke} className="text-border/40" />
+        <circle cx={cx} cy={cy} r={r} fill="none" strokeWidth={stroke} strokeLinecap="round"
+          strokeDasharray={`${dashLen} ${circ - dashLen}`}
+          className={`transition-all duration-1000 ease-out ${score >= 65 ? "stroke-emerald-500" : score >= 50 ? "stroke-amber-500" : score >= 35 ? "stroke-orange-500" : "stroke-red-500"}`} />
       </svg>
+      <div className="text-center z-10">
+        <div className="text-[28px] font-bold font-data text-earth leading-none">{score}</div>
+        <div className="text-[9px] font-semibold text-muted uppercase tracking-wider mt-0.5">{scoreText(score)}</div>
+      </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main Page Component
-// ---------------------------------------------------------------------------
+// ============================================================================
+// Main Page
+// ============================================================================
 
 export default function AnalyzePage() {
   const router = useRouter();
   const { setTopbar } = useTopbar();
   const { user, profile } = useAuth();
-  const { t: tr } = useTranslation();
-  const [tab, setTab] = useState<Tab>("analyze");
+  const { showToast } = useToast();
+  const [mode, setMode] = useState<"analyze" | "reverse">("analyze");
+  const [step, setStep] = useState(0);
+  const [resultTab, setResultTab] = useState<ResultTab>("summary");
   const [input, setInput] = useState<InputState>(() => {
-    // Check for shared link params first
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search);
       if (p.get("goal") && p.get("market")) {
         return {
-          ...INITIAL_INPUT,
+          ...INITIAL,
           goal: (p.get("goal") || "") as InputState["goal"],
           market: (p.get("market") || "") as MarketType | "",
-          city: p.get("city") || "",
-          zipCode: p.get("zip") || "",
+          city: p.get("city") || "", zipCode: p.get("zip") || "",
           propertyType: p.get("type") || "SFH",
           sizeCategory: p.get("size") || "standard",
-          bedrooms: Number(p.get("beds")) || 3,
-          bathrooms: Number(p.get("baths")) || 2,
+          bedrooms: Number(p.get("beds")) || 3, bathrooms: Number(p.get("baths")) || 2,
           stories: Number(p.get("stories")) || 1,
-          features: p.get("feat") ? p.get("feat")!.split(",") : [],
-          landOption: p.get("land") || "",
-          financingType: p.get("fin") || "",
-          downPaymentPct: Number(p.get("dp")) || 20,
-          loanRate: Number(p.get("rate")) || 7.5,
+          features: p.get("feat") ? p.get("feat")!.split(",").filter(Boolean) : [],
+          landOption: p.get("land") || "", financingType: p.get("fin") || "",
+          downPaymentPct: Number(p.get("dp")) || 20, loanRate: Number(p.get("rate")) || 7.5,
           timelineMonths: Number(p.get("months")) || 12,
-          monthlyRent: Number(p.get("rent")) || 0,
-          targetSalePrice: Number(p.get("sale")) || 0,
-          loanTerm: Number(p.get("term")) || 30,
-          monthlyIncome: Number(p.get("income")) || 0,
-          existingDebts: Number(p.get("debts")) || 0,
-          titreFoncierStatus: p.get("titre") || "",
+          monthlyRent: Number(p.get("rent")) || 0, targetSalePrice: Number(p.get("sale")) || 0,
+          loanTerm: Number(p.get("term")) || 30, monthlyIncome: Number(p.get("income")) || 0,
+          existingDebts: Number(p.get("debts")) || 0, titreFoncierStatus: p.get("titre") || "",
           commercialPct: Number(p.get("commpct")) || 30,
         };
       }
     }
-    // Pre-fill market from user profile
-    const market = (profile?.market as MarketType) || "";
-    return { ...INITIAL_INPUT, market };
+    return { ...INITIAL, market: (profile?.market as MarketType) || "" };
   });
   const [reverseBudget, setReverseBudget] = useState(0);
-  const [showAllSections, setShowAllSections] = useState(false);
   const [savedAnalyses, setSavedAnalyses] = useState<SavedAnalysis[]>([]);
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showSave, setShowSave] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(false);
-  const [showSavedList, setShowSavedList] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [zipLoading, setZipLoading] = useState(false);
-  const { showToast } = useToast();
+  const [showCreate, setShowCreate] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [creating, setCreating] = useState(false);
 
-  // Set topbar
-  useEffect(() => {
-    setTopbar("Deal Analyzer", undefined, undefined);
-  }, [setTopbar]);
-
-  // Load saved analyses
+  useEffect(() => { setTopbar("Deal Analyzer", undefined, undefined); }, [setTopbar]);
   useEffect(() => {
     if (!user?.uid) return;
     getUserAnalyses(user.uid).then(setSavedAnalyses).catch(() => {});
   }, [user?.uid]);
 
-  // ZIP code auto-populates city field via location API
+  // ZIP auto-fill
   useEffect(() => {
     if (!input.zipCode || input.zipCode.length !== 5 || input.market !== "USA") return;
-    // Only fetch if city is empty or was previously auto-filled
-    const timer = setTimeout(async () => {
+    const t = setTimeout(async () => {
       setZipLoading(true);
       try {
         const res = await fetch(`/api/location-data?q=${encodeURIComponent(input.zipCode)}&market=USA`);
         if (res.ok) {
-          const json = await res.json();
-          if (json.data?.city) {
-            setInput((prev) => ({ ...prev, city: `${json.data.city}${json.data.state ? `, ${json.data.state}` : ""}` }));
-          }
+          const j = await res.json();
+          if (j.data?.city) setInput((p) => ({ ...p, city: `${j.data.city}${j.data.state ? `, ${j.data.state}` : ""}` }));
         }
-      } catch {
-        // Silent fail -- city field remains as-is
-      } finally {
-        setZipLoading(false);
-      }
+      } catch {} finally { setZipLoading(false); }
     }, 400);
-    return () => clearTimeout(timer);
+    return () => clearTimeout(t);
   }, [input.zipCode, input.market]);
 
-  // Derived values
+  // Derived
   const isUSA = input.market === "USA";
-  const isWA = input.market && input.market !== "USA";
-  const currency = getCurrency(input.market);
+  const isWA = !!input.market && input.market !== "USA";
+  const currency = getCurr(input.market);
   const sizeUnit = isUSA ? "sqft" : (input.market ? "sqm" : "sqft");
-  const features = isUSA ? US_FEATURES : WA_FEATURES;
+  const featureList = isUSA ? US_FEATURES : WA_FEATURES;
 
-  // Location suggestions
-  const locationSuggestions = useMemo(() => {
+  const suggestions = useMemo(() => {
     if (!input.market || !input.city || input.city.length < 2) return [];
-    const allLocations = getLocationSuggestions(input.market);
-    const query = input.city.toLowerCase();
-    return allLocations
-      .filter((name) => name.toLowerCase().includes(query))
-      .slice(0, 5)
-      .map((name) => ({ city: name, region: "" }));
+    return getLocationSuggestions(input.market).filter((n) => n.toLowerCase().includes(input.city.toLowerCase())).slice(0, 5);
   }, [input.market, input.city]);
 
-  // Analysis results (real-time)
   const results = useMemo<AnalysisResults | null>(() => {
     if (!input.goal || !input.market) return null;
-    try {
-      return calculateAnalysis({
-        ...input,
-        market: input.market,
-      });
-    } catch {
-      return null;
-    }
+    try { return calculateAnalysis({ ...input, market: input.market }); } catch { return null; }
   }, [input]);
 
-  // Cost breakdown for chart
-  const costBreakdown = useMemo(() => {
-    if (!results) return [];
-    return getCostBreakdown(results);
-  }, [results]);
+  const breakdown = useMemo(() => results ? getCostBreakdown(results) : [], [results]);
 
-  // Reverse calculator
   const reverseResult = useMemo(() => {
-    if (tab !== "reverse" || !reverseBudget || !input.market) return null;
+    if (mode !== "reverse" || !reverseBudget || !input.market) return null;
     return reverseCalculate(reverseBudget, input.market, input.city, input.goal);
-  }, [tab, reverseBudget, input.market, input.city, input.goal]);
+  }, [mode, reverseBudget, input.market, input.city, input.goal]);
 
-  // Input setter helper -- clears features when market changes
-  const set = useCallback(<K extends keyof InputState>(key: K, value: InputState[K]) => {
-    setInput((prev) => {
-      const next = { ...prev, [key]: value };
-      // Reset features when switching markets (US features invalid in WA and vice versa)
-      if (key === "market" && value !== prev.market) {
-        next.features = [];
-        next.financingType = "";
-        next.titreFoncierStatus = "";
-      }
-      return next;
-    });
-  }, []);
-
-  // Build size display
-  const buildSize = useMemo(() => {
-    if (!input.market) return 0;
-    return getBuildingSize(input as any);
-  }, [input]);
-
-  // Location data for intelligence cards
   const locationData = useMemo<LocationData | null>(() => {
     if (!input.market || !input.city || input.city.length < 2) return null;
     return getClosestLocation(input.city, input.market);
   }, [input.market, input.city]);
 
-  // Cross-market comparison
-  // Cross-market comparison -- all costs normalized to USD for fair comparison
-  const crossMarketData = useMemo(() => {
-    if (!results || !input.market) return null;
-    const markets: MarketType[] = ["USA", "TOGO", "GHANA", "BENIN"];
-    const toUSD = (amount: number, m: string) => {
-      const rate = EXCHANGE_RATES[m];
-      return rate ? Math.round(amount / rate) : amount;
-    };
-    return markets.map((m) => {
+  const set = useCallback(<K extends keyof InputState>(k: K, v: InputState[K]) => {
+    setInput((p) => {
+      const n = { ...p, [k]: v };
+      if (k === "market" && v !== p.market) { n.features = []; n.financingType = ""; n.titreFoncierStatus = ""; }
+      return n;
+    });
+  }, []);
+
+  const buildSize = useMemo(() => input.market ? getBuildingSize(input as any) : 0, [input]);
+
+  // Sensitivity
+  const scenarios = useMemo(() => {
+    if (!results || !input.market) return [];
+    const base = results.totalCost;
+    const s: { label: string; cost: number; score: number; delta: number }[] = [];
+    s.push({ label: "Cost overrun +15%", cost: base + Math.round(results.constructionCost * 0.15), score: Math.max(0, results.dealScore - 8), delta: Math.round(results.constructionCost * 0.15) });
+    s.push({ label: "Under budget -10%", cost: base - Math.round(results.constructionCost * 0.10), score: Math.min(100, results.dealScore + 5), delta: -Math.round(results.constructionCost * 0.10) });
+    if (input.financingType === "construction_loan" || input.financingType === "fha_203k") {
+      try { const r = calculateAnalysis({ ...input, loanRate: input.loanRate + 2 } as any); s.push({ label: "Rate +2%", cost: r.totalCost, score: r.dealScore, delta: r.totalCost - base }); } catch {}
+    }
+    try { const r = calculateAnalysis({ ...input, timelineMonths: input.timelineMonths + 6 } as any); s.push({ label: "+6 months", cost: r.totalCost, score: r.dealScore, delta: r.totalCost - base }); } catch {}
+    return s;
+  }, [results, input]);
+
+  // Cross market
+  const crossMarket = useMemo(() => {
+    if (!results || !input.market) return [];
+    const toUSD = (a: number, m: string) => { const r = EXCHANGE_RATES[m]; return r ? Math.round(a / r) : a; };
+    return (["USA", "TOGO", "GHANA", "BENIN"] as MarketType[]).map((m) => {
       try {
         const r = m === input.market ? results : calculateAnalysis({ ...input, market: m } as any);
-        const mData = getMarketData(m);
-        const usdCost = m === "USA" ? r.totalCost : toUSD(r.totalCost, m);
-        return {
-          market: m,
-          currency: mData.currency,
-          totalCost: r.totalCost,
-          totalCostUSD: usdCost,
-          dealScore: r.dealScore,
-          isCurrent: m === input.market,
-        };
-      } catch {
-        return null;
-      }
-    }).filter(Boolean) as { market: string; currency: CurrencyConfig; totalCost: number; totalCostUSD: number; dealScore: number; isCurrent: boolean }[];
+        return { market: m, usd: m === "USA" ? r.totalCost : toUSD(r.totalCost, m), score: r.dealScore, current: m === input.market };
+      } catch { return null; }
+    }).filter(Boolean) as { market: string; usd: number; score: number; current: boolean }[];
   }, [results, input]);
 
-  // Sensitivity analysis: vary key inputs +/- 10-20%
-  const sensitivityData = useMemo(() => {
-    if (!results || !input.market) return null;
-    const scenarios: { label: string; totalCost: number; dealScore: number; delta: number }[] = [];
-    const baseTotal = results.totalCost;
-
-    // Cost overrun +15%: multiply construction portion by 1.15
-    const overrunCost = Math.round(results.constructionCost * 0.15);
-    const overrunTotal = baseTotal + overrunCost;
-    scenarios.push({ label: "Cost overrun +15%", totalCost: overrunTotal, dealScore: Math.max(0, results.dealScore - 8), delta: overrunCost });
-
-    // Cost savings -10%: construction comes in under budget
-    const savingsCost = Math.round(results.constructionCost * 0.10);
-    const savingsTotal = baseTotal - savingsCost;
-    scenarios.push({ label: "Under budget -10%", totalCost: savingsTotal, dealScore: Math.min(100, results.dealScore + 5), delta: -savingsCost });
-
-    // Higher interest rate (+2%)
-    if (input.financingType === "construction_loan" || input.financingType === "fha_203k") {
-      try {
-        const r = calculateAnalysis({ ...input, loanRate: input.loanRate + 2 } as any);
-        scenarios.push({ label: "Interest rate +2%", totalCost: r.totalCost, dealScore: r.dealScore, delta: r.totalCost - baseTotal });
-      } catch {}
-    }
-
-    // Longer timeline (+6 months)
-    try {
-      const r = calculateAnalysis({ ...input, timelineMonths: input.timelineMonths + 6 } as any);
-      scenarios.push({ label: "Timeline +6 months", totalCost: r.totalCost, dealScore: r.dealScore, delta: r.totalCost - baseTotal });
-    } catch {}
-
-    // Lower down payment (if applicable)
-    if (input.downPaymentPct > 10) {
-      try {
-        const r = calculateAnalysis({ ...input, downPaymentPct: Math.max(5, input.downPaymentPct - 10) } as any);
-        scenarios.push({ label: `Down payment ${Math.max(5, input.downPaymentPct - 10)}%`, totalCost: r.totalCost, dealScore: r.dealScore, delta: r.totalCost - baseTotal });
-      } catch {}
-    }
-
-    return scenarios;
-  }, [results, input]);
-
-  // Dual currency conversion rate
-  // Exchange rates (as of March 2026). CFA is pegged to EUR so relatively stable.
-  const EXCHANGE_RATES: Record<string, number> = { TOGO: 615, GHANA: 15.5, BENIN: 615 };
-
-  const dualCurrency = useMemo(() => {
-    if (!input.market || input.market === "USA") return null;
-    const usdCurrency: CurrencyConfig = { code: "USD", symbol: "$", locale: "en-US", decimals: 0, groupSeparator: ",", position: "prefix" as const };
+  // Dual currency
+  const dualUSD = useMemo(() => {
+    if (!input.market || input.market === "USA" || !results) return null;
     const rate = EXCHANGE_RATES[input.market];
-    if (!rate || !results) return null;
-    return { usdCurrency, rate, usdTotal: Math.round(results.totalCost / rate) };
+    return rate ? Math.round(results.totalCost / rate) : null;
   }, [input.market, results]);
 
-  // Whether enough inputs exist to show results
-  const hasResults = results !== null && input.goal && input.market;
-
-  // Save handler
+  // Save
   const handleSave = useCallback(async () => {
     if (!user?.uid || !results || !saveName.trim()) return;
     setSaving(true);
@@ -707,635 +419,594 @@ export default function AnalyzePage() {
       await saveAnalysis(user.uid, saveName.trim(), input as unknown as AnalysisInput, results);
       const updated = await getUserAnalyses(user.uid);
       setSavedAnalyses(updated);
-      setShowSaveDialog(false);
-      setSaveName("");
+      setShowSave(false); setSaveName("");
       showToast("Analysis saved", "success");
-    } catch (err) {
-      showToast("Failed to save analysis", "error");
-    } finally {
-      setSaving(false);
-    }
+    } catch { showToast("Failed to save", "error"); }
+    finally { setSaving(false); }
   }, [user?.uid, results, saveName, input, showToast]);
 
-  // Load handler
-  const handleLoad = useCallback((analysis: SavedAnalysis) => {
-    setInput({
-      goal: analysis.input.goal || "",
-      market: (analysis.input.market as MarketType) || "",
-      city: analysis.input.city || "",
-      zipCode: analysis.input.zipCode || "",
-      propertyType: analysis.input.propertyType || "SFH",
-      sizeCategory: analysis.input.sizeCategory || "standard",
-      customSize: analysis.input.customSize || 0,
-      bedrooms: analysis.input.bedrooms || 3,
-      bathrooms: analysis.input.bathrooms || 2,
-      stories: analysis.input.stories || 1,
-      features: analysis.input.features || [],
-      landOption: analysis.input.landOption || "",
-      landPrice: analysis.input.landPrice || 0,
-      titreFoncierStatus: analysis.input.titreFoncierStatus || "",
-      financingType: analysis.input.financingType || "",
-      downPaymentPct: analysis.input.downPaymentPct || 20,
-      downPaymentAmount: analysis.input.downPaymentAmount || 0,
-      loanRate: analysis.input.loanRate || 7.5,
-      loanTerm: analysis.input.loanTerm || 30,
-      monthlyIncome: analysis.input.monthlyIncome || 0,
-      existingDebts: analysis.input.existingDebts || 0,
-      creditScoreRange: analysis.input.creditScoreRange || "",
-      timelineMonths: analysis.input.timelineMonths || 12,
-      targetSalePrice: analysis.input.targetSalePrice || 0,
-      monthlyRent: analysis.input.monthlyRent || 0,
-      commercialPct: analysis.input.commercialPct || 30,
-    });
-    setTab("analyze");
-    setShowSavedList(false);
-    showToast(`Loaded "${analysis.name}"`, "success");
-  }, [showToast]);
-
-  // Delete handler
-  const handleDelete = useCallback(async (analysisId: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     if (!user?.uid) return;
-    try {
-      await deleteAnalysis(user.uid, analysisId);
-      setSavedAnalyses((prev) => prev.filter((a) => a.id !== analysisId));
-      showToast("Analysis deleted", "success");
-    } catch {
-      showToast("Failed to delete", "error");
-    }
+    try { await deleteAnalysis(user.uid, id); setSavedAnalyses((p) => p.filter((a) => a.id !== id)); showToast("Deleted", "success"); }
+    catch { showToast("Failed", "error"); }
   }, [user?.uid, showToast]);
 
+  const handleLoad = useCallback((a: SavedAnalysis) => {
+    setInput({
+      goal: a.input.goal || "", market: (a.input.market as MarketType) || "", city: a.input.city || "",
+      zipCode: a.input.zipCode || "", propertyType: a.input.propertyType || "SFH",
+      sizeCategory: a.input.sizeCategory || "standard", customSize: a.input.customSize || 0,
+      bedrooms: a.input.bedrooms || 3, bathrooms: a.input.bathrooms || 2, stories: a.input.stories || 1,
+      features: a.input.features || [], landOption: a.input.landOption || "", landPrice: a.input.landPrice || 0,
+      titreFoncierStatus: a.input.titreFoncierStatus || "", financingType: a.input.financingType || "",
+      downPaymentPct: a.input.downPaymentPct || 20, downPaymentAmount: a.input.downPaymentAmount || 0,
+      loanRate: a.input.loanRate || 7.5, loanTerm: a.input.loanTerm || 30,
+      monthlyIncome: a.input.monthlyIncome || 0, existingDebts: a.input.existingDebts || 0,
+      creditScoreRange: a.input.creditScoreRange || "", timelineMonths: a.input.timelineMonths || 12,
+      targetSalePrice: a.input.targetSalePrice || 0, monthlyRent: a.input.monthlyRent || 0,
+      commercialPct: a.input.commercialPct || 30,
+    });
+    setMode("analyze"); setShowSaved(false);
+    showToast(`Loaded "${a.name}"`, "success");
+  }, [showToast]);
+
+  // Create project directly from analyzer
+  const handleCreateProject = useCallback(async () => {
+    if (!user?.uid || !results || !createName.trim() || !input.market) return;
+    setCreating(true);
+    try {
+      const market = input.market as ProjMarket;
+      const purposeMap: Record<string, BuildPurpose> = { occupy: "OCCUPY", rent: "RENT", sell: "SELL", "mixed-use": "RENT" };
+      const purpose = purposeMap[input.goal] ?? "OCCUPY";
+      const propType = (input.propertyType || "SFH") as ProjPropType;
+      const totalBudget = results.totalCost;
+
+      const projectId = await createProject({
+        userId: user.uid, name: createName.trim(), market, purpose, propertyType: propType,
+        sizeRange: input.sizeCategory, city: input.city.trim(), region: input.city.trim(),
+        financingType: input.financingType, landCost: results.landCost,
+        dealScore: results.dealScore, currentPhase: 0, completedPhases: 0,
+        phaseName: "Phase 0: Define", progress: 0, status: "ACTIVE",
+        totalBudget, totalSpent: 0, currency: currency.code,
+        currentWeek: 0, totalWeeks: Math.round(input.timelineMonths * 4.33),
+        openItems: 0, subPhase: "Getting started",
+        details: `${propType} / ${market} / ${input.city.trim()}`,
+        bedrooms: input.bedrooms, bathrooms: input.bathrooms, stories: input.stories,
+        features: input.features.length > 0 ? input.features : undefined,
+      });
+
+      // Budget + tasks in parallel
+      await Promise.allSettled([
+        generateBudgetFromSpecs(user.uid, projectId, totalBudget, market, input.features),
+        seedInitialTasks(user.uid, projectId, {
+          market, purpose, propertyType: propType, city: input.city.trim(),
+          financingType: input.financingType, totalBudget,
+          bedrooms: input.bedrooms, bathrooms: input.bathrooms, features: input.features,
+        }),
+      ]);
+
+      showToast("Project created", "success");
+      router.push(`/project/${projectId}/overview`);
+    } catch (err) {
+      console.error("Failed to create project:", err);
+      showToast("Failed to create project", "error");
+      setCreating(false);
+    }
+  }, [user?.uid, results, createName, input, currency, router, showToast]);
+
+  const hasResults = !!results && !!input.goal && !!input.market;
+
+  // ========================================================================
+  // RENDER
+  // ========================================================================
+
   return (
-    <div className="min-h-full">
-      {/* Tab switcher */}
-      <div className="flex gap-1 mb-5 p-1 bg-warm/30 rounded-xl w-fit">
-        <button
-          onClick={() => setTab("analyze")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-all ${
-            tab === "analyze" ? "bg-surface shadow-sm text-earth" : "text-muted hover:text-earth"
-          }`}
-        >
-          <Calculator size={15} />
-          Analyze a Deal
-        </button>
-        <button
-          onClick={() => setTab("reverse")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-all ${
-            tab === "reverse" ? "bg-surface shadow-sm text-earth" : "text-muted hover:text-earth"
-          }`}
-        >
-          <RotateCcw size={15} />
-          What Can I Afford?
-        </button>
-        {savedAnalyses.length > 0 && (
-          <button
-            onClick={() => setShowSavedList(!showSavedList)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium text-muted hover:text-earth transition-all ml-auto"
-          >
-            <FolderOpen size={15} />
-            My Analyses ({savedAnalyses.length})
-          </button>
-        )}
+    <div className="min-h-full pb-24">
+      {/* ── Header bar ── */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-1 bg-warm/30 p-1 rounded-xl">
+          <Pill active={mode === "analyze"} onClick={() => setMode("analyze")}>Analyze</Pill>
+          <Pill active={mode === "reverse"} onClick={() => setMode("reverse")}>What Can I Afford?</Pill>
+        </div>
+        <div className="flex items-center gap-2">
+          {savedAnalyses.length > 0 && (
+            <button onClick={() => setShowSaved(!showSaved)} className="flex items-center gap-1.5 text-[11px] text-muted hover:text-earth transition-colors">
+              <FolderOpen size={13} />
+              Saved ({savedAnalyses.length})
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Saved Analyses List */}
-      {showSavedList && savedAnalyses.length > 0 && (
-        <div className="mb-5 bg-surface border border-border rounded-xl p-4">
-          <h4 className="text-[13px] font-semibold text-earth mb-3" style={{ fontFamily: "var(--font-heading)" }}>Saved Analyses</h4>
-          <div className="space-y-2">
-            {savedAnalyses.map((a) => (
-              <div key={a.id} className="flex items-center justify-between p-3 bg-warm/20 rounded-lg hover:bg-warm/30 transition-colors">
-                <button onClick={() => handleLoad(a)} className="flex-1 text-left">
-                  <p className="text-[13px] font-medium text-earth">{a.name}</p>
-                  <p className="text-[11px] text-muted">
-                    {a.input.market} / {a.input.city || "No location"} / Score: {a.results?.dealScore ?? "N/A"}
-                    <span className="mx-1.5">-</span>
-                    {new Date(a.createdAt).toLocaleDateString()}
-                  </p>
-                </button>
-                <button
-                  onClick={() => handleDelete(a.id)}
-                  className="p-1.5 text-muted hover:text-danger transition-colors shrink-0"
-                  aria-label="Delete analysis"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
+      {/* ── Saved analyses dropdown ── */}
+      {showSaved && savedAnalyses.length > 0 && (
+        <div className="mb-4 bg-surface border border-border rounded-xl overflow-hidden">
+          {savedAnalyses.map((a) => (
+            <div key={a.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-border/40 last:border-b-0 hover:bg-warm/20 transition-colors">
+              <button onClick={() => handleLoad(a)} className="flex-1 text-left min-w-0">
+                <p className="text-[12px] font-medium text-earth truncate">{a.name}</p>
+                <p className="text-[10px] text-muted">{a.input?.market} / {a.input?.city || "N/A"} / Score: {a.results?.dealScore ?? "-"}</p>
+              </button>
+              <button onClick={() => handleDelete(a.id)} className="p-1 text-muted/40 hover:text-danger transition-colors"><X size={12} /></button>
+            </div>
+          ))}
         </div>
       )}
 
-      {tab === "analyze" ? (
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* ─── LEFT PANEL: Inputs ─── */}
-          <div className="lg:w-[440px] shrink-0 space-y-3">
+      {mode === "analyze" ? (
+        <div className="flex flex-col lg:flex-row gap-5">
+          {/* ════════════════════════════════════════════════════════════════
+             LEFT: Step-based input panel
+             ════════════════════════════════════════════════════════════════ */}
+          <div className="lg:w-[420px] shrink-0">
+            {/* Step indicators */}
+            <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
+              {STEPS.map((s, i) => {
+                const Icon = s.icon;
+                const done = i < step;
+                const active = i === step;
+                return (
+                  <button key={s.id} onClick={() => setStep(i)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${
+                      active ? "bg-earth text-white" : done ? "bg-clay/10 text-clay" : "text-muted hover:bg-warm/30"
+                    }`}>
+                    {done ? <Check size={11} /> : <Icon size={11} />}
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
 
-            {/* Section A: Goal */}
-            <Section title="Your Goal" subtitle="What do you want to do with this property?">
-              <OptionGrid
-                options={[
-                  { id: "occupy", label: "Live in it", Icon: Home },
-                  { id: "rent", label: "Rent it out", Icon: DollarSign },
-                  { id: "sell", label: "Sell for profit", Icon: TrendingUp },
-                  { id: "mixed-use", label: "Mixed use", Icon: Building2 },
-                ]}
-                value={input.goal}
-                onChange={(v) => set("goal", v as InputState["goal"])}
-              />
-              {(input.goal === "rent" || input.goal === "mixed-use") && (
-                <div className="mt-2">
-                  <Label tooltip="Expected monthly rental income after the property is built and occupied">Monthly rent</Label>
-                  <NumberInput value={input.monthlyRent} onChange={(v) => set("monthlyRent", v)} prefix={currency.symbol} min={0} />
-                </div>
-              )}
-              {(input.goal === "sell" || input.goal === "mixed-use") && (
-                <div className="mt-2">
-                  <Label tooltip="The price you expect to sell the completed property for">Target sale price</Label>
-                  <NumberInput value={input.targetSalePrice} onChange={(v) => set("targetSalePrice", v)} prefix={currency.symbol} min={0} />
-                </div>
-              )}
-              {input.goal === "mixed-use" && (
-                <div className="mt-2">
-                  <Label tooltip="What percentage of the building will be used for commercial purposes (shops, offices)? The rest is residential.">Commercial %</Label>
-                  <NumberInput value={input.commercialPct} onChange={(v) => set("commercialPct", v)} suffix="%" min={0} max={80} />
-                  <p className="text-[10px] text-muted mt-1">{input.commercialPct}% commercial, {100 - input.commercialPct}% residential</p>
-                </div>
-              )}
-            </Section>
+            {/* Step content */}
+            <div className="bg-surface border border-border rounded-2xl p-5 min-h-[320px]">
 
-            {/* Section B: Market & Location */}
-            <Section title="Market & Location" subtitle="Where are you building?">
-              <Label>Market</Label>
-              <OptionGrid
-                options={[
-                  { id: "USA", label: "United States" },
-                  { id: "TOGO", label: "Togo" },
-                  { id: "GHANA", label: "Ghana" },
-                  { id: "BENIN", label: "Benin" },
-                ]}
-                value={input.market}
-                onChange={(v) => set("market", v as MarketType)}
-                columns={4}
-              />
-              {input.market && (
-                <div className="mt-2 relative">
-                  <Label tooltip="The city or area where you plan to build. This affects cost estimates.">City / Region</Label>
-                  <div className="relative">
-                    <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                    <input
-                      type="text"
-                      value={input.city}
-                      onChange={(e) => { set("city", e.target.value); setShowSuggestions(true); }}
-                      onFocus={() => setShowSuggestions(true)}
-                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                      placeholder={isUSA ? "e.g. Houston, TX" : `e.g. ${input.market === "TOGO" ? "Lome" : input.market === "GHANA" ? "Accra" : "Cotonou"}`}
-                      className="w-full pl-9 pr-3 py-2 bg-surface border border-border rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/30 focus:border-clay"
-                    />
+              {/* STEP 0: Goal */}
+              {step === 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>What is your goal?</h3>
+                  <div className="space-y-2">
+                    {([
+                      { id: "occupy" as const, label: "Build to live in", desc: "Owner-occupied home" },
+                      { id: "rent" as const, label: "Build to rent", desc: "Investment for rental income" },
+                      { id: "sell" as const, label: "Build to sell", desc: "Spec build for profit" },
+                      { id: "mixed-use" as const, label: "Mixed use", desc: "Residential + commercial" },
+                    ]).map((g) => (
+                      <Choice key={g.id} selected={input.goal === g.id} onClick={() => set("goal", g.id)}>
+                        <p className="text-[13px] font-medium text-earth">{g.label}</p>
+                        <p className="text-[11px] text-muted">{g.desc}</p>
+                      </Choice>
+                    ))}
                   </div>
-                  {showSuggestions && locationSuggestions.length > 0 && (
-                    <div className="absolute z-30 left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden">
-                      {locationSuggestions.map((loc) => (
-                        <button
-                          key={loc.city}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => { set("city", loc.city); setShowSuggestions(false); }}
-                          className="w-full text-left px-3 py-2 text-[12px] text-earth hover:bg-warm/30 transition-colors border-b border-border/30 last:border-b-0"
-                        >
-                          <span className="font-medium">{loc.city}</span>
-                          {loc.region && <span className="text-muted ml-1">({loc.region})</span>}
+                  {(input.goal === "rent" || input.goal === "mixed-use") && (
+                    <NumField label="Expected monthly rent" value={input.monthlyRent} onChange={(v) => set("monthlyRent", v)} prefix={currency.symbol} />
+                  )}
+                  {(input.goal === "sell" || input.goal === "mixed-use") && (
+                    <NumField label="Target sale price" value={input.targetSalePrice} onChange={(v) => set("targetSalePrice", v)} prefix={currency.symbol} />
+                  )}
+                  {input.goal === "mixed-use" && (
+                    <NumField label="Commercial %" value={input.commercialPct} onChange={(v) => set("commercialPct", Math.max(0, Math.min(80, v)))} suffix="%" tooltip="Percentage of building used for commercial" />
+                  )}
+                </div>
+              )}
+
+              {/* STEP 1: Location */}
+              {step === 1 && (
+                <div className="space-y-3">
+                  <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Where are you building?</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["USA", "TOGO", "GHANA", "BENIN"] as MarketType[]).map((m) => (
+                      <Choice key={m} selected={input.market === m} onClick={() => set("market", m)}>
+                        <p className="text-[13px] font-medium text-earth">{m === "USA" ? "United States" : m.charAt(0) + m.slice(1).toLowerCase()}</p>
+                      </Choice>
+                    ))}
+                  </div>
+                  {input.market && (
+                    <>
+                      <div className="relative">
+                        <div className="flex items-center gap-1 mb-1">
+                          <span className="text-[11px] font-medium text-earth">City / Region</span>
+                        </div>
+                        <div className="relative">
+                          <MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/40" />
+                          <input type="text" value={input.city}
+                            onChange={(e) => { set("city", e.target.value); setShowSuggestions(true); }}
+                            onFocus={() => setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                            placeholder={isUSA ? "e.g. Houston, TX" : "e.g. Lome"}
+                            className="w-full pl-9 pr-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20" />
+                        </div>
+                        {showSuggestions && suggestions.length > 0 && (
+                          <div className="absolute z-30 left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden">
+                            {suggestions.map((city) => (
+                              <button key={city} onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => { set("city", city); setShowSuggestions(false); }}
+                                className="w-full text-left px-3 py-2 text-[12px] text-earth hover:bg-warm/30 border-b border-border/20 last:border-b-0">
+                                {city}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {isUSA && (
+                        <div>
+                          <div className="flex items-center gap-1 mb-1">
+                            <span className="text-[11px] font-medium text-earth">ZIP code</span>
+                            {zipLoading && <span className="text-[9px] text-clay animate-pulse">Looking up...</span>}
+                          </div>
+                          <input type="text" value={input.zipCode} inputMode="numeric" maxLength={5}
+                            onChange={(e) => set("zipCode", e.target.value.replace(/\D/g, "").slice(0, 5))}
+                            placeholder="e.g. 77001"
+                            className="w-full px-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth font-data focus:outline-none focus:ring-2 focus:ring-clay/20" />
+                          {input.zipCode.length === 5 && input.city && !zipLoading && (
+                            <p className="text-[10px] text-success mt-1 flex items-center gap-1"><Check size={10} /> {input.city}</p>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* STEP 2: Property */}
+              {step === 2 && (
+                <div className="space-y-4">
+                  <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Property details</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["SFH", "DUPLEX", "TRIPLEX", "FOURPLEX"].map((t) => (
+                      <Choice key={t} selected={input.propertyType === t} onClick={() => set("propertyType", t)}>
+                        <p className="text-[12px] font-medium text-earth">{t === "SFH" ? "Single family" : t.charAt(0) + t.slice(1).toLowerCase()}</p>
+                      </Choice>
+                    ))}
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-medium text-earth mb-1.5 block">Size</span>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { id: "compact", label: isUSA ? "1,200" : "80" },
+                        { id: "standard", label: isUSA ? "1,800" : "130" },
+                        { id: "large", label: isUSA ? "2,800" : "200" },
+                        { id: "estate", label: isUSA ? "4,000" : "300" },
+                        { id: "custom", label: "Custom" },
+                      ].map((s) => (
+                        <button key={s.id} onClick={() => set("sizeCategory", s.id)}
+                          className={`px-2 py-2 rounded-lg text-[11px] font-medium text-center transition-all ${input.sizeCategory === s.id ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/20 text-muted hover:bg-warm/40 border border-transparent"}`}>
+                          {s.label}{s.id !== "custom" ? ` ${sizeUnit}` : ""}
                         </button>
                       ))}
                     </div>
-                  )}
-                  {isUSA && (
-                    <div className="mt-2">
-                      <Label tooltip="Enter a 5-digit ZIP code and the city will be filled automatically with accurate local cost data.">ZIP code</Label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={input.zipCode}
-                          onChange={(e) => {
-                            const v = e.target.value.replace(/\D/g, "").slice(0, 5);
-                            set("zipCode", v);
-                          }}
-                          placeholder="e.g. 77001"
-                          maxLength={5}
-                          inputMode="numeric"
-                          className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-[13px] text-earth font-data focus:outline-none focus:ring-2 focus:ring-clay/30 focus:border-clay"
-                        />
-                        {zipLoading && (
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-clay animate-pulse">Looking up...</span>
-                        )}
-                      </div>
-                      {input.zipCode.length === 5 && input.city && !zipLoading && (
-                        <p className="text-[10px] text-success mt-1">Found: {input.city}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </Section>
-
-            {/* Section C: Property */}
-            <Section title="Property Details" subtitle="What kind of home are you building?">
-              <Label>Property type</Label>
-              <OptionGrid
-                options={[
-                  { id: "SFH", label: "Single family" },
-                  { id: "DUPLEX", label: "Duplex" },
-                  { id: "TRIPLEX", label: "Triplex" },
-                  { id: "FOURPLEX", label: "Fourplex" },
-                ]}
-                value={input.propertyType}
-                onChange={(v) => set("propertyType", v)}
-              />
-
-              <div className="mt-2">
-                <Label tooltip={`Approximate size of the home in ${sizeUnit}. This is the primary driver of construction cost.`}>
-                  Size ({sizeUnit})
-                </Label>
-                <OptionGrid
-                  options={[
-                    { id: "compact", label: isUSA ? "Compact (1,200)" : "Compact (80)" },
-                    { id: "standard", label: isUSA ? "Standard (1,800)" : "Standard (130)" },
-                    { id: "large", label: isUSA ? "Large (2,800)" : "Large (200)" },
-                    { id: "estate", label: isUSA ? "Estate (4,000)" : "Estate (300)" },
-                    { id: "custom", label: "Custom" },
-                  ]}
-                  value={input.sizeCategory}
-                  onChange={(v) => set("sizeCategory", v)}
-                  columns={3}
-                />
-                {input.sizeCategory === "custom" && (
-                  <div className="mt-2">
-                    <NumberInput value={input.customSize} onChange={(v) => set("customSize", v)} suffix={sizeUnit} />
+                    {input.sizeCategory === "custom" && (
+                      <NumField label={`Custom size (${sizeUnit})`} value={input.customSize} onChange={(v) => set("customSize", v)} suffix={sizeUnit} min={100} />
+                    )}
                   </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                <div>
-                  <Label>Bedrooms</Label>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => set("bedrooms", Math.max(1, input.bedrooms - 1))} className="w-8 h-8 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[14px]">-</button>
-                    <span className="w-8 text-center font-data text-[14px] text-earth">{input.bedrooms}</span>
-                    <button onClick={() => set("bedrooms", Math.min(8, input.bedrooms + 1))} className="w-8 h-8 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[14px]">+</button>
-                  </div>
-                </div>
-                <div>
-                  <Label>Bathrooms</Label>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => set("bathrooms", Math.max(1, input.bathrooms - 1))} className="w-8 h-8 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[14px]">-</button>
-                    <span className="w-8 text-center font-data text-[14px] text-earth">{input.bathrooms}</span>
-                    <button onClick={() => set("bathrooms", Math.min(6, input.bathrooms + 1))} className="w-8 h-8 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[14px]">+</button>
-                  </div>
-                </div>
-                <div>
-                  <Label>Stories</Label>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => set("stories", Math.max(1, input.stories - 1))} className="w-8 h-8 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[14px]">-</button>
-                    <span className="w-8 text-center font-data text-[14px] text-earth">{input.stories}</span>
-                    <button onClick={() => set("stories", Math.min(3, input.stories + 1))} className="w-8 h-8 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[14px]">+</button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-2">
-                <Label>Features & Extras</Label>
-                <FeatureToggle
-                  features={features}
-                  selected={input.features}
-                  onChange={(f) => set("features", f)}
-                  market={input.market}
-                />
-              </div>
-            </Section>
-
-            {/* Section D: Land */}
-            <Section title="Land" subtitle="Do you already have land?" defaultOpen={false}>
-              <OptionGrid
-                options={[
-                  { id: "already-own", label: "Already own" },
-                  { id: "inherited", label: "Inherited / Family" },
-                  { id: "buying", label: "Buying / Known price" },
-                  { id: "estimate", label: "Estimate for me" },
-                ]}
-                value={input.landOption}
-                onChange={(v) => set("landOption", v)}
-              />
-              {(input.landOption === "buying") && (
-                <div className="mt-2">
-                  <Label>Land price</Label>
-                  <NumberInput value={input.landPrice} onChange={(v) => set("landPrice", v)} prefix={currency.symbol} />
-                </div>
-              )}
-              {isWA && (
-                <div className="mt-2">
-                  <Label tooltip="The titre foncier (land title) is a government-issued certificate proving legal ownership. Building without one is extremely risky.">
-                    Land title status
-                  </Label>
-                  <Select value={input.titreFoncierStatus} onChange={(e) => set("titreFoncierStatus", e.target.value)}>
-                    <option value="">Select status</option>
-                    <option value="secured">Titre foncier secured</option>
-                    <option value="in-progress">In progress</option>
-                    <option value="not-started">Not started</option>
-                    <option value="customary">Customary / communal land</option>
-                  </Select>
-                </div>
-              )}
-            </Section>
-
-            {/* Section E: Financing */}
-            <Section title="Financing" subtitle="How are you funding the build?" defaultOpen={false}>
-              <Label>Financing method</Label>
-              <OptionGrid
-                options={isUSA ? [
-                  { id: "cash", label: "Cash" },
-                  { id: "construction_loan", label: "Construction loan" },
-                  { id: "fha_203k", label: "FHA 203(k)" },
-                ] : [
-                  { id: "cash", label: "Cash" },
-                  { id: "phased_cash", label: "Phased (as-available)" },
-                  { id: "diaspora", label: "Diaspora savings" },
-                  { id: "tontine", label: "Tontine / Group" },
-                ]}
-                value={input.financingType}
-                onChange={(v) => set("financingType", v)}
-              />
-
-              {input.financingType === "phased_cash" && (
-                <p className="text-[11px] text-muted mt-2 leading-relaxed">Build in stages as cash becomes available. Common in West Africa where formal construction loans are rare. Timeline is typically 2-3x longer.</p>
-              )}
-              {input.financingType === "diaspora" && (
-                <p className="text-[11px] text-muted mt-2 leading-relaxed">Fund the build from abroad through regular remittances. Requires a trusted on-site representative to manage funds and oversee construction.</p>
-              )}
-              {input.financingType === "tontine" && (
-                <p className="text-[11px] text-muted mt-2 leading-relaxed">Pool savings with a trusted group (tontine). Each member contributes regularly and takes turns receiving the lump sum. Widely used across West Africa.</p>
-              )}
-
-              {(input.financingType === "construction_loan" || input.financingType === "fha_203k") && (
-                <div className="space-y-2 mt-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label tooltip="Percentage of total cost you will pay upfront. Higher down payment = lower monthly cost and better loan terms.">Down payment %</Label>
-                      <NumberInput value={input.downPaymentPct} onChange={(v) => set("downPaymentPct", Math.max(0, Math.min(100, v)))} suffix="%" min={0} max={100} />
-                    </div>
-                    <div>
-                      <Label tooltip="Annual interest rate on the construction loan. Current US average is 7-8%.">Interest rate</Label>
-                      <NumberInput value={input.loanRate} onChange={(v) => set("loanRate", Math.max(0, Math.min(25, v)))} suffix="%" step={0.1} min={0} max={25} />
-                    </div>
+                  <div className="flex justify-around pt-1">
+                    <Stepper value={input.bedrooms} onChange={(v) => set("bedrooms", v)} min={1} max={8} label="Beds" />
+                    <Stepper value={input.bathrooms} onChange={(v) => set("bathrooms", v)} min={1} max={6} label="Baths" />
+                    <Stepper value={input.stories} onChange={(v) => set("stories", v)} min={1} max={3} label="Stories" />
                   </div>
                   <div>
-                    <Label>Loan term (years)</Label>
-                    <Select value={input.loanTerm} onChange={(e) => set("loanTerm", Number(e.target.value))}>
-                      <option value={15}>15 years</option>
-                      <option value={20}>20 years</option>
-                      <option value={25}>25 years</option>
-                      <option value={30}>30 years</option>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label tooltip="Your total gross monthly income before taxes. Used to calculate debt-to-income ratio.">Monthly income</Label>
-                      <NumberInput value={input.monthlyIncome} onChange={(v) => set("monthlyIncome", v)} prefix={currency.symbol} />
-                    </div>
-                    <div>
-                      <Label tooltip="Total of all other monthly debt payments (car, student loans, credit cards)">Existing monthly debts</Label>
-                      <NumberInput value={input.existingDebts} onChange={(v) => set("existingDebts", v)} prefix={currency.symbol} />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </Section>
-
-            {/* Section F: Timeline */}
-            <Section title="Timeline" subtitle="How long will this build take?" defaultOpen={false}>
-              <Label tooltip="Estimated months from breaking ground to move-in. Affects financing costs and planning.">Construction timeline</Label>
-              <Select value={input.timelineMonths} onChange={(e) => set("timelineMonths", Number(e.target.value))}>
-                <option value={6}>6 months (aggressive)</option>
-                <option value={9}>9 months (fast)</option>
-                <option value={12}>12 months (standard)</option>
-                <option value={18}>18 months (relaxed)</option>
-                <option value={24}>24 months (phased)</option>
-                <option value={36}>36+ months (multi-phase)</option>
-              </Select>
-            </Section>
-
-            {/* Reset */}
-            <button
-              onClick={() => setInput({ ...INITIAL_INPUT, market: input.market })}
-              className="flex items-center gap-2 text-[12px] text-muted hover:text-earth transition-colors"
-            >
-              <RotateCcw size={12} />
-              Reset all inputs
-            </button>
-          </div>
-
-          {/* ─── RIGHT PANEL: Results ─── */}
-          <div className="flex-1 min-w-0">
-            {hasResults ? (
-              <div className="space-y-4 lg:sticky lg:top-4">
-                {/* Deal Score Card */}
-                <div className="bg-surface border border-border rounded-xl p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
-                        Deal Score
-                      </h3>
-                      <p className="text-[12px] text-muted mt-0.5">{results!.dealScoreSummary}</p>
-                    </div>
-                    <div className={`px-3 py-1 rounded-full text-[11px] font-bold text-white ${scoreBg(results!.dealScore)}`}>
-                      {scoreLabel(results!.dealScore)}
-                    </div>
-                  </div>
-                  <ScoreGauge score={results!.dealScore} />
-                </div>
-
-                {/* Cost Breakdown */}
-                <div className="bg-surface border border-border rounded-xl p-5">
-                  <h3 className="text-[15px] font-semibold text-earth mb-4" style={{ fontFamily: "var(--font-heading)" }}>
-                    Cost Breakdown
-                  </h3>
-                  <DonutChart items={costBreakdown} currency={currency} />
-                </div>
-
-                {/* Financial Summary */}
-                <div className="bg-surface border border-border rounded-xl p-5">
-                  <h3 className="text-[15px] font-semibold text-earth mb-3" style={{ fontFamily: "var(--font-heading)" }}>
-                    Financial Summary
-                  </h3>
-                  <div className="space-y-2">
-                    <SummaryRow label="Total project cost" value={fmt(results!.totalCost, currency)} bold />
-                    <SummaryRow label="Construction" value={fmt(results!.constructionCost, currency)} />
-                    <SummaryRow label="Land" value={fmt(results!.landCost, currency)} />
-                    <SummaryRow label="Soft costs (permits, design)" value={fmt(results!.softCosts, currency)} />
-                    <SummaryRow label="Contingency" value={fmt(results!.contingency, currency)} />
-                    {results!.financingCosts > 0 && (
-                      <SummaryRow label="Financing costs" value={fmt(results!.financingCosts, currency)} />
-                    )}
-                    <div className="border-t border-border my-2" />
-                    <SummaryRow
-                      label={`Cost per ${sizeUnit}`}
-                      value={fmt(results!.costPerUnit, currency)}
-                      sub={`${buildSize.toLocaleString()} ${sizeUnit}`}
-                    />
-                    {results!.monthlyCost > 0 && (
-                      <SummaryRow label="Monthly payment" value={fmt(results!.monthlyCost, currency)} highlight />
-                    )}
-                    {results!.dtiRatio !== null && (
-                      <SummaryRow
-                        label="Debt-to-income ratio"
-                        value={`${results!.dtiRatio}%`}
-                        warning={results!.dtiRatio > 43}
-                      />
-                    )}
-                    <SummaryRow label="Loan-to-value ratio" value={`${results!.ltvRatio}%`} />
-                    {results!.roi !== 0 && (
-                      <SummaryRow
-                        label={input.goal === "rent" ? "Annual rental yield" : "Expected ROI"}
-                        value={`${results!.roi}%`}
-                        positive={results!.roi > 0}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Risk Flags */}
-                {results!.riskFlags.length > 0 && (
-                  <div className="bg-surface border border-border rounded-xl p-5">
-                    <h3 className="text-[15px] font-semibold text-earth mb-3" style={{ fontFamily: "var(--font-heading)" }}>
-                      Risk Analysis
-                    </h3>
-                    <div className="space-y-2">
-                      {results!.riskFlags.map((flag, i) => (
-                        <div key={i} className={`flex gap-2.5 p-3 rounded-lg border ${
-                          flag.level === "critical" ? "border-danger/30 bg-danger/5" :
-                          flag.level === "warning" ? "border-warning/30 bg-warning/5" :
-                          "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20"
-                        }`}>
-                          {riskIcon(flag.level)}
-                          <div>
-                            <p className="text-[12px] font-medium text-earth">{flag.title}</p>
-                            <p className="text-[11px] text-muted mt-0.5 leading-relaxed">{flag.detail}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Dual Currency Display */}
-                {dualCurrency && (
-                  <div className="bg-surface border border-border rounded-xl p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Globe size={14} className="text-clay" />
-                      <h4 className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
-                        Dual Currency
-                      </h4>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-warm/20 rounded-lg">
-                        <p className="text-[10px] text-muted uppercase tracking-wide">{currency.code}</p>
-                        <p className="text-[16px] font-bold text-earth font-data">{fmtCompact(results!.totalCost, currency)}</p>
-                      </div>
-                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <p className="text-[10px] text-muted uppercase tracking-wide">USD equivalent</p>
-                        <p className="text-[16px] font-bold text-earth font-data">{fmtCompact(dualCurrency.usdTotal, dualCurrency.usdCurrency)}</p>
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-muted/60 mt-2">Rate: 1 USD = {dualCurrency.rate.toLocaleString()} {currency.code} (approximate, March 2026)</p>
-                  </div>
-                )}
-
-                {/* Location Intelligence */}
-                {locationData && (
-                  <div className="bg-surface border border-border rounded-xl p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <MapPin size={14} className="text-clay" />
-                      <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
-                        Location Intelligence
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <LocationCard label="Cost Index" value={`${locationData.costIndex.toFixed(2)}x`} sub={getCostComparisonText(locationData.costIndex)} positive={locationData.costIndex < 1.0} />
-                      <LocationCard label="Labor Index" value={`${locationData.laborIndex.toFixed(2)}x`} sub={locationData.laborIndex < 1 ? "Below average labor costs" : "Above average labor costs"} positive={locationData.laborIndex < 1.0} />
-                      <LocationCard label="Climate" value={getClimateLabel(locationData.climate)} sub={`Building season: ${formatMonthList(locationData.buildingSeasonMonths)}`} />
-                      <LocationCard label="Property Tax" value={`${locationData.propertyTaxRate}%`} sub="Annual rate" />
-                      {locationData.avgRentPerSqft && (
-                        <LocationCard label="Avg Rent" value={`$${locationData.avgRentPerSqft.toFixed(2)}/sqft`} sub="Market rental rate" />
-                      )}
-                      {locationData.avgRentPerSqm && (
-                        <LocationCard label="Avg Rent" value={`${locationData.avgRentPerSqm.toLocaleString()} CFA/sqm`} sub="Market rental rate" />
-                      )}
-                      {locationData.permitCostEstimate > 0 && (
-                        <LocationCard label="Permit Cost" value={fmt(locationData.permitCostEstimate, currency)} sub="Estimated permits & fees" />
-                      )}
-                    </div>
-                    {locationData.localNotes && (
-                      <p className="text-[11px] text-muted mt-3 leading-relaxed italic">{locationData.localNotes}</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Cross-Market Comparison */}
-                {crossMarketData && crossMarketData.length > 0 && (
-                  <div className="bg-surface border border-border rounded-xl p-5">
-                    <h3 className="text-[15px] font-semibold text-earth mb-3" style={{ fontFamily: "var(--font-heading)" }}>
-                      Cross-Market Comparison
-                    </h3>
-                    <p className="text-[11px] text-muted mb-3">Same property specs, all costs shown in USD for fair comparison</p>
-                    <div className="space-y-2">
-                      {crossMarketData.map((cm) => {
-                        const baseUSD = crossMarketData.find((c) => c.isCurrent)?.totalCostUSD || 1;
-                        const pctDiff = cm.isCurrent ? 0 : Math.round(((cm.totalCostUSD - baseUSD) / baseUSD) * 100);
+                    <span className="text-[11px] font-medium text-earth mb-1.5 block">Features</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {featureList.map((f) => {
+                        const on = input.features.includes(f.id);
                         return (
-                          <div key={cm.market} className={`flex items-center justify-between p-2.5 rounded-lg ${cm.isCurrent ? "bg-clay/10 border border-clay/20" : "bg-warm/10"}`}>
-                            <div className="flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full ${cm.isCurrent ? "bg-clay" : "bg-muted/30"}`} />
-                              <span className={`text-[12px] ${cm.isCurrent ? "font-semibold" : "font-medium"} text-earth`}>{cm.market}</span>
-                              {cm.isCurrent && <span className="text-[10px] text-muted">(current)</span>}
-                            </div>
-                            <div className="text-right flex items-center gap-2">
-                              <span className="text-[13px] font-data font-medium text-earth">${cm.totalCostUSD.toLocaleString()}</span>
-                              {!cm.isCurrent && (
-                                <span className={`text-[11px] font-data font-medium ${pctDiff > 0 ? "text-danger" : pctDiff < 0 ? "text-success" : "text-muted"}`}>
-                                  {pctDiff > 0 ? "+" : ""}{pctDiff}%
-                                </span>
-                              )}
-                              <span className={`text-[10px] font-data ${scoreColor(cm.dealScore)}`}>{cm.dealScore}</span>
-                            </div>
-                          </div>
+                          <button key={f.id} onClick={() => set("features", on ? input.features.filter((x) => x !== f.id) : [...input.features, f.id])}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-medium transition-all ${on ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/15 text-muted hover:bg-warm/30 border border-transparent"}`}>
+                            <f.Icon size={10} /> {f.label}
+                          </button>
                         );
                       })}
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Sensitivity Analysis */}
-                {sensitivityData && sensitivityData.length > 0 && (
-                  <div className="bg-surface border border-border rounded-xl p-5">
-                    <h3 className="text-[15px] font-semibold text-earth mb-1" style={{ fontFamily: "var(--font-heading)" }}>
-                      Sensitivity Analysis
-                    </h3>
-                    <p className="text-[11px] text-muted mb-3">How your deal changes under different scenarios</p>
+              {/* STEP 3: Land */}
+              {step === 3 && (
+                <div className="space-y-3">
+                  <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Land situation</h3>
+                  <div className="space-y-2">
+                    {[
+                      { id: "already-own", label: "I already own land", desc: "No land cost" },
+                      { id: "inherited", label: "Inherited / Family land", desc: "No land cost" },
+                      { id: "buying", label: "Buying land (known price)", desc: "Enter the price below" },
+                      { id: "estimate", label: "Estimate for me", desc: "We will estimate based on your area" },
+                    ].map((o) => (
+                      <Choice key={o.id} selected={input.landOption === o.id} onClick={() => set("landOption", o.id)}>
+                        <p className="text-[12px] font-medium text-earth">{o.label}</p>
+                        <p className="text-[10px] text-muted">{o.desc}</p>
+                      </Choice>
+                    ))}
+                  </div>
+                  {input.landOption === "buying" && (
+                    <NumField label="Land price" value={input.landPrice} onChange={(v) => set("landPrice", Math.max(0, v))} prefix={currency.symbol} />
+                  )}
+                  {isWA && (
+                    <div>
+                      <span className="text-[11px] font-medium text-earth mb-1 block">Land title status</span>
+                      <select value={input.titreFoncierStatus} onChange={(e) => set("titreFoncierStatus", e.target.value)}
+                        className="w-full px-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[12px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20">
+                        <option value="">Select status</option>
+                        <option value="secured">Titre foncier secured</option>
+                        <option value="in-progress">In progress</option>
+                        <option value="not-started">Not started</option>
+                        <option value="customary">Customary / communal</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* STEP 4: Finance */}
+              {step === 4 && (
+                <div className="space-y-3">
+                  <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Financing</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(isUSA
+                      ? [{ id: "cash", label: "Cash" }, { id: "construction_loan", label: "Construction loan" }, { id: "fha_203k", label: "FHA 203(k)" }]
+                      : [{ id: "cash", label: "Cash" }, { id: "phased_cash", label: "Phased" }, { id: "diaspora", label: "Diaspora" }, { id: "tontine", label: "Tontine" }]
+                    ).map((f) => (
+                      <Choice key={f.id} selected={input.financingType === f.id} onClick={() => set("financingType", f.id)}>
+                        <p className="text-[12px] font-medium text-earth">{f.label}</p>
+                      </Choice>
+                    ))}
+                  </div>
+                  {input.financingType === "phased_cash" && <p className="text-[10px] text-muted leading-relaxed">Build in stages as cash becomes available. Timeline is typically 2-3x longer.</p>}
+                  {input.financingType === "diaspora" && <p className="text-[10px] text-muted leading-relaxed">Fund from abroad via remittances. Requires a trusted on-site representative.</p>}
+                  {input.financingType === "tontine" && <p className="text-[10px] text-muted leading-relaxed">Pool savings with a group. Members take turns receiving the lump sum.</p>}
+                  {(input.financingType === "construction_loan" || input.financingType === "fha_203k") && (
                     <div className="space-y-2">
-                      {/* Baseline */}
-                      <div className="flex items-center justify-between p-2.5 bg-warm/20 rounded-lg text-[12px]">
-                        <span className="font-medium text-earth">Baseline</span>
-                        <div className="flex items-center gap-3">
-                          <span className="font-data text-earth">{fmtCompact(results!.totalCost, currency)}</span>
-                          <span className={`font-data font-medium ${scoreColor(results!.dealScore)}`}>Score: {results!.dealScore}</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <NumField label="Down payment" value={input.downPaymentPct} onChange={(v) => set("downPaymentPct", Math.max(0, Math.min(100, v)))} suffix="%" tooltip="Percentage you pay upfront" />
+                        <NumField label="Interest rate" value={input.loanRate} onChange={(v) => set("loanRate", Math.max(0, Math.min(25, v)))} suffix="%" step={0.1} tooltip="Annual rate. US avg 7-8%" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-medium text-earth mb-1 block">Loan term</span>
+                        <div className="flex gap-1.5">
+                          {[15, 20, 25, 30].map((y) => (
+                            <button key={y} onClick={() => set("loanTerm", y)}
+                              className={`flex-1 py-1.5 rounded-lg text-[11px] font-medium transition-all ${input.loanTerm === y ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/20 text-muted border border-transparent"}`}>
+                              {y}yr
+                            </button>
+                          ))}
                         </div>
                       </div>
-                      {sensitivityData.map((s, i) => (
-                        <div key={i} className="flex items-center justify-between p-2.5 rounded-lg border border-border/50 text-[12px]">
-                          <span className="text-muted">{s.label}</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <NumField label="Monthly income" value={input.monthlyIncome} onChange={(v) => set("monthlyIncome", v)} prefix={currency.symbol} tooltip="Gross monthly income for DTI calculation" />
+                        <NumField label="Existing debts" value={input.existingDebts} onChange={(v) => set("existingDebts", v)} prefix={currency.symbol} tooltip="Total monthly debt payments" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* STEP 5: Timeline */}
+              {step === 5 && (
+                <div className="space-y-3">
+                  <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Timeline</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { m: 6, label: "6 mo", desc: "Aggressive" },
+                      { m: 9, label: "9 mo", desc: "Fast" },
+                      { m: 12, label: "12 mo", desc: "Standard" },
+                      { m: 18, label: "18 mo", desc: "Relaxed" },
+                      { m: 24, label: "24 mo", desc: "Phased" },
+                      { m: 36, label: "36+ mo", desc: "Multi-phase" },
+                    ].map((t) => (
+                      <button key={t.m} onClick={() => set("timelineMonths", t.m)}
+                        className={`py-3 rounded-xl text-center transition-all ${input.timelineMonths === t.m ? "bg-clay/10 border-2 border-clay/30" : "bg-warm/20 border-2 border-transparent hover:bg-warm/40"}`}>
+                        <p className="text-[14px] font-bold font-data text-earth">{t.label}</p>
+                        <p className="text-[9px] text-muted">{t.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation */}
+              <div className="flex items-center justify-between mt-5 pt-4 border-t border-border/40">
+                <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}
+                  className="flex items-center gap-1 text-[12px] text-muted hover:text-earth disabled:opacity-30 transition-colors">
+                  <ChevronLeft size={14} /> Back
+                </button>
+                <div className="flex items-center gap-1">
+                  {STEPS.map((_, i) => (
+                    <button key={i} onClick={() => setStep(i)} className={`w-1.5 h-1.5 rounded-full transition-all ${i === step ? "bg-clay w-4" : i < step ? "bg-clay/40" : "bg-border"}`} />
+                  ))}
+                </div>
+                <button onClick={() => setStep(Math.min(STEPS.length - 1, step + 1))} disabled={step === STEPS.length - 1}
+                  className="flex items-center gap-1 text-[12px] text-earth font-medium hover:text-clay disabled:opacity-30 transition-colors">
+                  Next <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ════════════════════════════════════════════════════════════════
+             RIGHT: Results panel
+             ════════════════════════════════════════════════════════════════ */}
+          <div className="flex-1 min-w-0">
+            {hasResults ? (
+              <div className="space-y-4 lg:sticky lg:top-4">
+                {/* Score + Key metrics hero */}
+                <div className="bg-surface border border-border rounded-2xl p-5">
+                  <div className="flex items-center gap-5">
+                    <ScoreRing score={results!.dealScore} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] text-muted mb-2">{results!.dealScoreSummary}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-warm/20 rounded-lg px-3 py-2">
+                          <p className="text-[9px] text-muted uppercase tracking-wider">Total Cost</p>
+                          <p className="text-[15px] font-bold font-data text-earth">{fmtC(results!.totalCost, currency)}</p>
+                          {dualUSD && <p className="text-[9px] text-muted font-data">~${dualUSD.toLocaleString()} USD</p>}
+                        </div>
+                        <div className="bg-warm/20 rounded-lg px-3 py-2">
+                          <p className="text-[9px] text-muted uppercase tracking-wider">Per {sizeUnit}</p>
+                          <p className="text-[15px] font-bold font-data text-earth">{fmt(results!.costPerUnit, currency)}</p>
+                          <p className="text-[9px] text-muted font-data">{buildSize.toLocaleString()} {sizeUnit}</p>
+                        </div>
+                        {results!.monthlyCost > 0 && (
+                          <div className="bg-warm/20 rounded-lg px-3 py-2">
+                            <p className="text-[9px] text-muted uppercase tracking-wider">Monthly</p>
+                            <p className="text-[15px] font-bold font-data text-clay">{fmt(results!.monthlyCost, currency)}</p>
+                          </div>
+                        )}
+                        {results!.roi !== 0 && (
+                          <div className="bg-warm/20 rounded-lg px-3 py-2">
+                            <p className="text-[9px] text-muted uppercase tracking-wider">{input.goal === "rent" ? "Yield" : "ROI"}</p>
+                            <p className={`text-[15px] font-bold font-data ${results!.roi > 0 ? "text-success" : "text-danger"}`}>{results!.roi}%</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Result tabs */}
+                <div className="flex gap-1 bg-warm/20 p-1 rounded-xl">
+                  {([
+                    { id: "summary" as const, label: "Summary" },
+                    { id: "breakdown" as const, label: "Breakdown" },
+                    { id: "location" as const, label: "Location" },
+                    { id: "scenarios" as const, label: "Scenarios" },
+                  ]).map((t) => (
+                    <button key={t.id} onClick={() => setResultTab(t.id)}
+                      className={`flex-1 py-1.5 rounded-lg text-[11px] font-medium transition-all ${resultTab === t.id ? "bg-surface text-earth shadow-sm" : "text-muted hover:text-earth"}`}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tab: Summary */}
+                {resultTab === "summary" && (
+                  <div className="bg-surface border border-border rounded-2xl p-5 space-y-4">
+                    {/* Cost lines */}
+                    <div className="space-y-1.5">
+                      {[
+                        { l: "Construction", v: results!.constructionCost },
+                        { l: "Land", v: results!.landCost },
+                        { l: "Soft costs", v: results!.softCosts },
+                        { l: "Contingency", v: results!.contingency },
+                        ...(results!.financingCosts > 0 ? [{ l: "Financing", v: results!.financingCosts }] : []),
+                      ].map((r) => (
+                        <div key={r.l} className="flex justify-between text-[12px]">
+                          <span className="text-muted">{r.l}</span>
+                          <span className="font-data text-earth">{fmt(r.v, currency)}</span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between text-[13px] font-semibold pt-1.5 border-t border-border/60">
+                        <span className="text-earth">Total</span>
+                        <span className="font-data text-earth">{fmt(results!.totalCost, currency)}</span>
+                      </div>
+                    </div>
+                    {/* DTI / LTV */}
+                    {(results!.dtiRatio !== null || results!.ltvRatio > 0) && (
+                      <div className="flex gap-3">
+                        {results!.dtiRatio !== null && (
+                          <div className={`flex-1 px-3 py-2 rounded-lg ${results!.dtiRatio > 43 ? "bg-danger/5 border border-danger/20" : "bg-warm/20"}`}>
+                            <p className="text-[9px] text-muted uppercase">DTI Ratio</p>
+                            <p className={`text-[14px] font-bold font-data ${results!.dtiRatio > 43 ? "text-danger" : "text-earth"}`}>{results!.dtiRatio}%</p>
+                          </div>
+                        )}
+                        <div className="flex-1 px-3 py-2 rounded-lg bg-warm/20">
+                          <p className="text-[9px] text-muted uppercase">LTV Ratio</p>
+                          <p className="text-[14px] font-bold font-data text-earth">{results!.ltvRatio}%</p>
+                        </div>
+                      </div>
+                    )}
+                    {/* Risk flags */}
+                    {results!.riskFlags.length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-semibold text-earth uppercase tracking-wider">Risks</p>
+                        {results!.riskFlags.map((f, i) => (
+                          <div key={i} className={`flex gap-2 p-2.5 rounded-lg text-[11px] ${f.level === "critical" ? "bg-danger/5 border border-danger/20" : f.level === "warning" ? "bg-warning/5 border border-warning/20" : "bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"}`}>
+                            {f.level === "critical" ? <AlertCircle size={13} className="text-danger shrink-0 mt-0.5" /> : f.level === "warning" ? <AlertTriangle size={13} className="text-warning shrink-0 mt-0.5" /> : <Info size={13} className="text-blue-500 shrink-0 mt-0.5" />}
+                            <div><p className="font-medium text-earth">{f.title}</p><p className="text-muted mt-0.5 leading-relaxed">{f.detail}</p></div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab: Breakdown */}
+                {resultTab === "breakdown" && (
+                  <div className="bg-surface border border-border rounded-2xl p-5">
+                    <DonutChart items={breakdown} currency={currency} />
+                  </div>
+                )}
+
+                {/* Tab: Location */}
+                {resultTab === "location" && (
+                  <div className="bg-surface border border-border rounded-2xl p-5 space-y-4">
+                    {locationData ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="p-3 bg-warm/15 rounded-xl">
+                            <p className="text-[9px] text-muted uppercase tracking-wider">Cost Index</p>
+                            <p className={`text-[16px] font-bold font-data ${locationData.costIndex < 1 ? "text-success" : locationData.costIndex > 1.1 ? "text-warning" : "text-earth"}`}>{locationData.costIndex.toFixed(2)}x</p>
+                            <p className="text-[9px] text-muted">{getCostComparisonText(locationData.costIndex)}</p>
+                          </div>
+                          <div className="p-3 bg-warm/15 rounded-xl">
+                            <p className="text-[9px] text-muted uppercase tracking-wider">Climate</p>
+                            <p className="text-[13px] font-semibold text-earth">{getClimateLabel(locationData.climate)}</p>
+                            <p className="text-[9px] text-muted">Build: {formatMonthList(locationData.buildingSeasonMonths)}</p>
+                          </div>
+                          <div className="p-3 bg-warm/15 rounded-xl">
+                            <p className="text-[9px] text-muted uppercase tracking-wider">Property Tax</p>
+                            <p className="text-[16px] font-bold font-data text-earth">{locationData.propertyTaxRate}%</p>
+                          </div>
+                          <div className="p-3 bg-warm/15 rounded-xl">
+                            <p className="text-[9px] text-muted uppercase tracking-wider">Permits</p>
+                            <p className="text-[14px] font-bold font-data text-earth">{fmt(locationData.permitCostEstimate, currency)}</p>
+                          </div>
+                        </div>
+                        {locationData.localNotes && <p className="text-[11px] text-muted italic leading-relaxed">{locationData.localNotes}</p>}
+                        {/* Cross market */}
+                        {crossMarket.length > 1 && (
+                          <div>
+                            <p className="text-[11px] font-semibold text-earth uppercase tracking-wider mb-2">Cross-Market (USD)</p>
+                            <div className="space-y-1">
+                              {crossMarket.map((c) => (
+                                <div key={c.market} className={`flex items-center justify-between px-3 py-2 rounded-lg ${c.current ? "bg-clay/8 border border-clay/15" : "bg-warm/10"}`}>
+                                  <span className={`text-[12px] ${c.current ? "font-semibold text-earth" : "text-muted"}`}>{c.market} {c.current && "(you)"}</span>
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-[12px] font-data font-medium text-earth">${c.usd.toLocaleString()}</span>
+                                    <span className={`text-[10px] font-data font-semibold w-6 text-right ${c.score >= 65 ? "text-success" : c.score >= 50 ? "text-warning" : "text-danger"}`}>{c.score}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center py-8">
+                        <MapPin size={24} className="mx-auto text-muted/30 mb-2" />
+                        <p className="text-[12px] text-muted">Enter a city or ZIP code to see location intelligence</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab: Scenarios */}
+                {resultTab === "scenarios" && (
+                  <div className="bg-surface border border-border rounded-2xl p-5 space-y-3">
+                    <p className="text-[11px] text-muted">How your deal changes under different conditions</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between px-3 py-2 bg-warm/20 rounded-lg">
+                        <span className="text-[12px] font-medium text-earth">Baseline</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[12px] font-data font-medium text-earth">{fmtC(results!.totalCost, currency)}</span>
+                          <span className={`text-[11px] font-data font-semibold ${results!.dealScore >= 65 ? "text-success" : "text-warning"}`}>{results!.dealScore}</span>
+                        </div>
+                      </div>
+                      {scenarios.map((s, i) => (
+                        <div key={i} className="flex items-center justify-between px-3 py-2 rounded-lg border border-border/40">
+                          <span className="text-[11px] text-muted">{s.label}</span>
                           <div className="flex items-center gap-3">
-                            <span className="font-data text-earth">{fmtCompact(s.totalCost, currency)}</span>
-                            <span className={`font-data text-[11px] ${s.delta > 0 ? "text-danger" : "text-success"}`}>
-                              {s.delta > 0 ? "+" : ""}{fmtCompact(s.delta, currency)}
-                            </span>
-                            <span className={`font-data font-medium ${scoreColor(s.dealScore)}`}>{s.dealScore}</span>
+                            <span className="text-[11px] font-data text-earth">{fmtC(s.cost, currency)}</span>
+                            <span className={`text-[10px] font-data ${s.delta > 0 ? "text-danger" : "text-success"}`}>{s.delta > 0 ? "+" : ""}{fmtC(s.delta, currency)}</span>
+                            <span className={`text-[10px] font-data font-semibold w-5 text-right ${s.score >= 65 ? "text-success" : s.score >= 50 ? "text-warning" : "text-danger"}`}>{s.score}</span>
                           </div>
                         </div>
                       ))}
@@ -1343,349 +1014,181 @@ export default function AnalyzePage() {
                   </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setShowSaveDialog(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-clay text-white rounded-lg text-[13px] font-medium hover:bg-clay/90 transition-colors"
-                  >
-                    <Save size={14} />
-                    Save Analysis
-                  </button>
-                  <button
-                    onClick={() => {
-                      // Navigate to new-project with pre-filled data
-                      const params = new URLSearchParams({
-                        from: "analyzer",
-                        goal: input.goal,
-                        market: input.market,
-                        city: input.city,
-                        type: input.propertyType,
-                        size: input.sizeCategory,
-                        beds: String(input.bedrooms),
-                        baths: String(input.bathrooms),
-                        stories: String(input.stories),
-                        financing: input.financingType,
-                      });
-                      if (input.features.length > 0) params.set("feat", input.features.join(","));
-                      if (input.landOption) params.set("land", input.landOption);
-                      if (input.landPrice) params.set("landprice", String(input.landPrice));
-                      if (input.monthlyRent) params.set("rent", String(input.monthlyRent));
-                      if (input.targetSalePrice) params.set("sale", String(input.targetSalePrice));
-                      if (input.downPaymentPct !== 20) params.set("dp", String(input.downPaymentPct));
-                      if (input.loanRate !== 7.5) params.set("rate", String(input.loanRate));
-                      if (input.timelineMonths !== 12) params.set("months", String(input.timelineMonths));
-                      router.push(`/new-project?${params.toString()}`);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-earth text-white rounded-lg text-[13px] font-medium hover:bg-earth/90 transition-colors"
-                  >
-                    <Plus size={14} />
-                    Create Project
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (!results) return;
-                      exportAnalysisPDF({
-                        name: `${input.city || input.market} ${input.propertyType} Analysis`,
-                        input: {
-                          goal: input.goal,
-                          market: input.market,
-                          city: input.city,
-                          propertyType: input.propertyType,
-                          sizeCategory: input.sizeCategory,
-                          bedrooms: input.bedrooms,
-                          bathrooms: input.bathrooms,
-                          stories: input.stories,
-                          features: input.features,
-                          landOption: input.landOption,
-                          financingType: input.financingType,
-                          timelineMonths: input.timelineMonths,
-                        },
-                        results: {
-                          dealScore: results.dealScore,
-                          dealScoreSummary: results.dealScoreSummary,
-                          totalCost: results.totalCost,
-                          constructionCost: results.constructionCost,
-                          landCost: results.landCost,
-                          softCosts: results.softCosts,
-                          financingCosts: results.financingCosts,
-                          contingency: results.contingency,
-                          monthlyCost: results.monthlyCost,
-                          roi: results.roi,
-                          dtiRatio: results.dtiRatio,
-                          ltvRatio: results.ltvRatio,
-                          costPerUnit: results.costPerUnit,
-                          riskFlags: results.riskFlags,
-                        },
-                        currency: { code: currency.code, symbol: currency.symbol },
-                        sizeUnit,
-                        buildSize,
-                      });
-                    }}
-                    className="flex items-center gap-2 px-4 py-2.5 border border-border rounded-lg text-[13px] font-medium text-earth hover:bg-warm/30 transition-colors"
-                  >
-                    <FileDown size={14} />
-                    Export PDF
-                  </button>
-                  <button
-                    onClick={() => {
-                      const params = new URLSearchParams({
-                        goal: input.goal,
-                        market: input.market,
-                        city: input.city,
-                        type: input.propertyType,
-                        size: input.sizeCategory,
-                        beds: String(input.bedrooms),
-                        baths: String(input.bathrooms),
-                        stories: String(input.stories),
-                        land: input.landOption,
-                        fin: input.financingType,
-                        dp: String(input.downPaymentPct),
-                        rate: String(input.loanRate),
-                        months: String(input.timelineMonths),
-                      });
-                      if (input.features.length > 0) params.set("feat", input.features.join(","));
-                      if (input.monthlyRent) params.set("rent", String(input.monthlyRent));
-                      if (input.targetSalePrice) params.set("sale", String(input.targetSalePrice));
-                      if (input.zipCode) params.set("zip", input.zipCode);
-                      if (input.loanTerm !== 30) params.set("term", String(input.loanTerm));
-                      if (input.monthlyIncome) params.set("income", String(input.monthlyIncome));
-                      if (input.existingDebts) params.set("debts", String(input.existingDebts));
-                      if (input.titreFoncierStatus) params.set("titre", input.titreFoncierStatus);
-                      if (input.commercialPct !== 30) params.set("commpct", String(input.commercialPct));
-                      const url = `${window.location.origin}/analyze?${params.toString()}`;
-                      navigator.clipboard.writeText(url).then(() => {
-                        showToast("Link copied to clipboard", "success");
-                      }).catch(() => {
-                        showToast("Could not copy link", "error");
-                      });
-                    }}
-                    className="flex items-center gap-2 px-4 py-2.5 border border-border rounded-lg text-[13px] font-medium text-earth hover:bg-warm/30 transition-colors"
-                  >
-                    <Share2 size={14} />
-                    Copy Link
-                  </button>
-                </div>
-
                 {/* Disclaimer */}
-                <p className="text-[10px] text-muted/60 leading-relaxed">
-                  These estimates are for educational guidance only. Actual costs vary significantly by location, materials, labor availability, and market conditions. Consult licensed professionals before making financial commitments.
+                <p className="text-[9px] text-muted/50 leading-relaxed px-1">
+                  Estimates are for educational guidance only. Actual costs vary by location, materials, and market conditions. Consult licensed professionals before committing.
                 </p>
               </div>
             ) : (
-              /* Empty state */
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-warm/50 flex items-center justify-center mb-4">
-                  <Calculator size={28} className="text-clay" />
+                <div className="w-14 h-14 rounded-2xl bg-warm/40 flex items-center justify-center mb-4">
+                  <Calculator size={24} className="text-clay" />
                 </div>
-                <h3 className="text-[16px] font-semibold text-earth mb-2" style={{ fontFamily: "var(--font-heading)" }}>
-                  Start your analysis
-                </h3>
-                <p className="text-[13px] text-muted max-w-xs leading-relaxed">
-                  Select your goal and market to begin. Results update in real-time as you fill in details.
-                </p>
-                <div className="flex items-center gap-2 mt-4 text-[12px] text-clay font-medium">
-                  <ArrowRight size={14} />
-                  Begin with "Your Goal" on the left
-                </div>
+                <h3 className="text-[15px] font-semibold text-earth mb-1" style={{ fontFamily: "var(--font-heading)" }}>Start your analysis</h3>
+                <p className="text-[12px] text-muted max-w-[240px]">Select a goal and market to begin. Results update as you fill in details.</p>
               </div>
             )}
           </div>
         </div>
       ) : (
-        /* ─── REVERSE CALCULATOR TAB ─── */
-        <div className="max-w-xl mx-auto space-y-5">
-          <div className="bg-surface border border-border rounded-xl p-6">
-            <h3 className="text-[16px] font-semibold text-earth mb-1" style={{ fontFamily: "var(--font-heading)" }}>
-              What Can I Afford?
-            </h3>
-            <p className="text-[12px] text-muted mb-4">
-              Enter your total budget and we will estimate the largest home you can build.
-            </p>
-
+        /* ════════════════════════════════════════════════════════════════
+           REVERSE CALCULATOR
+           ════════════════════════════════════════════════════════════════ */
+        <div className="max-w-lg mx-auto space-y-4">
+          <div className="bg-surface border border-border rounded-2xl p-6">
+            <h3 className="text-[16px] font-semibold text-earth mb-1" style={{ fontFamily: "var(--font-heading)" }}>What Can I Afford?</h3>
+            <p className="text-[12px] text-muted mb-4">Enter your total budget and we will estimate the largest home you can build.</p>
             <div className="space-y-3">
-              <div>
-                <Label>Market</Label>
-                <OptionGrid
-                  options={[
-                    { id: "USA", label: "United States" },
-                    { id: "TOGO", label: "Togo" },
-                    { id: "GHANA", label: "Ghana" },
-                    { id: "BENIN", label: "Benin" },
-                  ]}
-                  value={input.market}
-                  onChange={(v) => set("market", v as MarketType)}
-                  columns={4}
-                />
+              <div className="grid grid-cols-2 gap-2">
+                {(["USA", "TOGO", "GHANA", "BENIN"] as MarketType[]).map((m) => (
+                  <Choice key={m} selected={input.market === m} onClick={() => set("market", m)}>
+                    <p className="text-[12px] font-medium text-earth">{m === "USA" ? "United States" : m.charAt(0) + m.slice(1).toLowerCase()}</p>
+                  </Choice>
+                ))}
               </div>
-
               {input.market && (
                 <>
+                  <NumField label="City / Region" value={0} onChange={() => {}} />
                   <div>
-                    <Label>City / Region</Label>
-                    <input
-                      type="text"
-                      value={input.city}
-                      onChange={(e) => set("city", e.target.value)}
-                      placeholder={isUSA ? "e.g. Houston, TX" : "e.g. Lome"}
-                      className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/30"
-                    />
+                    <div className="flex items-center gap-1 mb-1"><span className="text-[11px] font-medium text-earth">City</span></div>
+                    <input type="text" value={input.city} onChange={(e) => set("city", e.target.value)} placeholder="e.g. Houston"
+                      className="w-full px-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20" />
                   </div>
-                  <div>
-                    <Label tooltip="Your total available budget including land, construction, permits, and contingency">Total budget</Label>
-                    <NumberInput value={reverseBudget} onChange={setReverseBudget} prefix={currency.symbol} />
-                  </div>
+                  <NumField label="Total budget" value={reverseBudget} onChange={setReverseBudget} prefix={currency.symbol} tooltip="Total available for land, construction, permits, and contingency" />
                 </>
               )}
             </div>
           </div>
 
-          {reverseResult && reverseBudget > 0 && reverseBudget < reverseResult.minBudget && (
-            <div className="bg-surface border border-danger/30 rounded-xl p-5">
-              <div className="flex items-start gap-3">
-                <AlertTriangle size={18} className="text-danger shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[13px] font-semibold text-earth">Budget too low for new construction</p>
-                  <p className="text-[12px] text-muted mt-1 leading-relaxed">
-                    The minimum budget for a basic home in this market is approximately <span className="font-data font-semibold">{currency.symbol}{reverseResult.minBudget.toLocaleString()}</span>. Consider a different location, smaller scope, or alternative financing.
-                  </p>
-                </div>
+          {reverseResult && reverseBudget > 0 && reverseResult.maxSize <= 0 && (
+            <div className="bg-surface border border-danger/30 rounded-2xl p-5 flex items-start gap-3">
+              <AlertTriangle size={18} className="text-danger shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[13px] font-semibold text-earth">Budget too low</p>
+                <p className="text-[11px] text-muted mt-1">Minimum for this market: <span className="font-data font-semibold">{currency.symbol}{reverseResult.minBudget.toLocaleString()}</span></p>
               </div>
             </div>
           )}
 
           {reverseResult && reverseBudget > 0 && reverseResult.maxSize > 0 && (
-            <div className="bg-surface border border-border rounded-xl p-6">
-              <h3 className="text-[16px] font-semibold text-earth mb-4" style={{ fontFamily: "var(--font-heading)" }}>
-                You Can Build
-              </h3>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <StatCard label="Max size" value={`${reverseResult.maxSize.toLocaleString()} ${sizeUnit}`} Icon={Ruler} />
-                <StatCard label="Bedrooms" value={String(reverseResult.bedrooms)} Icon={Bed} />
-                <StatCard label="Bathrooms" value={String(reverseResult.bathrooms)} Icon={Bath} />
-                <StatCard label="Stories" value={String(reverseResult.stories)} Icon={Layers} />
+            <div className="bg-surface border border-border rounded-2xl p-6">
+              <h3 className="text-[16px] font-semibold text-earth mb-4" style={{ fontFamily: "var(--font-heading)" }}>You Can Build</h3>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {[
+                  { label: "Size", value: `${reverseResult.maxSize.toLocaleString()} ${sizeUnit}`, Icon: Ruler },
+                  { label: "Beds", value: String(reverseResult.bedrooms), Icon: Bed },
+                  { label: "Baths", value: String(reverseResult.bathrooms), Icon: Bath },
+                  { label: "Stories", value: String(reverseResult.stories), Icon: Layers },
+                ].map((s) => (
+                  <div key={s.label} className="bg-warm/15 rounded-xl p-3 flex items-center gap-3">
+                    <s.Icon size={16} className="text-clay" />
+                    <div>
+                      <p className="text-[9px] text-muted uppercase">{s.label}</p>
+                      <p className="text-[15px] font-bold font-data text-earth">{s.value}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <p className="text-[13px] text-earth leading-relaxed">{reverseResult.description}</p>
-              <p className="text-[10px] text-muted/60 mt-3">
-                Assumes standard finishes, includes land (25%), permits (15%), and contingency.
-              </p>
-
-              <button
-                onClick={() => {
-                  setInput({
-                    ...input,
-                    bedrooms: reverseResult.bedrooms,
-                    bathrooms: reverseResult.bathrooms,
-                    stories: reverseResult.stories,
-                    sizeCategory: "custom",
-                    customSize: reverseResult.maxSize,
-                  });
-                  setTab("analyze");
-                }}
-                className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-clay text-white rounded-lg text-[13px] font-medium hover:bg-clay/90 transition-colors"
-              >
-                <ArrowRight size={14} />
-                Analyze this as a deal
+              <p className="text-[12px] text-earth">{reverseResult.description}</p>
+              <button onClick={() => {
+                setInput((p) => ({ ...p, bedrooms: reverseResult.bedrooms, bathrooms: reverseResult.bathrooms, stories: reverseResult.stories, sizeCategory: "custom", customSize: reverseResult.maxSize }));
+                setMode("analyze");
+              }} className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-clay text-white rounded-xl text-[12px] font-medium hover:bg-clay/90 transition-colors">
+                <ArrowRight size={13} /> Analyze this as a deal
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* Save Dialog */}
-      {showSaveDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setShowSaveDialog(false); setSaveName(""); }}>
-          <div className="bg-surface border border-border rounded-xl shadow-xl w-full max-w-sm p-5 mx-4" onClick={(e) => e.stopPropagation()}>
-            <h4 className="text-[15px] font-semibold text-earth mb-3" style={{ fontFamily: "var(--font-heading)" }}>
-              Save Analysis
-            </h4>
-            <input
-              type="text"
-              value={saveName}
-              onChange={(e) => setSaveName(e.target.value)}
-              placeholder="e.g. Houston 3-bed rental"
-              className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/30 focus:border-clay mb-4"
-              autoFocus
+      {/* ══════════════════════════════════════════════════════════════════
+         FLOATING ACTION BAR
+         ══════════════════════════════════════════════════════════════════ */}
+      {hasResults && mode === "analyze" && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 bg-earth/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/10">
+          <button onClick={() => setShowSave(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium text-white/90 hover:bg-white/10 transition-colors">
+            <Save size={13} /> Save
+          </button>
+          <button onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium bg-white text-earth hover:bg-white/90 transition-colors">
+            <Plus size={13} /> Create Project
+          </button>
+          <button onClick={() => {
+            if (!results) return;
+            exportAnalysisPDF({
+              name: `${input.city || input.market} ${input.propertyType}`,
+              input: { goal: input.goal, market: input.market, city: input.city, propertyType: input.propertyType, sizeCategory: input.sizeCategory, bedrooms: input.bedrooms, bathrooms: input.bathrooms, stories: input.stories, features: input.features, landOption: input.landOption, financingType: input.financingType, timelineMonths: input.timelineMonths },
+              results: { dealScore: results.dealScore, dealScoreSummary: results.dealScoreSummary, totalCost: results.totalCost, constructionCost: results.constructionCost, landCost: results.landCost, softCosts: results.softCosts, financingCosts: results.financingCosts, contingency: results.contingency, monthlyCost: results.monthlyCost, roi: results.roi, dtiRatio: results.dtiRatio, ltvRatio: results.ltvRatio, costPerUnit: results.costPerUnit, riskFlags: results.riskFlags },
+              currency: { code: currency.code, symbol: currency.symbol }, sizeUnit, buildSize,
+            });
+          }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium text-white/90 hover:bg-white/10 transition-colors">
+            <FileDown size={13} /> PDF
+          </button>
+          <button onClick={() => {
+            const params = new URLSearchParams({ goal: input.goal, market: input.market, city: input.city, type: input.propertyType, size: input.sizeCategory, beds: String(input.bedrooms), baths: String(input.bathrooms), stories: String(input.stories), land: input.landOption, fin: input.financingType, dp: String(input.downPaymentPct), rate: String(input.loanRate), months: String(input.timelineMonths) });
+            if (input.features.length > 0) params.set("feat", input.features.join(","));
+            if (input.monthlyRent) params.set("rent", String(input.monthlyRent));
+            if (input.targetSalePrice) params.set("sale", String(input.targetSalePrice));
+            if (input.zipCode) params.set("zip", input.zipCode);
+            navigator.clipboard.writeText(`${window.location.origin}/analyze?${params.toString()}`).then(() => showToast("Link copied", "success")).catch(() => showToast("Could not copy", "error"));
+          }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium text-white/90 hover:bg-white/10 transition-colors">
+            <Share2 size={13} /> Share
+          </button>
+        </div>
+      )}
+
+      {/* Save dialog */}
+      {showSave && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setShowSave(false); setSaveName(""); }}>
+          <div className="bg-surface border border-border rounded-2xl shadow-xl w-full max-w-sm p-5 mx-4" onClick={(e) => e.stopPropagation()}>
+            <h4 className="text-[15px] font-semibold text-earth mb-3" style={{ fontFamily: "var(--font-heading)" }}>Save Analysis</h4>
+            <input type="text" value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="e.g. Houston 3-bed rental" autoFocus
               onKeyDown={(e) => { if (e.key === "Enter" && saveName.trim()) handleSave(); }}
-            />
+              className="w-full px-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20 mb-4" />
             <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => { setShowSaveDialog(false); setSaveName(""); }}
-                className="px-4 py-2 text-[13px] text-muted hover:text-earth transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={!saveName.trim() || saving}
-                className="px-4 py-2 bg-clay text-white rounded-lg text-[13px] font-medium hover:bg-clay/90 transition-colors disabled:opacity-50"
-              >
-                {saving ? "Saving..." : "Save"}
+              <button onClick={() => { setShowSave(false); setSaveName(""); }} className="px-4 py-2 text-[12px] text-muted hover:text-earth transition-colors">Cancel</button>
+              <button onClick={handleSave} disabled={!saveName.trim() || saving}
+                className="px-4 py-2 bg-clay text-white rounded-lg text-[12px] font-medium hover:bg-clay/90 disabled:opacity-50 transition-colors">{saving ? "Saving..." : "Save"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Project dialog */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setShowCreate(false); setCreateName(""); }}>
+          <div className="bg-surface border border-border rounded-2xl shadow-xl w-full max-w-sm p-5 mx-4" onClick={(e) => e.stopPropagation()}>
+            <h4 className="text-[15px] font-semibold text-earth mb-1" style={{ fontFamily: "var(--font-heading)" }}>Create Project</h4>
+            <p className="text-[11px] text-muted mb-3">Your analysis data will be used to set up the project with budget, tasks, and financing already configured.</p>
+            <input type="text" value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder="Name your project (e.g. Robinson Residence)" autoFocus
+              onKeyDown={(e) => { if (e.key === "Enter" && createName.trim()) handleCreateProject(); }}
+              className="w-full px-3 py-2.5 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20 mb-4" />
+            {results && (
+              <div className="grid grid-cols-3 gap-2 mb-4 text-center">
+                <div className="bg-warm/20 rounded-lg py-2">
+                  <p className="text-[9px] text-muted uppercase">Score</p>
+                  <p className={`text-[14px] font-bold font-data ${results.dealScore >= 65 ? "text-success" : "text-warning"}`}>{results.dealScore}</p>
+                </div>
+                <div className="bg-warm/20 rounded-lg py-2">
+                  <p className="text-[9px] text-muted uppercase">Budget</p>
+                  <p className="text-[14px] font-bold font-data text-earth">{fmtC(results.totalCost, currency)}</p>
+                </div>
+                <div className="bg-warm/20 rounded-lg py-2">
+                  <p className="text-[9px] text-muted uppercase">Size</p>
+                  <p className="text-[14px] font-bold font-data text-earth">{buildSize.toLocaleString()}</p>
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => { setShowCreate(false); setCreateName(""); }} className="px-4 py-2 text-[12px] text-muted hover:text-earth transition-colors">Cancel</button>
+              <button onClick={handleCreateProject} disabled={!createName.trim() || creating}
+                className="px-4 py-2.5 bg-earth text-white rounded-lg text-[12px] font-medium hover:bg-earth/90 disabled:opacity-50 transition-colors">
+                {creating ? "Creating..." : "Create Project"}
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Summary Row component
-// ---------------------------------------------------------------------------
-
-function SummaryRow({ label, value, bold, sub, highlight, warning, positive }: {
-  label: string;
-  value: string;
-  bold?: boolean;
-  sub?: string;
-  highlight?: boolean;
-  warning?: boolean;
-  positive?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <div>
-        <span className={`text-[12px] ${bold ? "font-semibold text-earth" : "text-muted"}`}>{label}</span>
-        {sub && <span className="text-[10px] text-muted/60 ml-1">({sub})</span>}
-      </div>
-      <span className={`text-[13px] font-data font-medium ${
-        bold ? "text-earth text-[14px]" :
-        highlight ? "text-clay" :
-        warning ? "text-danger" :
-        positive ? "text-success" :
-        "text-earth"
-      }`}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Stat card for reverse calculator
-// ---------------------------------------------------------------------------
-
-function LocationCard({ label, value, sub, positive }: { label: string; value: string; sub?: string; positive?: boolean }) {
-  return (
-    <div className="p-2.5 bg-warm/15 rounded-lg">
-      <p className="text-[10px] text-muted uppercase tracking-wide">{label}</p>
-      <p className={`text-[14px] font-bold font-data ${positive === true ? "text-success" : positive === false ? "text-warning" : "text-earth"}`}>{value}</p>
-      {sub && <p className="text-[10px] text-muted mt-0.5 leading-snug">{sub}</p>}
-    </div>
-  );
-}
-
-function StatCard({ label, value, Icon }: { label: string; value: string; Icon: React.ComponentType<{ size: number }> }) {
-  return (
-    <div className="bg-warm/20 rounded-xl p-3 flex items-center gap-3">
-      <div className="w-9 h-9 rounded-lg bg-clay/10 flex items-center justify-center">
-        <Icon size={16} />
-      </div>
-      <div>
-        <p className="text-[10px] text-muted uppercase tracking-wide">{label}</p>
-        <p className="text-[16px] font-bold text-earth font-data">{value}</p>
-      </div>
     </div>
   );
 }
