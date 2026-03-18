@@ -7,6 +7,7 @@ import {
   DollarSign,
   FileText,
   MessageSquare,
+  Settings,
   Key,
 } from "lucide-react";
 
@@ -116,6 +117,12 @@ const TOUR_STEPS: TourStep[] = [
     content:
       "Ask questions about your project, get budget analysis, schedule recommendations, and risk assessments. Your AI advisor knows your market, phase, and budget.",
     illustration: <MessageSquare size={48} className="text-clay" />,
+  },
+  {
+    title: "Set your preferences",
+    content:
+      "Head to Settings to choose your language (English, French, or Spanish), timezone, and currency. These customize your entire Keystone experience.",
+    illustration: <Settings size={48} className="text-clay" />,
   },
   {
     title: "You are ready to build",
