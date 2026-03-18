@@ -114,6 +114,7 @@ export function SettingsClient() {
   const [deleteError, setDeleteError] = useState("");
 
   // Plan/billing state
+  const [settingsTab, setSettingsTab] = useState<"profile" | "plan" | "notifications" | "data">("profile");
   const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
   const [upgradingTier, setUpgradingTier] = useState<PlanTier | null>(null);
   const [managingPortal, setManagingPortal] = useState(false);
@@ -480,9 +481,33 @@ export function SettingsClient() {
     <div className="animate-stagger">
       <PageHeader title="Parameters" />
 
+      {/* Tab navigation */}
+      <div className="flex gap-1 mb-5 border-b border-border overflow-x-auto">
+        {([
+          { id: "profile" as const, label: "Profile" },
+          { id: "plan" as const, label: "Plan & Billing" },
+          { id: "notifications" as const, label: "Notifications" },
+          { id: "data" as const, label: "Data" },
+        ]).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setSettingsTab(tab.id)}
+            className={`px-4 py-2.5 text-[12px] font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
+              settingsTab === tab.id
+                ? "border-clay text-earth"
+                : "border-transparent text-muted hover:text-earth"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* ================================================================= */}
-      {/* Profile Section                                                    */}
+      {/* PROFILE TAB                                                        */}
       {/* ================================================================= */}
+      {settingsTab === "profile" && (
+      <>
       <SectionLabel>Profile</SectionLabel>
       <Card padding="md" className="mb-5">
         <div className="flex items-center gap-3 mb-4">
@@ -673,9 +698,14 @@ export function SettingsClient() {
         )}
       </Card>
 
+      </>
+      )}
+
       {/* ================================================================= */}
-      {/* Plan Section                                                       */}
+      {/* PLAN & BILLING TAB                                                 */}
       {/* ================================================================= */}
+      {settingsTab === "plan" && (
+      <>
       <SectionLabel>Plan</SectionLabel>
       <Card padding="md" className="mb-5">
         <div className="flex items-center gap-3 mb-4">
@@ -1264,9 +1294,14 @@ export function SettingsClient() {
         </>
       )}
 
+      </>
+      )}
+
       {/* ================================================================= */}
-      {/* Notification Preferences                                           */}
+      {/* NOTIFICATIONS TAB                                                  */}
       {/* ================================================================= */}
+      {settingsTab === "notifications" && (
+      <>
       <SectionLabel>Notifications</SectionLabel>
       <Card padding="md" className="mb-5">
         <div className="flex items-center gap-3 mb-4">
@@ -1325,9 +1360,14 @@ export function SettingsClient() {
         </div>
       </Card>
 
+      </>
+      )}
+
       {/* ================================================================= */}
-      {/* Data Section                                                       */}
+      {/* DATA TAB                                                           */}
       {/* ================================================================= */}
+      {settingsTab === "data" && (
+      <>
       <SectionLabel>Data</SectionLabel>
       <Card padding="md" className="mb-5">
         <div className="flex items-center gap-3 mb-4">
@@ -1491,6 +1531,8 @@ export function SettingsClient() {
           )}
         </div>
       </Card>
+      </>
+      )}
     </div>
   );
 }
