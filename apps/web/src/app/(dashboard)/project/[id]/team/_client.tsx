@@ -681,15 +681,24 @@ export function TeamClient() {
                           <button
                             onClick={async () => {
                               if (!user || !profile) return;
-                              const result = await generateContractorLink(
-                                user.uid, projectId, c.id!, c.name, c.role, profile.plan
-                              );
-                              if ("error" in result) {
-                                showToast(result.error, "error");
-                              } else {
+                              try {
+                                const result = await generateContractorLink(
+                                  user.uid, projectId, c.id!, c.name, c.role, profile.plan
+                                );
+                                if ("error" in result) {
+                                  showToast(result.error, "error");
+                                  return;
+                                }
                                 const url = `${window.location.origin}/contractor/${result.token}`;
-                                navigator.clipboard.writeText(url);
-                                showToast("Access link copied. Share it with your contractor.", "success");
+                                try {
+                                  await navigator.clipboard.writeText(url);
+                                  showToast("Access link copied to clipboard.", "success");
+                                } catch {
+                                  // Clipboard failed — show the URL in a prompt
+                                  window.prompt("Copy this link and share with your contractor:", url);
+                                }
+                              } catch (err) {
+                                showToast("Failed to generate link. Please try again.", "error");
                               }
                             }}
                             className="flex items-center gap-1 px-3 py-1.5 text-[11px] border border-emerald-300 rounded-[var(--radius)] text-emerald-700 hover:bg-emerald-50 transition-colors"
