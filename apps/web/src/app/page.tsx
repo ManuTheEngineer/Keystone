@@ -683,10 +683,11 @@ export default function LandingPage() {
           </div>
 
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-            {/* Photo placeholder */}
-            <div className="w-28 h-28 rounded-2xl bg-warm flex items-center justify-center shrink-0">
-              <span className="text-[32px] font-bold text-clay font-data">EA</span>
-            </div>
+            <img
+              src="/founder.jpg"
+              alt="Emmanuel Abok, Founder of Keystone"
+              className="w-28 h-28 rounded-2xl object-cover shrink-0"
+            />
 
             <div className="flex-1 text-center md:text-left">
               <h3
