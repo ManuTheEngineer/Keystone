@@ -174,7 +174,7 @@ export function Sidebar({
             onClose();
           }}
           className={`
-            w-full flex items-center gap-2.5 py-2 text-[13px]
+            w-full flex items-center gap-2.5 py-2 text-[13px] text-left
             border-l-[3px] transition-all duration-150
             ${collapsed ? "px-0 justify-center" : "pl-4 pr-3"}
             ${
