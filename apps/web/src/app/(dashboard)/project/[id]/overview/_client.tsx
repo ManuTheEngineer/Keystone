@@ -42,6 +42,7 @@ import {
   type StepDecision,
 } from "@/lib/services/project-service";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { StatCard } from "@/components/ui/StatCard";
 import { PhaseTracker } from "@/components/ui/PhaseTracker";
@@ -198,6 +199,7 @@ export function OverviewClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
   const { user, profile } = useAuth();
+  const { showToast } = useToast();
   const router = useRouter();
   const projectId = params.id as string;
 
@@ -278,27 +280,42 @@ export function OverviewClient() {
 
   async function handleAddTask() {
     if (!newTaskLabel.trim() || !user) return;
-    await addTask(user.uid, {
-      projectId,
-      label: newTaskLabel.trim(),
-      status: "upcoming",
-      done: false,
-      order: tasks.length,
-    });
-    setNewTaskLabel("");
-    setShowAddTask(false);
+    try {
+      await addTask(user.uid, {
+        projectId,
+        label: newTaskLabel.trim(),
+        status: "upcoming",
+        done: false,
+        order: tasks.length,
+      });
+      setNewTaskLabel("");
+      setShowAddTask(false);
+      showToast("Task added.", "success");
+    } catch {
+      showToast("Failed to add task.", "error");
+    }
   }
 
   async function handleDeleteTask(taskId: string) {
     if (!user) return;
-    await deleteTask(user.uid, projectId, taskId);
+    try {
+      await deleteTask(user.uid, projectId, taskId);
+      showToast("Task deleted.", "success");
+    } catch {
+      showToast("Failed to delete task.", "error");
+    }
   }
 
   async function handleEditTaskSave(taskId: string) {
     if (!user || !editingTaskLabel.trim()) return;
-    await updateTask(user.uid, projectId, taskId, { label: editingTaskLabel.trim() });
-    setEditingTaskId(null);
-    setEditingTaskLabel("");
+    try {
+      await updateTask(user.uid, projectId, taskId, { label: editingTaskLabel.trim() });
+      setEditingTaskId(null);
+      setEditingTaskLabel("");
+      showToast("Task updated.", "success");
+    } catch {
+      showToast("Failed to update task.", "error");
+    }
   }
 
   async function handleDeleteProject() {
