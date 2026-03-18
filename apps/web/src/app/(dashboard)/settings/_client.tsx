@@ -551,7 +551,7 @@ export function SettingsClient() {
                 if (!user) return;
                 await update(ref(db, `users/${user.uid}/profile`), { locale: e.target.value });
                 showToast(
-                  e.target.value === "fr" ? "Langue mise \u00e0 jour." :
+                  e.target.value === "fr" ? "Langue mise à jour." :
                   e.target.value === "es" ? "Idioma actualizado." :
                   "Language updated.", "success"
                 );
@@ -559,8 +559,8 @@ export function SettingsClient() {
               className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
             >
               <option value="en">English</option>
-              <option value="fr">Fran\u00e7ais</option>
-              <option value="es">Espa\u00f1ol</option>
+              <option value="fr">Français</option>
+              <option value="es">Español</option>
             </select>
           </div>
 
