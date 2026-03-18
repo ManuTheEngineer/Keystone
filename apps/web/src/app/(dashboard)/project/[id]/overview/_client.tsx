@@ -796,6 +796,247 @@ export function OverviewClient() {
         );
       })()}
 
+      {/* Change Orders */}
+      {(changeOrders.length > 0 || showAddChangeOrder) && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <SectionLabel>Change Orders</SectionLabel>
+              {changeOrders.filter((co) => co.status === "pending").length > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-warning/15 text-warning text-[11px] font-data font-semibold">
+                  {changeOrders.filter((co) => co.status === "pending").length}
+                </span>
+              )}
+            </div>
+            {!showAddChangeOrder && (
+              <button
+                onClick={() => setShowAddChangeOrder(true)}
+                className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
+              >
+                <FilePlus size={12} /> New
+              </button>
+            )}
+          </div>
+
+          {/* Add change order form */}
+          {showAddChangeOrder && (
+            <Card padding="sm" className="mb-3">
+              <h4 className="text-[12px] font-semibold text-earth mb-2">New Change Order</h4>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={coDescription}
+                  onChange={(e) => setCoDescription(e.target.value)}
+                  placeholder="Description of the change"
+                  className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
+                  autoFocus
+                />
+                <textarea
+                  value={coReason}
+                  onChange={(e) => setCoReason(e.target.value)}
+                  placeholder="Reason for the change"
+                  rows={2}
+                  className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 resize-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] text-muted mb-0.5">
+                      Price impact ({marketData?.currency?.symbol || "$"})
+                    </label>
+                    <input
+                      type="number"
+                      value={coPriceImpact}
+                      onChange={(e) => setCoPriceImpact(e.target.value)}
+                      placeholder="0 (+ or -)"
+                      step="any"
+                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-muted mb-0.5">Schedule impact (days)</label>
+                    <input
+                      type="number"
+                      value={coScheduleImpact}
+                      onChange={(e) => setCoScheduleImpact(e.target.value)}
+                      placeholder="0"
+                      min="0"
+                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    disabled={!coDescription.trim() || !coReason.trim() || coSubmitting}
+                    onClick={async () => {
+                      if (!user) return;
+                      setCoSubmitting(true);
+                      try {
+                        await createChangeOrder(user.uid, {
+                          projectId,
+                          description: coDescription.trim(),
+                          reason: coReason.trim(),
+                          priceImpact: Number(coPriceImpact) || 0,
+                          scheduleImpact: Number(coScheduleImpact) || 0,
+                          initiatedBy: "owner",
+                          initiatorName: profile?.name || user.email || "Owner",
+                          status: "pending",
+                        });
+                        showToast("Change order created.", "success");
+                        setCoDescription("");
+                        setCoReason("");
+                        setCoPriceImpact("");
+                        setCoScheduleImpact("");
+                        setShowAddChangeOrder(false);
+                      } catch {
+                        showToast("Failed to create change order.", "error");
+                      } finally {
+                        setCoSubmitting(false);
+                      }
+                    }}
+                    className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                  >
+                    {coSubmitting ? "Creating..." : "Create"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAddChangeOrder(false);
+                      setCoDescription("");
+                      setCoReason("");
+                      setCoPriceImpact("");
+                      setCoScheduleImpact("");
+                    }}
+                    className="p-1 text-muted hover:text-earth transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Change order list */}
+          <div className="space-y-2">
+            {changeOrders.map((co) => (
+              <Card
+                key={co.id}
+                padding="sm"
+                className={`border-l-3 ${
+                  co.status === "pending"
+                    ? "border-l-warning"
+                    : co.status === "approved"
+                    ? "border-l-success"
+                    : "border-l-danger"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[12px] font-medium text-earth">{co.description}</span>
+                      <Badge
+                        variant={
+                          co.status === "pending" ? "warning" : co.status === "approved" ? "success" : "danger"
+                        }
+                      >
+                        {co.status.charAt(0).toUpperCase() + co.status.slice(1)}
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-muted mt-0.5">{co.reason}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-[11px] text-muted mt-1">
+                  <span className="font-data">
+                    {co.priceImpact >= 0 ? "+" : ""}
+                    {marketData?.currency?.symbol || "$"}{Math.abs(co.priceImpact).toLocaleString()}
+                  </span>
+                  {co.scheduleImpact > 0 && (
+                    <span className="font-data">+{co.scheduleImpact} day{co.scheduleImpact !== 1 ? "s" : ""}</span>
+                  )}
+                  <span>By {co.initiatorName}</span>
+                  <span>
+                    {new Date(co.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                </div>
+                {co.resolvedNote && (
+                  <p className="text-[11px] text-slate bg-warm/50 rounded px-2 py-1 mt-1.5">{co.resolvedNote}</p>
+                )}
+                {co.status === "pending" && (
+                  <>
+                    {coResolvingId === co.id ? (
+                      <div className="mt-2 pt-2 border-t border-border">
+                        <textarea
+                          value={coResolveNote}
+                          onChange={(e) => setCoResolveNote(e.target.value)}
+                          placeholder="Optional note..."
+                          rows={2}
+                          className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 resize-none mb-2"
+                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={async () => {
+                              if (!user || !co.id) return;
+                              try {
+                                await resolveChangeOrder(user.uid, projectId, co.id, "approved", coResolveNote.trim() || undefined);
+                                showToast("Change order approved.", "success");
+                              } catch {
+                                showToast("Failed to approve change order.", "error");
+                              } finally {
+                                setCoResolvingId(null);
+                                setCoResolveNote("");
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded bg-success text-white hover:bg-success/90 transition-colors"
+                          >
+                            <Check size={14} /> Approve
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (!user || !co.id) return;
+                              try {
+                                await resolveChangeOrder(user.uid, projectId, co.id, "rejected", coResolveNote.trim() || undefined);
+                                showToast("Change order rejected.", "success");
+                              } catch {
+                                showToast("Failed to reject change order.", "error");
+                              } finally {
+                                setCoResolvingId(null);
+                                setCoResolveNote("");
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-danger text-danger hover:bg-danger/10 transition-colors"
+                          >
+                            <XCircle size={14} /> Reject
+                          </button>
+                          <button
+                            onClick={() => { setCoResolvingId(null); setCoResolveNote(""); }}
+                            className="px-3 py-1.5 text-xs text-muted hover:text-earth transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
+                        <button
+                          onClick={() => { setCoResolvingId(co.id!); setCoResolveNote(""); }}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded bg-success text-white hover:bg-success/90 transition-colors"
+                        >
+                          <Check size={14} /> Approve
+                        </button>
+                        <button
+                          onClick={() => { setCoResolvingId(co.id!); setCoResolveNote(""); }}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-danger text-danger hover:bg-danger/10 transition-colors"
+                        >
+                          <XCircle size={14} /> Reject
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Materials Summary */}
       {materials.length > 0 && (
         <div className="mb-4">
@@ -1781,7 +2022,7 @@ export function OverviewClient() {
           )}
 
           {/* Quick action buttons */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
             <Link
               href={`/project/${projectId}/daily-log`}
               className="flex flex-col items-center gap-1.5 py-3 bg-surface border border-border rounded-[var(--radius)] hover:bg-warm transition-colors"
@@ -1803,6 +2044,13 @@ export function OverviewClient() {
               <DollarSign size={18} className="text-clay" />
               <span className="text-[10px] text-earth font-medium">Record expense</span>
             </Link>
+            <button
+              onClick={() => setShowAddChangeOrder(true)}
+              className="flex flex-col items-center gap-1.5 py-3 bg-surface border border-border rounded-[var(--radius)] hover:bg-warm transition-colors"
+            >
+              <FilePlus size={18} className="text-clay" />
+              <span className="text-[10px] text-earth font-medium">Change order</span>
+            </button>
           </div>
         </>
       )}
@@ -2083,7 +2331,7 @@ export function OverviewClient() {
 
       {/* Contractor Rating Prompt */}
       {ratingTaskId && (() => {
-        const ratedTask = tasks.find((t) => t.id === ratingTaskId) ?? completedTasks.find((t) => t.id === ratingTaskId);
+        const ratedTask = tasks.find((t) => t.id === ratingTaskId);
         if (!ratedTask) return null;
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
