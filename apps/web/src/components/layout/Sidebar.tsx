@@ -176,7 +176,7 @@ export function Sidebar({
           className={`
             w-full flex items-center gap-2.5 py-2 text-[13px]
             border-l-[3px] transition-all duration-150
-            ${collapsed ? "px-0 justify-center" : "px-5"}
+            ${collapsed ? "px-0 justify-center" : "pl-4 pr-3"}
             ${
               isActive
                 ? "border-l-emerald-500 rounded-r-lg bg-emerald-500/8 text-[#F5E6D3] opacity-100"
@@ -250,7 +250,7 @@ export function Sidebar({
         {/* Main navigation — fixed at top */}
         <nav className="py-3 shrink-0">
           {!collapsed && (
-            <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium">
+            <p className="pl-4 pr-3 mb-1.5 text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium">
               Main
             </p>
           )}
@@ -266,7 +266,7 @@ export function Sidebar({
         {projectName && (
           <nav className="py-3 flex-1 min-h-0 overflow-y-auto overflow-x-hidden sidebar-scroll">
             {!collapsed && (
-              <p className="px-5 mb-1.5 text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium truncate">
+              <p className="pl-4 pr-3 mb-1.5 text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium truncate">
                 {projectName}
               </p>
             )}
@@ -282,7 +282,7 @@ export function Sidebar({
                         else next.add(group.label);
                         return next;
                       })}
-                      className="w-full px-5 mt-3 mb-1 flex items-center justify-between text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium hover:text-[#D4A574]/50 transition-colors"
+                      className="w-full pl-4 pr-3 mt-3 mb-1 flex items-center justify-between text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium hover:text-[#D4A574]/50 transition-colors"
                     >
                       {group.label}
                       <ChevronDown
@@ -339,7 +339,7 @@ export function Sidebar({
           <button
             onClick={() => { onNavigate("settings"); onClose(); }}
             className={`
-              w-full flex items-center gap-2.5 px-5 py-2 text-[13px]
+              w-full flex items-center gap-2.5 pl-4 pr-3 py-2 text-[13px]
               border-l-[3px] rounded-r-lg transition-all duration-150
               ${activeSection === "settings"
                 ? "opacity-100 bg-emerald-500/8 border-l-emerald-500 text-[#F5E6D3]"
