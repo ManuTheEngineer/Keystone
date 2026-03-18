@@ -346,6 +346,39 @@ export function ScheduleClient() {
         projectName={project.name}
         projectId={projectId}
         subtitle="Construction timeline"
+        action={{
+          label: "Add to Calendar",
+          onClick: () => {
+            import("@/lib/services/calendar-service").then(({ generateICSCalendar, downloadICS }) => {
+              // Collect all milestones with dates
+              const events: { title: string; description: string; startDate: Date; allDay: boolean }[] = [];
+              for (const [phaseKey, dates] of Object.entries(allMilestoneDates)) {
+                const pDef = getPhaseDefinition(market, phaseKey as ProjectPhase);
+                if (!pDef) continue;
+                for (const [idxStr, dateStr] of Object.entries(dates as Record<string, string>)) {
+                  const idx = Number(idxStr);
+                  const milestone = pDef.milestones[idx];
+                  if (milestone && dateStr) {
+                    events.push({
+                      title: `[${project.name}] ${milestone.name}`,
+                      description: `Phase: ${pDef.name}. ${milestone.paymentPct ? `Payment: ${milestone.paymentPct}%` : ""}`,
+                      startDate: new Date(dateStr),
+                      allDay: true,
+                    });
+                  }
+                }
+              }
+              if (events.length === 0) {
+                showToast("No milestone dates set. Set dates on milestones first.", "info");
+                return;
+              }
+              const ics = generateICSCalendar(events, `${project.name} - Construction Schedule`);
+              downloadICS(ics, `${project.name}-schedule.ics`);
+              showToast(`${events.length} milestone(s) exported to calendar.`, "success");
+            });
+          },
+          icon: <Calendar size={16} />,
+        }}
       />
 
       {/* Construction method badge + total timeline */}
