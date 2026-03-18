@@ -485,10 +485,7 @@ export default function NewProjectPage() {
   const { setTopbar } = useTopbar();
   const { user, profile } = useAuth();
   const router = useRouter();
-  const [step, setStep] = useState(() => {
-    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("from") === "analyzer") return 9;
-    return 0;
-  });
+  const [step, setStep] = useState(0);
   const [state, setState] = useState<WizardState>(() => {
     // Pre-fill from Deal Analyzer URL params
     if (typeof window === "undefined") return INITIAL_STATE;
@@ -521,6 +518,13 @@ export default function NewProjectPage() {
   const [creating, setCreating] = useState(false);
   const [projectCount, setProjectCount] = useState(0);
   const [planError, setPlanError] = useState("");
+
+  // Skip to Name step when coming from Deal Analyzer
+  useEffect(() => {
+    if (state.fromAnalyzer) {
+      setStep(9);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch existing project count for plan limit enforcement
   useEffect(() => {
