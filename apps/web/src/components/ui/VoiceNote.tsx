@@ -3,6 +3,29 @@
 import { useState, useEffect, useRef } from "react";
 import { Mic, MicOff } from "lucide-react";
 
+// Web Speech API types (not in standard TS lib)
+interface SpeechRecognitionResult {
+  readonly length: number;
+  [index: number]: { transcript: string; confidence: number };
+}
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  [index: number]: SpeechRecognitionResult;
+}
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+interface SpeechRecognitionInstance extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
 interface VoiceNoteProps {
   onTranscript: (text: string) => void;
   placeholder?: string;
@@ -12,20 +35,21 @@ export function VoiceNote({ onTranscript, placeholder = "Tap to speak..." }: Voi
   const [recording, setRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [supported, setSupported] = useState(true);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   useEffect(() => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+    const w = window as unknown as Record<string, unknown>;
+    const SpeechRecognitionCtor = (w.SpeechRecognition || w.webkitSpeechRecognition) as
+      (new () => SpeechRecognitionInstance) | undefined;
+    if (!SpeechRecognitionCtor) {
       setSupported(false);
       return;
     }
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionCtor();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       let text = "";
       for (let i = 0; i < event.results.length; i++) {
         text += event.results[i][0].transcript;

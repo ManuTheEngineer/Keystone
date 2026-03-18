@@ -19,10 +19,9 @@ export function usePWA() {
         .register("/sw.js")
         .then((reg) => {
           setRegistration(reg);
-          console.log("Service worker registered");
         })
-        .catch((err) => {
-          console.warn("Service worker registration failed:", err);
+        .catch(() => {
+          // SW registration failed silently — non-critical
         });
     }
 
