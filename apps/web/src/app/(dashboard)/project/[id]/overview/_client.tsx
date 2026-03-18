@@ -515,7 +515,7 @@ export function OverviewClient() {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="text-sm font-medium text-earth">{task.label}</span>
                       {task.trade && (
-                        <Badge variant="muted" size="sm">{task.trade}</Badge>
+                        <Badge variant="info">{task.trade}</Badge>
                       )}
                     </div>
                     {task.assignedName && (
@@ -635,7 +635,12 @@ export function OverviewClient() {
                         setReviewLoading(task.id);
                         try {
                           await approveTask(user.uid, projectId, task.id);
-                          showToast("Task approved", "success");
+                          if (task.price) {
+                            await updateTask(user.uid, projectId, task.id, { paymentStatus: "authorized" });
+                            showToast(`Task approved. Payment of ${task.currency ?? "$"}${task.price.toLocaleString()} authorized.`, "success");
+                          } else {
+                            showToast("Task approved.", "success");
+                          }
                         } catch {
                           showToast("Failed to approve task", "error");
                         } finally {
@@ -665,6 +670,54 @@ export function OverviewClient() {
           </div>
         </div>
       )}
+
+      {/* Payments Due — tasks approved with price, awaiting payment release */}
+      {(() => {
+        const paymentsDue = tasks.filter((t) => t.done && t.price && t.paymentStatus === "authorized");
+        if (paymentsDue.length === 0) return null;
+        const totalDue = paymentsDue.reduce((s, t) => s + (t.price ?? 0), 0);
+        const cur = marketData?.currency;
+        return (
+          <div className="mb-4">
+            <SectionLabel>
+              Payments Due ({paymentsDue.length})
+            </SectionLabel>
+            <Card padding="sm">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <span className="text-[12px] text-muted">Total due</span>
+                <span className="text-[14px] font-bold text-earth font-data">
+                  {cur ? formatCurrencyCompact(totalDue, cur) : `$${totalDue.toLocaleString()}`}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {paymentsDue.map((task) => (
+                  <div key={task.id} className="flex items-center justify-between p-2.5 border border-border rounded-lg">
+                    <div>
+                      <p className="text-[12px] font-medium text-earth">{task.label}</p>
+                      <p className="text-[10px] text-muted">{task.assignedName} · {task.trade}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12px] font-data font-semibold text-earth">
+                        {cur ? formatCurrencyCompact(task.price ?? 0, cur) : `$${(task.price ?? 0).toLocaleString()}`}
+                      </span>
+                      <button
+                        onClick={async () => {
+                          if (!user || !task.id) return;
+                          await updateTask(user.uid, projectId, task.id, { paymentStatus: "released" });
+                          showToast(`Payment released for ${task.label}.`, "success");
+                        }}
+                        className="px-2.5 py-1 text-[10px] font-medium bg-success text-white rounded-lg hover:bg-success/90 transition-colors"
+                      >
+                        Release
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        );
+      })()}
 
       {/* Location Context Card */}
       {(() => {
@@ -1225,29 +1278,105 @@ export function OverviewClient() {
           {/* Inline add task */}
           {showAddTask && (
             <Card padding="sm" className="mb-2">
-              <div className="flex items-center gap-2">
+              <div className="space-y-2">
                 <input
                   type="text"
                   value={newTaskLabel}
                   onChange={(e) => setNewTaskLabel(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
-                  placeholder="Task description"
-                  className="flex-1 px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
+                  placeholder="Task name"
+                  className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
                   autoFocus
                 />
-                <button
-                  onClick={handleAddTask}
-                  disabled={!newTaskLabel.trim()}
-                  className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
-                >
-                  Add
-                </button>
-                <button
-                  onClick={() => { setShowAddTask(false); setNewTaskLabel(""); }}
-                  className="p-1 text-muted hover:text-earth transition-colors"
-                >
-                  <X size={14} />
-                </button>
+                <textarea
+                  value={taskDescription}
+                  onChange={(e) => setTaskDescription(e.target.value)}
+                  placeholder="Detailed instructions for the contractor"
+                  rows={2}
+                  className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 resize-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] text-muted mb-0.5">Assign to</label>
+                    <select
+                      value={selectedContactId}
+                      onChange={(e) => setSelectedContactId(e.target.value)}
+                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="">Unassigned</option>
+                      {contacts.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}{c.role ? ` (${c.role})` : ""}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-muted mb-0.5">Priority</label>
+                    <select
+                      value={taskPriority}
+                      onChange={(e) => setTaskPriority(e.target.value as "normal" | "urgent" | "critical")}
+                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="normal">Normal</option>
+                      <option value="urgent">Urgent</option>
+                      <option value="critical">Critical</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-muted mb-0.5">Price ({marketData?.currency?.symbol || "$"})</label>
+                    <input
+                      type="number"
+                      value={taskPrice}
+                      onChange={(e) => setTaskPrice(e.target.value)}
+                      placeholder="0"
+                      min="0"
+                      step="any"
+                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-muted mb-0.5">Due date</label>
+                    <input
+                      type="date"
+                      value={taskDueDate}
+                      onChange={(e) => setTaskDueDate(e.target.value)}
+                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex items-center gap-2 text-[11px] text-earth cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={requirePhoto}
+                      onChange={(e) => setRequirePhoto(e.target.checked)}
+                      className="rounded border-border text-emerald-600 focus:ring-emerald-500"
+                    />
+                    Require photo proof
+                  </label>
+                  <label className="flex items-center gap-2 text-[11px] text-earth cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={requireApproval}
+                      onChange={(e) => setRequireApproval(e.target.checked)}
+                      className="rounded border-border text-emerald-600 focus:ring-emerald-500"
+                    />
+                    Require my approval
+                  </label>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={handleAddTask}
+                    disabled={!newTaskLabel.trim()}
+                    className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                  >
+                    Add
+                  </button>
+                  <button
+                    onClick={resetTaskForm}
+                    className="p-1 text-muted hover:text-earth transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               </div>
             </Card>
           )}

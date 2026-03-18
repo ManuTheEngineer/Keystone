@@ -740,6 +740,33 @@ const translations: Record<string, Record<Locale, string>> = {
     es: "Nuevo proyecto",
   },
 
+  // ── Contractor Portal ───────────────────────────────────────────────
+  "contractor.toDo": { en: "To Do", fr: "A faire", es: "Por hacer" },
+  "contractor.inProgress": { en: "In Progress", fr: "En cours", es: "En curso" },
+  "contractor.pendingReview": { en: "Pending Review", fr: "En attente de validation", es: "Pendiente de revision" },
+  "contractor.completed": { en: "Completed", fr: "Termine", es: "Completado" },
+  "contractor.startTask": { en: "Start task", fr: "Demarrer la tache", es: "Iniciar tarea" },
+  "contractor.submitReview": { en: "Submit for review", fr: "Soumettre pour validation", es: "Enviar para revision" },
+  "contractor.markComplete": { en: "Mark complete", fr: "Marquer comme termine", es: "Marcar completo" },
+  "contractor.photoRequired": { en: "Photo proof required", fr: "Photo requise", es: "Foto requerida" },
+  "contractor.needsApproval": { en: "Needs approval", fr: "Validation requise", es: "Necesita aprobacion" },
+  "contractor.waitingApproval": { en: "Waiting for owner approval", fr: "En attente de validation du proprietaire", es: "Esperando aprobacion del propietario" },
+  "contractor.noTasks": { en: "No tasks assigned yet.", fr: "Aucune tache assignee pour le moment.", es: "No hay tareas asignadas aun." },
+  "contractor.noTasksSub": { en: "Your project owner will assign tasks here.", fr: "Le proprietaire du projet assignera des taches ici.", es: "El propietario del proyecto asignara tareas aqui." },
+  "contractor.addNote": { en: "Add a note about the work completed...", fr: "Ajoutez une note sur le travail effectue...", es: "Agrega una nota sobre el trabajo realizado..." },
+  "contractor.messageOwner": { en: "Message the owner...", fr: "Envoyer un message au proprietaire...", es: "Enviar mensaje al propietario..." },
+  "contractor.submitting": { en: "Submitting...", fr: "Envoi...", es: "Enviando..." },
+  "contractor.starting": { en: "Starting...", fr: "Demarrage...", es: "Iniciando..." },
+  "contractor.linkInvalid": { en: "This link is invalid or has been revoked.", fr: "Ce lien est invalide ou a ete revoque.", es: "Este enlace es invalido o ha sido revocado." },
+  "contractor.linkUnavailable": { en: "Link unavailable", fr: "Lien indisponible", es: "Enlace no disponible" },
+  "contractor.poweredBy": { en: "Powered by Keystone", fr: "Propulse par Keystone", es: "Desarrollado por Keystone" },
+  "contractor.returned": { en: "Returned", fr: "Retourne", es: "Devuelto" },
+  "contractor.photosAttached": { en: "photos attached", fr: "photos jointes", es: "fotos adjuntas" },
+  "contractor.due": { en: "Due", fr: "Echeance", es: "Vence" },
+  "contractor.urgent": { en: "Urgent", fr: "Urgent", es: "Urgente" },
+  "contractor.critical": { en: "Critical", fr: "Critique", es: "Critico" },
+  "contractor.phase": { en: "phase", fr: "phase", es: "fase" },
+
   // ── Not Found ───────────────────────────────────────────────────────
   "notfound.title": {
     en: "Page not found",

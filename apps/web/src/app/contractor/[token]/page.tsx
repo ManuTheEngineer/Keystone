@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { ref, get } from "firebase/database";
 import { db } from "@/lib/firebase";
@@ -15,7 +15,7 @@ import type { ProjectData, TaskData } from "@/lib/services/project-service";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
 import {
   CheckCircle2, Circle, Clock, AlertTriangle, Play,
-  Send, Camera, ChevronDown, ChevronUp, MessageCircle,
+  Send, Camera, ChevronDown, ChevronUp, MessageCircle, X, MapPin,
 } from "lucide-react";
 
 const PHASE_NAMES = ["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"];
@@ -34,10 +34,81 @@ export default function ContractorPage() {
   const [submitting, setSubmitting] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [toast, setToast] = useState("");
+  const [taskPhotos, setTaskPhotos] = useState<Record<string, {url: string; latitude?: number; longitude?: number; timestamp: string}[]>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activePhotoTaskId, setActivePhotoTaskId] = useState<string | null>(null);
 
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(""), 3000);
+  }
+
+  function handlePhotoUploadClick(taskId: string) {
+    setActivePhotoTaskId(taskId);
+    fileInputRef.current?.click();
+  }
+
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    const taskId = activePhotoTaskId;
+    if (!file || !taskId) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const timestamp = new Date().toISOString();
+
+      // Attempt GPS capture (non-blocking)
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setTaskPhotos((prev) => ({
+              ...prev,
+              [taskId]: [
+                ...(prev[taskId] || []),
+                {
+                  url: dataUrl,
+                  latitude: position.coords.latitude,
+                  longitude: position.coords.longitude,
+                  timestamp,
+                },
+              ],
+            }));
+          },
+          () => {
+            // GPS failed — still store photo without coordinates
+            setTaskPhotos((prev) => ({
+              ...prev,
+              [taskId]: [
+                ...(prev[taskId] || []),
+                { url: dataUrl, timestamp },
+              ],
+            }));
+          },
+          { timeout: 5000, enableHighAccuracy: true }
+        );
+      } else {
+        // No geolocation API — store without coordinates
+        setTaskPhotos((prev) => ({
+          ...prev,
+          [taskId]: [
+            ...(prev[taskId] || []),
+            { url: dataUrl, timestamp },
+          ],
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // Reset the input so the same file can be re-selected
+    e.target.value = "";
+  }
+
+  function removePhoto(taskId: string, index: number) {
+    setTaskPhotos((prev) => ({
+      ...prev,
+      [taskId]: (prev[taskId] || []).filter((_, i) => i !== index),
+    }));
   }
 
   useEffect(() => {
@@ -91,7 +162,8 @@ export default function ContractorPage() {
 
   async function handleSubmit(task: TaskData) {
     if (!link || !task.id) return;
-    if (task.requiresPhoto && (!task.completionPhotos || task.completionPhotos.length === 0)) {
+    const photos = taskPhotos[task.id] || [];
+    if (task.requiresPhoto && photos.length === 0) {
       showToast("Photo proof is required for this task.");
       return;
     }
@@ -99,7 +171,15 @@ export default function ContractorPage() {
     try {
       await contractorSubmitTask(
         token, link.userId, link.projectId, task.id,
-        { completionNote: completionNote || undefined },
+        {
+          completionNote: completionNote || undefined,
+          completionPhotos: photos.map((p) => ({
+            url: p.url,
+            latitude: p.latitude,
+            longitude: p.longitude,
+            timestamp: p.timestamp,
+          })),
+        },
         task.requiresApproval ?? false
       );
       setTasks((prev) => prev.map((t) => t.id === task.id ? {
@@ -112,6 +192,12 @@ export default function ContractorPage() {
       } : t));
       setCompletionNote("");
       setActiveTaskId(null);
+      // Clear photos for this task after successful submit
+      setTaskPhotos((prev) => {
+        const next = { ...prev };
+        delete next[task.id!];
+        return next;
+      });
       showToast(task.requiresApproval ? "Submitted for review." : "Task completed.");
     } catch {
       showToast("Failed to submit task.");
@@ -161,6 +247,16 @@ export default function ContractorPage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F0]">
+      {/* Hidden file input for photo capture */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileSelected}
+      />
+
       {/* Toast */}
       {toast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 bg-[#2D6A4F] text-white text-[13px] rounded-xl shadow-lg">
@@ -245,19 +341,67 @@ export default function ContractorPage() {
                         <p className="text-[12px] text-[#6A6A6A] pt-3">{task.description}</p>
                       )}
 
-                      {task.requiresPhoto && (
-                        <div className="flex items-center gap-2 text-[11px] text-[#BC6C25]">
-                          <Camera size={14} />
-                          Photo proof required
-                        </div>
-                      )}
-
                       <textarea
                         value={completionNote}
                         onChange={(e) => setCompletionNote(e.target.value)}
                         placeholder="Add a note about the work completed..."
                         className="w-full px-3 py-2 text-[12px] border border-[#e8e0d4] rounded-lg bg-white resize-none h-20 focus:outline-none focus:border-[#8B4513]"
                       />
+
+                      {/* Photo upload section */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handlePhotoUploadClick(task.id!)}
+                            className="flex items-center gap-2 px-3 py-2 text-[12px] font-medium border border-[#e8e0d4] rounded-lg bg-white hover:bg-[#F5E6D3]/40 transition-colors"
+                          >
+                            <Camera size={16} className="text-[#8B4513]" />
+                            Add photo
+                          </button>
+                          {(taskPhotos[task.id!] || []).length > 0 && (
+                            <span className="text-[11px] text-[#2D6A4F] font-medium">
+                              {(taskPhotos[task.id!] || []).length} photo{(taskPhotos[task.id!] || []).length !== 1 ? "s" : ""} attached
+                            </span>
+                          )}
+                          {task.requiresPhoto && (taskPhotos[task.id!] || []).length === 0 && (
+                            <span className="text-[11px] text-[#BC6C25] font-medium flex items-center gap-1">
+                              <AlertTriangle size={12} />
+                              Photo required
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Photo thumbnails */}
+                        {(taskPhotos[task.id!] || []).length > 0 && (
+                          <div className="flex gap-2 overflow-x-auto pb-1">
+                            {(taskPhotos[task.id!] || []).map((photo, idx) => (
+                              <div key={idx} className="relative shrink-0 w-[60px] h-[60px] rounded-lg overflow-hidden border border-[#e8e0d4] group">
+                                <img
+                                  src={photo.url}
+                                  alt={`Photo ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                {/* GPS indicator */}
+                                <div className={`absolute bottom-0 left-0 px-1 py-0.5 text-[8px] font-semibold ${photo.latitude != null ? "bg-[#2D6A4F]/80 text-white" : "bg-[#6A6A6A]/80 text-white"}`}>
+                                  <span className="flex items-center gap-0.5">
+                                    <MapPin size={7} />
+                                    {photo.latitude != null ? "GPS" : "No GPS"}
+                                  </span>
+                                </div>
+                                {/* Remove button */}
+                                <button
+                                  type="button"
+                                  onClick={() => removePhoto(task.id!, idx)}
+                                  className="absolute top-0 right-0 p-0.5 bg-[#9B2226]/80 text-white rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Comment thread */}
                       <div className="flex items-center gap-2">
@@ -279,10 +423,16 @@ export default function ContractorPage() {
 
                       <button
                         onClick={() => handleSubmit(task)}
-                        disabled={submitting}
+                        disabled={submitting || (task.requiresPhoto === true && (taskPhotos[task.id!] || []).length === 0)}
                         className="w-full py-2.5 text-[13px] font-medium bg-[#2D6A4F] text-white rounded-lg hover:bg-[#2D6A4F]/90 transition-colors disabled:opacity-50"
                       >
-                        {submitting ? "Submitting..." : task.requiresApproval ? "Submit for review" : "Mark complete"}
+                        {task.requiresPhoto && (taskPhotos[task.id!] || []).length === 0
+                          ? "Photo proof required"
+                          : submitting
+                            ? "Submitting..."
+                            : task.requiresApproval
+                              ? "Submit for review"
+                              : "Mark complete"}
                       </button>
                     </div>
                   )}
