@@ -509,6 +509,7 @@ export default function AnalyzePage() {
   const [saving, setSaving] = useState(false);
   const [showSavedList, setShowSavedList] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [zipLoading, setZipLoading] = useState(false);
   const { showToast } = useToast();
 
   // Set topbar
@@ -521,6 +522,29 @@ export default function AnalyzePage() {
     if (!user?.uid) return;
     getUserAnalyses(user.uid).then(setSavedAnalyses).catch(() => {});
   }, [user?.uid]);
+
+  // ZIP code auto-populates city field via location API
+  useEffect(() => {
+    if (!input.zipCode || input.zipCode.length !== 5 || input.market !== "USA") return;
+    // Only fetch if city is empty or was previously auto-filled
+    const timer = setTimeout(async () => {
+      setZipLoading(true);
+      try {
+        const res = await fetch(`/api/location-data?q=${encodeURIComponent(input.zipCode)}&market=USA`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data?.city) {
+            setInput((prev) => ({ ...prev, city: `${json.data.city}${json.data.state ? `, ${json.data.state}` : ""}` }));
+          }
+        }
+      } catch {
+        // Silent fail -- city field remains as-is
+      } finally {
+        setZipLoading(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [input.zipCode, input.market]);
 
   // Derived values
   const isUSA = input.market === "USA";
@@ -885,15 +909,27 @@ export default function AnalyzePage() {
                   )}
                   {isUSA && (
                     <div className="mt-2">
-                      <Label>ZIP code (optional, more accurate)</Label>
-                      <input
-                        type="text"
-                        value={input.zipCode}
-                        onChange={(e) => set("zipCode", e.target.value)}
-                        placeholder="e.g. 77001"
-                        maxLength={5}
-                        className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-[13px] text-earth font-data focus:outline-none focus:ring-2 focus:ring-clay/30 focus:border-clay"
-                      />
+                      <Label tooltip="Enter a 5-digit ZIP code and the city will be filled automatically with accurate local cost data.">ZIP code</Label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={input.zipCode}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/\D/g, "").slice(0, 5);
+                            set("zipCode", v);
+                          }}
+                          placeholder="e.g. 77001"
+                          maxLength={5}
+                          inputMode="numeric"
+                          className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-[13px] text-earth font-data focus:outline-none focus:ring-2 focus:ring-clay/30 focus:border-clay"
+                        />
+                        {zipLoading && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-clay animate-pulse">Looking up...</span>
+                        )}
+                      </div>
+                      {input.zipCode.length === 5 && input.city && !zipLoading && (
+                        <p className="text-[10px] text-success mt-1">Found: {input.city}</p>
+                      )}
                     </div>
                   )}
                 </div>

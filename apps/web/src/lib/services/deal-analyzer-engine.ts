@@ -163,11 +163,8 @@ export function calculateAnalysis(input: AnalysisInput): AnalysisResults {
   const isUSA = market === "USA";
   const size = getBuildingSize(input);
 
-  // Location data -- prefer zipCode for USA, fall back to city
-  const locationQuery = (isUSA && input.zipCode && input.zipCode.length === 5)
-    ? input.zipCode
-    : input.city;
-  const locationData = locationQuery ? getClosestLocation(locationQuery, market) : null;
+  // Location data (city is pre-populated from ZIP code by the UI when applicable)
+  const locationData = input.city ? getClosestLocation(input.city, market) : null;
   const costIndex = locationData?.costIndex ?? 1.0;
 
   // Construction cost
