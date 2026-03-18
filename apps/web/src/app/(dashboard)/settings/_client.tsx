@@ -543,6 +543,27 @@ export function SettingsClient() {
             </select>
           </div>
 
+          <div>
+            <label className="block text-[11px] text-muted font-medium mb-1">Language</label>
+            <select
+              value={profile?.locale ?? "en"}
+              onChange={async (e) => {
+                if (!user) return;
+                await update(ref(db, `users/${user.uid}/profile`), { locale: e.target.value });
+                showToast(
+                  e.target.value === "fr" ? "Langue mise \u00e0 jour." :
+                  e.target.value === "es" ? "Idioma actualizado." :
+                  "Language updated.", "success"
+                );
+              }}
+              className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+            >
+              <option value="en">English</option>
+              <option value="fr">Fran\u00e7ais</option>
+              <option value="es">Espa\u00f1ol</option>
+            </select>
+          </div>
+
           <div className="flex items-center gap-2 pt-1">
             <button
               onClick={handleSaveProfile}

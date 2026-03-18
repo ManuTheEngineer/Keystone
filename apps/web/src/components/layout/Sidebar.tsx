@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
-import type { Locale } from "@/lib/i18n";
+import { t, type Locale } from "@/lib/i18n";
 import {
   LayoutGrid,
   Plus,
@@ -151,8 +151,21 @@ export function Sidebar({
 
   const sidebarWidth = collapsed ? "w-[60px]" : "w-[240px]";
 
+  // Map nav item IDs to i18n keys
+  const NAV_I18N: Record<string, string> = {
+    dashboard: "nav.dashboard", portfolio: "project.portfolio",
+    "new-project": "project.newProject", learn: "nav.learn",
+    overview: "nav.overview", budget: "nav.budget", schedule: "nav.schedule",
+    financials: "nav.financials", team: "nav.team", documents: "nav.documents",
+    photos: "nav.photos", "daily-log": "nav.dailyLog",
+    inspections: "nav.inspections", "punch-list": "nav.punchList",
+    "ai-assistant": "nav.aiAssistant", vault: "project.fileVault",
+    monitor: "project.monitor",
+  };
+
   function renderNavItem(item: NavItem) {
     const isActive = activeSection === item.id;
+    const translatedLabel = NAV_I18N[item.id] ? t(NAV_I18N[item.id], locale ?? "en") : item.label;
     return (
       <div key={item.id} className="relative group">
         <button
@@ -170,11 +183,11 @@ export function Sidebar({
                 : "border-l-transparent text-[#D4A574] opacity-50 hover:opacity-80 hover:bg-[#D4A574]/5 hover:border-l-[#D4A574]/30 hover:border-l-[2px]"
             }
           `}
-          title={collapsed ? item.label : undefined}
-          aria-label={item.label}
+          title={collapsed ? translatedLabel : undefined}
+          aria-label={translatedLabel}
         >
           <span className="flex-shrink-0">{item.icon}</span>
-          {!collapsed && <span className="flex-1">{item.label}</span>}
+          {!collapsed && <span className="flex-1">{translatedLabel}</span>}
           {!collapsed && badges?.[item.id] != null && badges[item.id] > 0 && (
             <span className="ml-auto bg-danger text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
               {badges[item.id]}
@@ -184,7 +197,7 @@ export function Sidebar({
         {/* Tooltip for collapsed mode */}
         {collapsed && (
           <div className={`absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 rounded-md ${C.bgLight} text-[#F5E6D3] text-[11px] whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-md`}>
-            {item.label}
+            {translatedLabel}
           </div>
         )}
       </div>
@@ -334,10 +347,10 @@ export function Sidebar({
               }
               ${collapsed ? "justify-center px-0" : ""}
             `}
-            title={collapsed ? "Parameters" : undefined}
+            title={collapsed ? t("settings.title", locale ?? "en") : undefined}
           >
             <Settings size={18} />
-            {!collapsed && "Parameters"}
+            {!collapsed && t("settings.title", locale ?? "en")}
           </button>
 
           {/* User profile */}
