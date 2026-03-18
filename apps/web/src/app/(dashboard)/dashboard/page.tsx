@@ -986,7 +986,7 @@ export default function DashboardPage() {
               <div>
                 <p className="text-[12px] font-medium text-earth mb-1">{t("dashboard.didYouKnow")}</p>
                 <p className="text-[11px] text-muted leading-relaxed">
-                  Keystone supports both U.S. and West African construction markets. Whether you are building with wood-frame in the States or reinforced concrete block in Togo, Ghana, or Benin, every tool adapts to your market — from cost benchmarks to inspection checklists.
+                  Keystone supports both U.S. and West African construction markets. Whether you are building with wood-frame in the States or reinforced concrete block in Togo, Ghana, or Benin, every tool adapts to your market, from cost benchmarks to inspection checklists.
                 </p>
               </div>
             </div>

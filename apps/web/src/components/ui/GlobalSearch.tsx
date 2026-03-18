@@ -245,7 +245,7 @@ async function searchAllData(userId: string, query: string): Promise<SearchResul
             results.push({
               type: "budget",
               title: item.category,
-              subtitle: `${pName} — Est: $${item.estimated?.toLocaleString() ?? 0}`,
+              subtitle: `${pName} · Est: $${item.estimated?.toLocaleString() ?? 0}`,
               href: `/project/${projectId}/budget`,
               projectName: pName,
             });
@@ -262,7 +262,7 @@ async function searchAllData(userId: string, query: string): Promise<SearchResul
             results.push({
               type: "contact",
               title: name,
-              subtitle: `${pName} — ${role}`,
+              subtitle: `${pName} · ${role}`,
               href: `/project/${projectId}/team`,
               projectName: pName,
             });
@@ -277,7 +277,7 @@ async function searchAllData(userId: string, query: string): Promise<SearchResul
             results.push({
               type: "task",
               title: task.label,
-              subtitle: `${pName} — ${task.done ? "Completed" : "Open"}`,
+              subtitle: `${pName} · ${task.done ? "Completed" : "Open"}`,
               href: `/project/${projectId}/overview`,
               projectName: pName,
             });

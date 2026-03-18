@@ -345,7 +345,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   <Clock size={14} className="text-info shrink-0" />
                   <span className="text-earth">
                     <span className="font-medium">Trial active</span>
-                    {" "}— your {profile.plan} access expires{" "}
+                    {" "}· your {profile.plan} access expires{" "}
                     <span className="font-data font-medium">
                       {formatTrialExpiry(profile.trialExpiresAt)}
                     </span>

@@ -699,13 +699,13 @@ export default function LandingPage() {
               <p className="text-[13px] text-clay font-medium mb-4">Founder & Lead Developer</p>
               <div className="space-y-3 text-[14px] text-muted leading-relaxed">
                 <p>
-                  Keystone was born from a personal need. As a software engineer with roots in West Africa, I watched family and friends navigate the overwhelming complexity of building homes across two continents — managing contractors remotely, tracking budgets across currencies, and making high-stakes decisions with zero construction experience.
+                  Keystone was born from a personal need. As a mechanical engineer with roots in Togo, I watched family and friends navigate the overwhelming complexity of building homes across two continents, managing contractors remotely, tracking budgets across currencies, and making high-stakes decisions with zero construction experience.
                 </p>
                 <p>
-                  The existing tools were built for professional contractors, not for the first-time owner-builder. There was nothing that combined education, project management, financial modeling, and remote monitoring in one platform — and certainly nothing that understood both the U.S. construction market and the realities of building in Togo, Ghana, or Benin.
+                  The existing tools were built for professional contractors, not for the first-time owner-builder. There was nothing that combined education, project management, financial modeling, and remote monitoring in one platform. And certainly nothing that understood both the U.S. construction market and the realities of building in Togo, Ghana, or Benin.
                 </p>
                 <p>
-                  Keystone is that tool. Every feature is designed to guide someone with zero construction knowledge through every phase of building a home, whether they are on-site or watching from thousands of miles away. The AI advisor, the dual-market intelligence, the phase-based learning system — these exist because I built what I wished existed when my own family started building.
+                  Keystone is that tool. Every feature is designed to guide someone with zero construction knowledge through every phase of building a home, whether they are on-site or watching from thousands of miles away. The AI advisor, the dual-market intelligence, the phase-based learning system: these exist because I built what I wished existed when my own family started building.
                 </p>
               </div>
             </div>

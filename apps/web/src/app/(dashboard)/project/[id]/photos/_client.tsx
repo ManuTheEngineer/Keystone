@@ -449,7 +449,7 @@ export function PhotosClient() {
             </div>
           </div>
           <p className="text-[10px] text-muted mt-4 max-w-sm mx-auto">
-            Photos are automatically tagged with the date and organized by phase. GPS coordinates are captured when available for location verification — essential for remote monitoring.
+            Photos are automatically tagged with the date and organized by phase. GPS coordinates are captured when available for location verification, essential for remote monitoring.
           </p>
         </div>
       )}

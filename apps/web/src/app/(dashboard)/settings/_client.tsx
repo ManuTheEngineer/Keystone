@@ -728,7 +728,7 @@ export function SettingsClient() {
             )}
             {isTrialing && (
               <span className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-warning/10 text-warning rounded-full">
-                Trial: {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()} — expires {profile?.trialExpiresAt ? new Date(profile.trialExpiresAt).toLocaleDateString() : ""}
+                Trial: {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()} : expires {profile?.trialExpiresAt ? new Date(profile.trialExpiresAt).toLocaleDateString() : ""}
               </span>
             )}
           </div>

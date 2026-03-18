@@ -1025,7 +1025,7 @@ export default function NewProjectPage() {
         </div>
 
         <MentorTip>
-          Start simple. A single-family home is the most forgiving for first-time builders. Multi-unit properties multiply complexity — every unit needs its own kitchen, bathroom, and utility connections.
+          Start simple. A single-family home is the most forgiving for first-time builders. Multi-unit properties multiply complexity. Every unit needs its own kitchen, bathroom, and utility connections.
         </MentorTip>
       </div>
     );
@@ -1109,7 +1109,7 @@ export default function NewProjectPage() {
             </p>
             {getBuildingSize(state) > 0 && (
               <p className="text-[11px] text-muted mt-1">
-                That is approximately {formatCurrencyCompact(constructionCostNow / getBuildingSize(state), currency)} per {sizeUnit === "sqm" ? "sqm" : "sqft"} —{" "}
+                That is approximately {formatCurrencyCompact(constructionCostNow / getBuildingSize(state), currency)} per {sizeUnit === "sqm" ? "sqm" : "sqft"}.{" "}
                 {locationData?.costIndex && locationData.costIndex > 1.1 ? "above average for the broader market" : locationData?.costIndex && locationData.costIndex < 0.9 ? "below average for the broader market" : "within the typical range"}
               </p>
             )}
@@ -1117,7 +1117,7 @@ export default function NewProjectPage() {
         )}
 
         <MentorTip>
-          Bigger is not always better. Every extra square foot adds cost to build, heat, cool, and maintain. Choose the size that matches your budget and goals — you can always expand later.
+          Bigger is not always better. Every extra square foot adds cost to build, heat, cool, and maintain. Choose the size that matches your budget and goals. You can always expand later.
         </MentorTip>
       </div>
     );
@@ -1272,8 +1272,8 @@ export default function NewProjectPage() {
 
         <MentorTip>
           {isUSA
-            ? "A construction loan typically requires 20-25% down and converts to a mortgage when building is complete. Your debt-to-income ratio (DTI) — the percentage of your monthly income going to debt payments — must usually be below 43% to qualify."
-            : "Phased cash funding means you build as money is available. This avoids interest costs but extends your timeline. Budget carefully — running out of funds mid-construction is the most expensive mistake."
+            ? "A construction loan typically requires 20-25% down and converts to a mortgage when building is complete. Your debt-to-income ratio (DTI), the percentage of your monthly income going to debt payments, must usually be below 43% to qualify."
+            : "Phased cash funding means you build as money is available. This avoids interest costs but extends your timeline. Budget carefully. Running out of funds mid-construction is the most expensive mistake."
           }
         </MentorTip>
       </div>
@@ -1366,7 +1366,7 @@ export default function NewProjectPage() {
           )}
 
           <MentorTip>
-            These estimates use conservative market averages. Actual costs depend on your specific site, materials chosen, and local labor rates. The 15% contingency is your safety buffer — never skip it.
+            These estimates use conservative market averages. Actual costs depend on your specific site, materials chosen, and local labor rates. The 15% contingency is your safety buffer. Never skip it.
           </MentorTip>
 
           {/* Revenue projection */}
