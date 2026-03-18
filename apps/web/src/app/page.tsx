@@ -172,7 +172,7 @@ export default function LandingPage() {
               </h1>
               <p className="text-[16px] sm:text-[18px] text-muted leading-relaxed mb-8 max-w-xl">
                 The first platform that guides you from initial idea to final key,
-                whether you are building in Houston or Lome.
+                whether you are building in the United States or West Africa.
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link
