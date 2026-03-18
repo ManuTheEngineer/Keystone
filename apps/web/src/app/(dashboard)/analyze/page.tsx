@@ -69,6 +69,7 @@ import {
   Plus,
   FolderOpen,
   X,
+  Sliders,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -103,6 +104,7 @@ interface InputState {
   timelineMonths: number;
   targetSalePrice: number;
   monthlyRent: number;
+  commercialPct: number;
 }
 
 const INITIAL_INPUT: InputState = {
@@ -131,6 +133,7 @@ const INITIAL_INPUT: InputState = {
   timelineMonths: 12,
   targetSalePrice: 0,
   monthlyRent: 0,
+  commercialPct: 30,
 };
 
 // ---------------------------------------------------------------------------
@@ -486,6 +489,11 @@ export default function AnalyzePage() {
           timelineMonths: Number(p.get("months")) || 12,
           monthlyRent: Number(p.get("rent")) || 0,
           targetSalePrice: Number(p.get("sale")) || 0,
+          loanTerm: Number(p.get("term")) || 30,
+          monthlyIncome: Number(p.get("income")) || 0,
+          existingDebts: Number(p.get("debts")) || 0,
+          titreFoncierStatus: p.get("titre") || "",
+          commercialPct: Number(p.get("commpct")) || 30,
         };
       }
     }
@@ -500,6 +508,7 @@ export default function AnalyzePage() {
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(false);
   const [showSavedList, setShowSavedList] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const { showToast } = useToast();
 
   // Set topbar
@@ -556,9 +565,18 @@ export default function AnalyzePage() {
     return reverseCalculate(reverseBudget, input.market, input.city, input.goal);
   }, [tab, reverseBudget, input.market, input.city, input.goal]);
 
-  // Input setter helper
+  // Input setter helper -- clears features when market changes
   const set = useCallback(<K extends keyof InputState>(key: K, value: InputState[K]) => {
-    setInput((prev) => ({ ...prev, [key]: value }));
+    setInput((prev) => {
+      const next = { ...prev, [key]: value };
+      // Reset features when switching markets (US features invalid in WA and vice versa)
+      if (key === "market" && value !== prev.market) {
+        next.features = [];
+        next.financingType = "";
+        next.titreFoncierStatus = "";
+      }
+      return next;
+    });
   }, []);
 
   // Build size display
@@ -574,25 +592,31 @@ export default function AnalyzePage() {
   }, [input.market, input.city]);
 
   // Cross-market comparison
+  // Cross-market comparison -- all costs normalized to USD for fair comparison
   const crossMarketData = useMemo(() => {
     if (!results || !input.market) return null;
     const markets: MarketType[] = ["USA", "TOGO", "GHANA", "BENIN"];
-    const others = markets.filter((m) => m !== input.market);
-    return others.map((m) => {
+    const toUSD = (amount: number, m: string) => {
+      const rate = EXCHANGE_RATES[m];
+      return rate ? Math.round(amount / rate) : amount;
+    };
+    return markets.map((m) => {
       try {
-        const otherResults = calculateAnalysis({ ...input, market: m } as any);
+        const r = m === input.market ? results : calculateAnalysis({ ...input, market: m } as any);
         const mData = getMarketData(m);
+        const usdCost = m === "USA" ? r.totalCost : toUSD(r.totalCost, m);
         return {
           market: m,
           currency: mData.currency,
-          totalCost: otherResults.totalCost,
-          costPerUnit: otherResults.costPerUnit,
-          dealScore: otherResults.dealScore,
+          totalCost: r.totalCost,
+          totalCostUSD: usdCost,
+          dealScore: r.dealScore,
+          isCurrent: m === input.market,
         };
       } catch {
         return null;
       }
-    }).filter(Boolean) as { market: string; currency: CurrencyConfig; totalCost: number; costPerUnit: number; dealScore: number }[];
+    }).filter(Boolean) as { market: string; currency: CurrencyConfig; totalCost: number; totalCostUSD: number; dealScore: number; isCurrent: boolean }[];
   }, [results, input]);
 
   // Sensitivity analysis: vary key inputs +/- 10-20%
@@ -601,44 +625,49 @@ export default function AnalyzePage() {
     const scenarios: { label: string; totalCost: number; dealScore: number; delta: number }[] = [];
     const baseTotal = results.totalCost;
 
-    // Higher construction costs (+15%)
-    const higherCostInput = { ...input, sizeCategory: "custom", customSize: Math.round(buildSize * 1.15) } as any;
-    try {
-      const r = calculateAnalysis(higherCostInput);
-      scenarios.push({ label: "Costs +15%", totalCost: r.totalCost, dealScore: r.dealScore, delta: r.totalCost - baseTotal });
-    } catch {}
+    // Cost overrun +15%: multiply construction portion by 1.15
+    const overrunCost = Math.round(results.constructionCost * 0.15);
+    const overrunTotal = baseTotal + overrunCost;
+    scenarios.push({ label: "Cost overrun +15%", totalCost: overrunTotal, dealScore: Math.max(0, results.dealScore - 8), delta: overrunCost });
 
-    // Lower construction costs (-15%)
-    const lowerCostInput = { ...input, sizeCategory: "custom", customSize: Math.round(buildSize * 0.85) } as any;
-    try {
-      const r = calculateAnalysis(lowerCostInput);
-      scenarios.push({ label: "Costs -15%", totalCost: r.totalCost, dealScore: r.dealScore, delta: r.totalCost - baseTotal });
-    } catch {}
+    // Cost savings -10%: construction comes in under budget
+    const savingsCost = Math.round(results.constructionCost * 0.10);
+    const savingsTotal = baseTotal - savingsCost;
+    scenarios.push({ label: "Under budget -10%", totalCost: savingsTotal, dealScore: Math.min(100, results.dealScore + 5), delta: -savingsCost });
 
     // Higher interest rate (+2%)
     if (input.financingType === "construction_loan" || input.financingType === "fha_203k") {
       try {
         const r = calculateAnalysis({ ...input, loanRate: input.loanRate + 2 } as any);
-        scenarios.push({ label: "Rate +2%", totalCost: r.totalCost, dealScore: r.dealScore, delta: r.totalCost - baseTotal });
+        scenarios.push({ label: "Interest rate +2%", totalCost: r.totalCost, dealScore: r.dealScore, delta: r.totalCost - baseTotal });
       } catch {}
     }
 
     // Longer timeline (+6 months)
     try {
       const r = calculateAnalysis({ ...input, timelineMonths: input.timelineMonths + 6 } as any);
-      scenarios.push({ label: "+6 months", totalCost: r.totalCost, dealScore: r.dealScore, delta: r.totalCost - baseTotal });
+      scenarios.push({ label: "Timeline +6 months", totalCost: r.totalCost, dealScore: r.dealScore, delta: r.totalCost - baseTotal });
     } catch {}
 
+    // Lower down payment (if applicable)
+    if (input.downPaymentPct > 10) {
+      try {
+        const r = calculateAnalysis({ ...input, downPaymentPct: Math.max(5, input.downPaymentPct - 10) } as any);
+        scenarios.push({ label: `Down payment ${Math.max(5, input.downPaymentPct - 10)}%`, totalCost: r.totalCost, dealScore: r.dealScore, delta: r.totalCost - baseTotal });
+      } catch {}
+    }
+
     return scenarios;
-  }, [results, input, buildSize]);
+  }, [results, input]);
 
   // Dual currency conversion rate
+  // Exchange rates (as of March 2026). CFA is pegged to EUR so relatively stable.
+  const EXCHANGE_RATES: Record<string, number> = { TOGO: 615, GHANA: 15.5, BENIN: 615 };
+
   const dualCurrency = useMemo(() => {
     if (!input.market || input.market === "USA") return null;
-    // Show USD equivalent for WA markets
     const usdCurrency: CurrencyConfig = { code: "USD", symbol: "$", locale: "en-US", decimals: 0, groupSeparator: ",", position: "prefix" as const };
-    const rates: Record<string, number> = { TOGO: 610, GHANA: 14.5, BENIN: 610 }; // CFA/GHS per USD
-    const rate = rates[input.market];
+    const rate = EXCHANGE_RATES[input.market];
     if (!rate || !results) return null;
     return { usdCurrency, rate, usdTotal: Math.round(results.totalCost / rate) };
   }, [input.market, results]);
@@ -692,6 +721,7 @@ export default function AnalyzePage() {
       timelineMonths: analysis.input.timelineMonths || 12,
       targetSalePrice: analysis.input.targetSalePrice || 0,
       monthlyRent: analysis.input.monthlyRent || 0,
+      commercialPct: analysis.input.commercialPct || 30,
     });
     setTab("analyze");
     setShowSavedList(false);
@@ -788,16 +818,23 @@ export default function AnalyzePage() {
                 value={input.goal}
                 onChange={(v) => set("goal", v as InputState["goal"])}
               />
-              {(input.goal === "rent") && (
+              {(input.goal === "rent" || input.goal === "mixed-use") && (
                 <div className="mt-2">
                   <Label tooltip="Expected monthly rental income after the property is built and occupied">Monthly rent</Label>
-                  <NumberInput value={input.monthlyRent} onChange={(v) => set("monthlyRent", v)} prefix={currency.symbol} />
+                  <NumberInput value={input.monthlyRent} onChange={(v) => set("monthlyRent", v)} prefix={currency.symbol} min={0} />
                 </div>
               )}
-              {(input.goal === "sell") && (
+              {(input.goal === "sell" || input.goal === "mixed-use") && (
                 <div className="mt-2">
                   <Label tooltip="The price you expect to sell the completed property for">Target sale price</Label>
-                  <NumberInput value={input.targetSalePrice} onChange={(v) => set("targetSalePrice", v)} prefix={currency.symbol} />
+                  <NumberInput value={input.targetSalePrice} onChange={(v) => set("targetSalePrice", v)} prefix={currency.symbol} min={0} />
+                </div>
+              )}
+              {input.goal === "mixed-use" && (
+                <div className="mt-2">
+                  <Label tooltip="What percentage of the building will be used for commercial purposes (shops, offices)? The rest is residential.">Commercial %</Label>
+                  <NumberInput value={input.commercialPct} onChange={(v) => set("commercialPct", v)} suffix="%" min={0} max={80} />
+                  <p className="text-[10px] text-muted mt-1">{input.commercialPct}% commercial, {100 - input.commercialPct}% residential</p>
                 </div>
               )}
             </Section>
@@ -824,17 +861,20 @@ export default function AnalyzePage() {
                     <input
                       type="text"
                       value={input.city}
-                      onChange={(e) => set("city", e.target.value)}
+                      onChange={(e) => { set("city", e.target.value); setShowSuggestions(true); }}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                       placeholder={isUSA ? "e.g. Houston, TX" : `e.g. ${input.market === "TOGO" ? "Lome" : input.market === "GHANA" ? "Accra" : "Cotonou"}`}
                       className="w-full pl-9 pr-3 py-2 bg-surface border border-border rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/30 focus:border-clay"
                     />
                   </div>
-                  {locationSuggestions.length > 0 && (
+                  {showSuggestions && locationSuggestions.length > 0 && (
                     <div className="absolute z-30 left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden">
                       {locationSuggestions.map((loc) => (
                         <button
                           key={loc.city}
-                          onClick={() => { set("city", loc.city); }}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => { set("city", loc.city); setShowSuggestions(false); }}
                           className="w-full text-left px-3 py-2 text-[12px] text-earth hover:bg-warm/30 transition-colors border-b border-border/30 last:border-b-0"
                         >
                           <span className="font-medium">{loc.city}</span>
@@ -987,16 +1027,26 @@ export default function AnalyzePage() {
                 onChange={(v) => set("financingType", v)}
               />
 
+              {input.financingType === "phased_cash" && (
+                <p className="text-[11px] text-muted mt-2 leading-relaxed">Build in stages as cash becomes available. Common in West Africa where formal construction loans are rare. Timeline is typically 2-3x longer.</p>
+              )}
+              {input.financingType === "diaspora" && (
+                <p className="text-[11px] text-muted mt-2 leading-relaxed">Fund the build from abroad through regular remittances. Requires a trusted on-site representative to manage funds and oversee construction.</p>
+              )}
+              {input.financingType === "tontine" && (
+                <p className="text-[11px] text-muted mt-2 leading-relaxed">Pool savings with a trusted group (tontine). Each member contributes regularly and takes turns receiving the lump sum. Widely used across West Africa.</p>
+              )}
+
               {(input.financingType === "construction_loan" || input.financingType === "fha_203k") && (
                 <div className="space-y-2 mt-2">
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label tooltip="Percentage of total cost you will pay upfront. Higher down payment = lower monthly cost and better loan terms.">Down payment %</Label>
-                      <NumberInput value={input.downPaymentPct} onChange={(v) => set("downPaymentPct", v)} suffix="%" />
+                      <NumberInput value={input.downPaymentPct} onChange={(v) => set("downPaymentPct", Math.max(0, Math.min(100, v)))} suffix="%" min={0} max={100} />
                     </div>
                     <div>
-                      <Label tooltip="Annual interest rate on the construction loan">Interest rate</Label>
-                      <NumberInput value={input.loanRate} onChange={(v) => set("loanRate", v)} suffix="%" step={0.1} />
+                      <Label tooltip="Annual interest rate on the construction loan. Current US average is 7-8%.">Interest rate</Label>
+                      <NumberInput value={input.loanRate} onChange={(v) => set("loanRate", Math.max(0, Math.min(25, v)))} suffix="%" step={0.1} min={0} max={25} />
                     </div>
                   </div>
                   <div>
@@ -1004,6 +1054,7 @@ export default function AnalyzePage() {
                     <Select value={input.loanTerm} onChange={(e) => set("loanTerm", Number(e.target.value))}>
                       <option value={15}>15 years</option>
                       <option value={20}>20 years</option>
+                      <option value={25}>25 years</option>
                       <option value={30}>30 years</option>
                     </Select>
                   </div>
@@ -1156,7 +1207,7 @@ export default function AnalyzePage() {
                         <p className="text-[16px] font-bold text-earth font-data">{fmtCompact(dualCurrency.usdTotal, dualCurrency.usdCurrency)}</p>
                       </div>
                     </div>
-                    <p className="text-[10px] text-muted/60 mt-2">Rate: 1 USD = {dualCurrency.rate.toLocaleString()} {currency.code}</p>
+                    <p className="text-[10px] text-muted/60 mt-2">Rate: 1 USD = {dualCurrency.rate.toLocaleString()} {currency.code} (approximate, March 2026)</p>
                   </div>
                 )}
 
@@ -1196,35 +1247,25 @@ export default function AnalyzePage() {
                     <h3 className="text-[15px] font-semibold text-earth mb-3" style={{ fontFamily: "var(--font-heading)" }}>
                       Cross-Market Comparison
                     </h3>
-                    <p className="text-[11px] text-muted mb-3">Same property specs in different markets</p>
+                    <p className="text-[11px] text-muted mb-3">Same property specs, all costs shown in USD for fair comparison</p>
                     <div className="space-y-2">
-                      {/* Current market */}
-                      <div className="flex items-center justify-between p-2.5 bg-clay/10 rounded-lg border border-clay/20">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-clay" />
-                          <span className="text-[12px] font-semibold text-earth">{input.market}</span>
-                          <span className="text-[10px] text-muted">(current)</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[13px] font-data font-medium text-earth">{fmtCompact(results!.totalCost, currency)}</span>
-                          <span className={`ml-2 text-[11px] font-data ${scoreColor(results!.dealScore)}`}>Score: {results!.dealScore}</span>
-                        </div>
-                      </div>
-                      {/* Other markets */}
                       {crossMarketData.map((cm) => {
-                        const diff = cm.totalCost - results!.totalCost;
-                        const pctDiff = results!.totalCost > 0 ? Math.round((diff / results!.totalCost) * 100) : 0;
+                        const baseUSD = crossMarketData.find((c) => c.isCurrent)?.totalCostUSD || 1;
+                        const pctDiff = cm.isCurrent ? 0 : Math.round(((cm.totalCostUSD - baseUSD) / baseUSD) * 100);
                         return (
-                          <div key={cm.market} className="flex items-center justify-between p-2.5 bg-warm/10 rounded-lg">
+                          <div key={cm.market} className={`flex items-center justify-between p-2.5 rounded-lg ${cm.isCurrent ? "bg-clay/10 border border-clay/20" : "bg-warm/10"}`}>
                             <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-muted/30" />
-                              <span className="text-[12px] font-medium text-earth">{cm.market}</span>
+                              <span className={`w-2 h-2 rounded-full ${cm.isCurrent ? "bg-clay" : "bg-muted/30"}`} />
+                              <span className={`text-[12px] ${cm.isCurrent ? "font-semibold" : "font-medium"} text-earth`}>{cm.market}</span>
+                              {cm.isCurrent && <span className="text-[10px] text-muted">(current)</span>}
                             </div>
                             <div className="text-right flex items-center gap-2">
-                              <span className="text-[12px] font-data text-muted">{fmtCompact(cm.totalCost, cm.currency)}</span>
-                              <span className={`text-[11px] font-data font-medium ${pctDiff > 0 ? "text-danger" : pctDiff < 0 ? "text-success" : "text-muted"}`}>
-                                {pctDiff > 0 ? "+" : ""}{pctDiff}%
-                              </span>
+                              <span className="text-[13px] font-data font-medium text-earth">${cm.totalCostUSD.toLocaleString()}</span>
+                              {!cm.isCurrent && (
+                                <span className={`text-[11px] font-data font-medium ${pctDiff > 0 ? "text-danger" : pctDiff < 0 ? "text-success" : "text-muted"}`}>
+                                  {pctDiff > 0 ? "+" : ""}{pctDiff}%
+                                </span>
+                              )}
                               <span className={`text-[10px] font-data ${scoreColor(cm.dealScore)}`}>{cm.dealScore}</span>
                             </div>
                           </div>
@@ -1371,6 +1412,11 @@ export default function AnalyzePage() {
                       if (input.monthlyRent) params.set("rent", String(input.monthlyRent));
                       if (input.targetSalePrice) params.set("sale", String(input.targetSalePrice));
                       if (input.zipCode) params.set("zip", input.zipCode);
+                      if (input.loanTerm !== 30) params.set("term", String(input.loanTerm));
+                      if (input.monthlyIncome) params.set("income", String(input.monthlyIncome));
+                      if (input.existingDebts) params.set("debts", String(input.existingDebts));
+                      if (input.titreFoncierStatus) params.set("titre", input.titreFoncierStatus);
+                      if (input.commercialPct !== 30) params.set("commpct", String(input.commercialPct));
                       const url = `${window.location.origin}/analyze?${params.toString()}`;
                       navigator.clipboard.writeText(url).then(() => {
                         showToast("Link copied to clipboard", "success");
@@ -1458,7 +1504,21 @@ export default function AnalyzePage() {
             </div>
           </div>
 
-          {reverseResult && reverseBudget > 0 && (
+          {reverseResult && reverseBudget > 0 && reverseBudget < reverseResult.minBudget && (
+            <div className="bg-surface border border-danger/30 rounded-xl p-5">
+              <div className="flex items-start gap-3">
+                <AlertTriangle size={18} className="text-danger shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[13px] font-semibold text-earth">Budget too low for new construction</p>
+                  <p className="text-[12px] text-muted mt-1 leading-relaxed">
+                    The minimum budget for a basic home in this market is approximately <span className="font-data font-semibold">{currency.symbol}{reverseResult.minBudget.toLocaleString()}</span>. Consider a different location, smaller scope, or alternative financing.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {reverseResult && reverseBudget > 0 && reverseResult.maxSize > 0 && (
             <div className="bg-surface border border-border rounded-xl p-6">
               <h3 className="text-[16px] font-semibold text-earth mb-4" style={{ fontFamily: "var(--font-heading)" }}>
                 You Can Build
@@ -1498,8 +1558,8 @@ export default function AnalyzePage() {
 
       {/* Save Dialog */}
       {showSaveDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-surface border border-border rounded-xl shadow-xl w-full max-w-sm p-5 mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setShowSaveDialog(false); setSaveName(""); }}>
+          <div className="bg-surface border border-border rounded-xl shadow-xl w-full max-w-sm p-5 mx-4" onClick={(e) => e.stopPropagation()}>
             <h4 className="text-[15px] font-semibold text-earth mb-3" style={{ fontFamily: "var(--font-heading)" }}>
               Save Analysis
             </h4>
