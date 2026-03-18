@@ -188,7 +188,7 @@ export default function ContractorPage() {
           const data = tasksSnap.val() as Record<string, TaskData>;
           const myTasks = Object.entries(data)
             .map(([id, t]) => ({ ...t, id }))
-            .filter((t) => t.assignedTo === validated.contactId || !t.assignedTo)
+            .filter((t) => t.assignedTo === validated.contactId)
             .sort((a, b) => a.order - b.order);
           setTasks(myTasks);
         }

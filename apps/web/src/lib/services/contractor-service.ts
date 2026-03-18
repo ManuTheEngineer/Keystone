@@ -168,6 +168,13 @@ export async function contractorSubmitTask(
   if (!link || link.userId !== userId || link.projectId !== projectId) {
     throw new Error("Invalid or expired link");
   }
+  // Verify task is assigned to this contractor
+  const taskSnap = await get(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`));
+  if (!taskSnap.exists()) throw new Error("Task not found");
+  const taskData = taskSnap.val();
+  if (taskData.assignedTo && taskData.assignedTo !== link.contactId) {
+    throw new Error("Task not assigned to you");
+  }
   await update(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`), {
     completedBy: link.contactName,
     completedAt: new Date().toISOString(),
@@ -192,6 +199,13 @@ export async function contractorStartTask(
   if (!link || link.userId !== userId || link.projectId !== projectId) {
     throw new Error("Invalid or expired link");
   }
+  // Verify task is assigned to this contractor
+  const startTaskSnap = await get(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`));
+  if (!startTaskSnap.exists()) throw new Error("Task not found");
+  const startTaskData = startTaskSnap.val();
+  if (startTaskData.assignedTo && startTaskData.assignedTo !== link.contactId) {
+    throw new Error("Task not assigned to you");
+  }
   await update(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`), {
     status: "in-progress",
   });
@@ -210,6 +224,13 @@ export async function contractorAddComment(
   const link = await validateContractorToken(token);
   if (!link || link.userId !== userId || link.projectId !== projectId) {
     throw new Error("Invalid or expired link");
+  }
+  // Verify task is assigned to this contractor
+  const commentTaskSnap = await get(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`));
+  if (!commentTaskSnap.exists()) throw new Error("Task not found");
+  const commentTaskData = commentTaskSnap.val();
+  if (commentTaskData.assignedTo && commentTaskData.assignedTo !== link.contactId) {
+    throw new Error("Task not assigned to you");
   }
   const commentsRef = ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}/comments`);
   await push(commentsRef, {

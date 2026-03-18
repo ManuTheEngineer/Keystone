@@ -164,9 +164,10 @@
     },
 
     "contractorLinks": {
-      ".read": true,
+      ".read": false,
       ".write": "auth != null",
       "$token": {
+        ".read": true,
         ".validate": "newData.hasChildren(['token', 'userId', 'projectId', 'contactId'])"
       }
     },

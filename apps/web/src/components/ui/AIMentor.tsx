@@ -860,14 +860,14 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
               {currentTip.nextStepLabel ?? "Next step"}
               <ArrowRight size={11} />
             </a>
-          ) : (
+          ) : project?.id ? (
             <a
-              href={`/project/${(typeof window !== "undefined" ? window.location.pathname.match(/\/project\/([^/]+)/)?.[1] : "") || ""}/ai-assistant`}
+              href={`/project/${project.id}/ai-assistant`}
               className="text-[10px] text-muted hover:text-clay transition-colors"
             >
               Ask AI Assistant
             </a>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

@@ -18,6 +18,7 @@ export interface UserProfile {
   timezone: string;
   locale: string;
   currency: string;
+  market?: "USA" | "TOGO" | "GHANA" | "BENIN";
   plan: "FOUNDATION" | "BUILDER" | "DEVELOPER" | "ENTERPRISE";
   role?: "admin" | "user";
   stripeCustomerId?: string;
@@ -59,6 +60,7 @@ export async function registerUser(
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     locale: defaults.locale,
     currency: defaults.currency,
+    market: (market as UserProfile["market"]) ?? "USA",
     plan: "FOUNDATION",
     createdAt: new Date().toISOString(),
   };

@@ -48,10 +48,6 @@ export default function LandingPage() {
     );
   }
 
-  if (user) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-background">
       {/* Section 1: Navigation Bar */}
