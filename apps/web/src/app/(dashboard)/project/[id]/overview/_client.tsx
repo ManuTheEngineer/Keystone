@@ -94,6 +94,7 @@ import {
   AlertTriangle,
   ArrowRight,
   ChevronDown,
+  Share2,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
 import { PresentationModal } from "@/components/ui/PresentationModal";
@@ -325,8 +326,21 @@ export function OverviewClient() {
         }}
       />
 
-      {/* Presentations button */}
-      <div className="flex justify-end -mt-4 mb-4">
+      {/* Action buttons row */}
+      <div className="flex justify-end gap-2 -mt-4 mb-4">
+        {profile && ["BUILDER", "DEVELOPER", "ENTERPRISE"].includes(profile.plan) && (
+          <button
+            onClick={() => {
+              const shareUrl = `${window.location.origin}/project/${projectId}/overview`;
+              navigator.clipboard.writeText(shareUrl);
+              alert("Project link copied to clipboard. Share it with family or advisors to let them view your progress.");
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-lg border border-border text-earth hover:bg-warm transition-colors"
+          >
+            <Share2 size={14} />
+            Share
+          </button>
+        )}
         <button
           onClick={() => setShowPresentationModal(true)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-lg border border-border text-earth hover:bg-warm transition-colors"
