@@ -9,7 +9,7 @@ export interface ContractorLink {
   contactName: string;
   contactRole: string;
   createdAt: string;
-  revokedAt: string | null;
+  revokedAt?: string | null;
 }
 
 // Tier limits for contractor links
@@ -59,7 +59,7 @@ export async function generateContractorLink(
   }
 
   const token = generateToken();
-  const link: ContractorLink = {
+  const linkData = {
     token,
     userId,
     projectId,
@@ -67,11 +67,15 @@ export async function generateContractorLink(
     contactName,
     contactRole,
     createdAt: new Date().toISOString(),
-    revokedAt: null,
   };
 
-  await set(ref(db, `contractorLinks/${token}`), link);
-  return { token };
+  try {
+    await set(ref(db, `contractorLinks/${token}`), linkData);
+    return { token };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return { error: `Failed to create link: ${msg}` };
+  }
 }
 
 /**
