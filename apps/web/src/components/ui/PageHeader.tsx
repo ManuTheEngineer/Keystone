@@ -18,16 +18,31 @@ export function PageHeader({ title, projectName, projectId, subtitle, action }: 
   return (
     <div className="flex items-start justify-between mb-6">
       <div>
+        {projectName && (
+          <div className="flex items-center gap-1 text-[11px] text-muted mb-1">
+            {projectId ? (
+              <Link
+                href={`/project/${projectId}/overview`}
+                className="hover:text-earth transition-colors"
+              >
+                {projectName}
+              </Link>
+            ) : (
+              <span>{projectName}</span>
+            )}
+            <span className="text-muted/50">{">"}</span>
+            <span>{title}</span>
+          </div>
+        )}
         <h1
           className="text-[22px] text-earth leading-tight"
           style={{ fontFamily: "var(--font-heading)" }}
         >
-          {projectName || title}
+          {title}
         </h1>
-        <p className="text-[12px] text-muted mt-0.5">
-          {projectName ? title : subtitle}
-          {projectName && subtitle && ` -- ${subtitle}`}
-        </p>
+        {subtitle && (
+          <p className="text-[12px] text-muted mt-0.5">{subtitle}</p>
+        )}
       </div>
       {action && (
         <button
