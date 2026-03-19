@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ProductDemo } from "@/components/ui/ProductDemo";
 import {
   Target,
   Hammer,
@@ -342,8 +343,24 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Section 4: Features Grid */}
+      {/* Section 3.5: Interactive Product Demo */}
       <section className="py-16 sm:py-24 px-4 sm:px-6 bg-surface">
+        <div className="max-w-7xl mx-auto">
+          <h2
+            className="text-[28px] sm:text-[32px] text-earth text-center mb-4"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            See it in action
+          </h2>
+          <p className="text-[15px] text-muted text-center max-w-lg mx-auto mb-12">
+            From analyzing a deal to handing over the keys, Keystone guides you through every step of the building process.
+          </p>
+          <ProductDemo />
+        </div>
+      </section>
+
+      {/* Section 4: Features Grid */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <h2
             className="text-[28px] sm:text-[32px] text-earth text-center mb-16"
