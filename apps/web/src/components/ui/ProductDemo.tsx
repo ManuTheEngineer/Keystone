@@ -532,63 +532,78 @@ export function ProductDemo() {
         </button>
       </div>
 
-      {/* Title + description centered above visuals */}
-      <div className="text-center mb-8">
-        <h3 className="text-[24px] sm:text-[28px] text-earth leading-tight mb-2" style={{ fontFamily: "var(--font-heading)" }}>
-          {s.title}
-        </h3>
-        <p className="text-[14px] text-muted leading-relaxed max-w-lg mx-auto">
-          {s.description}
-        </p>
-      </div>
-
-      {/* Phone + Construction site side by side, centered */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-6">
-        {/* Phone mockup */}
-        <div style={{ width: 210 }} className="shrink-0">
-          <div className="rounded-[22px] border-[2.5px] border-earth bg-[#FDF8F0] shadow-[0_12px_40px_rgba(44,24,16,0.1)] overflow-hidden">
-            <div className="flex items-center justify-between px-4 pt-2 pb-1">
-              <span className="text-[7px] font-medium text-muted">9:41</span>
-              <div className="w-14 h-3.5 bg-earth rounded-full" />
-              <div className="w-3 h-2 bg-muted/40 rounded-sm" />
-            </div>
-            <div className="px-3 pt-0.5 pb-1.5 border-b border-sand/30">
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 rounded bg-earth flex items-center justify-center">
-                  <span className="text-[6px] text-sand font-bold">K</span>
-                </div>
-                <span className="text-[9px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>{s.phase}</span>
-              </div>
-            </div>
-            <div className="px-3 py-2.5 min-h-[210px]">
-              {scene === 0 && <AnalyzeScreen p={progress} />}
-              {scene === 1 && <PlanScreen p={progress} />}
-              {scene === 2 && <BuildScreen p={progress} />}
-              {scene === 3 && <TrackScreen p={progress} />}
-              {scene === 4 && <CompleteScreen p={progress} />}
-            </div>
-            <div className="flex justify-around py-1.5 border-t border-sand/20 bg-white/50">
-              {[Target, Home, BarChart3, Users, FileText].map((Icon, i) => (
-                <Icon key={i} size={11} className={i === scene ? "text-clay" : "text-sand"} />
-              ))}
-            </div>
-            <div className="flex justify-center pb-1"><div className="w-16 h-0.5 bg-earth rounded-full" /></div>
+      {/* Two-column: description left, browser mockup right */}
+      <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+        {/* Left: text */}
+        <div className="lg:w-[340px] shrink-0 text-center lg:text-left">
+          <h3 className="text-[24px] sm:text-[28px] text-earth leading-tight mb-3" style={{ fontFamily: "var(--font-heading)" }}>
+            {s.title}
+          </h3>
+          <p className="text-[14px] text-muted leading-relaxed mb-5">
+            {s.description}
+          </p>
+          <div className="flex flex-wrap justify-center lg:justify-start gap-2">
+            {s.highlights.map((h) => (
+              <span key={h} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-warm text-[11px] font-medium text-clay">
+                <Check size={10} /> {h}
+              </span>
+            ))}
           </div>
         </div>
 
-        {/* Construction site */}
-        <div className="w-full sm:w-auto" style={{ maxWidth: 380 }}>
-          <ConstructionSite scene={scene} p={progress} />
-        </div>
-      </div>
+        {/* Right: browser frame with app screen + construction site below */}
+        <div className="flex-1 min-w-0 w-full max-w-[600px]">
+          {/* Browser window frame */}
+          <div className="rounded-xl border border-border/60 bg-surface shadow-[0_8px_30px_rgba(44,24,16,0.08)] overflow-hidden">
+            {/* Browser chrome bar */}
+            <div className="flex items-center gap-2 px-3 py-2 bg-warm/40 border-b border-border/40">
+              <div className="flex gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
+                <div className="w-2.5 h-2.5 rounded-full bg-[#FEBC2E]" />
+                <div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" />
+              </div>
+              <div className="flex-1 flex justify-center">
+                <div className="flex items-center gap-1.5 px-4 py-1 bg-white/60 rounded-md text-[10px] text-muted max-w-[240px] w-full">
+                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/><path d="M8 5v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="8" cy="11" r="0.5" fill="currentColor"/></svg>
+                  keystonebuild.vercel.app
+                </div>
+              </div>
+            </div>
+            {/* App content -- sidebar hint + main area */}
+            <div className="flex">
+              {/* Mini sidebar */}
+              <div className="hidden sm:flex flex-col w-[52px] bg-earth shrink-0 py-3 items-center gap-3">
+                <div className="w-6 h-6 rounded bg-clay/30 flex items-center justify-center">
+                  <span className="text-[8px] text-sand font-bold">K</span>
+                </div>
+                <div className="w-5 h-0.5 bg-sand/20 rounded" />
+                {[Target, Home, BarChart3, Users, FileText].map((Icon, i) => (
+                  <div key={i} className={`w-7 h-7 rounded-lg flex items-center justify-center ${i === scene ? "bg-clay/20" : ""}`}>
+                    <Icon size={12} className={i === scene ? "text-sand" : "text-sand/30"} />
+                  </div>
+                ))}
+              </div>
+              {/* Main screen content */}
+              <div className="flex-1 bg-[#FDF8F0] p-4 sm:p-5 min-h-[260px]">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-sand/20">
+                  <span className="text-[11px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>{s.phase}</span>
+                  <span className="text-[9px] text-muted">/</span>
+                  <span className="text-[9px] text-muted">{s.title}</span>
+                </div>
+                {scene === 0 && <AnalyzeScreen p={progress} />}
+                {scene === 1 && <PlanScreen p={progress} />}
+                {scene === 2 && <BuildScreen p={progress} />}
+                {scene === 3 && <TrackScreen p={progress} />}
+                {scene === 4 && <CompleteScreen p={progress} />}
+              </div>
+            </div>
+          </div>
 
-      {/* Feature pills centered below */}
-      <div className="flex flex-wrap justify-center gap-2">
-        {s.highlights.map((h) => (
-          <span key={h} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-warm text-[11px] font-medium text-clay">
-            <Check size={10} /> {h}
-          </span>
-        ))}
+          {/* Construction site strip below browser */}
+          <div className="mt-3 rounded-xl overflow-hidden border border-border/30 shadow-sm">
+            <ConstructionSite scene={scene} p={progress} />
+          </div>
+        </div>
       </div>
     </div>
   );
