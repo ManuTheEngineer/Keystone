@@ -491,52 +491,17 @@ export function OverviewClient() {
       {/* Phase tracker - always shown */}
       <PhaseTracker currentPhase={project.currentPhase} completedPhases={project.completedPhases} />
 
-      {/* Phase advancement */}
-      {user && project && (
-        <PhaseAdvancement project={project} userId={user.uid} onAdvance={() => {}} />
-      )}
-
-      {/* Phase education - always shown */}
-      {education && (
-        <div className="mt-3 mb-4">
-          <PhaseEducationCard module={education} />
+      {/* Phase education - compact tip, not the full 9-phase list */}
+      {education && phaseDef && (
+        <div className="mt-2 mb-3 px-4 py-3 bg-warm/30 border border-border/40 rounded-xl">
+          <p className="text-[11px] text-muted leading-relaxed">
+            <span className="font-semibold text-earth">{phaseDef.name}:</span> {education.summary}
+            {phaseDef.typicalDurationWeeks && (
+              <span className="text-clay font-data"> ({phaseDef.typicalDurationWeeks.min}-{phaseDef.typicalDurationWeeks.max} weeks typical)</span>
+            )}
+          </p>
         </div>
       )}
-
-      {/* Actionable Phase Steps - shown for all phases */}
-      {user && (() => {
-        const steps = getPhaseSteps(market, phase);
-        if (steps.length === 0) return null;
-        return (
-          <div className="mt-4 mb-4">
-            <PhaseSteps
-              steps={steps}
-              completedSteps={phaseStepCompletions}
-              onComplete={(stepId, data) => {
-                completePhaseStep(user.uid, projectId, stepId, {
-                  completedAt: new Date().toISOString(),
-                  notes: data.notes,
-                  documentIds: data.documentIds,
-                });
-              }}
-              onUncomplete={(stepId) => {
-                uncompletePhaseStep(user.uid, projectId, stepId);
-              }}
-              onAddDecision={(stepId, decision) => {
-                addStepDecision(user.uid, projectId, stepId, decision);
-              }}
-              onRemoveDecision={(stepId, decisionIndex) => {
-                removeStepDecision(user.uid, projectId, stepId, decisionIndex);
-              }}
-              onUpdateDecision={(stepId, decisionIndex, decision) => {
-                updateStepDecision(user.uid, projectId, stepId, decisionIndex, decision);
-              }}
-              projectId={projectId}
-              userId={user.uid}
-            />
-          </div>
-        );
-      })()}
 
       {/* Document Readiness - shown for all phases */}
       {(() => {
@@ -559,12 +524,7 @@ export function OverviewClient() {
         );
       })()}
 
-      {/* Process guide - shown for phases 0-4 */}
-      {phase <= 4 && (
-        <div className="mb-4">
-          <ProcessGuide market={market} currentPhase={phase} />
-        </div>
-      )}
+      {/* Phase tracker already shows the 9 phases visually above */}
 
       {/* Stat cards - always shown, collapsible for early phases */}
       <CollapsibleSection title="Your Progress" defaultOpen={phase >= 6}>

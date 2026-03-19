@@ -689,9 +689,13 @@ export async function approveTask(
     reviewNote: reviewNote || "Approved",
   });
 
-  // Recalculate project progress from all tasks
+  // Recalculate progress + auto-advance phase if all current tasks done
   try {
-    const tasksSnap = await get(ref(db, `users/${userId}/projects/${projectId}/tasks`));
+    const [tasksSnap, projectSnap] = await Promise.all([
+      get(ref(db, `users/${userId}/projects/${projectId}/tasks`)),
+      get(ref(db, `users/${userId}/projects/${projectId}`)),
+    ]);
+
     if (tasksSnap.exists()) {
       let total = 0, done = 0, pending = 0;
       tasksSnap.forEach((child) => {
@@ -700,14 +704,35 @@ export async function approveTask(
         if (child.val().status === "pending-review") pending++;
       });
       const progress = total > 0 ? Math.round((done / total) * 100) : 0;
-      await update(ref(db, `users/${userId}/projects/${projectId}`), {
-        progress,
-        openItems: pending,
-        updatedAt: now,
-      });
+      const updates: Record<string, unknown> = { progress, openItems: pending, updatedAt: now };
+
+      // Auto-advance phase: if no pending-review and no upcoming tasks, advance
+      if (projectSnap.exists() && pending === 0) {
+        const proj = projectSnap.val();
+        const allDone = total > 0 && done === total;
+        const noPending = pending === 0;
+        const currentPhase = proj.currentPhase ?? 0;
+
+        // Check if all tasks are complete (none pending, none upcoming)
+        let hasIncomplete = false;
+        tasksSnap.forEach((child) => {
+          const s = child.val().status;
+          if (s !== "done" && s !== "cancelled") hasIncomplete = true;
+        });
+
+        if (!hasIncomplete && currentPhase < 8) {
+          const nextPhase = currentPhase + 1;
+          const PHASE_NAMES = ["Phase 0: Define", "Phase 1: Finance", "Phase 2: Land", "Phase 3: Design", "Phase 4: Approve", "Phase 5: Assemble", "Phase 6: Build", "Phase 7: Verify", "Phase 8: Operate"];
+          updates.currentPhase = nextPhase;
+          updates.completedPhases = nextPhase;
+          updates.phaseName = PHASE_NAMES[nextPhase] || `Phase ${nextPhase}`;
+        }
+      }
+
+      await update(ref(db, `users/${userId}/projects/${projectId}`), updates);
     }
   } catch {
-    // Non-blocking: progress update is best-effort
+    // Non-blocking: progress + phase update is best-effort
   }
 }
 
