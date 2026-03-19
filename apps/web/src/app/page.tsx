@@ -202,7 +202,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right illustration - 40% (shown second on mobile) */}
+            {/* Right illustration - animated house build */}
             <div className="lg:col-span-2 flex justify-center order-2">
               <svg
                 viewBox="0 0 400 360"
@@ -211,53 +211,76 @@ export default function LandingPage() {
                 className="w-full max-w-[400px]"
                 aria-hidden="true"
               >
-                {/* Foundation base */}
-                <line x1="60" y1="300" x2="340" y2="300" stroke="var(--color-sand)" strokeWidth="2.5" strokeLinecap="round" />
-                <line x1="80" y1="310" x2="320" y2="310" stroke="var(--color-sand)" strokeWidth="1.5" strokeLinecap="round" />
+                <style>{`
+                  .draw { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw-line 1.5s ease-out forwards; }
+                  .draw-d1 { animation-delay: 0.2s; } .draw-d2 { animation-delay: 0.5s; }
+                  .draw-d3 { animation-delay: 0.8s; } .draw-d4 { animation-delay: 1.1s; }
+                  .draw-d5 { animation-delay: 1.5s; } .draw-d6 { animation-delay: 1.8s; }
+                  .draw-d7 { animation-delay: 2.1s; } .draw-d8 { animation-delay: 2.5s; }
+                  .draw-d9 { animation-delay: 2.8s; } .draw-d10 { animation-delay: 3.2s; }
+                  @keyframes draw-line { to { stroke-dashoffset: 0; } }
+                  .fade-up { opacity: 0; transform: translateY(8px); animation: fade-up 0.6s ease-out forwards; }
+                  .fade-d5 { animation-delay: 1.5s; } .fade-d6 { animation-delay: 1.8s; }
+                  .fade-d7 { animation-delay: 2.2s; } .fade-d8 { animation-delay: 2.6s; }
+                  .fade-d9 { animation-delay: 3.0s; } .fade-d10 { animation-delay: 3.5s; }
+                  @keyframes fade-up { to { opacity: 1; transform: translateY(0); } }
+                  .pulse-glow { animation: pulse-glow 3s ease-in-out infinite; animation-delay: 3.5s; opacity: 0; }
+                  @keyframes pulse-glow { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+                `}</style>
 
-                {/* Vertical framing studs */}
-                <line x1="100" y1="300" x2="100" y2="160" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" />
-                <line x1="160" y1="300" x2="160" y2="130" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" />
-                <line x1="200" y1="300" x2="200" y2="115" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" />
-                <line x1="240" y1="300" x2="240" y2="130" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" />
-                <line x1="300" y1="300" x2="300" y2="160" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" />
+                {/* Foundation base - draws first */}
+                <line x1="60" y1="300" x2="340" y2="300" stroke="var(--color-sand)" strokeWidth="2.5" strokeLinecap="round" className="draw" />
+                <line x1="80" y1="310" x2="320" y2="310" stroke="var(--color-sand)" strokeWidth="1.5" strokeLinecap="round" className="draw draw-d1" />
+
+                {/* Vertical framing studs - grow upward */}
+                <line x1="100" y1="300" x2="100" y2="160" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" className="draw draw-d2" />
+                <line x1="160" y1="300" x2="160" y2="130" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" className="draw draw-d2" />
+                <line x1="200" y1="300" x2="200" y2="115" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" className="draw draw-d3" />
+                <line x1="240" y1="300" x2="240" y2="130" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" className="draw draw-d3" />
+                <line x1="300" y1="300" x2="300" y2="160" stroke="var(--color-clay)" strokeWidth="2" strokeLinecap="round" className="draw draw-d4" />
 
                 {/* Horizontal beam */}
-                <line x1="90" y1="200" x2="310" y2="200" stroke="var(--color-sand)" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="90" y1="200" x2="310" y2="200" stroke="var(--color-sand)" strokeWidth="1.5" strokeLinecap="round" className="draw draw-d5" />
 
                 {/* Roof peak outline */}
-                <line x1="60" y1="160" x2="200" y2="70" stroke="var(--color-earth)" strokeWidth="2.5" strokeLinecap="round" />
-                <line x1="200" y1="70" x2="340" y2="160" stroke="var(--color-earth)" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="60" y1="160" x2="200" y2="70" stroke="var(--color-earth)" strokeWidth="2.5" strokeLinecap="round" className="draw draw-d6" />
+                <line x1="200" y1="70" x2="340" y2="160" stroke="var(--color-earth)" strokeWidth="2.5" strokeLinecap="round" className="draw draw-d6" />
 
                 {/* Roof ridge beam */}
-                <line x1="60" y1="160" x2="340" y2="160" stroke="var(--color-earth)" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="60" y1="160" x2="340" y2="160" stroke="var(--color-earth)" strokeWidth="1.5" strokeLinecap="round" className="draw draw-d5" />
 
-                {/* Keystone at apex */}
-                <path
-                  d="M192 66 L208 66 L206 82 L194 82 Z"
-                  fill="none"
-                  stroke="var(--color-clay)"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                />
+                {/* Keystone at apex - fades in */}
+                <path d="M192 66 L208 66 L206 82 L194 82 Z" fill="none" stroke="var(--color-clay)" strokeWidth="2" strokeLinejoin="round" className="draw draw-d7" />
 
-                {/* Door opening */}
-                <rect x="180" y="240" width="40" height="60" rx="1" fill="none" stroke="var(--color-sand)" strokeWidth="1.5" />
-                <path d="M180 240 Q200 228 220 240" fill="none" stroke="var(--color-sand)" strokeWidth="1.5" />
+                {/* Door opening - fades up */}
+                <g className="fade-up fade-d7">
+                  <rect x="180" y="240" width="40" height="60" rx="1" fill="none" stroke="var(--color-sand)" strokeWidth="1.5" />
+                  <path d="M180 240 Q200 228 220 240" fill="none" stroke="var(--color-sand)" strokeWidth="1.5" />
+                </g>
 
                 {/* Window left */}
-                <rect x="110" y="220" width="30" height="30" rx="1" fill="none" stroke="var(--color-sand)" strokeWidth="1.5" />
-                <line x1="125" y1="220" x2="125" y2="250" stroke="var(--color-sand)" strokeWidth="1" />
-                <line x1="110" y1="235" x2="140" y2="235" stroke="var(--color-sand)" strokeWidth="1" />
+                <g className="fade-up fade-d8">
+                  <rect x="110" y="220" width="30" height="30" rx="1" fill="none" stroke="var(--color-sand)" strokeWidth="1.5" />
+                  <line x1="125" y1="220" x2="125" y2="250" stroke="var(--color-sand)" strokeWidth="1" />
+                  <line x1="110" y1="235" x2="140" y2="235" stroke="var(--color-sand)" strokeWidth="1" />
+                </g>
 
                 {/* Window right */}
-                <rect x="260" y="220" width="30" height="30" rx="1" fill="none" stroke="var(--color-sand)" strokeWidth="1.5" />
-                <line x1="275" y1="220" x2="275" y2="250" stroke="var(--color-sand)" strokeWidth="1" />
-                <line x1="260" y1="235" x2="290" y2="235" stroke="var(--color-sand)" strokeWidth="1" />
+                <g className="fade-up fade-d9">
+                  <rect x="260" y="220" width="30" height="30" rx="1" fill="none" stroke="var(--color-sand)" strokeWidth="1.5" />
+                  <line x1="275" y1="220" x2="275" y2="250" stroke="var(--color-sand)" strokeWidth="1" />
+                  <line x1="260" y1="235" x2="290" y2="235" stroke="var(--color-sand)" strokeWidth="1" />
+                </g>
 
-                {/* Construction detail lines */}
-                <line x1="130" y1="160" x2="160" y2="115" stroke="var(--color-sand)" strokeWidth="1" strokeLinecap="round" strokeDasharray="4 4" />
-                <line x1="270" y1="160" x2="240" y2="115" stroke="var(--color-sand)" strokeWidth="1" strokeLinecap="round" strokeDasharray="4 4" />
+                {/* Construction detail lines - dashed */}
+                <line x1="130" y1="160" x2="160" y2="115" stroke="var(--color-sand)" strokeWidth="1" strokeLinecap="round" strokeDasharray="4 4" className="fade-up fade-d5" />
+                <line x1="270" y1="160" x2="240" y2="115" stroke="var(--color-sand)" strokeWidth="1" strokeLinecap="round" strokeDasharray="4 4" className="fade-up fade-d5" />
+
+                {/* Warm glow inside door - appears last */}
+                <rect x="185" y="248" width="30" height="48" rx="1" fill="var(--color-warm)" className="pulse-glow" />
+
+                {/* Ground shadow - subtle depth */}
+                <ellipse cx="200" cy="315" rx="120" ry="6" fill="var(--color-sand)" opacity="0.15" className="fade-up fade-d10" />
               </svg>
             </div>
           </div>
