@@ -472,7 +472,7 @@ export default function AnalyzePage() {
         openItems: 0, subPhase: "Getting started",
         details: `${propType} / ${market} / ${input.city.trim()}`,
         bedrooms: input.bedrooms, bathrooms: input.bathrooms, stories: input.stories,
-        features: input.features.length > 0 ? input.features : undefined,
+        features: input.features.length > 0 ? input.features : null,
       });
 
       // Budget + tasks in parallel

@@ -707,7 +707,7 @@ export default function NewProjectPage() {
         bedrooms: state.bedrooms,
         bathrooms: state.bathrooms,
         stories: state.stories,
-        features: state.features.length > 0 ? state.features : undefined,
+        features: state.features.length > 0 ? state.features : null,
       });
 
       // Auto-generate budget + seed initial tasks in parallel

@@ -45,7 +45,7 @@ export interface ProjectData {
   bedrooms?: number;
   bathrooms?: number;
   stories?: number;
-  features?: string[];
+  features?: string[] | null;
   analysisId?: string; // Link back to the Deal Analyzer analysis
   isDemo?: boolean;
   priority?: number; // 1, 2, 3 (1 = highest)
@@ -308,7 +308,7 @@ export async function seedInitialTasks(
     totalBudget: number;
     bedrooms?: number;
     bathrooms?: number;
-    features?: string[];
+    features?: string[] | null;
     fromAnalyzer?: boolean;
   },
 ): Promise<void> {
