@@ -113,6 +113,8 @@ import {
   ListChecks,
   Star,
   FilePlus,
+  ArrowDown,
+  ClipboardCheck,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
 import { PresentationModal } from "@/components/ui/PresentationModal";
@@ -577,6 +579,29 @@ export function OverviewClient() {
         </div>
       </CollapsibleSection>
 
+      {/* Setup Review Banner -- shown when wizard/analyzer generated tasks need approval */}
+      {pendingReviewTasks.filter((t) => t.completedBy === "Deal Analyzer" || t.completedBy === "Project Wizard").length > 0 && (
+        <div className="mb-5 p-4 bg-clay/5 border border-clay/20 rounded-xl">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-clay/10 flex items-center justify-center shrink-0 mt-0.5">
+              <ClipboardCheck size={18} className="text-clay" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
+                Review your project setup
+              </h4>
+              <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
+                {pendingReviewTasks.filter((t) => t.completedBy === "Deal Analyzer" || t.completedBy === "Project Wizard").length} tasks were pre-filled from your {pendingReviewTasks.some((t) => t.completedBy === "Deal Analyzer") ? "deal analysis" : "project setup"}. Review the evidence below, edit if needed, then approve or reject each one.
+              </p>
+              <a href="#pending-review" className="inline-flex items-center gap-1 mt-2 text-[11px] font-medium text-clay hover:underline">
+                <ArrowDown size={12} />
+                Go to review queue
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Deal Analysis Snapshot */}
       {project.dealScore != null && project.dealScore > 0 && (
         <div className="mb-5 p-4 bg-surface border border-border rounded-xl">
@@ -620,7 +645,7 @@ export function OverviewClient() {
 
       {/* Pending Review Queue */}
       {pendingReviewTasks.length > 0 && (
-        <div className="mb-5">
+        <div className="mb-5" id="pending-review">
           <div className="flex items-center gap-2 mb-3">
             <SectionLabel>Pending Review</SectionLabel>
             <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-warning/15 text-warning text-[11px] font-data font-semibold">

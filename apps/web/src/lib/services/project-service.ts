@@ -288,9 +288,13 @@ export async function addBudgetItem(userId: string, data: Omit<BudgetItemData, "
 }
 
 /**
- * Seed initial tasks for a new project based on wizard data.
- * Tasks already answered by the wizard are marked done.
- * Remaining tasks are upcoming so the user sees clear next steps.
+ * Seed initial tasks for a new project based on wizard/analyzer data.
+ *
+ * Tasks that have data from the wizard are set to "pending-review" with
+ * auto-generated evidence so the user can verify, edit, and approve them.
+ * Tasks without data are "upcoming" (next steps).
+ *
+ * Nothing is auto-closed. The user must approve every task.
  */
 export async function seedInitialTasks(
   userId: string,
@@ -310,62 +314,95 @@ export async function seedInitialTasks(
 ): Promise<void> {
   const isUSA = projectData.market === "USA";
   const now = new Date().toISOString();
+  const src = projectData.fromAnalyzer ? "Deal Analyzer" : "Project Wizard";
 
-  // Phase 0: Define -- most of these are done from the wizard
+  // Helper: create a task that needs user review (has evidence from wizard)
+  function reviewTask(label: string, order: number, evidence: string): Omit<TaskData, "id"> {
+    return {
+      projectId, label, order, sourceType: "milestone",
+      status: "pending-review", done: false,
+      completionNote: evidence,
+      completedAt: now,
+      completedBy: src,
+      requiresApproval: true,
+    };
+  }
+
+  // Helper: create an upcoming task (no data yet)
+  function nextTask(label: string, order: number): Omit<TaskData, "id"> {
+    return { projectId, label, order, sourceType: "milestone", status: "upcoming", done: false };
+  }
+
+  // Phase 0: Define -- wizard data becomes evidence for review
   const defineTasks: Omit<TaskData, "id">[] = [
-    {
-      projectId, label: "Define building goal (occupy, rent, or sell)",
-      status: "done", done: true, order: 1, sourceType: "milestone",
-      completedAt: now, completionNote: `Set to: ${projectData.purpose}`,
-    },
-    {
-      projectId, label: `Select target market (${projectData.market})`,
-      status: "done", done: true, order: 2, sourceType: "milestone",
-      completedAt: now,
-    },
-    {
-      projectId, label: `Set location${projectData.city ? ` (${projectData.city})` : ""}`,
-      status: projectData.city ? "done" : "upcoming", done: !!projectData.city, order: 3, sourceType: "milestone",
-      ...(projectData.city ? { completedAt: now } : {}),
-    },
-    {
-      projectId, label: `Choose property type (${projectData.propertyType})`,
-      status: "done", done: true, order: 4, sourceType: "milestone",
-      completedAt: now,
-    },
-    {
-      projectId, label: "Set initial budget",
-      status: projectData.totalBudget > 0 ? "done" : "upcoming",
-      done: projectData.totalBudget > 0, order: 5, sourceType: "milestone",
-      ...(projectData.totalBudget > 0 ? { completedAt: now, completionNote: `Budget: ${projectData.totalBudget}` } : {}),
-    },
-    {
-      projectId, label: "Determine financing strategy",
-      status: projectData.financingType ? "done" : "upcoming",
-      done: !!projectData.financingType, order: 6, sourceType: "milestone",
-      ...(projectData.financingType ? { completedAt: now, completionNote: `Type: ${projectData.financingType}` } : {}),
-    },
+    reviewTask(
+      "Define building goal",
+      1,
+      `Goal set to: ${projectData.purpose}. Review and confirm this matches your intent.`,
+    ),
+    reviewTask(
+      "Select target market",
+      2,
+      `Market: ${projectData.market}. ${isUSA ? "Wood-frame construction, institutional lending." : "Reinforced concrete, cash/phased funding."}`,
+    ),
   ];
 
-  // Phase 1: Finance -- next steps
+  if (projectData.city) {
+    defineTasks.push(reviewTask(
+      "Set build location",
+      3,
+      `Location: ${projectData.city}. Verify this is the correct city/region for cost estimates.`,
+    ));
+  } else {
+    defineTasks.push(nextTask("Set build location", 3));
+  }
+
+  defineTasks.push(reviewTask(
+    "Choose property type and size",
+    4,
+    `Type: ${projectData.propertyType}${projectData.bedrooms ? `, ${projectData.bedrooms} bed / ${projectData.bathrooms} bath` : ""}. Confirm these specifications.`,
+  ));
+
+  if (projectData.totalBudget > 0) {
+    defineTasks.push(reviewTask(
+      "Review initial budget",
+      5,
+      `Estimated total: ${projectData.totalBudget.toLocaleString()} ${isUSA ? "USD" : "CFA"}. Budget line items have been auto-generated. Review each category in the Budget tab.`,
+    ));
+  } else {
+    defineTasks.push(nextTask("Set initial budget", 5));
+  }
+
+  if (projectData.financingType) {
+    defineTasks.push(reviewTask(
+      "Confirm financing strategy",
+      6,
+      `Financing: ${projectData.financingType}. Verify this is the right approach for your situation.`,
+    ));
+  } else {
+    defineTasks.push(nextTask("Determine financing strategy", 6));
+  }
+
+  // Phase 1: Finance -- next steps (no wizard data)
   const financeTasks: Omit<TaskData, "id">[] = isUSA ? [
-    { projectId, label: "Check credit score and DTI ratio", status: "upcoming", done: false, order: 7, sourceType: "milestone" },
-    { projectId, label: "Get construction loan pre-approval", status: "upcoming", done: false, order: 8, sourceType: "milestone" },
-    { projectId, label: "Compare lender terms (at least 3 quotes)", status: "upcoming", done: false, order: 9, sourceType: "milestone" },
+    nextTask("Check credit score and DTI ratio", 7),
+    nextTask("Get construction loan pre-approval", 8),
+    nextTask("Compare lender terms (at least 3 quotes)", 9),
   ] : [
-    { projectId, label: "Create savings plan and timeline", status: "upcoming", done: false, order: 7, sourceType: "milestone" },
-    { projectId, label: "Set up dedicated construction savings account", status: "upcoming", done: false, order: 8, sourceType: "milestone" },
-    { projectId, label: isUSA ? "Gather financial documents" : "Plan phased funding schedule", status: "upcoming", done: false, order: 9, sourceType: "milestone" },
+    nextTask("Create savings plan and timeline", 7),
+    nextTask("Set up dedicated construction savings account", 8),
+    nextTask("Plan phased funding schedule", 9),
   ];
 
   // Phase 2: Land -- next steps
   const landTasks: Omit<TaskData, "id">[] = [
-    { projectId, label: isUSA ? "Research zoning and buildability" : "Verify land title status", status: "upcoming", done: false, order: 10, sourceType: "milestone" },
-    { projectId, label: isUSA ? "Get property survey completed" : "Obtain titre foncier or land deed", status: "upcoming", done: false, order: 11, sourceType: "milestone" },
-    { projectId, label: "Confirm utilities access (water, electric, sewer)", status: "upcoming", done: false, order: 12, sourceType: "milestone" },
+    nextTask(isUSA ? "Research zoning and buildability" : "Verify land title status", 10),
+    nextTask(isUSA ? "Get property survey completed" : "Obtain titre foncier or land deed", 11),
+    nextTask("Confirm utilities access (water, electric, sewer)", 12),
   ];
 
   const allTasks = [...defineTasks, ...financeTasks, ...landTasks];
+  const pendingCount = allTasks.filter((t) => t.status === "pending-review").length;
 
   const tasksRef = ref(db, `users/${userId}/projects/${projectId}/tasks`);
   const taskUpdates: Record<string, Omit<TaskData, "id">> = {};
@@ -375,11 +412,10 @@ export async function seedInitialTasks(
   }
   await update(tasksRef, taskUpdates);
 
-  // Update project progress based on completed tasks
-  const doneCount = allTasks.filter((t) => t.done).length;
-  const progress = allTasks.length > 0 ? Math.round((doneCount / allTasks.length) * 100) : 0;
+  // Set openItems to the pending-review count so user sees the notification
   await update(ref(db, `users/${userId}/projects/${projectId}`), {
-    progress,
+    progress: 0, // nothing approved yet
+    openItems: pendingCount,
     updatedAt: now,
   });
 }
