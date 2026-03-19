@@ -1286,43 +1286,39 @@ export function OverviewClient() {
       {phase <= 1 && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-            {/* Getting Started checklist */}
+            {/* Task-driven progress -- single source of truth */}
             <div>
-              <SectionLabel>Getting Started</SectionLabel>
+              <SectionLabel>Project Tasks</SectionLabel>
               <Card padding="sm">
-                {[
-                  { label: "Define your goals and building purpose", done: !!project.purpose },
-                  { label: "Choose your target market", done: !!project.market },
-                  { label: `Set location${project.city ? ` (${project.city})` : ""}`, done: !!project.city },
-                  { label: "Set an initial budget", done: project.totalBudget > 0 },
-                  { label: "Generate budget breakdown", done: budgetItems.length > 0 },
-                  { label: "Determine financing strategy", done: !!project.financingType },
-                  { label: market === "USA" ? "Check loan pre-qualification" : "Plan savings schedule", done: phase >= 1 },
-                ].map((item, i, arr) => (
-                  <div
-                    key={i}
-                    className={`flex items-center gap-2.5 py-2 text-[12px] ${
-                      i < arr.length - 1 ? "border-b border-border" : ""
-                    }`}
-                  >
-                    <div
-                      className={`w-4 h-4 rounded border-[1.5px] shrink-0 flex items-center justify-center ${
-                        item.done
-                          ? "bg-success border-success"
-                          : "border-border-dark"
-                      }`}
-                    >
-                      {item.done && (
-                        <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                          <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
+                {tasks.length === 0 ? (
+                  <p className="text-[12px] text-muted py-3 text-center">No tasks yet. Create your first task to start tracking progress.</p>
+                ) : (
+                  <div>
+                    {/* Progress summary */}
+                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border">
+                      <div className="flex-1 h-1.5 bg-warm rounded-full overflow-hidden">
+                        <div className="h-full bg-success rounded-full" style={{ width: `${computedProgress}%`, transition: "width 0.5s" }} />
+                      </div>
+                      <span className="text-[11px] font-data font-semibold text-earth">{computedProgress}%</span>
                     </div>
-                    <span className={`flex-1 ${item.done ? "text-muted line-through opacity-50" : "text-earth"}`}>
-                      {item.label}
-                    </span>
+                    {/* Task list */}
+                    {tasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).slice(0, 8).map((task, i, arr) => (
+                      <div key={task.id} className={`flex items-center gap-2.5 py-2 text-[12px] ${i < arr.length - 1 ? "border-b border-border/40" : ""}`}>
+                        <div className={`w-4 h-4 rounded border-[1.5px] shrink-0 flex items-center justify-center ${
+                          task.done ? "bg-success border-success" : task.status === "pending-review" ? "bg-warning border-warning" : "border-border-dark"
+                        }`}>
+                          {task.done && <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                          {task.status === "pending-review" && <Clock size={8} className="text-white" />}
+                        </div>
+                        <span className={`flex-1 ${task.done ? "text-muted line-through opacity-50" : task.status === "pending-review" ? "text-warning font-medium" : "text-earth"}`}>
+                          {task.label}
+                        </span>
+                        {task.status === "pending-review" && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning font-medium">Review</span>}
+                      </div>
+                    ))}
+                    {tasks.length > 8 && <p className="text-[10px] text-muted text-center pt-1">+{tasks.length - 8} more tasks</p>}
                   </div>
-                ))}
+                )}
               </Card>
             </div>
 

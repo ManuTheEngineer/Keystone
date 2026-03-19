@@ -680,13 +680,35 @@ export async function approveTask(
   taskId: string,
   reviewNote?: string
 ): Promise<void> {
+  const now = new Date().toISOString();
   await update(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`), {
     status: "done",
     done: true,
-    reviewedAt: new Date().toISOString(),
+    reviewedAt: now,
     reviewedBy: userId,
     reviewNote: reviewNote || "Approved",
   });
+
+  // Recalculate project progress from all tasks
+  try {
+    const tasksSnap = await get(ref(db, `users/${userId}/projects/${projectId}/tasks`));
+    if (tasksSnap.exists()) {
+      let total = 0, done = 0, pending = 0;
+      tasksSnap.forEach((child) => {
+        total++;
+        if (child.val().done) done++;
+        if (child.val().status === "pending-review") pending++;
+      });
+      const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+      await update(ref(db, `users/${userId}/projects/${projectId}`), {
+        progress,
+        openItems: pending,
+        updatedAt: now,
+      });
+    }
+  } catch {
+    // Non-blocking: progress update is best-effort
+  }
 }
 
 /** Owner rejects a task — goes back to in-progress */
