@@ -15,13 +15,10 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ title, projectName, projectId, subtitle, action }: PageHeaderProps) {
-  const displayName = projectName || title;
-  const showBreadcrumb = !!projectName;
-
   return (
     <div className="flex items-start justify-between mb-6">
       <div>
-        {showBreadcrumb && (
+        {projectName && (
           <div className="flex items-center gap-1 text-[11px] text-muted mb-1">
             {projectId ? (
               <Link
@@ -41,7 +38,7 @@ export function PageHeader({ title, projectName, projectId, subtitle, action }: 
           className="text-[22px] text-earth leading-tight"
           style={{ fontFamily: "var(--font-heading)" }}
         >
-          {displayName}
+          {title}
         </h1>
         {subtitle && (
           <p className="text-[12px] text-muted mt-0.5">{subtitle}</p>
