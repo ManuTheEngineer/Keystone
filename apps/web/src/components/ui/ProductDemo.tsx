@@ -532,66 +532,63 @@ export function ProductDemo() {
         </button>
       </div>
 
-      {/* Two-panel layout */}
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
-        {/* Left: Phone + Construction stacked on mobile, side by side on desktop */}
-        <div className="flex flex-col sm:flex-row lg:flex-col gap-4 w-full lg:w-auto">
-          {/* Phone mockup */}
-          <div className="sm:w-1/2 lg:w-auto flex justify-center">
-            <div style={{ width: 220 }}>
-              <div className="rounded-[24px] border-[2.5px] border-earth bg-[#FDF8F0] shadow-[0_16px_48px_rgba(44,24,16,0.12)] overflow-hidden">
-                <div className="flex items-center justify-between px-4 pt-2 pb-1">
-                  <span className="text-[7px] font-medium text-muted">9:41</span>
-                  <div className="w-14 h-3.5 bg-earth rounded-full" />
-                  <div className="w-3 h-2 bg-muted/40 rounded-sm" />
+      {/* Title + description centered above visuals */}
+      <div className="text-center mb-8">
+        <h3 className="text-[24px] sm:text-[28px] text-earth leading-tight mb-2" style={{ fontFamily: "var(--font-heading)" }}>
+          {s.title}
+        </h3>
+        <p className="text-[14px] text-muted leading-relaxed max-w-lg mx-auto">
+          {s.description}
+        </p>
+      </div>
+
+      {/* Phone + Construction site side by side, centered */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-6">
+        {/* Phone mockup */}
+        <div style={{ width: 210 }} className="shrink-0">
+          <div className="rounded-[22px] border-[2.5px] border-earth bg-[#FDF8F0] shadow-[0_12px_40px_rgba(44,24,16,0.1)] overflow-hidden">
+            <div className="flex items-center justify-between px-4 pt-2 pb-1">
+              <span className="text-[7px] font-medium text-muted">9:41</span>
+              <div className="w-14 h-3.5 bg-earth rounded-full" />
+              <div className="w-3 h-2 bg-muted/40 rounded-sm" />
+            </div>
+            <div className="px-3 pt-0.5 pb-1.5 border-b border-sand/30">
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 rounded bg-earth flex items-center justify-center">
+                  <span className="text-[6px] text-sand font-bold">K</span>
                 </div>
-                <div className="px-3 pt-0.5 pb-1.5 border-b border-sand/30">
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 rounded bg-earth flex items-center justify-center">
-                      <span className="text-[6px] text-sand font-bold">K</span>
-                    </div>
-                    <span className="text-[9px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>{s.phase}</span>
-                  </div>
-                </div>
-                <div className="px-3 py-2.5 min-h-[220px]">
-                  {scene === 0 && <AnalyzeScreen p={progress} />}
-                  {scene === 1 && <PlanScreen p={progress} />}
-                  {scene === 2 && <BuildScreen p={progress} />}
-                  {scene === 3 && <TrackScreen p={progress} />}
-                  {scene === 4 && <CompleteScreen p={progress} />}
-                </div>
-                <div className="flex justify-around py-1.5 border-t border-sand/20 bg-white/50">
-                  {[Target, Home, BarChart3, Users, FileText].map((Icon, i) => (
-                    <Icon key={i} size={11} className={i === scene ? "text-clay" : "text-sand"} />
-                  ))}
-                </div>
-                <div className="flex justify-center pb-1"><div className="w-16 h-0.5 bg-earth rounded-full" /></div>
+                <span className="text-[9px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>{s.phase}</span>
               </div>
             </div>
-          </div>
-
-          {/* Construction site */}
-          <div className="sm:w-1/2 lg:w-auto">
-            <ConstructionSite scene={scene} p={progress} />
-          </div>
-        </div>
-
-        {/* Right: Scene info */}
-        <div className="flex-1 text-center lg:text-left lg:pt-4">
-          <h3 className="text-[24px] sm:text-[28px] text-earth leading-tight mb-3" style={{ fontFamily: "var(--font-heading)" }}>
-            {s.title}
-          </h3>
-          <p className="text-[15px] text-muted leading-relaxed mb-6 max-w-md mx-auto lg:mx-0">
-            {s.description}
-          </p>
-          <div className="flex flex-wrap justify-center lg:justify-start gap-2">
-            {s.highlights.map((h) => (
-              <span key={h} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-warm text-[11px] font-medium text-clay">
-                <Check size={10} /> {h}
-              </span>
-            ))}
+            <div className="px-3 py-2.5 min-h-[210px]">
+              {scene === 0 && <AnalyzeScreen p={progress} />}
+              {scene === 1 && <PlanScreen p={progress} />}
+              {scene === 2 && <BuildScreen p={progress} />}
+              {scene === 3 && <TrackScreen p={progress} />}
+              {scene === 4 && <CompleteScreen p={progress} />}
+            </div>
+            <div className="flex justify-around py-1.5 border-t border-sand/20 bg-white/50">
+              {[Target, Home, BarChart3, Users, FileText].map((Icon, i) => (
+                <Icon key={i} size={11} className={i === scene ? "text-clay" : "text-sand"} />
+              ))}
+            </div>
+            <div className="flex justify-center pb-1"><div className="w-16 h-0.5 bg-earth rounded-full" /></div>
           </div>
         </div>
+
+        {/* Construction site */}
+        <div className="w-full sm:w-auto" style={{ maxWidth: 380 }}>
+          <ConstructionSite scene={scene} p={progress} />
+        </div>
+      </div>
+
+      {/* Feature pills centered below */}
+      <div className="flex flex-wrap justify-center gap-2">
+        {s.highlights.map((h) => (
+          <span key={h} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-warm text-[11px] font-medium text-clay">
+            <Check size={10} /> {h}
+          </span>
+        ))}
       </div>
     </div>
   );
