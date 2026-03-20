@@ -157,7 +157,7 @@ function scoreText(s: number) {
 
 function Pill({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-all ${active ? "bg-earth text-white shadow-sm" : "text-muted hover:text-earth hover:bg-warm/40"}`}>
+    <button onClick={onClick} className={`px-4 py-2 rounded-full text-[13px] font-medium transition-all ${active ? "bg-earth text-white shadow-sm" : "text-muted hover:text-earth hover:bg-warm/40"}`}>
       {children}
     </button>
   );
@@ -207,61 +207,87 @@ function Stepper({ value, onChange, min, max, label }: { value: number; onChange
 }
 
 // ============================================================================
-// Donut Chart
+// Collapsible Card
 // ============================================================================
 
-function DonutChart({ items, currency }: { items: CostBreakdownItem[]; currency: CurrencyConfig }) {
-  const total = items.reduce((s, i) => s + i.amount, 0);
-  const r = 54, stroke = 16, size = 148, cx = size / 2, cy = size / 2;
-  const circ = 2 * Math.PI * r;
-  let off = 0;
+function CollapsibleCard({ title, icon: Icon, defaultOpen = true, children }: {
+  title: string; icon: React.ElementType; defaultOpen?: boolean; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="flex flex-col items-center gap-4">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Cost breakdown chart">
-        {items.map((item, i) => {
-          const pct = item.amount / total;
-          const dash = circ * pct;
-          const d = -off;
-          off += dash;
-          return <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={item.color} strokeWidth={stroke}
-            strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={d}
-            transform={`rotate(-90 ${cx} ${cy})`} className="transition-all duration-700" />;
-        })}
-        <text x={cx} y={cy - 4} textAnchor="middle" className="fill-muted text-[9px]" style={{ fontFamily: "var(--font-heading)" }}>Total</text>
-        <text x={cx} y={cy + 12} textAnchor="middle" className="fill-earth text-[14px] font-bold font-data">{fmtC(total, currency)}</text>
-      </svg>
-      <div className="w-full grid grid-cols-2 gap-x-3 gap-y-1.5">
-        {items.map((item, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: item.color }} />
-            <span className="text-[10px] text-muted flex-1 truncate">{item.category}</span>
-            <span className="text-[10px] font-data text-earth tabular-nums">{item.percentage}%</span>
+    <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+      <button onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-warm/10 transition-colors">
+        <div className="w-8 h-8 rounded-xl bg-warm/40 flex items-center justify-center shrink-0">
+          <Icon size={15} className="text-clay" />
+        </div>
+        <h3 className="text-[14px] font-semibold text-earth flex-1" style={{ fontFamily: "var(--font-heading)" }}>{title}</h3>
+        <ChevronRight size={14} className={`text-muted transition-transform duration-200 ${open ? "rotate-90" : ""}`} />
+      </button>
+      {open && <div className="px-5 pb-5 pt-0">{children}</div>}
+    </div>
+  );
+}
+
+// ============================================================================
+// Horizontal Bar Chart (replaces Donut)
+// ============================================================================
+
+function HorizontalBars({ items, currency }: { items: CostBreakdownItem[]; currency: CurrencyConfig }) {
+  const total = items.reduce((s, i) => s + i.amount, 0);
+  if (total === 0) return null;
+  const maxPct = Math.max(...items.map((i) => i.amount / total));
+
+  return (
+    <div className="space-y-2.5">
+      {items.map((item, i) => {
+        const pct = item.amount / total;
+        const barW = maxPct > 0 ? (pct / maxPct) * 100 : 0;
+        return (
+          <div key={i}>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="text-[12px] text-earth">{item.category}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-data text-muted tabular-nums">{item.percentage}%</span>
+                <span className="text-[12px] font-data font-medium text-earth tabular-nums w-24 text-right">{fmt(item.amount, currency)}</span>
+              </div>
+            </div>
+            <div className="h-2 bg-warm/30 rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${barW}%`, backgroundColor: item.color }} />
+            </div>
           </div>
-        ))}
+        );
+      })}
+      <div className="flex justify-between pt-2 border-t border-border/40">
+        <span className="text-[13px] font-semibold text-earth">Total</span>
+        <span className="text-[13px] font-data font-bold text-earth">{fmt(total, currency)}</span>
       </div>
     </div>
   );
 }
 
 // ============================================================================
-// Score Ring
+// Score Ring (larger, 150px)
 // ============================================================================
 
 function ScoreRing({ score }: { score: number }) {
-  const r = 44, stroke = 8, size = 120, cx = size / 2, cy = size / 2;
+  const r = 56, stroke = 10, size = 150, cx = size / 2, cy = size / 2;
   const circ = 2 * Math.PI * r;
   const dashLen = circ * (score / 100);
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="absolute inset-0 -rotate-90">
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="currentColor" strokeWidth={stroke} className="text-border/40" />
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="currentColor" strokeWidth={stroke} className="text-border/30" />
         <circle cx={cx} cy={cy} r={r} fill="none" strokeWidth={stroke} strokeLinecap="round"
           strokeDasharray={`${dashLen} ${circ - dashLen}`}
           className={`transition-all duration-1000 ease-out ${score >= 65 ? "stroke-emerald-500" : score >= 50 ? "stroke-amber-500" : score >= 35 ? "stroke-orange-500" : "stroke-red-500"}`} />
       </svg>
       <div className="text-center z-10">
-        <div className="text-[28px] font-bold font-data text-earth leading-none">{score}</div>
-        <div className="text-[9px] font-semibold text-muted uppercase tracking-wider mt-0.5">{scoreText(score)}</div>
+        <div className="text-[36px] font-bold font-data text-earth leading-none">{score}</div>
+        <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-1">{scoreText(score)}</div>
       </div>
     </div>
   );
@@ -501,17 +527,17 @@ export default function AnalyzePage() {
   // ========================================================================
 
   return (
-    <div className="min-h-full pb-24">
+    <div className="min-h-full pb-28">
       {/* ── Header bar ── */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-1 bg-warm/30 p-1 rounded-xl">
           <Pill active={mode === "analyze"} onClick={() => setMode("analyze")}>Analyze</Pill>
           <Pill active={mode === "reverse"} onClick={() => setMode("reverse")}>What Can I Afford?</Pill>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {savedAnalyses.length > 0 && (
-            <button onClick={() => setShowSaved(!showSaved)} className="flex items-center gap-1.5 text-[11px] text-muted hover:text-earth transition-colors">
-              <FolderOpen size={13} />
+            <button onClick={() => setShowSaved(!showSaved)} className="flex items-center gap-1.5 text-[12px] text-muted hover:text-earth transition-colors">
+              <FolderOpen size={14} />
               Saved ({savedAnalyses.length})
             </button>
           )}
@@ -520,7 +546,7 @@ export default function AnalyzePage() {
 
       {/* ── Saved analyses dropdown ── */}
       {showSaved && savedAnalyses.length > 0 && (
-        <div className="mb-4 bg-surface border border-border rounded-xl overflow-hidden">
+        <div className="mb-5 bg-surface border border-border rounded-xl overflow-hidden">
           {savedAnalyses.map((a) => (
             <div key={a.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-border/40 last:border-b-0 hover:bg-warm/20 transition-colors">
               <button onClick={() => handleLoad(a)} className="flex-1 text-left min-w-0">
@@ -534,182 +560,181 @@ export default function AnalyzePage() {
       )}
 
       {mode === "analyze" ? (
-        <div className="flex flex-col lg:flex-row gap-5">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* ════════════════════════════════════════════════════════════════
-             LEFT: Step-based input panel
+             LEFT: All inputs as collapsible cards (single scrollable form)
              ════════════════════════════════════════════════════════════════ */}
-          <div className="lg:w-[420px] shrink-0">
-            {/* Step indicators */}
-            <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
-              {STEPS.map((s, i) => {
-                const Icon = s.icon;
-                const done = i < step;
-                const active = i === step;
-                return (
-                  <button key={s.id} onClick={() => setStep(i)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${
-                      active ? "bg-earth text-white" : done ? "bg-clay/10 text-clay" : "text-muted hover:bg-warm/30"
-                    }`}>
-                    {done ? <Check size={11} /> : <Icon size={11} />}
-                    {s.label}
-                  </button>
-                );
-              })}
+          <div className="lg:w-[440px] shrink-0 space-y-4">
+
+            {/* Timeline pills row */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              {[
+                { m: 6, label: "6 mo" },
+                { m: 9, label: "9 mo" },
+                { m: 12, label: "12 mo" },
+                { m: 18, label: "18 mo" },
+                { m: 24, label: "24 mo" },
+                { m: 36, label: "36+ mo" },
+              ].map((t) => (
+                <button key={t.m} onClick={() => set("timelineMonths", t.m)}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${input.timelineMonths === t.m ? "bg-clay/10 text-clay border border-clay/30" : "text-muted hover:bg-warm/30 border border-transparent"}`}>
+                  {t.label}
+                </button>
+              ))}
             </div>
 
-            {/* Step content */}
-            <div className="bg-surface border border-border rounded-2xl p-5 min-h-[320px]">
-
-              {/* STEP 0: Goal */}
-              {step === 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>What is your goal?</h3>
-                  <div className="space-y-2">
+            {/* ── Card 1: Property ── */}
+            <CollapsibleCard title="Property" icon={Home} defaultOpen={true}>
+              <div className="space-y-4">
+                {/* Goal */}
+                <div>
+                  <span className="text-[11px] font-medium text-earth mb-1.5 block">Goal</span>
+                  <div className="grid grid-cols-2 gap-2">
                     {([
-                      { id: "occupy" as const, label: "Build to live in", desc: "Owner-occupied home" },
-                      { id: "rent" as const, label: "Build to rent", desc: "Investment for rental income" },
-                      { id: "sell" as const, label: "Build to sell", desc: "Spec build for profit" },
-                      { id: "mixed-use" as const, label: "Mixed use", desc: "Residential + commercial" },
+                      { id: "occupy" as const, label: "Build to live in" },
+                      { id: "rent" as const, label: "Build to rent" },
+                      { id: "sell" as const, label: "Build to sell" },
+                      { id: "mixed-use" as const, label: "Mixed use" },
                     ]).map((g) => (
                       <Choice key={g.id} selected={input.goal === g.id} onClick={() => set("goal", g.id)}>
-                        <p className="text-[13px] font-medium text-earth">{g.label}</p>
-                        <p className="text-[11px] text-muted">{g.desc}</p>
+                        <p className="text-[12px] font-medium text-earth">{g.label}</p>
                       </Choice>
                     ))}
                   </div>
                   {(input.goal === "rent" || input.goal === "mixed-use") && (
-                    <NumField label="Expected monthly rent" value={input.monthlyRent} onChange={(v) => set("monthlyRent", v)} prefix={currency.symbol} />
+                    <div className="mt-2">
+                      <NumField label="Expected monthly rent" value={input.monthlyRent} onChange={(v) => set("monthlyRent", v)} prefix={currency.symbol} min={0} />
+                    </div>
                   )}
                   {(input.goal === "sell" || input.goal === "mixed-use") && (
-                    <NumField label="Target sale price" value={input.targetSalePrice} onChange={(v) => set("targetSalePrice", v)} prefix={currency.symbol} />
+                    <div className="mt-2">
+                      <NumField label="Target sale price" value={input.targetSalePrice} onChange={(v) => set("targetSalePrice", v)} prefix={currency.symbol} min={0} />
+                    </div>
                   )}
                   {input.goal === "mixed-use" && (
-                    <NumField label="Commercial %" value={input.commercialPct} onChange={(v) => set("commercialPct", Math.max(0, Math.min(80, v)))} suffix="%" tooltip="Percentage of building used for commercial" />
+                    <div className="mt-2">
+                      <NumField label="Commercial %" value={input.commercialPct} onChange={(v) => set("commercialPct", Math.max(0, Math.min(80, v)))} suffix="%" min={0} max={80} tooltip="Percentage of building used for commercial" />
+                    </div>
                   )}
                 </div>
-              )}
 
-              {/* STEP 1: Location */}
-              {step === 1 && (
-                <div className="space-y-3">
-                  <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Where are you building?</h3>
-                  <div className="grid grid-cols-2 gap-2">
+                {/* Market */}
+                <div>
+                  <span className="text-[11px] font-medium text-earth mb-1.5 block">Market</span>
+                  <div className="grid grid-cols-4 gap-1.5">
                     {(["USA", "TOGO", "GHANA", "BENIN"] as MarketType[]).map((m) => (
-                      <Choice key={m} selected={input.market === m} onClick={() => set("market", m)}>
-                        <p className="text-[13px] font-medium text-earth">{m === "USA" ? "United States" : m.charAt(0) + m.slice(1).toLowerCase()}</p>
-                      </Choice>
+                      <button key={m} onClick={() => set("market", m)}
+                        className={`py-2.5 rounded-xl text-center transition-all text-[11px] font-medium ${input.market === m ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/20 text-muted hover:bg-warm/40 border border-transparent"}`}>
+                        {m === "USA" ? "USA" : m.charAt(0) + m.slice(1).toLowerCase()}
+                      </button>
                     ))}
                   </div>
-                  {input.market && (
-                    <>
-                      <div className="relative">
-                        <div className="flex items-center gap-1 mb-1">
-                          <span className="text-[11px] font-medium text-earth">City / Region</span>
-                        </div>
-                        <div className="relative">
-                          <MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/40" />
-                          <input type="text" value={input.city}
-                            onChange={(e) => { set("city", e.target.value); setShowSuggestions(true); }}
-                            onFocus={() => setShowSuggestions(true)}
-                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                            placeholder={isUSA ? "e.g. Houston, TX" : "e.g. Lome"}
-                            className="w-full pl-9 pr-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20" />
-                        </div>
-                        {showSuggestions && suggestions.length > 0 && (
-                          <div className="absolute z-30 left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden">
-                            {suggestions.map((city) => (
-                              <button key={city} onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { set("city", city); setShowSuggestions(false); }}
-                                className="w-full text-left px-3 py-2 text-[12px] text-earth hover:bg-warm/30 border-b border-border/20 last:border-b-0">
-                                {city}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                </div>
+
+                {/* Location */}
+                {input.market && (
+                  <div>
+                    <div className="relative">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="text-[11px] font-medium text-earth">City / Region</span>
                       </div>
-                      {isUSA && (
-                        <div>
-                          <div className="flex items-center gap-1 mb-1">
-                            <span className="text-[11px] font-medium text-earth">ZIP code</span>
-                            {zipLoading && <span className="text-[9px] text-clay animate-pulse">Looking up...</span>}
-                          </div>
-                          <input type="text" value={input.zipCode} inputMode="numeric" maxLength={5}
-                            onChange={(e) => set("zipCode", e.target.value.replace(/\D/g, "").slice(0, 5))}
-                            placeholder="e.g. 77001"
-                            className="w-full px-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth font-data focus:outline-none focus:ring-2 focus:ring-clay/20" />
-                          {input.zipCode.length === 5 && input.city && !zipLoading && (
-                            <p className="text-[10px] text-success mt-1 flex items-center gap-1"><Check size={10} /> {input.city}</p>
-                          )}
+                      <div className="relative">
+                        <MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/40" />
+                        <input type="text" value={input.city}
+                          onChange={(e) => { set("city", e.target.value); setShowSuggestions(true); }}
+                          onFocus={() => setShowSuggestions(true)}
+                          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                          placeholder={isUSA ? "e.g. Houston, TX" : "e.g. Lome"}
+                          className="w-full pl-9 pr-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20" />
+                      </div>
+                      {showSuggestions && suggestions.length > 0 && (
+                        <div className="absolute z-30 left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden">
+                          {suggestions.map((city) => (
+                            <button key={city} onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => { set("city", city); setShowSuggestions(false); }}
+                              className="w-full text-left px-3 py-2 text-[12px] text-earth hover:bg-warm/30 border-b border-border/20 last:border-b-0">
+                              {city}
+                            </button>
+                          ))}
                         </div>
                       )}
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* STEP 2: Property */}
-              {step === 2 && (
-                <div className="space-y-4">
-                  <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Property details</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["SFH", "DUPLEX", "TRIPLEX", "FOURPLEX"].map((t) => (
-                      <Choice key={t} selected={input.propertyType === t} onClick={() => set("propertyType", t)}>
-                        <p className="text-[12px] font-medium text-earth">{t === "SFH" ? "Single family" : t.charAt(0) + t.slice(1).toLowerCase()}</p>
-                      </Choice>
-                    ))}
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-medium text-earth mb-1.5 block">Size</span>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { id: "compact", label: isUSA ? "1,200" : "80" },
-                        { id: "standard", label: isUSA ? "1,800" : "130" },
-                        { id: "large", label: isUSA ? "2,800" : "200" },
-                        { id: "estate", label: isUSA ? "4,000" : "300" },
-                        { id: "custom", label: "Custom" },
-                      ].map((s) => (
-                        <button key={s.id} onClick={() => set("sizeCategory", s.id)}
-                          className={`px-2 py-2 rounded-lg text-[11px] font-medium text-center transition-all ${input.sizeCategory === s.id ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/20 text-muted hover:bg-warm/40 border border-transparent"}`}>
-                          {s.label}{s.id !== "custom" ? ` ${sizeUnit}` : ""}
-                        </button>
-                      ))}
                     </div>
-                    {input.sizeCategory === "custom" && (
-                      <NumField label={`Custom size (${sizeUnit})`} value={input.customSize} onChange={(v) => set("customSize", v)} suffix={sizeUnit} min={100} />
+                    {isUSA && (
+                      <div className="mt-2">
+                        <div className="flex items-center gap-1 mb-1">
+                          <span className="text-[11px] font-medium text-earth">ZIP code</span>
+                          {zipLoading && <span className="text-[9px] text-clay animate-pulse">Looking up...</span>}
+                        </div>
+                        <input type="text" value={input.zipCode} inputMode="numeric" maxLength={5}
+                          onChange={(e) => set("zipCode", e.target.value.replace(/\D/g, "").slice(0, 5))}
+                          placeholder="e.g. 77001"
+                          className="w-full px-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth font-data focus:outline-none focus:ring-2 focus:ring-clay/20" />
+                        {input.zipCode.length === 5 && input.city && !zipLoading && (
+                          <p className="text-[10px] text-success mt-1 flex items-center gap-1"><Check size={10} /> {input.city}</p>
+                        )}
+                      </div>
                     )}
                   </div>
-                  <div className="flex justify-around pt-1">
-                    <Stepper value={input.bedrooms} onChange={(v) => set("bedrooms", v)} min={1} max={8} label="Beds" />
-                    <Stepper value={input.bathrooms} onChange={(v) => set("bathrooms", v)} min={1} max={6} label="Baths" />
-                    <Stepper value={input.stories} onChange={(v) => set("stories", v)} min={1} max={3} label="Stories" />
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-medium text-earth mb-1.5 block">Features</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {featureList.map((f) => {
-                        const on = input.features.includes(f.id);
-                        return (
-                          <button key={f.id} onClick={() => set("features", on ? input.features.filter((x) => x !== f.id) : [...input.features, f.id])}
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-medium transition-all ${on ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/15 text-muted hover:bg-warm/30 border border-transparent"}`}>
-                            <f.Icon size={10} /> {f.label}
-                          </button>
-                        );
-                      })}
-                    </div>
+                )}
+
+                {/* Property Type */}
+                <div>
+                  <span className="text-[11px] font-medium text-earth mb-1.5 block">Type</span>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {["SFH", "DUPLEX", "TRIPLEX", "FOURPLEX"].map((t) => (
+                      <button key={t} onClick={() => set("propertyType", t)}
+                        className={`py-2 rounded-lg text-[11px] font-medium text-center transition-all ${input.propertyType === t ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/20 text-muted hover:bg-warm/40 border border-transparent"}`}>
+                        {t === "SFH" ? "Single" : t.charAt(0) + t.slice(1).toLowerCase()}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              )}
 
-              {/* STEP 3: Land */}
-              {step === 3 && (
-                <div className="space-y-3">
-                  <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Land situation</h3>
-                  <div className="space-y-2">
+                {/* Size */}
+                <div>
+                  <span className="text-[11px] font-medium text-earth mb-1.5 block">Size</span>
+                  <div className="grid grid-cols-5 gap-1">
                     {[
-                      { id: "already-own", label: "I already own land", desc: "No land cost" },
-                      { id: "inherited", label: "Inherited / Family land", desc: "No land cost" },
-                      { id: "buying", label: "Buying land (known price)", desc: "Enter the price below" },
-                      { id: "estimate", label: "Estimate for me", desc: "We will estimate based on your area" },
+                      { id: "compact", label: isUSA ? "1,200" : "80" },
+                      { id: "standard", label: isUSA ? "1,800" : "130" },
+                      { id: "large", label: isUSA ? "2,800" : "200" },
+                      { id: "estate", label: isUSA ? "4,000" : "300" },
+                      { id: "custom", label: "Custom" },
+                    ].map((s) => (
+                      <button key={s.id} onClick={() => set("sizeCategory", s.id)}
+                        className={`px-1.5 py-2 rounded-lg text-[10px] font-medium text-center transition-all ${input.sizeCategory === s.id ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/20 text-muted hover:bg-warm/40 border border-transparent"}`}>
+                        {s.label}{s.id !== "custom" ? ` ${sizeUnit}` : ""}
+                      </button>
+                    ))}
+                  </div>
+                  {input.sizeCategory === "custom" && (
+                    <div className="mt-2">
+                      <NumField label={`Custom size (${sizeUnit})`} value={input.customSize} onChange={(v) => set("customSize", v)} suffix={sizeUnit} min={100} max={50000} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Beds / Baths / Stories */}
+                <div className="flex justify-around pt-1">
+                  <Stepper value={input.bedrooms} onChange={(v) => set("bedrooms", v)} min={1} max={8} label="Beds" />
+                  <Stepper value={input.bathrooms} onChange={(v) => set("bathrooms", v)} min={1} max={6} label="Baths" />
+                  <Stepper value={input.stories} onChange={(v) => set("stories", v)} min={1} max={3} label="Stories" />
+                </div>
+              </div>
+            </CollapsibleCard>
+
+            {/* ── Card 2: Land & Features ── */}
+            <CollapsibleCard title="Land & Features" icon={Ruler} defaultOpen={true}>
+              <div className="space-y-4">
+                {/* Land option */}
+                <div>
+                  <span className="text-[11px] font-medium text-earth mb-1.5 block">Land situation</span>
+                  <div className="space-y-1.5">
+                    {[
+                      { id: "already-own", label: "Already own land", desc: "No land cost" },
+                      { id: "inherited", label: "Inherited / Family", desc: "No land cost" },
+                      { id: "buying", label: "Buying (known price)", desc: "Enter price" },
+                      { id: "estimate", label: "Estimate for me", desc: "Based on area" },
                     ].map((o) => (
                       <Choice key={o.id} selected={input.landOption === o.id} onClick={() => set("landOption", o.id)}>
                         <p className="text-[12px] font-medium text-earth">{o.label}</p>
@@ -718,10 +743,12 @@ export default function AnalyzePage() {
                     ))}
                   </div>
                   {input.landOption === "buying" && (
-                    <NumField label="Land price" value={input.landPrice} onChange={(v) => set("landPrice", Math.max(0, v))} prefix={currency.symbol} />
+                    <div className="mt-2">
+                      <NumField label="Land price" value={input.landPrice} onChange={(v) => set("landPrice", Math.max(0, v))} prefix={currency.symbol} min={0} />
+                    </div>
                   )}
                   {isWA && (
-                    <div>
+                    <div className="mt-2">
                       <span className="text-[11px] font-medium text-earth mb-1 block">Land title status</span>
                       <select value={input.titreFoncierStatus} onChange={(e) => set("titreFoncierStatus", e.target.value)}
                         className="w-full px-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[12px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20">
@@ -734,263 +761,219 @@ export default function AnalyzePage() {
                     </div>
                   )}
                 </div>
-              )}
 
-              {/* STEP 4: Finance */}
-              {step === 4 && (
-                <div className="space-y-3">
-                  <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Financing</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(isUSA
-                      ? [{ id: "cash", label: "Cash" }, { id: "construction_loan", label: "Construction loan" }, { id: "fha_203k", label: "FHA 203(k)" }]
-                      : [{ id: "cash", label: "Cash" }, { id: "phased_cash", label: "Phased" }, { id: "diaspora", label: "Diaspora" }, { id: "tontine", label: "Tontine" }]
-                    ).map((f) => (
-                      <Choice key={f.id} selected={input.financingType === f.id} onClick={() => set("financingType", f.id)}>
-                        <p className="text-[12px] font-medium text-earth">{f.label}</p>
-                      </Choice>
-                    ))}
+                {/* Features */}
+                <div>
+                  <span className="text-[11px] font-medium text-earth mb-1.5 block">Features</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {featureList.map((f) => {
+                      const on = input.features.includes(f.id);
+                      return (
+                        <button key={f.id} onClick={() => set("features", on ? input.features.filter((x) => x !== f.id) : [...input.features, f.id])}
+                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-medium transition-all ${on ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/15 text-muted hover:bg-warm/30 border border-transparent"}`}>
+                          <f.Icon size={10} /> {f.label}
+                        </button>
+                      );
+                    })}
                   </div>
-                  {input.financingType === "phased_cash" && <p className="text-[10px] text-muted leading-relaxed">Build in stages as cash becomes available. Timeline is typically 2-3x longer.</p>}
-                  {input.financingType === "diaspora" && <p className="text-[10px] text-muted leading-relaxed">Fund from abroad via remittances. Requires a trusted on-site representative.</p>}
-                  {input.financingType === "tontine" && <p className="text-[10px] text-muted leading-relaxed">Pool savings with a group. Members take turns receiving the lump sum.</p>}
-                  {(input.financingType === "construction_loan" || input.financingType === "fha_203k") && (
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <NumField label="Down payment" value={input.downPaymentPct} onChange={(v) => set("downPaymentPct", Math.max(0, Math.min(100, v)))} suffix="%" tooltip="Percentage you pay upfront" />
-                        <NumField label="Interest rate" value={input.loanRate} onChange={(v) => set("loanRate", Math.max(0, Math.min(25, v)))} suffix="%" step={0.1} tooltip="Annual rate. US avg 7-8%" />
+                </div>
+              </div>
+            </CollapsibleCard>
+
+            {/* ── Card 3: Financing ── */}
+            <CollapsibleCard title="Financing" icon={CreditCard} defaultOpen={true}>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  {(isUSA
+                    ? [{ id: "cash", label: "Cash" }, { id: "construction_loan", label: "Construction loan" }, { id: "fha_203k", label: "FHA 203(k)" }]
+                    : [{ id: "cash", label: "Cash" }, { id: "phased_cash", label: "Phased" }, { id: "diaspora", label: "Diaspora" }, { id: "tontine", label: "Tontine" }]
+                  ).map((f) => (
+                    <Choice key={f.id} selected={input.financingType === f.id} onClick={() => set("financingType", f.id)}>
+                      <p className="text-[12px] font-medium text-earth">{f.label}</p>
+                    </Choice>
+                  ))}
+                </div>
+                {input.financingType === "phased_cash" && <p className="text-[10px] text-muted leading-relaxed">Build in stages as cash becomes available. Timeline is typically 2-3x longer.</p>}
+                {input.financingType === "diaspora" && <p className="text-[10px] text-muted leading-relaxed">Fund from abroad via remittances. Requires a trusted on-site representative.</p>}
+                {input.financingType === "tontine" && <p className="text-[10px] text-muted leading-relaxed">Pool savings with a group. Members take turns receiving the lump sum.</p>}
+                {(input.financingType === "construction_loan" || input.financingType === "fha_203k") && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <NumField label="Down payment" value={input.downPaymentPct} onChange={(v) => set("downPaymentPct", Math.max(0, Math.min(100, v)))} suffix="%" min={0} max={100} tooltip="Percentage you pay upfront" />
+                      <NumField label="Interest rate" value={input.loanRate} onChange={(v) => set("loanRate", Math.max(0, Math.min(25, v)))} suffix="%" step={0.1} min={0} max={25} tooltip="Annual rate. US avg 7-8%" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-medium text-earth mb-1 block">Loan term</span>
+                      <div className="flex gap-1.5">
+                        {[15, 20, 25, 30].map((y) => (
+                          <button key={y} onClick={() => set("loanTerm", y)}
+                            className={`flex-1 py-1.5 rounded-lg text-[11px] font-medium transition-all ${input.loanTerm === y ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/20 text-muted border border-transparent"}`}>
+                            {y}yr
+                          </button>
+                        ))}
                       </div>
-                      <div>
-                        <span className="text-[11px] font-medium text-earth mb-1 block">Loan term</span>
-                        <div className="flex gap-1.5">
-                          {[15, 20, 25, 30].map((y) => (
-                            <button key={y} onClick={() => set("loanTerm", y)}
-                              className={`flex-1 py-1.5 rounded-lg text-[11px] font-medium transition-all ${input.loanTerm === y ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/20 text-muted border border-transparent"}`}>
-                              {y}yr
-                            </button>
-                          ))}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <NumField label="Monthly income" value={input.monthlyIncome} onChange={(v) => set("monthlyIncome", v)} prefix={currency.symbol} min={0} tooltip="Gross monthly income for DTI calculation" />
+                      <NumField label="Existing debts" value={input.existingDebts} onChange={(v) => set("existingDebts", v)} prefix={currency.symbol} min={0} tooltip="Total monthly debt payments" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CollapsibleCard>
+          </div>
+
+          {/* ════════════════════════════════════════════════════════════════
+             RIGHT: Sticky results panel (single scroll, no tabs)
+             ════════════════════════════════════════════════════════════════ */}
+          <div className="flex-1 min-w-0">
+            {hasResults ? (
+              <div className="lg:sticky lg:top-4 space-y-5">
+
+                {/* ── Score Ring hero ── */}
+                <div className="bg-surface border border-border rounded-2xl p-6">
+                  <div className="flex flex-col items-center mb-5">
+                    <ScoreRing score={results!.dealScore} />
+                    <p className="text-[12px] text-muted mt-3 text-center max-w-[320px] leading-relaxed">{results!.dealScoreSummary}</p>
+                  </div>
+
+                  {/* ── Key metrics grid (4 cards) ── */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-warm/20 rounded-xl px-4 py-3">
+                      <p className="text-[9px] text-muted uppercase tracking-wider mb-0.5">Total Cost</p>
+                      <p className="text-[18px] font-bold font-data text-earth leading-tight">{fmtC(results!.totalCost, currency)}</p>
+                      {dualUSD && <p className="text-[10px] text-muted font-data mt-0.5">~${dualUSD.toLocaleString()} USD</p>}
+                    </div>
+                    <div className="bg-warm/20 rounded-xl px-4 py-3">
+                      <p className="text-[9px] text-muted uppercase tracking-wider mb-0.5">Per {sizeUnit}</p>
+                      <p className="text-[18px] font-bold font-data text-earth leading-tight">{fmt(results!.costPerUnit, currency)}</p>
+                      <p className="text-[10px] text-muted font-data mt-0.5">{buildSize.toLocaleString()} {sizeUnit}</p>
+                    </div>
+                    {results!.monthlyCost > 0 && (
+                      <div className="bg-warm/20 rounded-xl px-4 py-3">
+                        <p className="text-[9px] text-muted uppercase tracking-wider mb-0.5">Monthly</p>
+                        <p className="text-[18px] font-bold font-data text-clay leading-tight">{fmt(results!.monthlyCost, currency)}</p>
+                      </div>
+                    )}
+                    {results!.roi !== 0 && (
+                      <div className="bg-warm/20 rounded-xl px-4 py-3">
+                        <p className="text-[9px] text-muted uppercase tracking-wider mb-0.5">{input.goal === "rent" ? "Yield" : "ROI"}</p>
+                        <p className={`text-[18px] font-bold font-data leading-tight ${results!.roi > 0 ? "text-success" : "text-danger"}`}>{results!.roi}%</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Cost Breakdown (horizontal bars) ── */}
+                {breakdown.length > 0 && (
+                  <div className="bg-surface border border-border rounded-2xl p-5">
+                    <h4 className="text-[13px] font-semibold text-earth mb-4" style={{ fontFamily: "var(--font-heading)" }}>Cost Breakdown</h4>
+                    <HorizontalBars items={breakdown} currency={currency} />
+                  </div>
+                )}
+
+                {/* ── Cost summary lines ── */}
+                <div className="bg-surface border border-border rounded-2xl p-5 space-y-4">
+                  <h4 className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Summary</h4>
+                  <div className="space-y-1.5">
+                    {[
+                      { l: "Construction", v: results!.constructionCost },
+                      { l: "Land", v: results!.landCost },
+                      { l: "Soft costs", v: results!.softCosts },
+                      { l: "Contingency", v: results!.contingency },
+                      ...(results!.financingCosts > 0 ? [{ l: "Financing", v: results!.financingCosts }] : []),
+                    ].map((r) => (
+                      <div key={r.l} className="flex justify-between text-[12px]">
+                        <span className="text-muted">{r.l}</span>
+                        <span className="font-data text-earth">{fmt(r.v, currency)}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between text-[13px] font-semibold pt-1.5 border-t border-border/60">
+                      <span className="text-earth">Total</span>
+                      <span className="font-data text-earth">{fmt(results!.totalCost, currency)}</span>
+                    </div>
+                  </div>
+
+                  {/* DTI / LTV */}
+                  {(results!.dtiRatio !== null || results!.ltvRatio > 0) && (
+                    <div className="flex gap-3">
+                      {results!.dtiRatio !== null && (
+                        <div className={`flex-1 px-3 py-2 rounded-lg ${results!.dtiRatio > 43 ? "bg-danger/5 border border-danger/20" : "bg-warm/20"}`}>
+                          <p className="text-[9px] text-muted uppercase">DTI Ratio</p>
+                          <p className={`text-[14px] font-bold font-data ${results!.dtiRatio > 43 ? "text-danger" : "text-earth"}`}>{results!.dtiRatio}%</p>
                         </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <NumField label="Monthly income" value={input.monthlyIncome} onChange={(v) => set("monthlyIncome", v)} prefix={currency.symbol} tooltip="Gross monthly income for DTI calculation" />
-                        <NumField label="Existing debts" value={input.existingDebts} onChange={(v) => set("existingDebts", v)} prefix={currency.symbol} tooltip="Total monthly debt payments" />
+                      )}
+                      <div className="flex-1 px-3 py-2 rounded-lg bg-warm/20">
+                        <p className="text-[9px] text-muted uppercase">LTV Ratio</p>
+                        <p className="text-[14px] font-bold font-data text-earth">{results!.ltvRatio}%</p>
                       </div>
                     </div>
                   )}
                 </div>
-              )}
 
-              {/* STEP 5: Timeline */}
-              {step === 5 && (
-                <div className="space-y-3">
-                  <h3 className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Timeline</h3>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { m: 6, label: "6 mo", desc: "Aggressive" },
-                      { m: 9, label: "9 mo", desc: "Fast" },
-                      { m: 12, label: "12 mo", desc: "Standard" },
-                      { m: 18, label: "18 mo", desc: "Relaxed" },
-                      { m: 24, label: "24 mo", desc: "Phased" },
-                      { m: 36, label: "36+ mo", desc: "Multi-phase" },
-                    ].map((t) => (
-                      <button key={t.m} onClick={() => set("timelineMonths", t.m)}
-                        className={`py-3 rounded-xl text-center transition-all ${input.timelineMonths === t.m ? "bg-clay/10 border-2 border-clay/30" : "bg-warm/20 border-2 border-transparent hover:bg-warm/40"}`}>
-                        <p className="text-[14px] font-bold font-data text-earth">{t.label}</p>
-                        <p className="text-[9px] text-muted">{t.desc}</p>
-                      </button>
+                {/* ── Risk flags ── */}
+                {results!.riskFlags.length > 0 && (
+                  <div className="bg-surface border border-border rounded-2xl p-5 space-y-2.5">
+                    <h4 className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Risk Flags</h4>
+                    {results!.riskFlags.map((f, i) => (
+                      <div key={i} className={`flex gap-2.5 p-3 rounded-xl text-[11px] ${f.level === "critical" ? "bg-danger/5 border border-danger/20" : f.level === "warning" ? "bg-warning/5 border border-warning/20" : "bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"}`}>
+                        {f.level === "critical" ? <AlertCircle size={14} className="text-danger shrink-0 mt-0.5" /> : f.level === "warning" ? <AlertTriangle size={14} className="text-warning shrink-0 mt-0.5" /> : <Info size={14} className="text-blue-500 shrink-0 mt-0.5" />}
+                        <div><p className="font-medium text-earth">{f.title}</p><p className="text-muted mt-0.5 leading-relaxed">{f.detail}</p></div>
+                      </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Navigation */}
-              <div className="flex items-center justify-between mt-5 pt-4 border-t border-border/40">
-                <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}
-                  className="flex items-center gap-1 text-[12px] text-muted hover:text-earth disabled:opacity-30 transition-colors">
-                  <ChevronLeft size={14} /> Back
-                </button>
-                <div className="flex items-center gap-1">
-                  {STEPS.map((_, i) => (
-                    <button key={i} onClick={() => setStep(i)} className={`w-1.5 h-1.5 rounded-full transition-all ${i === step ? "bg-clay w-4" : i < step ? "bg-clay/40" : "bg-border"}`} />
-                  ))}
-                </div>
-                <button onClick={() => setStep(Math.min(STEPS.length - 1, step + 1))} disabled={step === STEPS.length - 1}
-                  className="flex items-center gap-1 text-[12px] text-earth font-medium hover:text-clay disabled:opacity-30 transition-colors">
-                  Next <ChevronRight size={14} />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* ════════════════════════════════════════════════════════════════
-             RIGHT: Results panel
-             ════════════════════════════════════════════════════════════════ */}
-          <div className="flex-1 min-w-0">
-            {hasResults ? (
-              <div className="space-y-4 lg:sticky lg:top-4">
-                {/* Score + Key metrics hero */}
-                <div className="bg-surface border border-border rounded-2xl p-5">
-                  <div className="flex items-center gap-5">
-                    <ScoreRing score={results!.dealScore} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] text-muted mb-2">{results!.dealScoreSummary}</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-warm/20 rounded-lg px-3 py-2">
-                          <p className="text-[9px] text-muted uppercase tracking-wider">Total Cost</p>
-                          <p className="text-[15px] font-bold font-data text-earth">{fmtC(results!.totalCost, currency)}</p>
-                          {dualUSD && <p className="text-[9px] text-muted font-data">~${dualUSD.toLocaleString()} USD</p>}
-                        </div>
-                        <div className="bg-warm/20 rounded-lg px-3 py-2">
-                          <p className="text-[9px] text-muted uppercase tracking-wider">Per {sizeUnit}</p>
-                          <p className="text-[15px] font-bold font-data text-earth">{fmt(results!.costPerUnit, currency)}</p>
-                          <p className="text-[9px] text-muted font-data">{buildSize.toLocaleString()} {sizeUnit}</p>
-                        </div>
-                        {results!.monthlyCost > 0 && (
-                          <div className="bg-warm/20 rounded-lg px-3 py-2">
-                            <p className="text-[9px] text-muted uppercase tracking-wider">Monthly</p>
-                            <p className="text-[15px] font-bold font-data text-clay">{fmt(results!.monthlyCost, currency)}</p>
-                          </div>
-                        )}
-                        {results!.roi !== 0 && (
-                          <div className="bg-warm/20 rounded-lg px-3 py-2">
-                            <p className="text-[9px] text-muted uppercase tracking-wider">{input.goal === "rent" ? "Yield" : "ROI"}</p>
-                            <p className={`text-[15px] font-bold font-data ${results!.roi > 0 ? "text-success" : "text-danger"}`}>{results!.roi}%</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Result tabs */}
-                <div className="flex gap-1 bg-warm/20 p-1 rounded-xl">
-                  {([
-                    { id: "summary" as const, label: "Summary" },
-                    { id: "breakdown" as const, label: "Breakdown" },
-                    { id: "location" as const, label: "Location" },
-                    { id: "scenarios" as const, label: "Scenarios" },
-                  ]).map((t) => (
-                    <button key={t.id} onClick={() => setResultTab(t.id)}
-                      className={`flex-1 py-1.5 rounded-lg text-[11px] font-medium transition-all ${resultTab === t.id ? "bg-surface text-earth shadow-sm" : "text-muted hover:text-earth"}`}>
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Tab: Summary */}
-                {resultTab === "summary" && (
-                  <div className="bg-surface border border-border rounded-2xl p-5 space-y-4">
-                    {/* Cost lines */}
-                    <div className="space-y-1.5">
-                      {[
-                        { l: "Construction", v: results!.constructionCost },
-                        { l: "Land", v: results!.landCost },
-                        { l: "Soft costs", v: results!.softCosts },
-                        { l: "Contingency", v: results!.contingency },
-                        ...(results!.financingCosts > 0 ? [{ l: "Financing", v: results!.financingCosts }] : []),
-                      ].map((r) => (
-                        <div key={r.l} className="flex justify-between text-[12px]">
-                          <span className="text-muted">{r.l}</span>
-                          <span className="font-data text-earth">{fmt(r.v, currency)}</span>
-                        </div>
-                      ))}
-                      <div className="flex justify-between text-[13px] font-semibold pt-1.5 border-t border-border/60">
-                        <span className="text-earth">Total</span>
-                        <span className="font-data text-earth">{fmt(results!.totalCost, currency)}</span>
-                      </div>
-                    </div>
-                    {/* DTI / LTV */}
-                    {(results!.dtiRatio !== null || results!.ltvRatio > 0) && (
-                      <div className="flex gap-3">
-                        {results!.dtiRatio !== null && (
-                          <div className={`flex-1 px-3 py-2 rounded-lg ${results!.dtiRatio > 43 ? "bg-danger/5 border border-danger/20" : "bg-warm/20"}`}>
-                            <p className="text-[9px] text-muted uppercase">DTI Ratio</p>
-                            <p className={`text-[14px] font-bold font-data ${results!.dtiRatio > 43 ? "text-danger" : "text-earth"}`}>{results!.dtiRatio}%</p>
-                          </div>
-                        )}
-                        <div className="flex-1 px-3 py-2 rounded-lg bg-warm/20">
-                          <p className="text-[9px] text-muted uppercase">LTV Ratio</p>
-                          <p className="text-[14px] font-bold font-data text-earth">{results!.ltvRatio}%</p>
-                        </div>
-                      </div>
-                    )}
-                    {/* Risk flags */}
-                    {results!.riskFlags.length > 0 && (
-                      <div className="space-y-1.5">
-                        <p className="text-[11px] font-semibold text-earth uppercase tracking-wider">Risks</p>
-                        {results!.riskFlags.map((f, i) => (
-                          <div key={i} className={`flex gap-2 p-2.5 rounded-lg text-[11px] ${f.level === "critical" ? "bg-danger/5 border border-danger/20" : f.level === "warning" ? "bg-warning/5 border border-warning/20" : "bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"}`}>
-                            {f.level === "critical" ? <AlertCircle size={13} className="text-danger shrink-0 mt-0.5" /> : f.level === "warning" ? <AlertTriangle size={13} className="text-warning shrink-0 mt-0.5" /> : <Info size={13} className="text-blue-500 shrink-0 mt-0.5" />}
-                            <div><p className="font-medium text-earth">{f.title}</p><p className="text-muted mt-0.5 leading-relaxed">{f.detail}</p></div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 )}
 
-                {/* Tab: Breakdown */}
-                {resultTab === "breakdown" && (
-                  <div className="bg-surface border border-border rounded-2xl p-5">
-                    <DonutChart items={breakdown} currency={currency} />
-                  </div>
-                )}
-
-                {/* Tab: Location */}
-                {resultTab === "location" && (
+                {/* ── Location Intelligence ── */}
+                {locationData && (
                   <div className="bg-surface border border-border rounded-2xl p-5 space-y-4">
-                    {locationData ? (
-                      <>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="p-3 bg-warm/15 rounded-xl">
-                            <p className="text-[9px] text-muted uppercase tracking-wider">Cost Index</p>
-                            <p className={`text-[16px] font-bold font-data ${locationData.costIndex < 1 ? "text-success" : locationData.costIndex > 1.1 ? "text-warning" : "text-earth"}`}>{locationData.costIndex.toFixed(2)}x</p>
-                            <p className="text-[9px] text-muted">{getCostComparisonText(locationData.costIndex)}</p>
-                          </div>
-                          <div className="p-3 bg-warm/15 rounded-xl">
-                            <p className="text-[9px] text-muted uppercase tracking-wider">Climate</p>
-                            <p className="text-[13px] font-semibold text-earth">{getClimateLabel(locationData.climate)}</p>
-                            <p className="text-[9px] text-muted">Build: {formatMonthList(locationData.buildingSeasonMonths)}</p>
-                          </div>
-                          <div className="p-3 bg-warm/15 rounded-xl">
-                            <p className="text-[9px] text-muted uppercase tracking-wider">Property Tax</p>
-                            <p className="text-[16px] font-bold font-data text-earth">{locationData.propertyTaxRate}%</p>
-                          </div>
-                          <div className="p-3 bg-warm/15 rounded-xl">
-                            <p className="text-[9px] text-muted uppercase tracking-wider">Permits</p>
-                            <p className="text-[14px] font-bold font-data text-earth">{fmt(locationData.permitCostEstimate, currency)}</p>
-                          </div>
-                        </div>
-                        {locationData.localNotes && <p className="text-[11px] text-muted italic leading-relaxed">{locationData.localNotes}</p>}
-                        {/* Cross market */}
-                        {crossMarket.length > 1 && (
-                          <div>
-                            <p className="text-[11px] font-semibold text-earth uppercase tracking-wider mb-2">Cross-Market (USD)</p>
-                            <div className="space-y-1">
-                              {crossMarket.map((c) => (
-                                <div key={c.market} className={`flex items-center justify-between px-3 py-2 rounded-lg ${c.current ? "bg-clay/8 border border-clay/15" : "bg-warm/10"}`}>
-                                  <span className={`text-[12px] ${c.current ? "font-semibold text-earth" : "text-muted"}`}>{c.market} {c.current && "(you)"}</span>
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-[12px] font-data font-medium text-earth">${c.usd.toLocaleString()}</span>
-                                    <span className={`text-[10px] font-data font-semibold w-6 text-right ${c.score >= 65 ? "text-success" : c.score >= 50 ? "text-warning" : "text-danger"}`}>{c.score}</span>
-                                  </div>
-                                </div>
-                              ))}
+                    <h4 className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Location Intelligence</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-3 bg-warm/15 rounded-xl">
+                        <p className="text-[9px] text-muted uppercase tracking-wider">Cost Index</p>
+                        <p className={`text-[16px] font-bold font-data ${locationData.costIndex < 1 ? "text-success" : locationData.costIndex > 1.1 ? "text-warning" : "text-earth"}`}>{locationData.costIndex.toFixed(2)}x</p>
+                        <p className="text-[9px] text-muted">{getCostComparisonText(locationData.costIndex)}</p>
+                      </div>
+                      <div className="p-3 bg-warm/15 rounded-xl">
+                        <p className="text-[9px] text-muted uppercase tracking-wider">Climate</p>
+                        <p className="text-[13px] font-semibold text-earth">{getClimateLabel(locationData.climate)}</p>
+                        <p className="text-[9px] text-muted">Build: {formatMonthList(locationData.buildingSeasonMonths)}</p>
+                      </div>
+                      <div className="p-3 bg-warm/15 rounded-xl">
+                        <p className="text-[9px] text-muted uppercase tracking-wider">Property Tax</p>
+                        <p className="text-[16px] font-bold font-data text-earth">{locationData.propertyTaxRate}%</p>
+                      </div>
+                      <div className="p-3 bg-warm/15 rounded-xl">
+                        <p className="text-[9px] text-muted uppercase tracking-wider">Permits</p>
+                        <p className="text-[14px] font-bold font-data text-earth">{fmt(locationData.permitCostEstimate, currency)}</p>
+                      </div>
+                    </div>
+                    {locationData.localNotes && <p className="text-[11px] text-muted italic leading-relaxed">{locationData.localNotes}</p>}
+
+                    {/* Cross market */}
+                    {crossMarket.length > 1 && (
+                      <div>
+                        <p className="text-[11px] font-semibold text-earth uppercase tracking-wider mb-2">Cross-Market (USD)</p>
+                        <div className="space-y-1">
+                          {crossMarket.map((c) => (
+                            <div key={c.market} className={`flex items-center justify-between px-3 py-2 rounded-lg ${c.current ? "bg-clay/8 border border-clay/15" : "bg-warm/10"}`}>
+                              <span className={`text-[12px] ${c.current ? "font-semibold text-earth" : "text-muted"}`}>{c.market} {c.current && "(you)"}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[12px] font-data font-medium text-earth">${c.usd.toLocaleString()}</span>
+                                <span className={`text-[10px] font-data font-semibold w-6 text-right ${c.score >= 65 ? "text-success" : c.score >= 50 ? "text-warning" : "text-danger"}`}>{c.score}</span>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="text-center py-8">
-                        <MapPin size={24} className="mx-auto text-muted/30 mb-2" />
-                        <p className="text-[12px] text-muted">Enter a city or ZIP code to see location intelligence</p>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Tab: Scenarios */}
-                {resultTab === "scenarios" && (
+                {/* ── Sensitivity table ── */}
+                {scenarios.length > 0 && (
                   <div className="bg-surface border border-border rounded-2xl p-5 space-y-3">
+                    <h4 className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>Sensitivity</h4>
                     <p className="text-[11px] text-muted">How your deal changes under different conditions</p>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between px-3 py-2 bg-warm/20 rounded-lg">
@@ -1020,46 +1003,76 @@ export default function AnalyzePage() {
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-warm/40 flex items-center justify-center mb-4">
-                  <Calculator size={24} className="text-clay" />
+              <div className="flex flex-col items-center justify-center py-20 text-center lg:sticky lg:top-4">
+                <div className="w-16 h-16 rounded-2xl bg-warm/40 flex items-center justify-center mb-4">
+                  <Calculator size={28} className="text-clay" />
                 </div>
-                <h3 className="text-[15px] font-semibold text-earth mb-1" style={{ fontFamily: "var(--font-heading)" }}>Start your analysis</h3>
-                <p className="text-[12px] text-muted max-w-[240px]">Select a goal and market to begin. Results update as you fill in details.</p>
+                <h3 className="text-[16px] font-semibold text-earth mb-1" style={{ fontFamily: "var(--font-heading)" }}>Start your analysis</h3>
+                <p className="text-[12px] text-muted max-w-[260px]">Select a goal and market to begin. Results update live as you fill in details.</p>
               </div>
             )}
           </div>
         </div>
       ) : (
         /* ════════════════════════════════════════════════════════════════
-           REVERSE CALCULATOR
+           REVERSE CALCULATOR -- full-width centered layout
            ════════════════════════════════════════════════════════════════ */
-        <div className="max-w-lg mx-auto space-y-4">
-          <div className="bg-surface border border-border rounded-2xl p-6">
-            <h3 className="text-[16px] font-semibold text-earth mb-1" style={{ fontFamily: "var(--font-heading)" }}>What Can I Afford?</h3>
-            <p className="text-[12px] text-muted mb-4">Enter your total budget and we will estimate the largest home you can build.</p>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                {(["USA", "TOGO", "GHANA", "BENIN"] as MarketType[]).map((m) => (
-                  <Choice key={m} selected={input.market === m} onClick={() => set("market", m)}>
-                    <p className="text-[12px] font-medium text-earth">{m === "USA" ? "United States" : m.charAt(0) + m.slice(1).toLowerCase()}</p>
-                  </Choice>
-                ))}
-              </div>
-              {input.market && (
-                <>
-                  <NumField label="City / Region" value={0} onChange={() => {}} />
-                  <div>
-                    <div className="flex items-center gap-1 mb-1"><span className="text-[11px] font-medium text-earth">City</span></div>
-                    <input type="text" value={input.city} onChange={(e) => set("city", e.target.value)} placeholder="e.g. Houston"
-                      className="w-full px-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20" />
-                  </div>
-                  <NumField label="Total budget" value={reverseBudget} onChange={setReverseBudget} prefix={currency.symbol} tooltip="Total available for land, construction, permits, and contingency" />
-                </>
-              )}
-            </div>
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="text-center mb-2">
+            <h2 className="text-[22px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>What Can I Afford?</h2>
+            <p className="text-[13px] text-muted mt-1">Enter your total budget and we will estimate the largest home you can build.</p>
           </div>
 
+          {/* Market selector as flag-style cards */}
+          <div className="grid grid-cols-4 gap-3">
+            {(["USA", "TOGO", "GHANA", "BENIN"] as MarketType[]).map((m) => {
+              const labels: Record<string, { name: string; flag: string }> = {
+                USA: { name: "United States", flag: "US" },
+                TOGO: { name: "Togo", flag: "TG" },
+                GHANA: { name: "Ghana", flag: "GH" },
+                BENIN: { name: "Benin", flag: "BJ" },
+              };
+              const info = labels[m];
+              return (
+                <button key={m} onClick={() => set("market", m)}
+                  className={`flex flex-col items-center gap-2 py-5 rounded-2xl border-2 transition-all ${input.market === m ? "border-clay bg-clay/5 shadow-sm" : "border-transparent bg-warm/20 hover:bg-warm/40"}`}>
+                  <div className="w-10 h-10 rounded-full bg-warm/40 flex items-center justify-center">
+                    <Globe size={18} className={input.market === m ? "text-clay" : "text-muted"} />
+                  </div>
+                  <span className={`text-[13px] font-medium ${input.market === m ? "text-earth" : "text-muted"}`}>{info.name}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {input.market && (
+            <div className="space-y-4">
+              {/* City */}
+              <div>
+                <div className="flex items-center gap-1 mb-1"><span className="text-[11px] font-medium text-earth">City / Region</span></div>
+                <div className="relative">
+                  <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/40" />
+                  <input type="text" value={input.city} onChange={(e) => set("city", e.target.value)} placeholder={isUSA ? "e.g. Houston, TX" : "e.g. Lome"}
+                    className="w-full pl-9 pr-3 py-2.5 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20" />
+                </div>
+              </div>
+
+              {/* Budget -- large, prominent number */}
+              <div className="bg-surface border border-border rounded-2xl p-6 text-center">
+                <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Your total budget</p>
+                <div className="relative max-w-xs mx-auto">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[18px] text-muted font-data">{currency.symbol}</span>
+                  <input type="number" value={reverseBudget || ""} onChange={(e) => setReverseBudget(Number(e.target.value) || 0)}
+                    placeholder="0"
+                    min={0}
+                    className="w-full pl-10 pr-4 py-4 bg-warm/10 border border-border/40 rounded-xl text-[28px] font-bold font-data text-earth text-center focus:outline-none focus:ring-2 focus:ring-clay/20 focus:border-clay/40" />
+                </div>
+                <p className="text-[10px] text-muted mt-2">Includes land, construction, permits, and contingency</p>
+              </div>
+            </div>
+          )}
+
+          {/* Budget too low */}
           {reverseResult && reverseBudget > 0 && reverseResult.maxSize <= 0 && (
             <div className="bg-surface border border-danger/30 rounded-2xl p-5 flex items-start gap-3">
               <AlertTriangle size={18} className="text-danger shrink-0 mt-0.5" />
@@ -1070,32 +1083,39 @@ export default function AnalyzePage() {
             </div>
           )}
 
+          {/* Results as "house card" */}
           {reverseResult && reverseBudget > 0 && reverseResult.maxSize > 0 && (
-            <div className="bg-surface border border-border rounded-2xl p-6">
-              <h3 className="text-[16px] font-semibold text-earth mb-4" style={{ fontFamily: "var(--font-heading)" }}>You Can Build</h3>
-              <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="bg-surface border border-border rounded-2xl overflow-hidden">
+              {/* Card header with visual gradient */}
+              <div className="bg-gradient-to-br from-warm to-warm/40 px-6 py-8 text-center">
+                <p className="text-[10px] text-clay uppercase tracking-widest font-semibold mb-2">You can build</p>
+                <p className="text-[32px] font-bold font-data text-earth leading-none">{reverseResult.maxSize.toLocaleString()} <span className="text-[16px] font-medium text-muted">{sizeUnit}</span></p>
+              </div>
+              {/* Property listing stats */}
+              <div className="grid grid-cols-4 border-t border-border/40">
                 {[
-                  { label: "Size", value: `${reverseResult.maxSize.toLocaleString()} ${sizeUnit}`, Icon: Ruler },
                   { label: "Beds", value: String(reverseResult.bedrooms), Icon: Bed },
                   { label: "Baths", value: String(reverseResult.bathrooms), Icon: Bath },
                   { label: "Stories", value: String(reverseResult.stories), Icon: Layers },
+                  { label: "Size", value: `${reverseResult.maxSize.toLocaleString()}`, Icon: Ruler },
                 ].map((s) => (
-                  <div key={s.label} className="bg-warm/15 rounded-xl p-3 flex items-center gap-3">
+                  <div key={s.label} className="flex flex-col items-center gap-1.5 py-4 border-r border-border/20 last:border-r-0">
                     <s.Icon size={16} className="text-clay" />
-                    <div>
-                      <p className="text-[9px] text-muted uppercase">{s.label}</p>
-                      <p className="text-[15px] font-bold font-data text-earth">{s.value}</p>
-                    </div>
+                    <span className="text-[16px] font-bold font-data text-earth">{s.value}</span>
+                    <span className="text-[9px] text-muted uppercase tracking-wider">{s.label}</span>
                   </div>
                 ))}
               </div>
-              <p className="text-[12px] text-earth">{reverseResult.description}</p>
-              <button onClick={() => {
-                setInput((p) => ({ ...p, bedrooms: reverseResult.bedrooms, bathrooms: reverseResult.bathrooms, stories: reverseResult.stories, sizeCategory: "custom", customSize: reverseResult.maxSize }));
-                setMode("analyze");
-              }} className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-clay text-white rounded-xl text-[12px] font-medium hover:bg-clay/90 transition-colors">
-                <ArrowRight size={13} /> Analyze this as a deal
-              </button>
+              {/* Description and CTA */}
+              <div className="px-6 py-5 border-t border-border/40">
+                <p className="text-[12px] text-earth leading-relaxed mb-4">{reverseResult.description}</p>
+                <button onClick={() => {
+                  setInput((p) => ({ ...p, bedrooms: reverseResult.bedrooms, bathrooms: reverseResult.bathrooms, stories: reverseResult.stories, sizeCategory: "custom", customSize: reverseResult.maxSize }));
+                  setMode("analyze");
+                }} className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-earth text-white rounded-xl text-[13px] font-medium hover:bg-earth/90 transition-colors">
+                  <ArrowRight size={15} /> Analyze this as a deal
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -1105,13 +1125,13 @@ export default function AnalyzePage() {
          FLOATING ACTION BAR
          ══════════════════════════════════════════════════════════════════ */}
       {hasResults && mode === "analyze" && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2.5 bg-earth/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/10">
-          <button onClick={() => setShowSave(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium text-white/90 hover:bg-white/10 transition-colors">
-            <Save size={13} /> Save
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-5 py-3 bg-earth/95 backdrop-blur-sm rounded-2xl shadow-xl border border-white/10">
+          <button onClick={() => setShowSave(true)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-medium text-white/90 hover:bg-white/10 transition-colors">
+            <Save size={14} /> Save
           </button>
           <button onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium bg-white text-earth hover:bg-white/90 transition-colors">
-            <Plus size={13} /> Create Project
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-medium bg-white text-earth hover:bg-white/90 transition-colors">
+            <Plus size={14} /> Create Project
           </button>
           <button onClick={() => {
             if (!results) return;
@@ -1121,8 +1141,8 @@ export default function AnalyzePage() {
               results: { dealScore: results.dealScore, dealScoreSummary: results.dealScoreSummary, totalCost: results.totalCost, constructionCost: results.constructionCost, landCost: results.landCost, softCosts: results.softCosts, financingCosts: results.financingCosts, contingency: results.contingency, monthlyCost: results.monthlyCost, roi: results.roi, dtiRatio: results.dtiRatio, ltvRatio: results.ltvRatio, costPerUnit: results.costPerUnit, riskFlags: results.riskFlags },
               currency: { code: currency.code, symbol: currency.symbol }, sizeUnit, buildSize,
             });
-          }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium text-white/90 hover:bg-white/10 transition-colors">
-            <FileDown size={13} /> PDF
+          }} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-medium text-white/90 hover:bg-white/10 transition-colors">
+            <FileDown size={14} /> PDF
           </button>
           <button onClick={() => {
             const params = new URLSearchParams({ goal: input.goal, market: input.market, city: input.city, type: input.propertyType, size: input.sizeCategory, beds: String(input.bedrooms), baths: String(input.bathrooms), stories: String(input.stories), land: input.landOption, fin: input.financingType, dp: String(input.downPaymentPct), rate: String(input.loanRate), months: String(input.timelineMonths) });
@@ -1131,8 +1151,8 @@ export default function AnalyzePage() {
             if (input.targetSalePrice) params.set("sale", String(input.targetSalePrice));
             if (input.zipCode) params.set("zip", input.zipCode);
             navigator.clipboard.writeText(`${window.location.origin}/analyze?${params.toString()}`).then(() => showToast("Link copied", "success")).catch(() => showToast("Could not copy", "error"));
-          }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium text-white/90 hover:bg-white/10 transition-colors">
-            <Share2 size={13} /> Share
+          }} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-medium text-white/90 hover:bg-white/10 transition-colors">
+            <Share2 size={14} /> Share
           </button>
         </div>
       )}
