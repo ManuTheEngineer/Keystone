@@ -115,6 +115,8 @@ import {
   FilePlus,
   ArrowDown,
   ClipboardCheck,
+  CheckCircle2,
+  ChevronRight,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
 import { PresentationModal } from "@/components/ui/PresentationModal";
@@ -1257,63 +1259,179 @@ export function OverviewClient() {
       {phase <= 1 && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-            {/* Current Phase Tasks */}
+            {/* Current Phase Task Workflow */}
             <div>
-              <SectionLabel>
-                Current Phase: {["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"][phase] || "Define"}
-              </SectionLabel>
-              <Card padding="sm">
-                {currentPhaseTasks.length === 0 ? (
-                  <p className="text-[12px] text-muted py-3 text-center">No tasks for this phase yet.</p>
-                ) : (
-                  <div>
-                    {/* Phase progress */}
-                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border">
-                      <div className="flex-1 h-1.5 bg-warm rounded-full overflow-hidden">
-                        <div className="h-full bg-success rounded-full" style={{ width: `${currentPhaseProgress}%`, transition: "width 0.5s" }} />
+              <div className="flex items-center justify-between mb-2">
+                <SectionLabel>
+                  {["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"][phase] || "Define"}
+                </SectionLabel>
+                <span className="text-[10px] font-data text-muted">
+                  {currentPhaseDone.length}/{currentPhaseTasks.length} complete
+                </span>
+              </div>
+
+              {/* Phase progress bar */}
+              <div className="h-1.5 bg-warm rounded-full overflow-hidden mb-3">
+                <div className="h-full bg-success rounded-full" style={{ width: `${currentPhaseProgress}%`, transition: "width 0.5s" }} />
+              </div>
+
+              {currentPhaseTasks.length === 0 ? (
+                <Card padding="sm">
+                  <p className="text-[12px] text-muted py-3 text-center">No tasks for this phase.</p>
+                </Card>
+              ) : (
+                <div className="space-y-2">
+                  {/* Each task is a full interactive card */}
+                  {currentPhaseTasks
+                    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                    .map((task, idx) => {
+                      const isOpen = completingTaskId === task.id;
+                      const isPending = task.status === "pending-review";
+                      const isDone = task.done;
+                      const stepNum = idx + 1;
+
+                      return (
+                        <div key={task.id} className={`rounded-xl border transition-all ${
+                          isDone ? "border-success/20 bg-success/3" :
+                          isPending ? "border-warning/30 bg-warning/3" :
+                          isOpen ? "border-clay/30 bg-surface shadow-sm" :
+                          "border-border/50 bg-surface hover:border-border"
+                        }`}>
+                          {/* Task header -- always visible */}
+                          <button
+                            onClick={() => {
+                              if (isDone) return;
+                              if (isPending) {
+                                // Scroll to pending review queue
+                                document.getElementById("pending-review")?.scrollIntoView({ behavior: "smooth" });
+                                return;
+                              }
+                              setCompletingTaskId(isOpen ? null : task.id!);
+                              setCompletionNote("");
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                            disabled={isDone}
+                          >
+                            {/* Step number / status icon */}
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-bold font-data ${
+                              isDone ? "bg-success text-white" :
+                              isPending ? "bg-warning text-white" :
+                              isOpen ? "bg-clay text-white" :
+                              "bg-warm text-clay"
+                            }`}>
+                              {isDone ? <Check size={14} /> : isPending ? <Clock size={13} /> : stepNum}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-[13px] font-medium ${isDone ? "text-muted line-through" : "text-earth"}`}>
+                                {task.label}
+                              </p>
+                              {isDone && task.completionNote && task.completionNote !== "Completed" && (
+                                <p className="text-[10px] text-success/70 mt-0.5 truncate">{task.completionNote}</p>
+                              )}
+                              {isDone && task.completedAt && (
+                                <p className="text-[9px] text-muted/40 mt-0.5">
+                                  Completed {new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Status indicator */}
+                            {isPending && (
+                              <span className="text-[9px] px-2 py-0.5 rounded-full bg-warning/10 text-warning font-semibold shrink-0">
+                                Needs review
+                              </span>
+                            )}
+                            {!isDone && !isPending && (
+                              <ChevronRight size={14} className={`text-muted/30 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                            )}
+                          </button>
+
+                          {/* Expanded completion form */}
+                          {isOpen && !isDone && !isPending && (
+                            <div className="px-4 pb-4 pt-0">
+                              <div className="border-t border-border/30 pt-3">
+                                {/* Quick options */}
+                                <p className="text-[10px] font-medium text-earth mb-2">How did you complete this?</p>
+                                <div className="flex flex-wrap gap-1 mb-2.5">
+                                  {["Verified and confirmed", "Researched and decided", "Document obtained", "Meeting completed", "Reviewed and approved"].map((q) => (
+                                    <button key={q} onClick={() => setCompletionNote(q)}
+                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all ${
+                                        completionNote === q
+                                          ? "bg-success/10 text-success border border-success/30"
+                                          : "bg-warm/50 text-muted hover:text-earth border border-transparent"
+                                      }`}>
+                                      {q}
+                                    </button>
+                                  ))}
+                                </div>
+                                <textarea
+                                  value={completionNote}
+                                  onChange={(e) => setCompletionNote(e.target.value)}
+                                  placeholder="Add details about what was done, key decisions, or documents referenced..."
+                                  className="w-full px-3 py-2.5 text-[12px] bg-white border border-border/50 rounded-lg text-earth placeholder:text-muted/40 focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success/30 resize-none"
+                                  rows={3}
+                                />
+                                <div className="flex items-center justify-between mt-3">
+                                  <button
+                                    onClick={() => { setCompletingTaskId(null); setCompletionNote(""); }}
+                                    className="text-[11px] text-muted hover:text-earth transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    disabled={completionLoading || !completionNote.trim()}
+                                    onClick={async () => {
+                                      if (!user || !task.id) return;
+                                      setCompletionLoading(true);
+                                      try {
+                                        await updateTask(user.uid, projectId, task.id, {
+                                          done: true, status: "done",
+                                          completedAt: new Date().toISOString(),
+                                          completedBy: user.uid,
+                                          completionNote: completionNote.trim(),
+                                        });
+                                        await approveTask(user.uid, projectId, task.id, completionNote.trim());
+                                        // Auto-open next incomplete task
+                                        const nextTask = currentPhaseTasks
+                                          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                                          .find((t) => !t.done && t.status !== "pending-review" && t.id !== task.id);
+                                        setCompletingTaskId(nextTask?.id ?? null);
+                                        setCompletionNote("");
+                                        showToast("Task completed", "success");
+                                      } catch {
+                                        showToast("Failed to complete task", "error");
+                                      } finally {
+                                        setCompletionLoading(false);
+                                      }
+                                    }}
+                                    className="flex items-center gap-1.5 px-5 py-2 text-[12px] font-semibold rounded-lg bg-success text-white hover:bg-success/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
+                                  >
+                                    <Check size={13} />
+                                    {completionLoading ? "Saving..." : "Complete & Next"}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                  {/* Phase complete celebration */}
+                  {currentPhaseProgress === 100 && currentPhaseTasks.length > 0 && (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-success/5 border border-success/20 rounded-xl">
+                      <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
+                        <CheckCircle2 size={18} className="text-success" />
                       </div>
-                      <span className="text-[11px] font-data font-semibold text-earth">
-                        {currentPhaseDone.length}/{currentPhaseTasks.length}
-                      </span>
+                      <div>
+                        <p className="text-[12px] font-semibold text-success">Phase complete!</p>
+                        <p className="text-[10px] text-muted">All tasks done. {phase < 8 ? "Moving to next phase." : "Project finished!"}</p>
+                      </div>
                     </div>
-                    {/* Pending review tasks first */}
-                    {currentPhasePending.length > 0 && (
-                      <div className="mb-1">
-                        {currentPhasePending.map((t) => (
-                          <div key={t.id} className="flex items-center gap-2.5 py-2 text-[12px] border-b border-border/40">
-                            <div className="w-4 h-4 rounded border-[1.5px] bg-warning border-warning shrink-0 flex items-center justify-center">
-                              <Clock size={8} className="text-white" />
-                            </div>
-                            <span className="flex-1 text-warning font-medium">{t.label}</span>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning font-medium">Review</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {/* Active tasks */}
-                    {currentPhaseActive.map((t, i) => (
-                      <div key={t.id} className={`flex items-center gap-2.5 py-2 text-[12px] ${i < currentPhaseActive.length - 1 ? "border-b border-border/40" : ""}`}>
-                        <div className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0" />
-                        <span className="flex-1 text-earth">{t.label}</span>
-                      </div>
-                    ))}
-                    {/* Done tasks (collapsed) */}
-                    {currentPhaseDone.length > 0 && (
-                      <div className="mt-1 pt-1 border-t border-border/30">
-                        <p className="text-[10px] text-success font-medium mb-1">{currentPhaseDone.length} completed</p>
-                        {currentPhaseDone.slice(0, 3).map((t) => (
-                          <div key={t.id} className="flex items-center gap-2 py-1 text-[11px]">
-                            <div className="w-3 h-3 rounded border-[1.5px] bg-success border-success shrink-0 flex items-center justify-center">
-                              <svg width="6" height="5" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            </div>
-                            <span className="text-muted/50 line-through">{t.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Card>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Budget estimate preview */}
