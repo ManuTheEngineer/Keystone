@@ -249,6 +249,9 @@ export function OverviewClient() {
   const [taskDueDate, setTaskDueDate] = useState("");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskLabel, setEditingTaskLabel] = useState("");
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+  const [completionNote, setCompletionNote] = useState("");
+  const [completionLoading, setCompletionLoading] = useState(false);
   const [showDeleteProject, setShowDeleteProject] = useState(false);
   const [deleteProjectName, setDeleteProjectName] = useState("");
   const [deletingProject, setDeletingProject] = useState(false);
@@ -1564,7 +1567,7 @@ export function OverviewClient() {
                     ) : (
                       <div
                         className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
-                        onClick={() => user && updateTask(user.uid, projectId, task.id!, { done: true, status: "done" })}
+                        onClick={() => setCompletingTaskId(completingTaskId === task.id ? null : task.id!)}
                       />
                     )}
                     {editingTaskId === task.id ? (
@@ -1606,6 +1609,56 @@ export function OverviewClient() {
                   </div>
                   {blockInfo.blocked && (
                     <p className="text-[10px] text-muted/60 pl-6">Blocked by: {blockInfo.blockedBy.join(", ")}</p>
+                  )}
+                  {/* Completion panel -- add evidence before marking done */}
+                  {completingTaskId === task.id && !blockInfo.blocked && (
+                    <div className="ml-6 mt-1.5 p-3 bg-warm/30 rounded-lg border border-border/40">
+                      <p className="text-[10px] font-medium text-earth mb-1.5">How did you complete this?</p>
+                      <textarea
+                        value={completionNote}
+                        onChange={(e) => setCompletionNote(e.target.value)}
+                        placeholder="Describe what was done, decisions made, or attach relevant details..."
+                        className="w-full px-2.5 py-2 text-[11px] bg-white/80 border border-border/50 rounded-lg text-earth placeholder:text-muted/40 focus:outline-none focus:ring-1 focus:ring-clay/30 resize-none"
+                        rows={2}
+                        autoFocus
+                      />
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          disabled={completionLoading}
+                          onClick={async () => {
+                            if (!user || !task.id) return;
+                            setCompletionLoading(true);
+                            try {
+                              await updateTask(user.uid, projectId, task.id, {
+                                done: true,
+                                status: "done",
+                                completedAt: new Date().toISOString(),
+                                completedBy: user.uid,
+                                completionNote: completionNote.trim() || "Completed",
+                              });
+                              // Recalculate progress
+                              await approveTask(user.uid, projectId, task.id, completionNote.trim() || "Completed");
+                              setCompletingTaskId(null);
+                              setCompletionNote("");
+                              showToast("Task completed", "success");
+                            } catch {
+                              showToast("Failed to complete task", "error");
+                            } finally {
+                              setCompletionLoading(false);
+                            }
+                          }}
+                          className="px-3 py-1.5 text-[11px] font-medium rounded-lg bg-success text-white hover:bg-success/90 disabled:opacity-50 transition-colors"
+                        >
+                          {completionLoading ? "Saving..." : "Mark Complete"}
+                        </button>
+                        <button
+                          onClick={() => { setCompletingTaskId(null); setCompletionNote(""); }}
+                          className="px-3 py-1.5 text-[11px] text-muted hover:text-earth transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
                 );
@@ -1910,7 +1963,7 @@ export function OverviewClient() {
                     ) : (
                       <div
                         className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
-                        onClick={() => user && updateTask(user.uid, projectId, task.id!, { done: true, status: "done" })}
+                        onClick={() => setCompletingTaskId(completingTaskId === task.id ? null : task.id!)}
                       />
                     )}
                     {editingTaskId === task.id ? (
@@ -1952,6 +2005,54 @@ export function OverviewClient() {
                   </div>
                   {blockInfo.blocked && (
                     <p className="text-[10px] text-muted/60 pl-6 mt-0.5">Blocked by: {blockInfo.blockedBy.join(", ")}</p>
+                  )}
+                  {/* Completion panel */}
+                  {completingTaskId === task.id && !blockInfo.blocked && (
+                    <div className="ml-6 mt-1.5 p-3 bg-warm/30 rounded-lg border border-border/40">
+                      <p className="text-[10px] font-medium text-earth mb-1.5">How did you complete this?</p>
+                      <textarea
+                        value={completionNote}
+                        onChange={(e) => setCompletionNote(e.target.value)}
+                        placeholder="Describe what was done, decisions made, or relevant details..."
+                        className="w-full px-2.5 py-2 text-[11px] bg-white/80 border border-border/50 rounded-lg text-earth placeholder:text-muted/40 focus:outline-none focus:ring-1 focus:ring-clay/30 resize-none"
+                        rows={2}
+                        autoFocus
+                      />
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          disabled={completionLoading}
+                          onClick={async () => {
+                            if (!user || !task.id) return;
+                            setCompletionLoading(true);
+                            try {
+                              await updateTask(user.uid, projectId, task.id, {
+                                done: true, status: "done",
+                                completedAt: new Date().toISOString(),
+                                completedBy: user.uid,
+                                completionNote: completionNote.trim() || "Completed",
+                              });
+                              await approveTask(user.uid, projectId, task.id, completionNote.trim() || "Completed");
+                              setCompletingTaskId(null);
+                              setCompletionNote("");
+                              showToast("Task completed", "success");
+                            } catch {
+                              showToast("Failed to complete task", "error");
+                            } finally {
+                              setCompletionLoading(false);
+                            }
+                          }}
+                          className="px-3 py-1.5 text-[11px] font-medium rounded-lg bg-success text-white hover:bg-success/90 disabled:opacity-50 transition-colors"
+                        >
+                          {completionLoading ? "Saving..." : "Mark Complete"}
+                        </button>
+                        <button
+                          onClick={() => { setCompletingTaskId(null); setCompletionNote(""); }}
+                          className="px-3 py-1.5 text-[11px] text-muted hover:text-earth transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
                 );
