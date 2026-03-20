@@ -684,7 +684,7 @@ export default function AnalyzePage() {
                     {["SFH", "DUPLEX", "TRIPLEX", "FOURPLEX"].map((t) => (
                       <button key={t} onClick={() => set("propertyType", t)}
                         className={`py-2 rounded-lg text-[11px] font-medium text-center transition-all ${input.propertyType === t ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/20 text-muted hover:bg-warm/40 border border-transparent"}`}>
-                        {t === "SFH" ? "Single" : t.charAt(0) + t.slice(1).toLowerCase()}
+                        {t === "SFH" ? "Single-family" : t.charAt(0) + t.slice(1).toLowerCase()}
                       </button>
                     ))}
                   </div>

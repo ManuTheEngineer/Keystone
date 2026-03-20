@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { sendAIMessage, type AIMessage } from "@/lib/services/ai-service";
+import { sendAIMessage, type AIMessage, type AIUsage } from "@/lib/services/ai-service";
 import {
   subscribeToProject,
   subscribeToConversation,
@@ -145,6 +145,7 @@ export function AIAssistantClient() {
   const [error, setError] = useState<string | null>(null);
   const [conversationRestored, setConversationRestored] = useState(false);
   const [conversationLoaded, setConversationLoaded] = useState(false);
+  const [aiUsage, setAiUsage] = useState<AIUsage | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   /* ---------- subscriptions ---------- */
@@ -259,6 +260,7 @@ export function AIAssistantClient() {
 
     try {
       const result = await sendAIMessage(newMessages, projectContext, mode);
+      if (result.usage) setAiUsage(result.usage);
       const finalMessages = [...newMessages, { role: "assistant" as const, content: result.message }];
       setMessages(finalMessages);
       persistMessages(finalMessages);
@@ -278,8 +280,9 @@ export function AIAssistantClient() {
         persistMessages(finalMessages);
       } else if (errMsg.startsWith("RATE_LIMITED:")) {
         const parts = errMsg.split(":");
-        const used = parts[1];
-        const limit = parts[2];
+        const used = Number(parts[1]) || 0;
+        const limit = Number(parts[2]) || 0;
+        setAiUsage({ used, limit, plan: "" });
         setError(`You've used ${used} of ${limit} daily queries. Upgrade your plan for more.`);
         // Remove the pending user message since it wasn't processed
         setMessages(messages);
@@ -435,6 +438,16 @@ export function AIAssistantClient() {
           </div>
         )}
       </div>
+
+      {/* AI usage counter */}
+      {aiUsage && (
+        <div className="flex items-center gap-1.5 pt-2 pb-1">
+          <Zap size={12} className={aiUsage.used >= aiUsage.limit ? "text-danger" : "text-muted"} />
+          <span className={`text-[10px] font-data ${aiUsage.used >= aiUsage.limit ? "text-danger font-medium" : "text-muted"}`}>
+            {aiUsage.used}/{aiUsage.limit} queries today
+          </span>
+        </div>
+      )}
 
       {/* Input */}
       <div className="flex items-center gap-2 pt-3 border-t border-border">

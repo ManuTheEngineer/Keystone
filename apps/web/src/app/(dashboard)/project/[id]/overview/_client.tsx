@@ -2618,7 +2618,7 @@ export function OverviewClient() {
           <Card padding="sm">
             <DetailRow label="Market" value={<MarketBadge market={market} />} />
             <DetailRow label="Purpose" value={project.purpose} />
-            <DetailRow label="Type" value={project.propertyType} />
+            <DetailRow label="Type" value={project.propertyType === "SFH" ? "Single-family home" : project.propertyType ? project.propertyType.charAt(0) + project.propertyType.slice(1).toLowerCase() : ""} />
             {phaseDef && (
               <DetailRow label="Method" value={phaseDef.constructionMethod} />
             )}

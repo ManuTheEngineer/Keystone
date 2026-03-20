@@ -108,7 +108,7 @@ function PlanScreen({ p }: { p: number }) {
     { label: "Define building goal", done: p > 0.12 },
     { label: "Select target market (USA)", done: p > 0.25 },
     { label: "Set location (Houston, TX)", done: p > 0.4 },
-    { label: "Choose property type (SFH)", done: p > 0.55 },
+    { label: "Choose property type (Single-family home)", done: p > 0.55 },
     { label: "Review initial budget", done: p > 0.7 },
     { label: "Confirm financing strategy", done: p > 0.85 },
   ];

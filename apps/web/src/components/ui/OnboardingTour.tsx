@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   LayoutGrid,
   BarChart3,
@@ -10,6 +11,8 @@ import {
   Settings,
   Key,
 } from "lucide-react";
+import { getUserProjects, type ProjectData } from "@/lib/services/project-service";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 /* ------------------------------------------------------------------ */
 /*  Tour step definition                                               */
@@ -138,9 +141,21 @@ const TOUR_STEPS: TourStep[] = [
 
 export function OnboardingTour({ onComplete }: OnboardingTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [demoProjectId, setDemoProjectId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const router = useRouter();
   const step = TOUR_STEPS[currentStep];
   const isLastStep = currentStep === TOUR_STEPS.length - 1;
   const isFirstStep = currentStep === 0;
+
+  // Find the demo project ID so we can link to it on the final step
+  useEffect(() => {
+    if (!user) return;
+    getUserProjects(user.uid).then((projects) => {
+      const demo = projects.find((p: ProjectData) => p.isDemo);
+      if (demo?.id) setDemoProjectId(demo.id);
+    }).catch(() => {});
+  }, [user]);
 
   const handleNext = useCallback(() => {
     if (isLastStep) {
@@ -228,12 +243,25 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
               </button>
             )}
           </div>
-          <button
-            onClick={handleNext}
-            className="px-6 py-2.5 rounded-xl bg-earth text-warm text-[14px] font-medium hover:bg-earth-light transition-colors"
-          >
-            {isLastStep ? "Get started" : "Next"}
-          </button>
+          <div className="flex items-center gap-2">
+            {isLastStep && demoProjectId && (
+              <button
+                onClick={() => {
+                  onComplete();
+                  router.push(`/project/${demoProjectId}/overview`);
+                }}
+                className="px-4 py-2.5 rounded-xl border border-clay text-clay text-[13px] font-medium hover:bg-clay/5 transition-colors"
+              >
+                Explore demo project
+              </button>
+            )}
+            <button
+              onClick={handleNext}
+              className="px-6 py-2.5 rounded-xl bg-earth text-warm text-[14px] font-medium hover:bg-earth-light transition-colors"
+            >
+              {isLastStep ? "Get started" : "Next"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -664,7 +664,7 @@ export default function NewProjectPage() {
       const limits = getPlanLimits((profile?.plan as PlanTier) ?? "FOUNDATION");
       if (limits.projects !== Infinity && projectCount >= limits.projects) {
         setPlanError(
-          `Your ${profile?.plan ?? "Foundation"} plan allows ${limits.projects} project${limits.projects === 1 ? "" : "s"}. Upgrade your plan to create more.`
+          `Your ${profile?.plan ?? "Foundation"} plan allows ${limits.projects} project${limits.projects === 1 ? "" : "s"} (demo projects don't count). Upgrade your plan to create more.`
         );
         return;
       }

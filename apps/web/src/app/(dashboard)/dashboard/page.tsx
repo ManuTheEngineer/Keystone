@@ -1095,6 +1095,9 @@ export default function DashboardPage() {
                         >
                           {p.name}
                         </h3>
+                        {p.isDemo && (
+                          <Badge variant="info" className="rounded-full text-[9px]">[Demo]</Badge>
+                        )}
                         <MarketBadge market={p.market as Market} />
                         <Badge
                           variant={p.currentPhase >= 5 ? "warning" : "info"}
