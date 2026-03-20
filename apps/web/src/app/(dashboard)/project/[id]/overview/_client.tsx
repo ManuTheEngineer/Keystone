@@ -1612,32 +1612,49 @@ export function OverviewClient() {
                   )}
                   {/* Completion panel -- add evidence before marking done */}
                   {completingTaskId === task.id && !blockInfo.blocked && (
-                    <div className="ml-6 mt-1.5 p-3 bg-warm/30 rounded-lg border border-border/40">
-                      <p className="text-[10px] font-medium text-earth mb-1.5">How did you complete this?</p>
+                    <div className="ml-6 mt-2 p-3.5 bg-surface rounded-xl border border-success/20 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <div className="w-5 h-5 rounded-full bg-success/10 flex items-center justify-center">
+                          <Check size={11} className="text-success" />
+                        </div>
+                        <p className="text-[11px] font-semibold text-earth">Complete: {task.label}</p>
+                      </div>
+                      {/* Quick options */}
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {["Verified and confirmed", "Researched and decided", "Document obtained", "Meeting completed", "Reviewed and approved"].map((q) => (
+                          <button key={q} onClick={() => setCompletionNote(q)}
+                            className={`px-2 py-1 rounded-md text-[9px] font-medium transition-all ${completionNote === q ? "bg-success/10 text-success border border-success/30" : "bg-warm/40 text-muted hover:text-earth border border-transparent"}`}>
+                            {q}
+                          </button>
+                        ))}
+                      </div>
                       <textarea
                         value={completionNote}
                         onChange={(e) => setCompletionNote(e.target.value)}
-                        placeholder="Describe what was done, decisions made, or attach relevant details..."
-                        className="w-full px-2.5 py-2 text-[11px] bg-white/80 border border-border/50 rounded-lg text-earth placeholder:text-muted/40 focus:outline-none focus:ring-1 focus:ring-clay/30 resize-none"
+                        placeholder="Add details: what was done, key decisions, documents referenced..."
+                        className="w-full px-3 py-2 text-[11px] bg-white border border-border/50 rounded-lg text-earth placeholder:text-muted/40 focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success/40 resize-none"
                         rows={2}
-                        autoFocus
                       />
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center justify-between mt-2.5">
                         <button
-                          disabled={completionLoading}
+                          onClick={() => { setCompletingTaskId(null); setCompletionNote(""); }}
+                          className="px-3 py-1.5 text-[11px] text-muted hover:text-earth transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          disabled={completionLoading || !completionNote.trim()}
                           onClick={async () => {
                             if (!user || !task.id) return;
                             setCompletionLoading(true);
                             try {
                               await updateTask(user.uid, projectId, task.id, {
-                                done: true,
-                                status: "done",
+                                done: true, status: "done",
                                 completedAt: new Date().toISOString(),
                                 completedBy: user.uid,
-                                completionNote: completionNote.trim() || "Completed",
+                                completionNote: completionNote.trim(),
                               });
-                              // Recalculate progress
-                              await approveTask(user.uid, projectId, task.id, completionNote.trim() || "Completed");
+                              await approveTask(user.uid, projectId, task.id, completionNote.trim());
                               setCompletingTaskId(null);
                               setCompletionNote("");
                               showToast("Task completed", "success");
@@ -1647,15 +1664,10 @@ export function OverviewClient() {
                               setCompletionLoading(false);
                             }
                           }}
-                          className="px-3 py-1.5 text-[11px] font-medium rounded-lg bg-success text-white hover:bg-success/90 disabled:opacity-50 transition-colors"
+                          className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-semibold rounded-lg bg-success text-white hover:bg-success/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
                         >
+                          <Check size={12} />
                           {completionLoading ? "Saving..." : "Mark Complete"}
-                        </button>
-                        <button
-                          onClick={() => { setCompletingTaskId(null); setCompletionNote(""); }}
-                          className="px-3 py-1.5 text-[11px] text-muted hover:text-earth transition-colors"
-                        >
-                          Cancel
                         </button>
                       </div>
                     </div>
@@ -2425,36 +2437,41 @@ export function OverviewClient() {
           </div>
         </div>
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-clay/60 mb-2">Completed Tasks</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-clay/60 mb-2">
+            Completed Tasks {completedTasks.length > 0 && <span className="text-success font-data">({completedTasks.length})</span>}
+          </p>
           <Card padding="sm">
             {completedTasks.length === 0 ? (
-              <p className="text-[11px] text-muted py-2">None yet.</p>
+              <p className="text-[11px] text-muted py-2">None yet. Complete tasks above to track your progress.</p>
             ) : (
-              completedTasks.slice(0, 5).map((task, i) => (
+              completedTasks.slice(0, 8).map((task, i) => (
                 <div
                   key={task.id}
-                  className={`flex items-center gap-2 py-1.5 text-[11px] ${
-                    i < Math.min(completedTasks.length, 5) - 1 ? "border-b border-border" : ""
-                  }`}
+                  className={`py-2 ${i < Math.min(completedTasks.length, 8) - 1 ? "border-b border-border/40" : ""}`}
                 >
-                  <div
-                    className="w-4 h-4 rounded border-[1.5px] bg-success border-success shrink-0 flex items-center justify-center cursor-pointer"
-                    onClick={() => user && updateTask(user.uid, projectId, task.id!, { done: false, status: "upcoming" })}
-                  >
-                    <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                      <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+                  <div className="flex items-center gap-2 text-[11px]">
+                    <div className="w-4 h-4 rounded border-[1.5px] bg-success border-success shrink-0 flex items-center justify-center">
+                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                        <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <span className="flex-1 text-muted">{task.label}</span>
+                    {task.completedAt && (
+                      <span className="text-[9px] text-muted/50 font-data shrink-0">
+                        {new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    )}
                   </div>
-                  <span className="flex-1 text-muted line-through opacity-40">{task.label}</span>
-                  <button
-                    onClick={() => handleDeleteTask(task.id!)}
-                    className="p-0.5 text-muted hover:text-danger transition-colors shrink-0"
-                    title="Delete task"
-                  >
-                    <X size={10} />
-                  </button>
+                  {task.completionNote && task.completionNote !== "Completed" && (
+                    <p className="ml-6 mt-1 text-[10px] text-muted/70 leading-relaxed bg-success/5 px-2 py-1 rounded">
+                      {task.completionNote}
+                    </p>
+                  )}
                 </div>
               ))
+            )}
+            {completedTasks.length > 8 && (
+              <p className="text-[10px] text-muted text-center pt-1">+{completedTasks.length - 8} more completed</p>
             )}
           </Card>
         </div>
