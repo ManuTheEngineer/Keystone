@@ -135,6 +135,7 @@ export interface TaskData {
   projectId: string;
   label: string;
   description?: string;
+  phase?: number; // 0=Define, 1=Finance, 2=Land, 3=Design, 4=Approve, 5=Assemble, 6=Build, 7=Verify, 8=Operate
   status: "upcoming" | "in-progress" | "done" | "pending-review" | "rejected" | "cancelled";
   done: boolean;
   order: number;
@@ -317,91 +318,116 @@ export async function seedInitialTasks(
   const src = projectData.fromAnalyzer ? "Deal Analyzer" : "Project Wizard";
 
   // Helper: create a task that needs user review (has evidence from wizard)
-  function reviewTask(label: string, order: number, evidence: string): Omit<TaskData, "id"> {
+  function reviewTask(label: string, order: number, phase: number, evidence: string): Omit<TaskData, "id"> {
     return {
-      projectId, label, order, sourceType: "milestone",
+      projectId, label, order, phase, sourceType: "milestone",
       status: "pending-review", done: false,
-      completionNote: evidence,
-      completedAt: now,
-      completedBy: src,
+      completionNote: evidence, completedAt: now, completedBy: src,
       requiresApproval: true,
     };
   }
 
-  // Helper: create an upcoming task (no data yet)
-  function nextTask(label: string, order: number): Omit<TaskData, "id"> {
-    return { projectId, label, order, sourceType: "milestone", status: "upcoming", done: false };
+  // Helper: create an upcoming task
+  function task(label: string, order: number, phase: number): Omit<TaskData, "id"> {
+    return { projectId, label, order, phase, sourceType: "milestone", status: "upcoming", done: false };
   }
 
-  // Phase 0: Define -- wizard data becomes evidence for review
-  const defineTasks: Omit<TaskData, "id">[] = [
-    reviewTask(
-      "Define building goal",
-      1,
-      `Goal set to: ${projectData.purpose}. Review and confirm this matches your intent.`,
-    ),
-    reviewTask(
-      "Select target market",
-      2,
-      `Market: ${projectData.market}. ${isUSA ? "Wood-frame construction, institutional lending." : "Reinforced concrete, cash/phased funding."}`,
-    ),
-  ];
+  const allTasks: Omit<TaskData, "id">[] = [];
 
+  // ── Phase 0: Define ──
+  allTasks.push(reviewTask("Define building goal", 1, 0,
+    `Goal set to: ${projectData.purpose}. Review and confirm this matches your intent.`));
+  allTasks.push(reviewTask("Select target market", 2, 0,
+    `Market: ${projectData.market}. ${isUSA ? "Wood-frame construction, institutional lending." : "Reinforced concrete, cash/phased funding."}`));
   if (projectData.city) {
-    defineTasks.push(reviewTask(
-      "Set build location",
-      3,
-      `Location: ${projectData.city}. Verify this is the correct city/region for cost estimates.`,
-    ));
+    allTasks.push(reviewTask("Set build location", 3, 0,
+      `Location: ${projectData.city}. Verify this is the correct city/region for cost estimates.`));
   } else {
-    defineTasks.push(nextTask("Set build location", 3));
+    allTasks.push(task("Set build location", 3, 0));
   }
-
-  defineTasks.push(reviewTask(
-    "Choose property type and size",
-    4,
-    `Type: ${projectData.propertyType}${projectData.bedrooms ? `, ${projectData.bedrooms} bed / ${projectData.bathrooms} bath` : ""}. Confirm these specifications.`,
-  ));
-
+  allTasks.push(reviewTask("Choose property type and size", 4, 0,
+    `Type: ${projectData.propertyType}${projectData.bedrooms ? `, ${projectData.bedrooms} bed / ${projectData.bathrooms} bath` : ""}. Confirm these specifications.`));
   if (projectData.totalBudget > 0) {
-    defineTasks.push(reviewTask(
-      "Review initial budget",
-      5,
-      `Estimated total: ${projectData.totalBudget.toLocaleString()} ${isUSA ? "USD" : "CFA"}. Budget line items have been auto-generated. Review each category in the Budget tab.`,
-    ));
+    allTasks.push(reviewTask("Review initial budget", 5, 0,
+      `Estimated total: ${projectData.totalBudget.toLocaleString()} ${isUSA ? "USD" : "CFA"}. Budget line items auto-generated. Review each category in the Budget tab.`));
   } else {
-    defineTasks.push(nextTask("Set initial budget", 5));
+    allTasks.push(task("Set initial budget", 5, 0));
   }
-
   if (projectData.financingType) {
-    defineTasks.push(reviewTask(
-      "Confirm financing strategy",
-      6,
-      `Financing: ${projectData.financingType}. Verify this is the right approach for your situation.`,
-    ));
+    allTasks.push(reviewTask("Confirm financing strategy", 6, 0,
+      `Financing: ${projectData.financingType}. Verify this is the right approach for your situation.`));
   } else {
-    defineTasks.push(nextTask("Determine financing strategy", 6));
+    allTasks.push(task("Determine financing strategy", 6, 0));
   }
 
-  // Phase 1: Finance -- next steps (no wizard data)
-  const financeTasks: Omit<TaskData, "id">[] = isUSA ? [
-    nextTask("Check credit score and DTI ratio", 7),
-    nextTask("Get construction loan pre-approval", 8),
-    nextTask("Compare lender terms (at least 3 quotes)", 9),
-  ] : [
-    nextTask("Create savings plan and timeline", 7),
-    nextTask("Set up dedicated construction savings account", 8),
-    nextTask("Plan phased funding schedule", 9),
-  ];
+  // ── Phase 1: Finance ──
+  if (isUSA) {
+    allTasks.push(task("Check credit score and review DTI ratio", 10, 1));
+    allTasks.push(task("Get construction loan pre-approval", 11, 1));
+    allTasks.push(task("Compare lender terms (at least 3 quotes)", 12, 1));
+    allTasks.push(task("Gather financial documents (tax returns, pay stubs, bank statements)", 13, 1));
+  } else {
+    allTasks.push(task("Create savings plan and timeline", 10, 1));
+    allTasks.push(task("Set up dedicated construction savings account", 11, 1));
+    allTasks.push(task("Plan phased funding schedule", 12, 1));
+  }
 
-  // Phase 2: Land -- next steps
-  const landTasks: Omit<TaskData, "id">[] = [
-    nextTask(isUSA ? "Research zoning and buildability" : "Verify land title status", 10),
-    nextTask(isUSA ? "Get property survey completed" : "Obtain titre foncier or land deed", 11),
-    nextTask("Confirm utilities access (water, electric, sewer)", 12),
-  ];
+  // ── Phase 2: Land ──
+  allTasks.push(task(isUSA ? "Research zoning and buildability" : "Verify land title status", 20, 2));
+  allTasks.push(task(isUSA ? "Get property survey completed" : "Obtain titre foncier or land deed", 21, 2));
+  allTasks.push(task("Confirm utilities access (water, electric, sewer)", 22, 2));
+  allTasks.push(task(isUSA ? "Review HOA restrictions and covenants" : "Verify plot boundaries with neighbors", 23, 2));
 
-  const allTasks = [...defineTasks, ...financeTasks, ...landTasks];
+  // ── Phase 3: Design ──
+  allTasks.push(task("Hire architect or select house plans", 30, 3));
+  allTasks.push(task("Finalize floor plan and elevations", 31, 3));
+  allTasks.push(task("Select exterior materials and finishes", 32, 3));
+  allTasks.push(task("Complete structural engineering", 33, 3));
+  allTasks.push(task(isUSA ? "Energy code compliance review" : "Review plans with local engineer", 34, 3));
+
+  // ── Phase 4: Approve ──
+  allTasks.push(task(isUSA ? "Submit plans to building department" : "Submit plans to local authority", 40, 4));
+  allTasks.push(task(isUSA ? "Obtain building permit" : "Obtain construction permit", 41, 4));
+  allTasks.push(task(isUSA ? "Get required variances if needed" : "Get environmental clearance if needed", 42, 4));
+  allTasks.push(task("Finalize construction timeline", 43, 4));
+
+  // ── Phase 5: Assemble ──
+  allTasks.push(task("Hire general contractor or construction manager", 50, 5));
+  allTasks.push(task("Negotiate and sign construction contract", 51, 5));
+  allTasks.push(task("Verify contractor insurance and licensing", 52, 5));
+  allTasks.push(task("Establish payment schedule and draw process", 53, 5));
+  allTasks.push(task(isUSA ? "Set up builder's risk insurance" : "Set up site security", 54, 5));
+
+  // ── Phase 6: Build ──
+  allTasks.push(task("Site preparation and grading", 60, 6));
+  allTasks.push(task(isUSA ? "Foundation pour and inspection" : "Foundation (semelle and soubassement)", 61, 6));
+  allTasks.push(task(isUSA ? "Framing and structural inspection" : "Wall construction (block/poteau-poutre)", 62, 6));
+  allTasks.push(task(isUSA ? "Rough plumbing, electrical, HVAC" : "Plumbing and electrical rough-in", 63, 6));
+  allTasks.push(task(isUSA ? "Insulation and drywall" : "Plastering (enduit) and rendering", 64, 6));
+  allTasks.push(task("Roofing complete", 65, 6));
+  allTasks.push(task(isUSA ? "Interior finishes (flooring, paint, cabinets)" : "Flooring (carrelage), painting, fixtures", 66, 6));
+  allTasks.push(task(isUSA ? "Exterior finishes (siding, landscaping)" : "Exterior finishes and perimeter wall", 67, 6));
+
+  // ── Phase 7: Verify ──
+  allTasks.push(task(isUSA ? "Schedule final building inspection" : "Arrange final walkthrough", 70, 7));
+  allTasks.push(task("Complete punch list items", 71, 7));
+  allTasks.push(task(isUSA ? "Obtain Certificate of Occupancy" : "Obtain completion certificate", 72, 7));
+  allTasks.push(task("Final contractor payment release", 73, 7));
+
+  // ── Phase 8: Operate ──
+  allTasks.push(task(isUSA ? "Set up homeowner's insurance" : "Set up property insurance", 80, 8));
+  allTasks.push(task("Archive all project documents", 81, 8));
+  allTasks.push(task("Record warranty information for all systems", 82, 8));
+  if (projectData.purpose === "RENT") {
+    allTasks.push(task("List property for rental", 83, 8));
+    allTasks.push(task("Screen and select tenants", 84, 8));
+  } else if (projectData.purpose === "SELL") {
+    allTasks.push(task("Stage property for sale", 83, 8));
+    allTasks.push(task("List with agent or FSBO", 84, 8));
+  } else {
+    allTasks.push(task("Schedule move-in", 83, 8));
+    allTasks.push(task("Set up maintenance schedule", 84, 8));
+  }
   const pendingCount = allTasks.filter((t) => t.status === "pending-review").length;
 
   const tasksRef = ref(db, `users/${userId}/projects/${projectId}/tasks`);

@@ -325,6 +325,14 @@ export function OverviewClient() {
   const completedTasks = tasks.filter((t) => t.done);
   const pendingReviewTasks = tasks.filter((t) => t.status === "pending-review");
 
+  // Phase-filtered tasks for current phase
+  const currentPhaseTasks = tasks.filter((t) => t.phase === phase || t.phase == null);
+  const currentPhaseActive = currentPhaseTasks.filter((t) => !t.done && t.status !== "pending-review");
+  const currentPhaseDone = currentPhaseTasks.filter((t) => t.done);
+  const currentPhasePending = currentPhaseTasks.filter((t) => t.status === "pending-review");
+  const currentPhaseProgress = currentPhaseTasks.length > 0
+    ? Math.round((currentPhaseDone.length / currentPhaseTasks.length) * 100) : 0;
+
   // Compute real progress from tasks + phases (instead of using hardcoded project.progress)
   const computedProgress = tasks.length > 0
     ? Math.round((completedTasks.length / tasks.length) * 100)
@@ -1249,37 +1257,60 @@ export function OverviewClient() {
       {phase <= 1 && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-            {/* Task-driven progress -- single source of truth */}
+            {/* Current Phase Tasks */}
             <div>
-              <SectionLabel>Project Tasks</SectionLabel>
+              <SectionLabel>
+                Current Phase: {["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"][phase] || "Define"}
+              </SectionLabel>
               <Card padding="sm">
-                {tasks.length === 0 ? (
-                  <p className="text-[12px] text-muted py-3 text-center">No tasks yet. Create your first task to start tracking progress.</p>
+                {currentPhaseTasks.length === 0 ? (
+                  <p className="text-[12px] text-muted py-3 text-center">No tasks for this phase yet.</p>
                 ) : (
                   <div>
-                    {/* Progress summary */}
+                    {/* Phase progress */}
                     <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border">
                       <div className="flex-1 h-1.5 bg-warm rounded-full overflow-hidden">
-                        <div className="h-full bg-success rounded-full" style={{ width: `${computedProgress}%`, transition: "width 0.5s" }} />
+                        <div className="h-full bg-success rounded-full" style={{ width: `${currentPhaseProgress}%`, transition: "width 0.5s" }} />
                       </div>
-                      <span className="text-[11px] font-data font-semibold text-earth">{computedProgress}%</span>
+                      <span className="text-[11px] font-data font-semibold text-earth">
+                        {currentPhaseDone.length}/{currentPhaseTasks.length}
+                      </span>
                     </div>
-                    {/* Task list */}
-                    {tasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).slice(0, 8).map((task, i, arr) => (
-                      <div key={task.id} className={`flex items-center gap-2.5 py-2 text-[12px] ${i < arr.length - 1 ? "border-b border-border/40" : ""}`}>
-                        <div className={`w-4 h-4 rounded border-[1.5px] shrink-0 flex items-center justify-center ${
-                          task.done ? "bg-success border-success" : task.status === "pending-review" ? "bg-warning border-warning" : "border-border-dark"
-                        }`}>
-                          {task.done && <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                          {task.status === "pending-review" && <Clock size={8} className="text-white" />}
-                        </div>
-                        <span className={`flex-1 ${task.done ? "text-muted line-through opacity-50" : task.status === "pending-review" ? "text-warning font-medium" : "text-earth"}`}>
-                          {task.label}
-                        </span>
-                        {task.status === "pending-review" && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning font-medium">Review</span>}
+                    {/* Pending review tasks first */}
+                    {currentPhasePending.length > 0 && (
+                      <div className="mb-1">
+                        {currentPhasePending.map((t) => (
+                          <div key={t.id} className="flex items-center gap-2.5 py-2 text-[12px] border-b border-border/40">
+                            <div className="w-4 h-4 rounded border-[1.5px] bg-warning border-warning shrink-0 flex items-center justify-center">
+                              <Clock size={8} className="text-white" />
+                            </div>
+                            <span className="flex-1 text-warning font-medium">{t.label}</span>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning font-medium">Review</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* Active tasks */}
+                    {currentPhaseActive.map((t, i) => (
+                      <div key={t.id} className={`flex items-center gap-2.5 py-2 text-[12px] ${i < currentPhaseActive.length - 1 ? "border-b border-border/40" : ""}`}>
+                        <div className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0" />
+                        <span className="flex-1 text-earth">{t.label}</span>
                       </div>
                     ))}
-                    {tasks.length > 8 && <p className="text-[10px] text-muted text-center pt-1">+{tasks.length - 8} more tasks</p>}
+                    {/* Done tasks (collapsed) */}
+                    {currentPhaseDone.length > 0 && (
+                      <div className="mt-1 pt-1 border-t border-border/30">
+                        <p className="text-[10px] text-success font-medium mb-1">{currentPhaseDone.length} completed</p>
+                        {currentPhaseDone.slice(0, 3).map((t) => (
+                          <div key={t.id} className="flex items-center gap-2 py-1 text-[11px]">
+                            <div className="w-3 h-3 rounded border-[1.5px] bg-success border-success shrink-0 flex items-center justify-center">
+                              <svg width="6" height="5" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </div>
+                            <span className="text-muted/50 line-through">{t.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </Card>
