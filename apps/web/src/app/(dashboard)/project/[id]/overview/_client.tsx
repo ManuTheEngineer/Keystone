@@ -1350,29 +1350,51 @@ export function OverviewClient() {
                           {/* Expanded completion form */}
                           {isOpen && !isDone && !isPending && (
                             <div className="px-4 pb-4 pt-0">
-                              <div className="border-t border-border/30 pt-3">
-                                {/* Quick options */}
-                                <p className="text-[10px] font-medium text-earth mb-2">How did you complete this?</p>
-                                <div className="flex flex-wrap gap-1 mb-2.5">
-                                  {["Verified and confirmed", "Researched and decided", "Document obtained", "Meeting completed", "Reviewed and approved"].map((q) => (
-                                    <button key={q} onClick={() => setCompletionNote(q)}
-                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all ${
-                                        completionNote === q
-                                          ? "bg-success/10 text-success border border-success/30"
-                                          : "bg-warm/50 text-muted hover:text-earth border border-transparent"
-                                      }`}>
-                                      {q}
-                                    </button>
-                                  ))}
+                              <div className="border-t border-border/30 pt-3 space-y-3">
+                                {/* 1. Closing rationale */}
+                                <div>
+                                  <p className="text-[11px] font-semibold text-earth mb-1.5">Closing rationale</p>
+                                  <div className="flex flex-wrap gap-1 mb-2">
+                                    {["Verified and confirmed", "Researched and decided", "Document uploaded", "Meeting completed", "Reviewed and approved"].map((q) => (
+                                      <button key={q} onClick={() => setCompletionNote((prev) => prev ? `${prev}. ${q}` : q)}
+                                        className="px-2.5 py-1 rounded-lg text-[10px] font-medium bg-warm/50 text-muted hover:text-earth hover:bg-warm border border-transparent transition-all">
+                                        + {q}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <textarea
+                                    value={completionNote}
+                                    onChange={(e) => setCompletionNote(e.target.value)}
+                                    placeholder="Describe what was done, key decisions made, and any reference numbers..."
+                                    className="w-full px-3 py-2.5 text-[12px] bg-white border border-border/50 rounded-lg text-earth placeholder:text-muted/40 focus:outline-none focus:ring-2 focus:ring-clay/15 focus:border-clay/30 resize-none"
+                                    rows={2}
+                                  />
                                 </div>
-                                <textarea
-                                  value={completionNote}
-                                  onChange={(e) => setCompletionNote(e.target.value)}
-                                  placeholder="Add details about what was done, key decisions, or documents referenced..."
-                                  className="w-full px-3 py-2.5 text-[12px] bg-white border border-border/50 rounded-lg text-earth placeholder:text-muted/40 focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success/30 resize-none"
-                                  rows={3}
-                                />
-                                <div className="flex items-center justify-between mt-3">
+
+                                {/* 2. Attach artifacts -- links to other pages */}
+                                <div>
+                                  <p className="text-[11px] font-semibold text-earth mb-1.5">Attach supporting evidence</p>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <Link
+                                      href={`/project/${projectId}/documents`}
+                                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-warm/20 hover:bg-warm/40 transition-colors text-[10px] text-earth font-medium"
+                                    >
+                                      <FileText size={13} className="text-clay shrink-0" />
+                                      Upload document
+                                    </Link>
+                                    <Link
+                                      href={`/project/${projectId}/photos`}
+                                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-warm/20 hover:bg-warm/40 transition-colors text-[10px] text-earth font-medium"
+                                    >
+                                      <Camera size={13} className="text-clay shrink-0" />
+                                      Upload photos
+                                    </Link>
+                                  </div>
+                                  <p className="text-[9px] text-muted mt-1">Upload files in Documents or Photos, then describe them in the rationale above.</p>
+                                </div>
+
+                                {/* 3. Actions */}
+                                <div className="flex items-center justify-between pt-1">
                                   <button
                                     onClick={() => { setCompletingTaskId(null); setCompletionNote(""); }}
                                     className="text-[11px] text-muted hover:text-earth transition-colors"
@@ -1392,7 +1414,6 @@ export function OverviewClient() {
                                           completionNote: completionNote.trim(),
                                         });
                                         await approveTask(user.uid, projectId, task.id, completionNote.trim());
-                                        // Auto-open next incomplete task
                                         const nextTask = currentPhaseTasks
                                           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                                           .find((t) => !t.done && t.status !== "pending-review" && t.id !== task.id);
@@ -1418,16 +1439,43 @@ export function OverviewClient() {
                       );
                     })}
 
-                  {/* Phase complete celebration */}
+                  {/* Phase complete -- show what's next */}
                   {currentPhaseProgress === 100 && currentPhaseTasks.length > 0 && (
-                    <div className="flex items-center gap-3 px-4 py-3 bg-success/5 border border-success/20 rounded-xl">
-                      <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
-                        <CheckCircle2 size={18} className="text-success" />
+                    <div className="rounded-xl border border-success/20 bg-success/3 overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <div className="w-9 h-9 rounded-xl bg-success/10 flex items-center justify-center">
+                          <CheckCircle2 size={20} className="text-success" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[13px] font-semibold text-success" style={{ fontFamily: "var(--font-heading)" }}>
+                            {["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"][phase]} phase complete!
+                          </p>
+                          <p className="text-[11px] text-muted mt-0.5">
+                            {phase < 8
+                              ? `All ${currentPhaseTasks.length} tasks done. Advancing to ${["Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate", "Done"][phase]}.`
+                              : "Congratulations! Your project is complete."}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[12px] font-semibold text-success">Phase complete!</p>
-                        <p className="text-[10px] text-muted">All tasks done. {phase < 8 ? "Moving to next phase." : "Project finished!"}</p>
-                      </div>
+                      {phase < 8 && (
+                        <div className="px-4 py-3 border-t border-success/10 bg-success/5">
+                          <p className="text-[10px] font-semibold text-earth mb-2">Recommended before moving on:</p>
+                          <div className="flex flex-wrap gap-2">
+                            <Link href={`/project/${projectId}/documents`}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-border/50 text-[10px] font-medium text-earth hover:bg-warm/30 transition-colors">
+                              <FileText size={11} className="text-clay" /> Review documents
+                            </Link>
+                            <Link href={`/project/${projectId}/budget`}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-border/50 text-[10px] font-medium text-earth hover:bg-warm/30 transition-colors">
+                              <DollarSign size={11} className="text-clay" /> Check budget
+                            </Link>
+                            <Link href={`/project/${projectId}/photos`}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-border/50 text-[10px] font-medium text-earth hover:bg-warm/30 transition-colors">
+                              <Camera size={11} className="text-clay" /> Add progress photos
+                            </Link>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
