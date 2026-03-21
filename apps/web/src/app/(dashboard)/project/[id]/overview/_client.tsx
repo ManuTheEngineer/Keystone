@@ -1285,21 +1285,24 @@ export function OverviewClient() {
       {/* ----------------------------------------------------------------- */}
       {phase <= 1 && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 mb-5">
             {/* Current Phase Task Workflow */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <SectionLabel>
-                  {getPhaseName(phase, project?.market)}
-                </SectionLabel>
-                <span className="text-[10px] font-data text-muted">
-                  {currentPhaseDone.length}/{currentPhaseTasks.length} complete
-                </span>
-              </div>
-
-              {/* Phase progress bar */}
-              <div className="h-1.5 bg-warm rounded-full overflow-hidden mb-3">
-                <div className="h-full bg-success rounded-full" style={{ width: `${currentPhaseProgress}%`, transition: "width 0.5s" }} />
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-[14px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
+                    {getPhaseName(phase, project?.market)}
+                  </h3>
+                  <span className="text-[11px] font-data text-muted bg-warm/40 px-2 py-0.5 rounded">
+                    {currentPhaseDone.length}/{currentPhaseTasks.length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-24 h-1 bg-warm rounded-full overflow-hidden">
+                    <div className="h-full bg-success rounded-full" style={{ width: `${currentPhaseProgress}%`, transition: "width 0.5s" }} />
+                  </div>
+                  <span className="text-[10px] font-data text-muted">{currentPhaseProgress}%</span>
+                </div>
               </div>
 
               {currentPhaseTasks.length === 0 ? (
@@ -1363,35 +1366,23 @@ export function OverviewClient() {
                       const doneCount = groupTasks.filter((t) => t.done).length;
 
                       return (
-                        <div key={msIdx}>
-                          {/* Milestone header */}
-                          <div className={`flex items-center gap-2 mb-2 px-1 ${allDone ? "opacity-60" : ""}`}>
-                            <div className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
-                              allDone ? "bg-success border-success" : "border-border-dark"
-                            }`}>
-                              {allDone && (
-                                <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                                  <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <span className={`text-[12px] font-medium ${allDone ? "text-muted line-through" : "text-earth"}`}>
-                                {milestone.name}
-                              </span>
-                              <span className="text-[10px] text-muted ml-2 font-data">{doneCount}/{groupTasks.length}</span>
-                            </div>
+                        <div key={msIdx} className="mb-1">
+                          {/* Milestone header — compact row */}
+                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-t bg-surface-alt/50 border-b border-border/30 ${allDone ? "opacity-50" : ""}`}>
+                            <div className={`w-3 h-3 rounded-sm shrink-0 ${allDone ? "bg-success" : "bg-border"}`} />
+                            <span className={`text-[11px] font-semibold uppercase tracking-[0.06em] flex-1 ${allDone ? "text-muted" : "text-earth"}`}>
+                              {milestone.name}
+                            </span>
+                            <span className="text-[10px] font-data text-muted">{doneCount}/{groupTasks.length}</span>
                             {milestone.requiresInspection && (
-                              <span className="text-[8px] text-warning font-medium uppercase tracking-wider">Inspection</span>
+                              <span className="text-[8px] text-warning font-medium px-1.5 py-0.5 rounded bg-warning/8 border border-warning/15">INSP</span>
                             )}
                             {milestone.requiresPayment && milestone.paymentPct && (
-                              <span className="text-[8px] text-info font-medium uppercase tracking-wider font-data">
-                                {milestone.paymentPct}% payment
-                              </span>
+                              <span className="text-[8px] text-info font-medium font-data px-1.5 py-0.5 rounded bg-info/8 border border-info/15">{milestone.paymentPct}%</span>
                             )}
                           </div>
-                          {/* Tasks under this milestone */}
-                          <div className={`space-y-2 ${milestones.length > 0 ? "pl-7" : ""} mb-3`}>
+                          {/* Task rows — tight, professional */}
+                          <div className="border-x border-b border-border/30 rounded-b mb-2 divide-y divide-border/20">
                   {groupTasks
                     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                     .map((task, idx) => {
@@ -1401,59 +1392,44 @@ export function OverviewClient() {
                       const stepNum = idx + 1;
 
                       return (
-                        <div key={task.id} className={`rounded-xl border transition-all ${
-                          isDone ? "border-success/20 bg-success/3" :
-                          isPending ? "border-warning/30 bg-warning/3" :
-                          isOpen ? "border-clay/30 bg-surface shadow-sm" :
-                          "border-border/50 bg-surface hover:border-border"
-                        }`}>
-                          {/* Task header -- always visible */}
+                        <div key={task.id} id={`task-${task.id}`} className={`transition-colors ${isOpen ? "bg-warm/20" : "hover:bg-warm/10"}`}>
+                          {/* Task row — compact, professional */}
                           <button
                             onClick={() => {
                               if (isDone) return;
                               if (isPending) {
-                                // Scroll to pending review queue
                                 document.getElementById("pending-review")?.scrollIntoView({ behavior: "smooth" });
                                 return;
                               }
                               setCompletingTaskId(isOpen ? null : task.id!);
                               setCompletionNote("");
                             }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left"
                             disabled={isDone}
                           >
-                            {/* Step number / status icon */}
-                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-bold font-data ${
-                              isDone ? "bg-success text-white" :
-                              isPending ? "bg-warning text-white" :
-                              isOpen ? "bg-clay text-white" :
-                              "bg-warm text-clay"
-                            }`}>
-                              {isDone ? <Check size={14} /> : isPending ? <Clock size={13} /> : stepNum}
-                            </div>
+                            {/* Status dot */}
+                            <div className={`w-2 h-2 rounded-full shrink-0 ${
+                              isDone ? "bg-success" : isPending ? "bg-warning" : "bg-border"
+                            }`} />
 
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-[13px] font-medium ${isDone ? "text-muted line-through" : "text-earth"}`}>
-                                {task.label}
-                              </p>
-                              {isDone && task.completionNote && task.completionNote !== "Completed" && (
-                                <p className="text-[10px] text-success/70 mt-0.5 truncate">{task.completionNote}</p>
-                              )}
-                              {isDone && task.completedAt && (
-                                <p className="text-[9px] text-muted/40 mt-0.5">
-                                  Completed {new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                </p>
-                              )}
-                            </div>
+                            <span className={`text-[12px] flex-1 min-w-0 truncate ${isDone ? "text-muted line-through" : "text-earth"}`}>
+                              {task.label}
+                            </span>
 
-                            {/* Status indicator */}
-                            {isPending && (
-                              <span className="text-[9px] px-2 py-0.5 rounded-full bg-warning/10 text-warning font-semibold shrink-0">
-                                Needs review
+                            {/* Meta */}
+                            {isDone && task.completedAt && (
+                              <span className="text-[9px] font-data text-muted/50 shrink-0">
+                                {new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                               </span>
                             )}
+                            {isPending && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-warning/10 text-warning font-medium shrink-0">Review</span>
+                            )}
+                            {task.assignedName && !isDone && (
+                              <span className="text-[9px] text-muted/60 shrink-0 truncate max-w-[80px]">{task.assignedName}</span>
+                            )}
                             {!isDone && !isPending && (
-                              <ChevronRight size={14} className={`text-muted/30 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                              <ChevronDown size={12} className={`text-muted/30 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
                             )}
                           </button>
 
