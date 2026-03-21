@@ -847,7 +847,9 @@ export default function DashboardPage() {
     const activeProjects = projects.filter((p) => p.status === "ACTIVE");
     const totalInvested = projects.reduce((sum, p) => sum + (p.totalSpent || 0), 0);
     const totalBudget = projects.reduce((sum, p) => sum + (p.totalBudget || 0), 0);
-    return { activeCount: activeProjects.length, totalInvested, totalBudget };
+    const markets = new Set(projects.map((p) => p.market));
+    const singleCurrency = markets.size <= 1;
+    return { activeCount: activeProjects.length, totalInvested, totalBudget, singleCurrency };
   }, [projects]);
 
   const handlePriorityChange = useCallback(async (projectId: string, priority: number | null) => {
@@ -1285,7 +1287,7 @@ export default function DashboardPage() {
                   <p className="text-[12px] text-muted">
                     <span className="font-data font-semibold">{projects.length}</span>
                     {" "}project{projects.length !== 1 ? "s" : ""}
-                    {stats.totalInvested > 0 && (
+                    {stats.totalInvested > 0 && stats.singleCurrency && (
                       <>
                         {" / "}
                         <span className="font-data font-semibold">

@@ -1047,7 +1047,7 @@ export default function NewProjectPage() {
                     {state.market === "USA"
                       ? `$${(locationData.landPricePerAcre.low / 1000).toFixed(0)}K to $${(locationData.landPricePerAcre.high / 1000).toFixed(0)}K per acre`
                       : locationData.landPricePerSqm
-                        ? `${locationData.landPricePerSqm.low.toLocaleString()} to ${locationData.landPricePerSqm.high.toLocaleString()} per sqm`
+                        ? `${locationData.landPricePerSqm.low.toLocaleString()} to ${locationData.landPricePerSqm.high.toLocaleString()} ${currency.code} per sqm`
                         : "N/A"
                     }
                   </span>
@@ -1059,10 +1059,7 @@ export default function NewProjectPage() {
                 <div className="flex justify-between">
                   <span className="text-muted">Permit cost estimate</span>
                   <span className="font-medium font-data">
-                    {state.market === "USA"
-                      ? `$${locationData.permitCostEstimate.toLocaleString()}`
-                      : `${locationData.permitCostEstimate.toLocaleString()} CFA`
-                    }
+                    {formatCurrency(locationData.permitCostEstimate, currency)}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -1473,7 +1470,7 @@ export default function NewProjectPage() {
     const costRows = [
       { label: "Land", value: costs.land, pct: costs.total > 0 ? (costs.land / costs.total) * 100 : 0, color: "#8B4513", detail: landDetail },
       { label: "Construction", value: costs.construction, pct: costs.total > 0 ? (costs.construction / costs.total) * 100 : 0, color: "#2C1810", detail: `Based on ${getBuildingSize(state).toLocaleString()} ${sizeUnit} at market mid-range cost per ${sizeUnit}.${locationLabel}` },
-      { label: "Soft costs (permits, design, fees)", value: costs.soft, pct: costs.total > 0 ? (costs.soft / costs.total) * 100 : 0, color: "#D4A574", detail: `Estimated at 15% of construction cost. Includes architectural design, permits, engineering, and inspections.${locationData ? ` Typical permit cost in ${locationData.city}: ${state.market === "USA" ? "$" : ""}${locationData.permitCostEstimate.toLocaleString()}${state.market !== "USA" ? " CFA" : ""}.` : ""}` },
+      { label: "Soft costs (permits, design, fees)", value: costs.soft, pct: costs.total > 0 ? (costs.soft / costs.total) * 100 : 0, color: "#D4A574", detail: `Estimated at 15% of construction cost. Includes architectural design, permits, engineering, and inspections.${locationData ? ` Typical permit cost in ${locationData.city}: ${formatCurrency(locationData.permitCostEstimate, currency)}.` : ""}` },
       { label: "Financing costs", value: costs.financing, pct: costs.total > 0 ? (costs.financing / costs.total) * 100 : 0, color: "#1B4965", detail: state.financingType === "cash" || state.financingType === "phased_cash" ? "No financing costs with cash payment." : `Based on ${state.downPaymentPct}% down at ${state.loanRate}% over ${state.timelineMonths} months.` },
       { label: "Contingency (15%)", value: costs.contingency, pct: costs.total > 0 ? (costs.contingency / costs.total) * 100 : 0, color: "#BC6C25", detail: "A 15% contingency protects against cost overruns. This is the industry standard safety buffer." },
     ];

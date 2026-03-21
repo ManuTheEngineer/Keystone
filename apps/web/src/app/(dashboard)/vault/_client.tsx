@@ -432,7 +432,10 @@ export function VaultClient() {
     setDeleting(false);
   }, [user, deleting, showToast]);
 
-  const primaryCurrency = projects.length > 0
+  // Derive currency from filtered projects (not first overall project)
+  const primaryCurrency = filteredProjects.length > 0
+    ? getMarketData((filteredProjects[0]?.market as Market) ?? "USA").currency
+    : projects.length > 0
     ? getMarketData((projects[0]?.market as Market) ?? "USA").currency
     : USD_CONFIG;
 

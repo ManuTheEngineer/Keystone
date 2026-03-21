@@ -404,7 +404,7 @@ export async function gatherFullProjectData(
     riskAssessment.push({
       level: "critical",
       title: "Budget exceeded",
-      detail: `Spent exceeds budget by ${overPct}% ($${(totalSpent - totalBudget).toLocaleString()}).`,
+      detail: `Spent exceeds budget by ${overPct}% (${currency.symbol}${(totalSpent - totalBudget).toLocaleString()}).`,
     });
   } else if (totalBudget > 0 && totalSpent > totalBudget * 0.9) {
     const usedPct = ((totalSpent / totalBudget) * 100).toFixed(1);
@@ -466,7 +466,7 @@ export async function gatherFullProjectData(
     riskAssessment.push({
       level: "info",
       title: "Spending pace elevated",
-      detail: `Weekly burn rate of $${burnRate.toLocaleString()} may outpace remaining budget over ${remainingWeeks} weeks.`,
+      detail: `Weekly burn rate of ${currency.symbol}${burnRate.toLocaleString()} may outpace remaining budget over ${remainingWeeks} weeks.`,
     });
   }
 
