@@ -651,43 +651,50 @@ export default function AnalyzePage() {
                 {/* Location */}
                 {input.market && (
                   <div>
-                    <div className="relative">
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-[11px] font-medium text-earth">City / Region</span>
-                      </div>
-                      <div className="relative">
-                        <MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/40" />
-                        <input type="text" value={input.city}
-                          onChange={(e) => { set("city", e.target.value); setShowSuggestions(true); }}
-                          onFocus={() => setShowSuggestions(true)}
-                          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                          placeholder={isUSA ? "e.g. Houston, TX" : "e.g. Lome"}
-                          className="w-full pl-9 pr-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20" />
-                      </div>
-                      {showSuggestions && suggestions.length > 0 && (
-                        <div className="absolute z-30 left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden">
-                          {suggestions.map((city) => (
-                            <button key={city} onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => { set("city", city); setShowSuggestions(false); }}
-                              className="w-full text-left px-3 py-2 text-[12px] text-earth hover:bg-warm/30 border-b border-border/20 last:border-b-0">
-                              {city}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    {isUSA && (
-                      <div className="mt-2">
+                    {isUSA ? (
+                      /* USA: ZIP code is the primary input, city auto-resolves */
+                      <div>
                         <div className="flex items-center gap-1 mb-1">
                           <span className="text-[11px] font-medium text-earth">ZIP code</span>
                           {zipLoading && <span className="text-[9px] text-clay animate-pulse">Looking up...</span>}
                         </div>
-                        <input type="text" value={input.zipCode} inputMode="numeric" maxLength={5}
-                          onChange={(e) => set("zipCode", e.target.value.replace(/\D/g, "").slice(0, 5))}
-                          placeholder="e.g. 77001"
-                          className="w-full px-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth font-data focus:outline-none focus:ring-2 focus:ring-clay/20" />
+                        <div className="relative">
+                          <MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/40" />
+                          <input type="text" value={input.zipCode} inputMode="numeric" maxLength={5}
+                            onChange={(e) => set("zipCode", e.target.value.replace(/\D/g, "").slice(0, 5))}
+                            placeholder="e.g. 77001"
+                            className="w-full pl-9 pr-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth font-data focus:outline-none focus:ring-2 focus:ring-clay/20" />
+                        </div>
                         {input.zipCode.length === 5 && input.city && !zipLoading && (
                           <p className="text-[10px] text-success mt-1 flex items-center gap-1"><Check size={10} /> {input.city}</p>
+                        )}
+                        <p className="text-[10px] text-muted mt-1">ZIP code gives the most accurate cost data for your area.</p>
+                      </div>
+                    ) : (
+                      /* West Africa: City / Region with suggestions */
+                      <div className="relative">
+                        <div className="flex items-center gap-1 mb-1">
+                          <span className="text-[11px] font-medium text-earth">City / Region</span>
+                        </div>
+                        <div className="relative">
+                          <MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/40" />
+                          <input type="text" value={input.city}
+                            onChange={(e) => { set("city", e.target.value); setShowSuggestions(true); }}
+                            onFocus={() => setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                            placeholder="e.g. Lome"
+                            className="w-full pl-9 pr-3 py-2 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20" />
+                        </div>
+                        {showSuggestions && suggestions.length > 0 && (
+                          <div className="absolute z-30 left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg overflow-hidden">
+                            {suggestions.map((city) => (
+                              <button key={city} onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => { set("city", city); setShowSuggestions(false); }}
+                                className="w-full text-left px-3 py-2 text-[12px] text-earth hover:bg-warm/30 border-b border-border/20 last:border-b-0">
+                                {city}
+                              </button>
+                            ))}
+                          </div>
                         )}
                       </div>
                     )}
@@ -1087,14 +1094,35 @@ export default function AnalyzePage() {
 
           {input.market && (
             <div className="space-y-4">
-              {/* City */}
+              {/* Location */}
               <div>
-                <div className="flex items-center gap-1 mb-1"><span className="text-[11px] font-medium text-earth">City / Region</span></div>
-                <div className="relative">
-                  <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/40" />
-                  <input type="text" value={input.city} onChange={(e) => set("city", e.target.value)} placeholder={isUSA ? "e.g. Houston, TX" : "e.g. Lome"}
-                    className="w-full pl-9 pr-3 py-2.5 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20" />
-                </div>
+                {isUSA ? (
+                  <>
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="text-[11px] font-medium text-earth">ZIP code</span>
+                      {zipLoading && <span className="text-[9px] text-clay animate-pulse">Looking up...</span>}
+                    </div>
+                    <div className="relative">
+                      <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/40" />
+                      <input type="text" value={input.zipCode} inputMode="numeric" maxLength={5}
+                        onChange={(e) => set("zipCode", e.target.value.replace(/\D/g, "").slice(0, 5))}
+                        placeholder="e.g. 77001"
+                        className="w-full pl-9 pr-3 py-2.5 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth font-data focus:outline-none focus:ring-2 focus:ring-clay/20" />
+                    </div>
+                    {input.zipCode.length === 5 && input.city && !zipLoading && (
+                      <p className="text-[10px] text-success mt-1 flex items-center gap-1"><Check size={10} /> {input.city}</p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-1 mb-1"><span className="text-[11px] font-medium text-earth">City / Region</span></div>
+                    <div className="relative">
+                      <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted/40" />
+                      <input type="text" value={input.city} onChange={(e) => set("city", e.target.value)} placeholder="e.g. Lome"
+                        className="w-full pl-9 pr-3 py-2.5 bg-white/60 border border-border/60 rounded-lg text-[13px] text-earth focus:outline-none focus:ring-2 focus:ring-clay/20" />
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Budget -- large, prominent number */}
