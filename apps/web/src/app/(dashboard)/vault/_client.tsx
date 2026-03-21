@@ -155,28 +155,9 @@ interface KebabMenuProps {
 }
 
 function KebabMenu({ project, isOpen, onToggle, onClose, onSetPriority, onPause, onResume, onDelete, onView }: KebabMenuProps) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-
-  useEffect(() => {
-    if (isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const menuWidth = 180;
-      const menuHeight = 260;
-      let top = rect.bottom + 4;
-      let left = rect.right - menuWidth;
-      if (top + menuHeight > window.innerHeight) {
-        top = rect.top - menuHeight - 4;
-      }
-      if (left < 8) left = 8;
-      setMenuPos({ top, left });
-    }
-  }, [isOpen]);
-
   return (
     <div className="relative">
       <button
-        ref={buttonRef}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -194,8 +175,7 @@ function KebabMenu({ project, isOpen, onToggle, onClose, onSetPriority, onPause,
             onClick={onClose}
           />
           <div
-            className="fixed w-[180px] bg-surface border border-border rounded-lg shadow-lg z-50 py-1"
-            style={{ top: menuPos.top, left: menuPos.left }}
+            className="absolute right-0 top-full mt-1 w-[180px] bg-surface border border-border rounded-lg shadow-lg z-50 py-1"
           >
             {/* View project */}
             <button

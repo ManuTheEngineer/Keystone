@@ -1830,16 +1830,8 @@ export default function NewProjectPage() {
         })}
       </div>
 
-      {/* Progress bar + step label */}
+      {/* Progress bar */}
       <div className="max-w-xs mx-auto mb-4">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-clay/60">
-            Step {step + 1} of {STEP_COUNT}
-          </p>
-          <p className="text-[10px] font-data font-medium text-muted">
-            {Math.round(((step + 1) / STEP_COUNT) * 100)}%
-          </p>
-        </div>
         <div className="w-full h-1 bg-warm rounded-full overflow-hidden">
           <div
             className="h-full bg-emerald-500 rounded-full transition-all duration-300"
