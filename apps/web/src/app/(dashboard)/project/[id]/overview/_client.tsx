@@ -1311,17 +1311,32 @@ export function OverviewClient() {
                   {/* Group tasks under milestones */}
                   {(() => {
                     const nonPending = currentPhaseTasks.filter((t) => t.status !== "pending-review");
-                    // Group by milestoneIndex (undefined = ungrouped at the end)
-                    const milestoneGroups = new Map<number | undefined, typeof nonPending>();
-                    for (const t of nonPending) {
-                      const key = t.milestoneIndex;
-                      if (!milestoneGroups.has(key)) milestoneGroups.set(key, []);
-                      milestoneGroups.get(key)!.push(t);
-                    }
                     // Get phase milestones for labels
                     const currentPhaseKey = PHASE_ORDER[phase];
                     const phaseDef = currentPhaseKey ? getPhaseDefinition(project!.market as Market, currentPhaseKey) : null;
                     const milestones = phaseDef?.milestones ?? [];
+
+                    // For tasks without milestoneIndex, auto-assign by distributing evenly across milestones
+                    const hasAnyMilestoneIndex = nonPending.some((t) => t.milestoneIndex != null);
+
+                    const milestoneGroups = new Map<number | undefined, typeof nonPending>();
+                    if (!hasAnyMilestoneIndex && milestones.length > 0) {
+                      // Legacy tasks: distribute evenly across milestones
+                      const sorted = [...nonPending].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+                      const perMs = Math.ceil(sorted.length / milestones.length);
+                      sorted.forEach((t, i) => {
+                        const msIdx = Math.min(Math.floor(i / perMs), milestones.length - 1);
+                        if (!milestoneGroups.has(msIdx)) milestoneGroups.set(msIdx, []);
+                        milestoneGroups.get(msIdx)!.push(t);
+                      });
+                    } else {
+                      // New tasks with milestoneIndex
+                      for (const t of nonPending) {
+                        const key = t.milestoneIndex;
+                        if (!milestoneGroups.has(key)) milestoneGroups.set(key, []);
+                        milestoneGroups.get(key)!.push(t);
+                      }
+                    }
 
                     // Sort groups by milestone index
                     const sortedGroups = Array.from(milestoneGroups.entries()).sort(
