@@ -201,10 +201,11 @@ export function BudgetClient() {
     locationData ? adjustCostForLocation(amount, locationData) : amount;
 
   const remaining = project.totalBudget - project.totalSpent;
-  const varianceNum = project.totalBudget > 0
+  const hasSpending = project.totalSpent > 0;
+  const varianceNum = project.totalBudget > 0 && hasSpending
     ? ((project.totalSpent - project.totalBudget) / project.totalBudget) * 100
     : 0;
-  const variance = varianceNum.toFixed(1);
+  const variance = hasSpending ? `${varianceNum.toFixed(1)}%` : "N/A";
   const budgetUtilization = project.totalBudget > 0
     ? Math.round((project.totalSpent / project.totalBudget) * 100)
     : 0;
@@ -339,9 +340,9 @@ export function BudgetClient() {
             <StatCard value={fmtCompact(remaining)} label="Remaining" />
             <div>
               <StatCard
-                value={`${variance}%`}
+                value={variance}
                 label="Variance"
-                valueClassName={varianceNum > 0 ? "text-danger" : varianceNum < -5 ? "text-info" : ""}
+                valueClassName={!hasSpending ? "text-muted" : varianceNum > 0 ? "text-danger" : varianceNum < -5 ? "text-info" : ""}
               />
               <div className="mt-1 px-1">
                 <LearnTooltip
@@ -589,19 +590,11 @@ export function BudgetClient() {
                   {benchmark && !isExpanded && (() => {
                     const adjLow = adjustForLocation(benchmark.lowRange);
                     const adjHigh = adjustForLocation(benchmark.highRange);
+                    const unitLabel = benchmark.unit === "sqft" ? "/sqft" : benchmark.unit === "sqm" ? "/sqm" : benchmark.unit === "linear_ft" ? "/ft" : benchmark.unit === "linear_m" ? "/m" : "";
                     return (
                       <div className="mt-2 flex items-center gap-2 text-[9px] text-muted flex-wrap">
                         <span>{locationData ? `Range for ${locationData.city}:` : "Market range:"}</span>
-                        <span className="font-data">{fmtCompact(adjLow)} - {fmtCompact(adjHigh)}</span>
-                        {item.estimated > 0 && item.estimated >= adjLow && item.estimated <= adjHigh && (
-                          <span className="text-success">Within range</span>
-                        )}
-                        {item.estimated > 0 && item.estimated > adjHigh && (
-                          <span className="text-danger">Above range</span>
-                        )}
-                        {item.estimated > 0 && item.estimated < adjLow && (
-                          <span className="text-info">Below range</span>
-                        )}
+                        <span className="font-data">{fmtCompact(adjLow)} - {fmtCompact(adjHigh)}{unitLabel && <span className="text-muted/60"> {unitLabel}</span>}</span>
                       </div>
                     );
                   })()}

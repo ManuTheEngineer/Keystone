@@ -149,7 +149,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       setPunchListCount(items.filter((i) => i.status === "open").length);
     });
     const unsub2 = subscribeToTasks(user.uid, currentProjectId, (tasks) => {
-      setOpenTaskCount(tasks.filter((t) => !t.done).length);
+      const phase = currentProject?.currentPhase;
+      setOpenTaskCount(tasks.filter((t) => !t.done && (phase == null || t.phase === phase || t.phase == null)).length);
     });
     return () => { unsub1(); unsub2(); };
   }, [user, currentProjectId]);

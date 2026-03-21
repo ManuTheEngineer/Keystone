@@ -131,6 +131,19 @@ import { LearnTooltip } from "@/components/ui/LearnTooltip";
 import { getNextActions, type NextAction } from "@/lib/next-actions";
 import type { ExportData } from "@/lib/services/export-service";
 
+const PHASE_NAMES_EN = ["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"];
+const PHASE_NAMES_FR = ["Definir", "Financer", "Terrain", "Concevoir", "Approuver", "Assembler", "Construire", "Verifier", "Exploiter"];
+
+function getPhaseName(phaseIndex: number, market?: string): string {
+  const isWA = market && ["TOGO", "GHANA", "BENIN"].includes(market);
+  const en = PHASE_NAMES_EN[phaseIndex] ?? "Define";
+  if (isWA && market !== "GHANA") {
+    const fr = PHASE_NAMES_FR[phaseIndex] ?? "";
+    return fr ? `${en} / ${fr}` : en;
+  }
+  return en;
+}
+
 // ---------------------------------------------------------------------------
 // Collapsible section component
 // ---------------------------------------------------------------------------
@@ -540,13 +553,12 @@ export function OverviewClient() {
           vaultFiles
         );
         if (docAnalysis.complete.length + docAnalysis.missing.length === 0) return null;
-        const phaseNames = ["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"];
         return (
           <CollapsibleSection title="Documents Needed" count={docAnalysis.missing.length}>
             <DocumentReadiness
               analysis={docAnalysis}
               projectId={projectId}
-              phaseName={phaseNames[phase] ?? "Current"}
+              phaseName={PHASE_NAMES_EN[phase] ?? "Current"}
             />
           </CollapsibleSection>
         );
@@ -1278,7 +1290,7 @@ export function OverviewClient() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <SectionLabel>
-                  {["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"][phase] || "Define"}
+                  {getPhaseName(phase, project?.market)}
                 </SectionLabel>
                 <span className="text-[10px] font-data text-muted">
                   {currentPhaseDone.length}/{currentPhaseTasks.length} complete
@@ -1298,6 +1310,7 @@ export function OverviewClient() {
                 <div className="space-y-2">
                   {/* Each task is a full interactive card */}
                   {currentPhaseTasks
+                    .filter((t) => t.status !== "pending-review")
                     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                     .map((task, idx) => {
                       const isOpen = completingTaskId === task.id;
@@ -1463,7 +1476,7 @@ export function OverviewClient() {
                         </div>
                         <div className="flex-1">
                           <p className="text-[13px] font-semibold text-success" style={{ fontFamily: "var(--font-heading)" }}>
-                            {["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"][phase]} phase complete!
+                            {PHASE_NAMES_EN[phase]} phase complete!
                           </p>
                           <p className="text-[11px] text-muted mt-0.5">
                             {phase < 8
