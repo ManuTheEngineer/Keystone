@@ -1311,75 +1311,87 @@ export function OverviewClient() {
                   {/* Group tasks under milestones */}
                   {(() => {
                     const nonPending = currentPhaseTasks.filter((t) => t.status !== "pending-review");
-                    // Get phase milestones for labels
-                    const currentPhaseKey = PHASE_ORDER[phase];
-                    const phaseDef = currentPhaseKey ? getPhaseDefinition(project!.market as Market, currentPhaseKey) : null;
+                    // Get phase milestones for labels — use the same phaseDef from outer scope
                     const milestones = phaseDef?.milestones ?? [];
 
-                    // For tasks without milestoneIndex, auto-assign by distributing evenly across milestones
-                    const hasAnyMilestoneIndex = nonPending.some((t) => t.milestoneIndex != null);
+                    // Distribute tasks across milestones
+                    const milestoneGroups: { msIdx: number; milestone: typeof milestones[0]; tasks: typeof nonPending }[] = [];
 
-                    const milestoneGroups = new Map<number | undefined, typeof nonPending>();
-                    if (!hasAnyMilestoneIndex && milestones.length > 0) {
-                      // Legacy tasks: distribute evenly across milestones
+                    if (milestones.length > 0) {
+                      // Check if tasks have milestoneIndex
+                      const hasIdx = nonPending.some((t) => t.milestoneIndex != null);
                       const sorted = [...nonPending].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-                      const perMs = Math.ceil(sorted.length / milestones.length);
-                      sorted.forEach((t, i) => {
-                        const msIdx = Math.min(Math.floor(i / perMs), milestones.length - 1);
-                        if (!milestoneGroups.has(msIdx)) milestoneGroups.set(msIdx, []);
-                        milestoneGroups.get(msIdx)!.push(t);
-                      });
-                    } else {
-                      // New tasks with milestoneIndex
-                      for (const t of nonPending) {
-                        const key = t.milestoneIndex;
-                        if (!milestoneGroups.has(key)) milestoneGroups.set(key, []);
-                        milestoneGroups.get(key)!.push(t);
+
+                      if (hasIdx) {
+                        // New tasks: group by milestoneIndex
+                        for (let mi = 0; mi < milestones.length; mi++) {
+                          milestoneGroups.push({
+                            msIdx: mi,
+                            milestone: milestones[mi],
+                            tasks: sorted.filter((t) => t.milestoneIndex === mi),
+                          });
+                        }
+                        // Ungrouped tasks (no milestoneIndex)
+                        const ungrouped = sorted.filter((t) => t.milestoneIndex == null);
+                        if (ungrouped.length > 0) {
+                          // Add to last milestone
+                          milestoneGroups[milestoneGroups.length - 1].tasks.push(...ungrouped);
+                        }
+                      } else {
+                        // Legacy: distribute evenly
+                        const perMs = Math.max(1, Math.ceil(sorted.length / milestones.length));
+                        for (let mi = 0; mi < milestones.length; mi++) {
+                          milestoneGroups.push({
+                            msIdx: mi,
+                            milestone: milestones[mi],
+                            tasks: sorted.slice(mi * perMs, (mi + 1) * perMs),
+                          });
+                        }
                       }
+                    } else {
+                      // No milestones defined — show flat
+                      return nonPending.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((task, idx) => {
+                        const isOpen = completingTaskId === task.id;
+                        const isDone = task.done;
+                        const stepNum = idx + 1;
+                        return null; // Will fall through to flat rendering below
+                      });
                     }
 
-                    // Sort groups by milestone index
-                    const sortedGroups = Array.from(milestoneGroups.entries()).sort(
-                      (a, b) => (a[0] ?? 999) - (b[0] ?? 999)
-                    );
-
-                    return sortedGroups.map(([msIdx, groupTasks]) => {
-                      const milestone = msIdx != null ? milestones[msIdx] : null;
-                      const allDone = groupTasks.every((t) => t.done);
+                    return milestoneGroups.map(({ msIdx, milestone, tasks: groupTasks }) => {
+                      const allDone = groupTasks.length > 0 && groupTasks.every((t) => t.done);
                       const doneCount = groupTasks.filter((t) => t.done).length;
 
                       return (
-                        <div key={msIdx ?? "ungrouped"}>
+                        <div key={msIdx}>
                           {/* Milestone header */}
-                          {milestone && (
-                            <div className={`flex items-center gap-2 mb-2 px-1 ${allDone ? "opacity-60" : ""}`}>
-                              <div className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
-                                allDone ? "bg-success border-success" : "border-border-dark"
-                              }`}>
-                                {allDone && (
-                                  <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                                    <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                  </svg>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <span className={`text-[12px] font-medium ${allDone ? "text-muted line-through" : "text-earth"}`}>
-                                  {milestone.name}
-                                </span>
-                                <span className="text-[10px] text-muted ml-2 font-data">{doneCount}/{groupTasks.length}</span>
-                              </div>
-                              {milestone.requiresInspection && (
-                                <span className="text-[8px] text-warning font-medium uppercase tracking-wider">Inspection</span>
-                              )}
-                              {milestone.requiresPayment && milestone.paymentPct && (
-                                <span className="text-[8px] text-info font-medium uppercase tracking-wider font-data">
-                                  {milestone.paymentPct}% payment
-                                </span>
+                          <div className={`flex items-center gap-2 mb-2 px-1 ${allDone ? "opacity-60" : ""}`}>
+                            <div className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
+                              allDone ? "bg-success border-success" : "border-border-dark"
+                            }`}>
+                              {allDone && (
+                                <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                                  <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
                               )}
                             </div>
-                          )}
+                            <div className="flex-1 min-w-0">
+                              <span className={`text-[12px] font-medium ${allDone ? "text-muted line-through" : "text-earth"}`}>
+                                {milestone.name}
+                              </span>
+                              <span className="text-[10px] text-muted ml-2 font-data">{doneCount}/{groupTasks.length}</span>
+                            </div>
+                            {milestone.requiresInspection && (
+                              <span className="text-[8px] text-warning font-medium uppercase tracking-wider">Inspection</span>
+                            )}
+                            {milestone.requiresPayment && milestone.paymentPct && (
+                              <span className="text-[8px] text-info font-medium uppercase tracking-wider font-data">
+                                {milestone.paymentPct}% payment
+                              </span>
+                            )}
+                          </div>
                           {/* Tasks under this milestone */}
-                          <div className="space-y-2 pl-7">
+                          <div className={`space-y-2 ${milestones.length > 0 ? "pl-7" : ""} mb-3`}>
                   {groupTasks
                     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                     .map((task, idx) => {
