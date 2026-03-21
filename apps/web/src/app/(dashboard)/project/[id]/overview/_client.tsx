@@ -1510,6 +1510,18 @@ export function OverviewClient() {
               )}
             </div>
 
+            {/* Phase gate — advance to next phase */}
+            {user && project && (
+              <PhaseAdvancement
+                project={project}
+                userId={user.uid}
+                tasks={tasks}
+                onAdvance={() => {
+                  showToast("Phase advanced successfully", "success");
+                }}
+              />
+            )}
+
             {/* Budget estimate preview */}
             <div>
               <SectionLabel>Budget Preview</SectionLabel>

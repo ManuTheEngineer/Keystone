@@ -715,7 +715,7 @@ export async function approveTask(
     reviewNote: reviewNote || "Approved",
   });
 
-  // Recalculate progress + auto-advance phase if all current tasks done
+  // Recalculate progress from tasks
   try {
     const [tasksSnap, projectSnap] = await Promise.all([
       get(ref(db, `users/${userId}/projects/${projectId}/tasks`)),
@@ -732,33 +732,21 @@ export async function approveTask(
       const progress = total > 0 ? Math.round((done / total) * 100) : 0;
       const updates: Record<string, unknown> = { progress, openItems: pending, updatedAt: now };
 
-      // Auto-advance phase: if no pending-review and no upcoming tasks, advance
-      if (projectSnap.exists() && pending === 0) {
-        const proj = projectSnap.val();
-        const allDone = total > 0 && done === total;
-        const noPending = pending === 0;
-        const currentPhase = proj.currentPhase ?? 0;
-
-        // Check if all tasks are complete (none pending, none upcoming)
-        let hasIncomplete = false;
-        tasksSnap.forEach((child) => {
-          const s = child.val().status;
-          if (s !== "done" && s !== "cancelled") hasIncomplete = true;
-        });
-
-        if (!hasIncomplete && currentPhase < 8) {
-          const nextPhase = currentPhase + 1;
-          const PHASE_NAMES = ["Phase 0: Define", "Phase 1: Finance", "Phase 2: Land", "Phase 3: Design", "Phase 4: Approve", "Phase 5: Assemble", "Phase 6: Build", "Phase 7: Verify", "Phase 8: Operate"];
-          updates.currentPhase = nextPhase;
-          updates.completedPhases = nextPhase;
-          updates.phaseName = PHASE_NAMES[nextPhase] || `Phase ${nextPhase}`;
-        }
-      }
-
       await update(ref(db, `users/${userId}/projects/${projectId}`), updates);
     }
+
+    // Sync: if approved task came from a milestone, auto-check that milestone on schedule
+    const taskSnap = await get(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`));
+    if (taskSnap.exists()) {
+      const task = taskSnap.val();
+      if (task.sourceType === "milestone" && task.sourceMilestone && task.phase != null) {
+        try {
+          await syncTaskToMilestone(userId, projectId, task.phase, task.sourceMilestone);
+        } catch { /* non-blocking */ }
+      }
+    }
   } catch {
-    // Non-blocking: progress + phase update is best-effort
+    // Non-blocking: progress update is best-effort
   }
 }
 
@@ -1169,6 +1157,26 @@ export async function setMilestoneDate(
   } else {
     await set(datesRef, date);
   }
+}
+
+/**
+ * Sync task completion → milestone: when a task sourced from a milestone is completed,
+ * find and check the corresponding milestone in the schedule.
+ */
+async function syncTaskToMilestone(userId: string, projectId: string, phaseIndex: number, milestoneName: string): Promise<void> {
+  const { getPhaseDefinition, PHASE_ORDER } = await import("@keystone/market-data");
+  const projSnap = await get(ref(db, `users/${userId}/projects/${projectId}`));
+  if (!projSnap.exists()) return;
+  const project = projSnap.val();
+  const phaseKey = PHASE_ORDER[phaseIndex];
+  if (!phaseKey) return;
+  const phaseDef = getPhaseDefinition(project.market, phaseKey);
+  if (!phaseDef) return;
+  const milestoneIndex = phaseDef.milestones.findIndex(
+    (m: any) => m.name.toLowerCase() === milestoneName.toLowerCase()
+  );
+  if (milestoneIndex === -1) return;
+  await toggleMilestoneProgress(userId, projectId, phaseKey, milestoneIndex, true, phaseDef.milestones.length);
 }
 
 export function subscribeToAllMilestoneDates(
