@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "./Card";
 import { SectionLabel } from "./SectionLabel";
 import {
@@ -16,7 +16,7 @@ import {
   PHASE_NAMES,
 } from "@keystone/market-data";
 import type { Market } from "@keystone/market-data";
-import { ChevronRight, Check, AlertTriangle } from "lucide-react";
+import { ChevronRight, Check, AlertTriangle, ShieldCheck } from "lucide-react";
 
 interface PhaseAdvancementProps {
   project: ProjectData;
@@ -34,7 +34,6 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
   const [firebaseProgress, setFirebaseProgress] = useState<boolean[]>([]);
   const [advancing, setAdvancing] = useState(false);
 
-  // Subscribe to milestone progress from Firebase (shared with Schedule page)
   useEffect(() => {
     if (!project.id) return;
     const unsub = subscribeToMilestoneProgress(
@@ -53,28 +52,18 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
   const milestones = phaseDef.milestones;
   const phaseTasks = tasks.filter((t) => t.phase === currentPhaseIndex || t.phase == null);
 
-  // Compute milestone completion from BOTH Firebase progress AND task completion
-  // A milestone is complete if:
-  //   1. Firebase milestoneProgress[i] is true, OR
-  //   2. All tasks assigned to that milestone are done
+  // Derive milestone completion from task status
   const milestoneCompleted = milestones.map((_, i) => {
-    // Check Firebase
     if (firebaseProgress[i]) return true;
-
-    // Check task completion — find tasks assigned to this milestone
     const hasIdx = phaseTasks.some((t) => t.milestoneIndex != null);
     let milestoneTasks: TaskData[];
-
     if (hasIdx) {
       milestoneTasks = phaseTasks.filter((t) => t.milestoneIndex === i);
     } else {
-      // Legacy: distribute evenly
       const sorted = [...phaseTasks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       const perMs = Math.max(1, Math.ceil(sorted.length / milestones.length));
       milestoneTasks = sorted.slice(i * perMs, (i + 1) * perMs);
     }
-
-    // If there are tasks for this milestone and ALL are done, milestone is complete
     return milestoneTasks.length > 0 && milestoneTasks.every((t) => t.done || t.status === "cancelled");
   });
 
@@ -84,7 +73,7 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
   const allTasksDone = incompleteTasks.length === 0;
   const canAdvance = allMilestonesChecked && allTasksDone;
 
-  // Auto-sync: when task-derived completion differs from Firebase, update Firebase
+  // Auto-sync Firebase
   useEffect(() => {
     if (!project.id) return;
     milestoneCompleted.forEach((completed, i) => {
@@ -93,12 +82,6 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
       }
     });
   }, [milestoneCompleted.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function handleToggle(index: number) {
-    if (!project.id) return;
-    const newState = !milestoneCompleted[index];
-    await toggleMilestoneProgress(userId, project.id, currentPhaseKey, index, newState, milestones.length);
-  }
 
   async function handleAdvance() {
     if (!nextPhaseKey || advancing || !canAdvance) return;
@@ -113,116 +96,62 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
     }
   }
 
+  // Don't render if last phase and everything complete
+  if (isLastPhase && allMilestonesChecked && allTasksDone) {
+    return (
+      <div className="mt-4 mb-5">
+        <Card padding="sm" className="border-l-[3px] border-l-success bg-success/3">
+          <div className="flex items-center gap-2 text-[12px] text-success font-medium py-1">
+            <Check size={16} />
+            All phases complete
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="mt-5 mb-5">
-      <SectionLabel>Phase Gate</SectionLabel>
-      <Card padding="md" className="border-l-[3px] border-l-emerald-500">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <p className="text-[13px] font-medium text-earth">
-              Phase {currentPhaseIndex}: {PHASE_NAMES[currentPhaseKey]}
-            </p>
-            <p className="text-[11px] text-muted mt-0.5">
-              Complete all milestones and tasks to advance
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] text-muted uppercase tracking-wider">Milestones</p>
-            <p className="font-data text-[14px] text-earth font-medium">
-              {checkedCount} / {milestones.length}
-            </p>
-          </div>
-        </div>
-
-        {/* Milestone checklist */}
-        <div className="space-y-1">
-          {milestones.map((milestone, i) => {
-            const isChecked = milestoneCompleted[i];
-            return (
-              <div
-                key={i}
-                className={`flex items-start gap-2.5 py-2 text-[12px] ${
-                  i < milestones.length - 1 ? "border-b border-border" : ""
-                }`}
-              >
-                <button
-                  onClick={() => handleToggle(i)}
-                  className={`w-4 h-4 mt-0.5 rounded border-[1.5px] shrink-0 flex items-center justify-center transition-colors ${
-                    isChecked
-                      ? "bg-success border-success"
-                      : "border-border-dark hover:border-emerald-500"
-                  }`}
-                >
-                  {isChecked && (
-                    <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                      <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </button>
-                <div className="flex-1 min-w-0">
-                  <span className={isChecked ? "text-muted line-through opacity-50" : "text-earth"}>
-                    {milestone.name}
-                  </span>
-                  {milestone.description && (
-                    <p className="text-[10px] text-muted mt-0.5 leading-relaxed">{milestone.description}</p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Gate status */}
-        {!canAdvance && (
-          <div className="mt-3 pt-3 border-t border-border space-y-1.5">
-            {!allMilestonesChecked && (
-              <div className="flex items-center gap-2 text-[11px] text-muted">
-                <AlertTriangle size={12} className="text-warning shrink-0" />
-                {milestones.length - checkedCount} milestone{milestones.length - checkedCount !== 1 ? "s" : ""} remaining
-              </div>
-            )}
-            {!allTasksDone && (
-              <div className="flex items-center gap-2 text-[11px] text-muted">
-                <AlertTriangle size={12} className="text-warning shrink-0" />
-                {incompleteTasks.length} task{incompleteTasks.length !== 1 ? "s" : ""} still open
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Advance button */}
-        {!isLastPhase && (
-          <div className="mt-4 pt-3 border-t border-border">
-            <button
-              onClick={handleAdvance}
-              disabled={!canAdvance || advancing}
-              className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-[12px] font-medium rounded-[var(--radius)] transition-colors ${
-                canAdvance
-                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                  : "bg-surface border border-border text-muted cursor-not-allowed"
-              }`}
-            >
-              {advancing ? (
-                "Advancing..."
-              ) : (
-                <>
-                  Advance to {nextPhaseName}
-                  <ChevronRight size={14} />
-                </>
+    <div className="mt-4 mb-5">
+      {canAdvance ? (
+        <button
+          onClick={handleAdvance}
+          disabled={advancing}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 text-[13px] font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+        >
+          {advancing ? (
+            "Advancing..."
+          ) : (
+            <>
+              <ShieldCheck size={16} />
+              All milestones complete — Advance to {nextPhaseName}
+              <ChevronRight size={14} />
+            </>
+          )}
+        </button>
+      ) : (
+        <Card padding="sm" className="border-l-[3px] border-l-warning/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={14} className="text-muted" />
+              <span className="text-[12px] text-muted">Phase Gate</span>
+            </div>
+            <div className="flex items-center gap-3 text-[11px]">
+              {!allMilestonesChecked && (
+                <span className="flex items-center gap-1 text-warning">
+                  <AlertTriangle size={10} />
+                  {milestones.length - checkedCount} milestone{milestones.length - checkedCount !== 1 ? "s" : ""}
+                </span>
               )}
-            </button>
-          </div>
-        )}
-
-        {isLastPhase && allMilestonesChecked && (
-          <div className="mt-4 pt-3 border-t border-border text-center">
-            <div className="flex items-center justify-center gap-2 text-[12px] text-success font-medium">
-              <Check size={16} />
-              Final phase — project complete
+              {!allTasksDone && (
+                <span className="flex items-center gap-1 text-warning">
+                  <AlertTriangle size={10} />
+                  {incompleteTasks.length} task{incompleteTasks.length !== 1 ? "s" : ""}
+                </span>
+              )}
             </div>
           </div>
-        )}
-      </Card>
+        </Card>
+      )}
     </div>
   );
 }
