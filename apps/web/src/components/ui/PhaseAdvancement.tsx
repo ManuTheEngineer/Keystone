@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card } from "./Card";
 import { SectionLabel } from "./SectionLabel";
 import {
@@ -31,7 +31,7 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
   const currentPhaseKey = PHASE_ORDER[currentPhaseIndex];
   const phaseDef = getPhaseDefinition(market, currentPhaseKey);
 
-  const [milestoneProgress, setMilestoneProgress] = useState<boolean[]>([]);
+  const [firebaseProgress, setFirebaseProgress] = useState<boolean[]>([]);
   const [advancing, setAdvancing] = useState(false);
 
   // Subscribe to milestone progress from Firebase (shared with Schedule page)
@@ -39,7 +39,7 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
     if (!project.id) return;
     const unsub = subscribeToMilestoneProgress(
       userId, project.id, currentPhaseKey,
-      (progress) => setMilestoneProgress(progress)
+      (progress) => setFirebaseProgress(progress)
     );
     return unsub;
   }, [userId, project.id, currentPhaseKey]);
@@ -51,20 +51,52 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
   const nextPhaseName = nextPhaseKey ? PHASE_NAMES[nextPhaseKey] : null;
 
   const milestones = phaseDef.milestones;
-
-  // Gate checks
-  const checkedCount = milestoneProgress.filter(Boolean).length;
-  const allMilestonesChecked = milestones.length > 0 && checkedCount >= milestones.length;
-
   const phaseTasks = tasks.filter((t) => t.phase === currentPhaseIndex || t.phase == null);
+
+  // Compute milestone completion from BOTH Firebase progress AND task completion
+  // A milestone is complete if:
+  //   1. Firebase milestoneProgress[i] is true, OR
+  //   2. All tasks assigned to that milestone are done
+  const milestoneCompleted = milestones.map((_, i) => {
+    // Check Firebase
+    if (firebaseProgress[i]) return true;
+
+    // Check task completion — find tasks assigned to this milestone
+    const hasIdx = phaseTasks.some((t) => t.milestoneIndex != null);
+    let milestoneTasks: TaskData[];
+
+    if (hasIdx) {
+      milestoneTasks = phaseTasks.filter((t) => t.milestoneIndex === i);
+    } else {
+      // Legacy: distribute evenly
+      const sorted = [...phaseTasks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const perMs = Math.max(1, Math.ceil(sorted.length / milestones.length));
+      milestoneTasks = sorted.slice(i * perMs, (i + 1) * perMs);
+    }
+
+    // If there are tasks for this milestone and ALL are done, milestone is complete
+    return milestoneTasks.length > 0 && milestoneTasks.every((t) => t.done || t.status === "cancelled");
+  });
+
+  const checkedCount = milestoneCompleted.filter(Boolean).length;
+  const allMilestonesChecked = milestones.length > 0 && checkedCount >= milestones.length;
   const incompleteTasks = phaseTasks.filter((t) => !t.done && t.status !== "cancelled");
   const allTasksDone = incompleteTasks.length === 0;
-
   const canAdvance = allMilestonesChecked && allTasksDone;
+
+  // Auto-sync: when task-derived completion differs from Firebase, update Firebase
+  useEffect(() => {
+    if (!project.id) return;
+    milestoneCompleted.forEach((completed, i) => {
+      if (completed && !firebaseProgress[i]) {
+        toggleMilestoneProgress(userId, project.id!, currentPhaseKey, i, true, milestones.length).catch(() => {});
+      }
+    });
+  }, [milestoneCompleted.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleToggle(index: number) {
     if (!project.id) return;
-    const newState = !(milestoneProgress[index] ?? false);
+    const newState = !milestoneCompleted[index];
     await toggleMilestoneProgress(userId, project.id, currentPhaseKey, index, newState, milestones.length);
   }
 
@@ -102,10 +134,10 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
           </div>
         </div>
 
-        {/* Milestone checklist (synced with Schedule page) */}
+        {/* Milestone checklist */}
         <div className="space-y-1">
           {milestones.map((milestone, i) => {
-            const isChecked = milestoneProgress[i] ?? false;
+            const isChecked = milestoneCompleted[i];
             return (
               <div
                 key={i}
@@ -134,16 +166,6 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
                   {milestone.description && (
                     <p className="text-[10px] text-muted mt-0.5 leading-relaxed">{milestone.description}</p>
                   )}
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {milestone.requiresInspection && (
-                      <span className="text-[9px] text-warning font-medium">Inspection required</span>
-                    )}
-                    {milestone.requiresPayment && milestone.paymentPct && (
-                      <span className="text-[9px] text-info font-medium font-data">
-                        Payment: {milestone.paymentPct}%
-                      </span>
-                    )}
-                  </div>
                 </div>
               </div>
             );
