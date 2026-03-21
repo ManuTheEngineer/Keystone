@@ -20,6 +20,7 @@ import {
   getCostBreakdown,
   reverseCalculate,
   getBuildingSize,
+  getScoreTips,
   type AnalysisInput,
   type AnalysisResults,
   type CostBreakdownItem,
@@ -397,7 +398,16 @@ export default function AnalyzePage() {
   const set = useCallback(<K extends keyof InputState>(k: K, v: InputState[K]) => {
     setInput((p) => {
       const n = { ...p, [k]: v };
-      if (k === "market" && v !== p.market) { n.features = []; n.financingType = ""; n.titreFoncierStatus = ""; }
+      if (k === "market" && v !== p.market) {
+        n.features = []; n.financingType = ""; n.titreFoncierStatus = "";
+        // Convert custom size between sqft and sqm when switching markets
+        if (n.customSize > 0) {
+          const wasUSA = p.market === "USA";
+          const nowUSA = v === "USA";
+          if (wasUSA && !nowUSA) n.customSize = Math.round(n.customSize * 0.0929); // sqft → sqm
+          else if (!wasUSA && nowUSA && p.market) n.customSize = Math.round(n.customSize * 10.764); // sqm → sqft
+        }
+      }
       return n;
     });
   }, []);
@@ -535,6 +545,13 @@ export default function AnalyzePage() {
           <Pill active={mode === "reverse"} onClick={() => setMode("reverse")}>What Can I Afford?</Pill>
         </div>
         <div className="flex items-center gap-3">
+          {(input.goal || input.market) && (
+            <button onClick={() => { setInput(INITIAL); setReverseBudget(0); }}
+              className="flex items-center gap-1.5 text-[12px] text-muted hover:text-earth transition-colors">
+              <RotateCcw size={13} />
+              Reset
+            </button>
+          )}
           {savedAnalyses.length > 0 && (
             <button onClick={() => setShowSaved(!showSaved)} className="flex items-center gap-1.5 text-[12px] text-muted hover:text-earth transition-colors">
               <FolderOpen size={14} />
@@ -747,6 +764,14 @@ export default function AnalyzePage() {
                       <NumField label="Land price" value={input.landPrice} onChange={(v) => set("landPrice", Math.max(0, v))} prefix={currency.symbol} min={0} />
                     </div>
                   )}
+                  {input.landOption === "estimate" && results && (
+                    <div className="mt-2 px-3 py-2 bg-warm/20 rounded-lg">
+                      <p className="text-[10px] text-muted">
+                        Estimated: <span className="font-data font-semibold text-earth">{fmt(results.landCost, currency)}</span>
+                        <span className="text-muted/60"> (25% of construction cost{input.city ? `, based on ${input.city} area` : ""})</span>
+                      </p>
+                    </div>
+                  )}
                   {isWA && (
                     <div className="mt-2">
                       <span className="text-[11px] font-medium text-earth mb-1 block">Land title status</span>
@@ -835,6 +860,19 @@ export default function AnalyzePage() {
                   <div className="flex flex-col items-center mb-5">
                     <ScoreRing score={results!.dealScore} />
                     <p className="text-[12px] text-muted mt-3 text-center max-w-[320px] leading-relaxed">{results!.dealScoreSummary}</p>
+                    {results!.dealScore < 80 && (() => {
+                      const tips = getScoreTips(input as unknown as AnalysisInput, results!);
+                      return tips.length > 0 ? (
+                        <div className="mt-3 w-full space-y-1">
+                          {tips.map((tip, i) => (
+                            <div key={i} className="flex items-start gap-1.5 text-[10px] text-muted">
+                              <ArrowRight size={9} className="text-clay shrink-0 mt-0.5" />
+                              <span>{tip}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
 
                   {/* ── Key metrics grid (4 cards) ── */}
@@ -882,7 +920,8 @@ export default function AnalyzePage() {
                       { l: "Soft costs", v: results!.softCosts },
                       { l: "Contingency", v: results!.contingency },
                       ...(results!.financingCosts > 0 ? [{ l: "Financing", v: results!.financingCosts }] : []),
-                    ].map((r) => (
+                      ...(results!.carryingCosts > 0 ? [{ l: "Carrying costs", v: results!.carryingCosts }] : []),
+                    ].filter((r) => r.v > 0).map((r) => (
                       <div key={r.l} className="flex justify-between text-[12px]">
                         <span className="text-muted">{r.l}</span>
                         <span className="font-data text-earth">{fmt(r.v, currency)}</span>
@@ -903,9 +942,10 @@ export default function AnalyzePage() {
                           <p className={`text-[14px] font-bold font-data ${results!.dtiRatio > 43 ? "text-danger" : "text-earth"}`}>{results!.dtiRatio}%</p>
                         </div>
                       )}
-                      <div className="flex-1 px-3 py-2 rounded-lg bg-warm/20">
+                      <div className={`flex-1 px-3 py-2 rounded-lg ${results!.ltvRatio > 90 ? "bg-danger/5 border border-danger/20" : results!.ltvRatio > 80 ? "bg-warning/5 border border-warning/20" : "bg-warm/20"}`}>
                         <p className="text-[9px] text-muted uppercase">LTV Ratio</p>
-                        <p className="text-[14px] font-bold font-data text-earth">{results!.ltvRatio}%</p>
+                        <p className={`text-[14px] font-bold font-data ${results!.ltvRatio > 90 ? "text-danger" : results!.ltvRatio > 80 ? "text-warning" : "text-success"}`}>{results!.ltvRatio}%</p>
+                        <p className="text-[8px] text-muted mt-0.5">{results!.ltvRatio <= 80 ? "20%+ equity — no PMI needed" : results!.ltvRatio <= 90 ? "PMI likely required" : "Very low equity — higher risk"}</p>
                       </div>
                     </div>
                   )}
@@ -1062,9 +1102,10 @@ export default function AnalyzePage() {
                 <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Your total budget</p>
                 <div className="relative max-w-xs mx-auto">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[18px] text-muted font-data">{currency.symbol}</span>
-                  <input type="number" value={reverseBudget || ""} onChange={(e) => setReverseBudget(Number(e.target.value) || 0)}
+                  <input type="text" inputMode="numeric"
+                    value={reverseBudget ? reverseBudget.toLocaleString() : ""}
+                    onChange={(e) => { const raw = e.target.value.replace(/[^0-9]/g, ""); setReverseBudget(Number(raw) || 0); }}
                     placeholder="0"
-                    min={0}
                     className="w-full pl-10 pr-4 py-4 bg-warm/10 border border-border/40 rounded-xl text-[28px] font-bold font-data text-earth text-center focus:outline-none focus:ring-2 focus:ring-clay/20 focus:border-clay/40" />
                 </div>
                 <p className="text-[10px] text-muted mt-2">Includes land, construction, permits, and contingency</p>
@@ -1135,12 +1176,15 @@ export default function AnalyzePage() {
           </button>
           <button onClick={() => {
             if (!results) return;
-            exportAnalysisPDF({
-              name: `${input.city || input.market} ${input.propertyType}`,
-              input: { goal: input.goal, market: input.market, city: input.city, propertyType: input.propertyType, sizeCategory: input.sizeCategory, bedrooms: input.bedrooms, bathrooms: input.bathrooms, stories: input.stories, features: input.features, landOption: input.landOption, financingType: input.financingType, timelineMonths: input.timelineMonths },
-              results: { dealScore: results.dealScore, dealScoreSummary: results.dealScoreSummary, totalCost: results.totalCost, constructionCost: results.constructionCost, landCost: results.landCost, softCosts: results.softCosts, financingCosts: results.financingCosts, contingency: results.contingency, monthlyCost: results.monthlyCost, roi: results.roi, dtiRatio: results.dtiRatio, ltvRatio: results.ltvRatio, costPerUnit: results.costPerUnit, riskFlags: results.riskFlags },
-              currency: { code: currency.code, symbol: currency.symbol }, sizeUnit, buildSize,
-            });
+            try {
+              exportAnalysisPDF({
+                name: `${input.city || input.market} ${input.propertyType}`,
+                input: { goal: input.goal, market: input.market, city: input.city, propertyType: input.propertyType, sizeCategory: input.sizeCategory, bedrooms: input.bedrooms, bathrooms: input.bathrooms, stories: input.stories, features: input.features, landOption: input.landOption, financingType: input.financingType, timelineMonths: input.timelineMonths },
+                results: { dealScore: results.dealScore, dealScoreSummary: results.dealScoreSummary, totalCost: results.totalCost, constructionCost: results.constructionCost, landCost: results.landCost, softCosts: results.softCosts, financingCosts: results.financingCosts, contingency: results.contingency, monthlyCost: results.monthlyCost, roi: results.roi, dtiRatio: results.dtiRatio, ltvRatio: results.ltvRatio, costPerUnit: results.costPerUnit, riskFlags: results.riskFlags },
+                currency: { code: currency.code, symbol: currency.symbol }, sizeUnit, buildSize,
+              });
+              showToast("PDF print dialog opened", "success");
+            } catch { showToast("Failed to generate PDF", "error"); }
           }} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-medium text-white/90 hover:bg-white/10 transition-colors">
             <FileDown size={14} /> PDF
           </button>
@@ -1195,7 +1239,7 @@ export default function AnalyzePage() {
                 </div>
                 <div className="bg-warm/20 rounded-lg py-2">
                   <p className="text-[9px] text-muted uppercase">Size</p>
-                  <p className="text-[14px] font-bold font-data text-earth">{buildSize.toLocaleString()}</p>
+                  <p className="text-[14px] font-bold font-data text-earth">{buildSize.toLocaleString()} <span className="text-[10px] font-normal text-muted">{sizeUnit}</span></p>
                 </div>
               </div>
             )}

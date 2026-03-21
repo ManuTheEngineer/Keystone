@@ -66,6 +66,7 @@ export interface AnalysisResults {
   softCosts: number;
   financingCosts: number;
   contingency: number;
+  carryingCosts: number;
   monthlyCost: number;
   roi: number;
   dtiRatio: number | null;
@@ -223,8 +224,25 @@ export function calculateAnalysis(input: AnalysisInput): AnalysisResults {
   const contingencyRate = isUSA ? 0.15 : 0.20;
   const contingency = Math.round((constructionCost + featureCost) * contingencyRate);
 
+  // Carrying / timeline costs — longer builds incur inflation + interest during construction
+  const timelineMonths = input.timelineMonths || 12;
+  const baselineMonths = 12;
+  let carryingCosts = 0;
+  if (timelineMonths > baselineMonths) {
+    const extraMonths = timelineMonths - baselineMonths;
+    // Material inflation: ~0.4% per month on construction costs beyond baseline
+    const inflationCost = Math.round((constructionCost + featureCost) * 0.004 * extraMonths);
+    // Interest during construction: if financed, lender charges draw interest
+    const idcRate = (input.financingType === "construction_loan" || input.financingType === "fha_203k")
+      ? (input.loanRate || 7.5) / 100 / 12
+      : 0;
+    const avgDrawBalance = (constructionCost + featureCost + softCosts) * 0.5; // avg 50% drawn
+    const interestDuringConstruction = Math.round(avgDrawBalance * idcRate * extraMonths);
+    carryingCosts = inflationCost + interestDuringConstruction;
+  }
+
   // Total
-  const totalCost = constructionCost + featureCost + landCost + softCosts + financingCosts + contingency;
+  const totalCost = constructionCost + featureCost + landCost + softCosts + financingCosts + contingency + carryingCosts;
   const costPerUnit = size > 0 ? Math.round(totalCost / size) : 0;
 
   // DTI ratio (capped at 200% for display)
@@ -272,6 +290,7 @@ export function calculateAnalysis(input: AnalysisInput): AnalysisResults {
     softCosts,
     financingCosts,
     contingency,
+    carryingCosts,
     monthlyCost,
     roi,
     dtiRatio,
@@ -349,6 +368,27 @@ function calculateDealScore(
   else summary = "High risk. Consider adjusting scope, budget, or financing before proceeding.";
 
   return { score, summary };
+}
+
+/**
+ * Generate actionable tips for improving the deal score.
+ */
+export function getScoreTips(input: AnalysisInput, results: AnalysisResults): string[] {
+  const tips: string[] = [];
+  const locationData = input.city ? getClosestLocation(input.city, input.market as Market) : null;
+  const costIndex = locationData?.costIndex ?? 1.0;
+
+  if (costIndex > 1.1) tips.push("High-cost area — consider nearby cities with lower cost indices");
+  if (results.dtiRatio !== null && results.dtiRatio > 36) tips.push("Lower DTI by increasing income or reducing existing debts");
+  if (results.ltvRatio > 80) tips.push("Increase down payment to 20%+ to avoid PMI and improve score");
+  if (input.landOption === "" || input.landOption === "estimate") tips.push("Enter an actual land price for more accurate analysis");
+  if (input.goal === "rent" && (!input.monthlyRent || input.monthlyRent === 0)) tips.push("Add expected monthly rent to calculate yield");
+  if (input.goal === "sell" && (!input.targetSalePrice || input.targetSalePrice === 0)) tips.push("Add target sale price to calculate ROI");
+  if (input.features.length > 5) tips.push("Reduce features to lower costs — prioritize essentials");
+  if (results.riskFlags.length > 2) tips.push(`Resolve ${results.riskFlags.filter(f => f.level === "critical").length} critical risk flags`);
+  if (input.sizeCategory === "large" || input.sizeCategory === "estate") tips.push("Consider a smaller footprint for a better budget ratio");
+
+  return tips.slice(0, 3); // Max 3 tips
 }
 
 // ---------------------------------------------------------------------------
@@ -454,6 +494,9 @@ export function getCostBreakdown(results: AnalysisResults): CostBreakdownItem[] 
   ];
   if (results.financingCosts > 0) {
     raw.push({ category: "Financing", amount: results.financingCosts, color: "#BC6C25", exactPct: (results.financingCosts / total) * 100 });
+  }
+  if (results.carryingCosts > 0) {
+    raw.push({ category: "Carrying costs", amount: results.carryingCosts, color: "#6B4226", exactPct: (results.carryingCosts / total) * 100 });
   }
 
   const filtered = raw.filter((i) => i.amount > 0);
