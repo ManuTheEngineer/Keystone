@@ -381,7 +381,10 @@ export function VaultClient() {
     const avgProgress = filteredProjects.length > 0
       ? Math.round(filteredProjects.reduce((sum, p) => sum + (p.progress || 0), 0) / filteredProjects.length)
       : 0;
-    return { totalBudget, totalSpent, avgProgress };
+    // Check if all filtered projects share the same market currency
+    const markets = new Set(filteredProjects.map((p) => p.market));
+    const singleCurrency = markets.size <= 1;
+    return { totalBudget, totalSpent, avgProgress, singleCurrency };
   }, [filteredProjects]);
 
   const isFiltered = statusFilter !== "all" || marketFilter !== "all" || searchQuery.trim() !== "";
@@ -460,7 +463,7 @@ export function VaultClient() {
                 {isFiltered && <span className="text-muted/60"> of {projects.length}</span>}
                 {" "}project{filteredProjects.length !== 1 ? "s" : ""}
               </span>
-              {portfolioStats.totalBudget > 0 && (
+              {portfolioStats.totalBudget > 0 && portfolioStats.singleCurrency && (
                 <>
                   <span>
                     <span className="font-data text-earth">{formatCurrencyCompact(portfolioStats.totalBudget, primaryCurrency)}</span> budget
@@ -468,10 +471,12 @@ export function VaultClient() {
                   <span>
                     <span className="font-data text-earth">{formatCurrencyCompact(portfolioStats.totalSpent, primaryCurrency)}</span> spent
                   </span>
-                  <span>
-                    <span className="font-data text-earth">{portfolioStats.avgProgress}%</span> avg progress
-                  </span>
                 </>
+              )}
+              {filteredProjects.length > 0 && (
+                <span>
+                  <span className="font-data text-earth">{portfolioStats.avgProgress}%</span> avg progress
+                </span>
               )}
             </div>
           </div>
@@ -496,8 +501,8 @@ export function VaultClient() {
           </div>
         </div>
 
-        {/* Budget health bar for portfolio */}
-        {portfolioStats.totalBudget > 0 && (
+        {/* Budget health bar for portfolio — only when all projects share a currency */}
+        {portfolioStats.totalBudget > 0 && portfolioStats.singleCurrency && (
           <div className="mt-3">
             <BudgetHealthBar spent={portfolioStats.totalSpent} budget={portfolioStats.totalBudget} />
             <div className="flex items-center justify-between mt-1 text-[10px] text-muted">
