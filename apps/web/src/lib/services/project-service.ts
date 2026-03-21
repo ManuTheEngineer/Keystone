@@ -164,6 +164,7 @@ export interface TaskData {
   // Origin
   sourceType?: "custom" | "milestone";
   sourceMilestone?: string;
+  milestoneIndex?: number;
 
   // Completion (filled by contractor)
   completedBy?: string;
@@ -318,9 +319,11 @@ export async function seedInitialTasks(
   const src = projectData.fromAnalyzer ? "Deal Analyzer" : "Project Wizard";
 
   // Helper: create a task that needs user review (has evidence from wizard)
-  function reviewTask(label: string, order: number, phase: number, evidence: string): Omit<TaskData, "id"> {
+  function reviewTask(label: string, order: number, phase: number, evidence: string, milestoneName?: string, milestoneIndex?: number): Omit<TaskData, "id"> {
     return {
       projectId, label, order, phase, sourceType: "milestone",
+      sourceMilestone: milestoneName,
+      milestoneIndex,
       status: "pending-review", done: false,
       completionNote: evidence, completedAt: now, completedBy: src,
       requiresApproval: true,
@@ -328,105 +331,123 @@ export async function seedInitialTasks(
   }
 
   // Helper: create an upcoming task
-  function task(label: string, order: number, phase: number): Omit<TaskData, "id"> {
-    return { projectId, label, order, phase, sourceType: "milestone", status: "upcoming", done: false };
+  function task(label: string, order: number, phase: number, milestoneName?: string, milestoneIndex?: number): Omit<TaskData, "id"> {
+    return { projectId, label, order, phase, sourceType: "milestone", sourceMilestone: milestoneName, milestoneIndex, status: "upcoming", done: false };
+  }
+
+  // Get milestone definitions for proper task→milestone mapping
+  const { getPhaseDefinition, PHASE_ORDER } = await import("@keystone/market-data");
+  function ms(phase: number, index: number): { name: string; index: number } {
+    const phaseKey = PHASE_ORDER[phase];
+    const def = phaseKey ? getPhaseDefinition(projectData.market, phaseKey) : null;
+    const milestone = def?.milestones[index];
+    return { name: milestone?.name ?? "", index };
   }
 
   const allTasks: Omit<TaskData, "id">[] = [];
 
   // ── Phase 0: Define ──
+  // Milestone 0: "Goals and purpose defined"
   allTasks.push(reviewTask("Define building goal", 1, 0,
-    `Goal set to: ${projectData.purpose}. Review and confirm this matches your intent.`));
+    `Goal set to: ${projectData.purpose}. Review and confirm this matches your intent.`,
+    ms(0, 0).name, 0));
   allTasks.push(reviewTask("Select target market", 2, 0,
-    `Market: ${projectData.market}. ${isUSA ? "Wood-frame construction, institutional lending." : "Reinforced concrete, cash/phased funding."}`));
-  if (projectData.city) {
-    allTasks.push(reviewTask("Set build location", 3, 0,
-      `Location: ${projectData.city}. Verify this is the correct city/region for cost estimates.`));
-  } else {
-    allTasks.push(task("Set build location", 3, 0));
-  }
-  allTasks.push(reviewTask("Choose property type and size", 4, 0,
-    `Type: ${projectData.propertyType}${projectData.bedrooms ? `, ${projectData.bedrooms} bed / ${projectData.bathrooms} bath` : ""}. Confirm these specifications.`));
+    `Market: ${projectData.market}. ${isUSA ? "Wood-frame construction, institutional lending." : "Reinforced concrete, cash/phased funding."}`,
+    ms(0, 0).name, 0));
+  // Milestone 1: "Preliminary budget range set"
   if (projectData.totalBudget > 0) {
-    allTasks.push(reviewTask("Review initial budget", 5, 0,
-      `Estimated total: ${projectData.totalBudget.toLocaleString()} ${isUSA ? "USD" : "CFA"}. Budget line items auto-generated. Review each category in the Budget tab.`));
+    allTasks.push(reviewTask("Review initial budget", 3, 0,
+      `Estimated total: ${projectData.totalBudget.toLocaleString()} ${isUSA ? "USD" : "CFA"}. Budget line items auto-generated. Review each category in the Budget tab.`,
+      ms(0, 1).name, 1));
   } else {
-    allTasks.push(task("Set initial budget", 5, 0));
+    allTasks.push(task("Set initial budget", 3, 0, ms(0, 1).name, 1));
   }
   if (projectData.financingType) {
-    allTasks.push(reviewTask("Confirm financing strategy", 6, 0,
-      `Financing: ${projectData.financingType}. Verify this is the right approach for your situation.`));
+    allTasks.push(reviewTask("Confirm financing strategy", 4, 0,
+      `Financing: ${projectData.financingType}. Verify this is the right approach for your situation.`,
+      ms(0, 1).name, 1));
   } else {
-    allTasks.push(task("Determine financing strategy", 6, 0));
+    allTasks.push(task("Determine financing strategy", 4, 0, ms(0, 1).name, 1));
   }
+  // Milestone 2: "Market and location research complete"
+  if (projectData.city) {
+    allTasks.push(reviewTask("Set build location", 5, 0,
+      `Location: ${projectData.city}. Verify this is the correct city/region for cost estimates.`,
+      ms(0, 2).name, 2));
+  } else {
+    allTasks.push(task("Set build location", 5, 0, ms(0, 2).name, 2));
+  }
+  allTasks.push(reviewTask("Choose property type and size", 6, 0,
+    `Type: ${projectData.propertyType}${projectData.bedrooms ? `, ${projectData.bedrooms} bed / ${projectData.bathrooms} bath` : ""}. Confirm these specifications.`,
+    ms(0, 2).name, 2));
 
   // ── Phase 1: Finance ──
   if (isUSA) {
-    allTasks.push(task("Check credit score and review DTI ratio", 10, 1));
-    allTasks.push(task("Get construction loan pre-approval", 11, 1));
-    allTasks.push(task("Compare lender terms (at least 3 quotes)", 12, 1));
-    allTasks.push(task("Gather financial documents (tax returns, pay stubs, bank statements)", 13, 1));
+    allTasks.push(task("Check credit score and review DTI ratio", 10, 1, ms(1, 0).name, 0));
+    allTasks.push(task("Get construction loan pre-approval", 11, 1, ms(1, 0).name, 0));
+    allTasks.push(task("Compare lender terms (at least 3 quotes)", 12, 1, ms(1, 1).name, 1));
+    allTasks.push(task("Gather financial documents (tax returns, pay stubs, bank statements)", 13, 1, ms(1, 1).name, 1));
   } else {
-    allTasks.push(task("Create savings plan and timeline", 10, 1));
-    allTasks.push(task("Set up dedicated construction savings account", 11, 1));
-    allTasks.push(task("Plan phased funding schedule", 12, 1));
+    allTasks.push(task("Create savings plan and timeline", 10, 1, ms(1, 0).name, 0));
+    allTasks.push(task("Set up dedicated construction savings account", 11, 1, ms(1, 0).name, 0));
+    allTasks.push(task("Plan phased funding schedule", 12, 1, ms(1, 1).name, 1));
   }
 
   // ── Phase 2: Land ──
-  allTasks.push(task(isUSA ? "Research zoning and buildability" : "Verify land title status", 20, 2));
-  allTasks.push(task(isUSA ? "Get property survey completed" : "Obtain titre foncier or land deed", 21, 2));
-  allTasks.push(task("Confirm utilities access (water, electric, sewer)", 22, 2));
-  allTasks.push(task(isUSA ? "Review HOA restrictions and covenants" : "Verify plot boundaries with neighbors", 23, 2));
+  allTasks.push(task(isUSA ? "Research zoning and buildability" : "Verify land title status", 20, 2, ms(2, 0).name, 0));
+  allTasks.push(task(isUSA ? "Get property survey completed" : "Obtain titre foncier or land deed", 21, 2, ms(2, 1).name, 1));
+  allTasks.push(task("Confirm utilities access (water, electric, sewer)", 22, 2, ms(2, 2).name, 2));
+  allTasks.push(task(isUSA ? "Review HOA restrictions and covenants" : "Verify plot boundaries with neighbors", 23, 2, ms(2, 2).name, 2));
 
   // ── Phase 3: Design ──
-  allTasks.push(task("Hire architect or select house plans", 30, 3));
-  allTasks.push(task("Finalize floor plan and elevations", 31, 3));
-  allTasks.push(task("Select exterior materials and finishes", 32, 3));
-  allTasks.push(task("Complete structural engineering", 33, 3));
-  allTasks.push(task(isUSA ? "Energy code compliance review" : "Review plans with local engineer", 34, 3));
+  allTasks.push(task("Hire architect or select house plans", 30, 3, ms(3, 0).name, 0));
+  allTasks.push(task("Finalize floor plan and elevations", 31, 3, ms(3, 0).name, 0));
+  allTasks.push(task("Select exterior materials and finishes", 32, 3, ms(3, 1).name, 1));
+  allTasks.push(task("Complete structural engineering", 33, 3, ms(3, 1).name, 1));
+  allTasks.push(task(isUSA ? "Energy code compliance review" : "Review plans with local engineer", 34, 3, ms(3, 2).name, 2));
 
   // ── Phase 4: Approve ──
-  allTasks.push(task(isUSA ? "Submit plans to building department" : "Submit plans to local authority", 40, 4));
-  allTasks.push(task(isUSA ? "Obtain building permit" : "Obtain construction permit", 41, 4));
-  allTasks.push(task(isUSA ? "Get required variances if needed" : "Get environmental clearance if needed", 42, 4));
-  allTasks.push(task("Finalize construction timeline", 43, 4));
+  allTasks.push(task(isUSA ? "Submit plans to building department" : "Submit plans to local authority", 40, 4, ms(4, 0).name, 0));
+  allTasks.push(task(isUSA ? "Obtain building permit" : "Obtain construction permit", 41, 4, ms(4, 0).name, 0));
+  allTasks.push(task(isUSA ? "Get required variances if needed" : "Get environmental clearance if needed", 42, 4, ms(4, 1).name, 1));
+  allTasks.push(task("Finalize construction timeline", 43, 4, ms(4, 1).name, 1));
 
   // ── Phase 5: Assemble ──
-  allTasks.push(task("Hire general contractor or construction manager", 50, 5));
-  allTasks.push(task("Negotiate and sign construction contract", 51, 5));
-  allTasks.push(task("Verify contractor insurance and licensing", 52, 5));
-  allTasks.push(task("Establish payment schedule and draw process", 53, 5));
-  allTasks.push(task(isUSA ? "Set up builder's risk insurance" : "Set up site security", 54, 5));
+  allTasks.push(task("Hire general contractor or construction manager", 50, 5, ms(5, 0).name, 0));
+  allTasks.push(task("Negotiate and sign construction contract", 51, 5, ms(5, 0).name, 0));
+  allTasks.push(task("Verify contractor insurance and licensing", 52, 5, ms(5, 1).name, 1));
+  allTasks.push(task("Establish payment schedule and draw process", 53, 5, ms(5, 1).name, 1));
+  allTasks.push(task(isUSA ? "Set up builder's risk insurance" : "Set up site security", 54, 5, ms(5, 2).name, 2));
 
   // ── Phase 6: Build ──
-  allTasks.push(task("Site preparation and grading", 60, 6));
-  allTasks.push(task(isUSA ? "Foundation pour and inspection" : "Foundation (semelle and soubassement)", 61, 6));
-  allTasks.push(task(isUSA ? "Framing and structural inspection" : "Wall construction (block/poteau-poutre)", 62, 6));
-  allTasks.push(task(isUSA ? "Rough plumbing, electrical, HVAC" : "Plumbing and electrical rough-in", 63, 6));
-  allTasks.push(task(isUSA ? "Insulation and drywall" : "Plastering (enduit) and rendering", 64, 6));
-  allTasks.push(task("Roofing complete", 65, 6));
-  allTasks.push(task(isUSA ? "Interior finishes (flooring, paint, cabinets)" : "Flooring (carrelage), painting, fixtures", 66, 6));
-  allTasks.push(task(isUSA ? "Exterior finishes (siding, landscaping)" : "Exterior finishes and perimeter wall", 67, 6));
+  allTasks.push(task("Site preparation and grading", 60, 6, ms(6, 0).name, 0));
+  allTasks.push(task(isUSA ? "Foundation pour and inspection" : "Foundation (semelle and soubassement)", 61, 6, ms(6, 0).name, 0));
+  allTasks.push(task(isUSA ? "Framing and structural inspection" : "Wall construction (block/poteau-poutre)", 62, 6, ms(6, 1).name, 1));
+  allTasks.push(task(isUSA ? "Rough plumbing, electrical, HVAC" : "Plumbing and electrical rough-in", 63, 6, ms(6, 1).name, 1));
+  allTasks.push(task(isUSA ? "Insulation and drywall" : "Plastering (enduit) and rendering", 64, 6, ms(6, 2).name, 2));
+  allTasks.push(task("Roofing complete", 65, 6, ms(6, 2).name, 2));
+  allTasks.push(task(isUSA ? "Interior finishes (flooring, paint, cabinets)" : "Flooring (carrelage), painting, fixtures", 66, 6, ms(6, 3).name, 3));
+  allTasks.push(task(isUSA ? "Exterior finishes (siding, landscaping)" : "Exterior finishes and perimeter wall", 67, 6, ms(6, 3).name, 3));
 
   // ── Phase 7: Verify ──
-  allTasks.push(task(isUSA ? "Schedule final building inspection" : "Arrange final walkthrough", 70, 7));
-  allTasks.push(task("Complete punch list items", 71, 7));
-  allTasks.push(task(isUSA ? "Obtain Certificate of Occupancy" : "Obtain completion certificate", 72, 7));
-  allTasks.push(task("Final contractor payment release", 73, 7));
+  allTasks.push(task(isUSA ? "Schedule final building inspection" : "Arrange final walkthrough", 70, 7, ms(7, 0).name, 0));
+  allTasks.push(task("Complete punch list items", 71, 7, ms(7, 0).name, 0));
+  allTasks.push(task(isUSA ? "Obtain Certificate of Occupancy" : "Obtain completion certificate", 72, 7, ms(7, 1).name, 1));
+  allTasks.push(task("Final contractor payment release", 73, 7, ms(7, 1).name, 1));
 
   // ── Phase 8: Operate ──
-  allTasks.push(task(isUSA ? "Set up homeowner's insurance" : "Set up property insurance", 80, 8));
-  allTasks.push(task("Archive all project documents", 81, 8));
-  allTasks.push(task("Record warranty information for all systems", 82, 8));
+  allTasks.push(task(isUSA ? "Set up homeowner's insurance" : "Set up property insurance", 80, 8, ms(8, 0).name, 0));
+  allTasks.push(task("Archive all project documents", 81, 8, ms(8, 0).name, 0));
+  allTasks.push(task("Record warranty information for all systems", 82, 8, ms(8, 1).name, 1));
   if (projectData.purpose === "RENT") {
-    allTasks.push(task("List property for rental", 83, 8));
-    allTasks.push(task("Screen and select tenants", 84, 8));
+    allTasks.push(task("List property for rental", 83, 8, ms(8, 1).name, 1));
+    allTasks.push(task("Screen and select tenants", 84, 8, ms(8, 1).name, 1));
   } else if (projectData.purpose === "SELL") {
-    allTasks.push(task("Stage property for sale", 83, 8));
-    allTasks.push(task("List with agent or FSBO", 84, 8));
+    allTasks.push(task("Stage property for sale", 83, 8, ms(8, 1).name, 1));
+    allTasks.push(task("List with agent or FSBO", 84, 8, ms(8, 1).name, 1));
   } else {
-    allTasks.push(task("Schedule move-in", 83, 8));
-    allTasks.push(task("Set up maintenance schedule", 84, 8));
+    allTasks.push(task("Schedule move-in", 83, 8, ms(8, 1).name, 1));
+    allTasks.push(task("Set up maintenance schedule", 84, 8, ms(8, 1).name, 1));
   }
   const pendingCount = allTasks.filter((t) => t.status === "pending-review").length;
 
@@ -735,14 +756,31 @@ export async function approveTask(
       await update(ref(db, `users/${userId}/projects/${projectId}`), updates);
     }
 
-    // Sync: if approved task came from a milestone, auto-check that milestone on schedule
-    const taskSnap = await get(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`));
-    if (taskSnap.exists()) {
-      const task = taskSnap.val();
-      if (task.sourceType === "milestone" && task.sourceMilestone && task.phase != null) {
-        try {
-          await syncTaskToMilestone(userId, projectId, task.phase, task.sourceMilestone);
-        } catch { /* non-blocking */ }
+    // Auto-check milestone when ALL tasks under it are complete
+    if (tasksSnap.exists()) {
+      const taskVal = (await get(ref(db, `users/${userId}/projects/${projectId}/tasks/${taskId}`))).val();
+      if (taskVal?.milestoneIndex != null && taskVal?.phase != null) {
+        const msIndex = taskVal.milestoneIndex;
+        const phase = taskVal.phase;
+        // Check if all tasks with same phase + milestoneIndex are done
+        let allMsDone = true;
+        tasksSnap.forEach((child) => {
+          const t = child.val();
+          if (t.phase === phase && t.milestoneIndex === msIndex && !t.done && t.status !== "cancelled") {
+            allMsDone = false;
+          }
+        });
+        if (allMsDone) {
+          try {
+            const { getPhaseDefinition, PHASE_ORDER } = await import("@keystone/market-data");
+            const projVal = projectSnap.val();
+            const phaseKey = PHASE_ORDER[phase];
+            const phaseDef = phaseKey ? getPhaseDefinition(projVal.market, phaseKey) : null;
+            if (phaseDef) {
+              await toggleMilestoneProgress(userId, projectId, phaseKey!, msIndex, true, phaseDef.milestones.length);
+            }
+          } catch { /* non-blocking */ }
+        }
       }
     }
   } catch {

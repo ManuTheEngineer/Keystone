@@ -1307,10 +1307,65 @@ export function OverviewClient() {
                   <p className="text-[12px] text-muted py-3 text-center">No tasks for this phase.</p>
                 </Card>
               ) : (
-                <div className="space-y-2">
-                  {/* Each task is a full interactive card */}
-                  {currentPhaseTasks
-                    .filter((t) => t.status !== "pending-review")
+                <div className="space-y-4">
+                  {/* Group tasks under milestones */}
+                  {(() => {
+                    const nonPending = currentPhaseTasks.filter((t) => t.status !== "pending-review");
+                    // Group by milestoneIndex (undefined = ungrouped at the end)
+                    const milestoneGroups = new Map<number | undefined, typeof nonPending>();
+                    for (const t of nonPending) {
+                      const key = t.milestoneIndex;
+                      if (!milestoneGroups.has(key)) milestoneGroups.set(key, []);
+                      milestoneGroups.get(key)!.push(t);
+                    }
+                    // Get phase milestones for labels
+                    const currentPhaseKey = PHASE_ORDER[phase];
+                    const phaseDef = currentPhaseKey ? getPhaseDefinition(project!.market as Market, currentPhaseKey) : null;
+                    const milestones = phaseDef?.milestones ?? [];
+
+                    // Sort groups by milestone index
+                    const sortedGroups = Array.from(milestoneGroups.entries()).sort(
+                      (a, b) => (a[0] ?? 999) - (b[0] ?? 999)
+                    );
+
+                    return sortedGroups.map(([msIdx, groupTasks]) => {
+                      const milestone = msIdx != null ? milestones[msIdx] : null;
+                      const allDone = groupTasks.every((t) => t.done);
+                      const doneCount = groupTasks.filter((t) => t.done).length;
+
+                      return (
+                        <div key={msIdx ?? "ungrouped"}>
+                          {/* Milestone header */}
+                          {milestone && (
+                            <div className={`flex items-center gap-2 mb-2 px-1 ${allDone ? "opacity-60" : ""}`}>
+                              <div className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
+                                allDone ? "bg-success border-success" : "border-border-dark"
+                              }`}>
+                                {allDone && (
+                                  <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                                    <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span className={`text-[12px] font-medium ${allDone ? "text-muted line-through" : "text-earth"}`}>
+                                  {milestone.name}
+                                </span>
+                                <span className="text-[10px] text-muted ml-2 font-data">{doneCount}/{groupTasks.length}</span>
+                              </div>
+                              {milestone.requiresInspection && (
+                                <span className="text-[8px] text-warning font-medium uppercase tracking-wider">Inspection</span>
+                              )}
+                              {milestone.requiresPayment && milestone.paymentPct && (
+                                <span className="text-[8px] text-info font-medium uppercase tracking-wider font-data">
+                                  {milestone.paymentPct}% payment
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {/* Tasks under this milestone */}
+                          <div className="space-y-2 pl-7">
+                  {groupTasks
                     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                     .map((task, idx) => {
                       const isOpen = completingTaskId === task.id;
@@ -1466,6 +1521,11 @@ export function OverviewClient() {
                         </div>
                       );
                     })}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
 
                   {/* Phase complete -- show what's next */}
                   {currentPhaseProgress === 100 && currentPhaseTasks.length > 0 && (
