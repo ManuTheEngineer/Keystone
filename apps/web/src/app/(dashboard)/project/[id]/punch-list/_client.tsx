@@ -55,6 +55,7 @@ export function PunchListClient() {
   const [trade, setTrade] = useState("");
   const [severity, setSeverity] = useState<"critical" | "major" | "minor">("major");
   const [notes, setNotes] = useState("");
+  const [location, setLocation] = useState("");
 
   // Filters
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -119,12 +120,13 @@ export function PunchListClient() {
         trade: trade || "General",
         severity,
         status: "open",
-        notes: notes.trim() || undefined,
+        notes: [location.trim(), notes.trim()].filter(Boolean).join(" — ") || undefined,
       });
       setDescription("");
       setTrade("");
       setSeverity("major");
       setNotes("");
+      setLocation("");
       setShowForm(false);
       showToast("Punch list item added", "success");
     } catch {
@@ -278,13 +280,25 @@ export function PunchListClient() {
             </div>
             <div>
               <label className="block text-[12px] font-medium text-earth mb-1.5">
+                Location
+              </label>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="e.g. Kitchen, Master bath, Exterior south wall..."
+                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-earth mb-1.5">
                 Notes (optional)
               </label>
               <input
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Additional context or location details..."
+                placeholder="Additional context..."
                 className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
               />
             </div>

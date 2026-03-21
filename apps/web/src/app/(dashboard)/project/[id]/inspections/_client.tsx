@@ -138,8 +138,29 @@ export function InspectionsClient() {
     const allPassed =
       currentItems.length === inspection.checklistItems.length && currentItems.every(Boolean);
 
-    try {
+    // Optimistic update — immediately reflect in UI
+    setResults((prev) => {
       if (existing?.id) {
+        return prev.map((r) =>
+          r.id === existing.id
+            ? { ...r, completedItems: currentItems, passed: allPassed }
+            : r
+        );
+      }
+      // Add new optimistic result
+      return [...prev, {
+        id: `temp-${inspectionId}`,
+        projectId,
+        inspectionId,
+        phase: currentPhaseKey,
+        completedItems: currentItems,
+        passed: allPassed,
+        updatedAt: new Date().toISOString(),
+      }];
+    });
+
+    try {
+      if (existing?.id && !existing.id.startsWith("temp-")) {
         await updateInspectionResult(user.uid, projectId, existing.id, {
           completedItems: currentItems,
           passed: allPassed,
@@ -158,6 +179,7 @@ export function InspectionsClient() {
       }
     } catch {
       showToast("Failed to save inspection result", "error");
+      // Revert optimistic update — Firebase subscription will restore correct state
     }
   }
 
@@ -232,26 +254,26 @@ export function InspectionsClient() {
         </Card>
       </div>
 
-      {/* Current phase inspections */}
-      <SectionLabel>
-        Current phase: {PHASE_NAMES[currentPhaseKey]} inspections
-      </SectionLabel>
+      {/* Current phase inspections — only show if there are inspections */}
+      {currentPhaseInspections.length > 0 && (
+        <>
+          <SectionLabel>
+            Current phase: {PHASE_NAMES[currentPhaseKey]} inspections
+          </SectionLabel>
+          <div className="mb-5">
+            <InspectionChecklist
+              inspections={currentPhaseInspections}
+              completedItems={completedItems}
+              onToggle={handleToggle}
+            />
+          </div>
+        </>
+      )}
 
-      {currentPhaseInspections.length === 0 ? (
-        <div className="mb-5">
-          <EmptyState
-            icon={<ClipboardCheck size={28} />}
-            title="No inspections yet"
-            description="Inspection checklists will appear based on your project phase and market requirements."
-          />
-        </div>
-      ) : (
-        <div className="mb-5">
-          <InspectionChecklist
-            inspections={currentPhaseInspections}
-            completedItems={completedItems}
-            onToggle={handleToggle}
-          />
+      {/* No inspections for this phase — show a brief note, not a big empty state */}
+      {currentPhaseInspections.length === 0 && upcomingPhases.length > 0 && (
+        <div className="mb-5 px-3 py-2.5 rounded-[var(--radius)] bg-warm/20 border border-sand/30 text-[11px] text-muted">
+          No inspections required for the {PHASE_NAMES[currentPhaseKey]} phase. Inspections start in the {upcomingPhases[0]?.phase ? PHASE_NAMES[upcomingPhases[0].phase] : "next"} phase.
         </div>
       )}
 
