@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useTranslation } from "@/lib/hooks/use-translation";
@@ -63,6 +63,23 @@ export function DailyLogClient() {
   const [editSaving, setEditSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const highlightDay = searchParams.get("day");
+  const scrolledRef = useRef(false);
+
+  // Scroll to the targeted day when logs load
+  useEffect(() => {
+    if (!highlightDay || logs.length === 0 || scrolledRef.current) return;
+    const dayNum = parseInt(highlightDay, 10);
+    if (isNaN(dayNum)) return;
+    const el = document.getElementById(`daily-log-day-${dayNum}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-clay/40");
+      scrolledRef.current = true;
+      setTimeout(() => el.classList.remove("ring-2", "ring-clay/40"), 3000);
+    }
+  }, [highlightDay, logs]);
 
   useEffect(() => {
     if (!user) return;
@@ -315,6 +332,7 @@ export function DailyLogClient() {
             return (
               <div
                 key={entry.id}
+                id={`daily-log-day-${entry.day}`}
                 className="p-3 border border-border rounded-[var(--radius)] bg-surface border-l-[3px] hover:shadow-[var(--shadow-sm)] transition-shadow"
                 style={{ borderLeftColor: getWeatherBorderColor(entry.weather) }}
               >

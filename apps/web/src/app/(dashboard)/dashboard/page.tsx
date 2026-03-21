@@ -380,6 +380,7 @@ interface ActivityItem {
   projectName: string;
   projectId: string;
   timestamp: string;
+  logDay?: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -700,7 +701,7 @@ export default function DashboardPage() {
           projectName: pName,
           description: task.label,
           urgency: "blue",
-          href: `/project/${pid}/overview`,
+          href: `/project/${pid}/overview${task.id ? `?task=${task.id}` : ""}`,
           type: "task",
         });
       }
@@ -771,6 +772,7 @@ export default function DashboardPage() {
               projectName: pName,
               projectId: pid,
               timestamp: log.createdAt || log.date,
+              logDay: log.day,
             });
           }
           updateActivities();
@@ -783,14 +785,19 @@ export default function DashboardPage() {
             if (key.startsWith(`task-${pid}-`)) allActivities.delete(key);
           }
           const doneTasks = tasks.filter((t) => t.done);
-          for (const task of doneTasks.slice(-2)) {
+          const sortedDone = [...doneTasks].sort((a, b) => {
+            const da = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+            const db = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+            return db - da;
+          });
+          for (const task of sortedDone.slice(0, 2)) {
             allActivities.set(`task-${pid}-${task.id}`, {
               id: `task-${pid}-${task.id}`,
               type: "task-completed",
               text: `Task completed: ${task.label}`,
               projectName: pName,
               projectId: pid,
-              timestamp: "",
+              timestamp: task.completedAt || task.reviewedAt || "",
             });
           }
           updateActivities();
@@ -839,7 +846,8 @@ export default function DashboardPage() {
   const stats = useMemo(() => {
     const activeProjects = projects.filter((p) => p.status === "ACTIVE");
     const totalInvested = projects.reduce((sum, p) => sum + (p.totalSpent || 0), 0);
-    return { activeCount: activeProjects.length, totalInvested };
+    const totalBudget = projects.reduce((sum, p) => sum + (p.totalBudget || 0), 0);
+    return { activeCount: activeProjects.length, totalInvested, totalBudget };
   }, [projects]);
 
   const handlePriorityChange = useCallback(async (projectId: string, priority: number | null) => {
@@ -1210,7 +1218,7 @@ export default function DashboardPage() {
           </div>
 
           {/* AI Mentor Tip */}
-          <div className="mb-6 lg:mb-0">
+          <div className="mb-6">
             <Card padding="sm" className="bg-warm/20 border-sand/40">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-warm flex items-center justify-center shrink-0 mt-0.5">
@@ -1227,6 +1235,47 @@ export default function DashboardPage() {
               </div>
             </Card>
           </div>
+
+          {/* Budget Overview */}
+          {stats.totalBudget > 0 && (
+            <div className="mb-6 lg:mb-0">
+              <SectionLabel>Budget Overview</SectionLabel>
+              <Card padding="sm">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <DollarSign size={14} className="text-clay" />
+                      <span className="text-[12px] text-muted">Spent</span>
+                    </div>
+                    <span className="text-[13px] font-data font-semibold text-earth">
+                      {formatCurrencyCompact(stats.totalInvested, primaryCurrency)}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-warm rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        stats.totalInvested / stats.totalBudget > 0.95
+                          ? "bg-danger"
+                          : stats.totalInvested / stats.totalBudget > 0.80
+                          ? "bg-warning"
+                          : "bg-success"
+                      }`}
+                      style={{ width: `${Math.min(100, (stats.totalInvested / stats.totalBudget) * 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-muted">
+                    <span>
+                      {Math.round((stats.totalInvested / stats.totalBudget) * 100)}% of{" "}
+                      {formatCurrencyCompact(stats.totalBudget, primaryCurrency)} budget
+                    </span>
+                    <span className="font-data font-medium text-success">
+                      {formatCurrencyCompact(stats.totalBudget - stats.totalInvested, primaryCurrency)} remaining
+                    </span>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
         </div>
 
         {/* -------------------------------------------------------- */}
@@ -1277,7 +1326,7 @@ export default function DashboardPage() {
                     title={p.name}
                   >
                     <span className={`w-2 h-2 rounded-full shrink-0 ${marketDotColor(p.market)}`} />
-                    <span className="truncate max-w-[80px]">{p.name}</span>
+                    <span className="truncate max-w-[140px]">{p.name}</span>
                   </div>
                 ))}
                 {sortedProjects.length > 8 && (
@@ -1333,7 +1382,7 @@ export default function DashboardPage() {
               </Link>
 
               <Link
-                href="/vault"
+                href="/vault?view=exports"
                 className="flex items-center gap-3 bg-surface border border-border/60 rounded-2xl px-4 py-3 card-hover"
               >
                 <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
@@ -1395,7 +1444,7 @@ export default function DashboardPage() {
                     key={activity.id}
                     href={
                       activity.type === "daily-log"
-                        ? `/project/${activity.projectId}/daily-log`
+                        ? `/project/${activity.projectId}/daily-log${activity.logDay ? `?day=${activity.logDay}` : ""}`
                         : activity.type === "photo-uploaded"
                         ? `/project/${activity.projectId}/photos`
                         : `/project/${activity.projectId}/overview`

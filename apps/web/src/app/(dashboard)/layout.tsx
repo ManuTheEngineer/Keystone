@@ -65,6 +65,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       return stored ? new Set(JSON.parse(stored)) : new Set();
     } catch { return new Set(); }
   });
+  const [readNotifications, setReadNotifications] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const stored = localStorage.getItem("keystone-read-notifications");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
   const [detailedData, setDetailedData] = useState<Record<string, { punchList: PunchListItemData[]; tasks: TaskData[]; dailyLogs: DailyLogData[] }>>({});
   const router = useRouter();
   const pathname = usePathname();
@@ -221,10 +228,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
 
     const all = [...projectNotifs, ...detailedNotifs];
-    // Filter out dismissed
-    const filtered = all.filter((n) => !dismissedNotifications.has(n.id));
+    // Filter out dismissed, mark read
+    const filtered = all
+      .filter((n) => !dismissedNotifications.has(n.id))
+      .map((n) => readNotifications.has(n.id) ? { ...n, read: true } : n);
     return sortNotifications(filtered);
-  }, [projects, priorityProjects, detailedData, dismissedNotifications]);
+  }, [projects, priorityProjects, detailedData, dismissedNotifications, readNotifications]);
 
   function persistDismissed(set: Set<string>) {
     try { localStorage.setItem("keystone-dismissed-notifications", JSON.stringify([...set])); } catch {}
@@ -246,6 +255,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         next.add(n.id);
       }
       persistDismissed(next);
+      return next;
+    });
+  }
+
+  function handleMarkAllRead() {
+    setReadNotifications((prev) => {
+      const next = new Set(prev);
+      for (const n of notifications) {
+        next.add(n.id);
+      }
+      try { localStorage.setItem("keystone-read-notifications", JSON.stringify([...next])); } catch {}
       return next;
     });
   }
@@ -298,6 +318,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 notifications={notifications}
                 onDismissNotification={handleDismissNotification}
                 onDismissAllNotifications={handleDismissAllNotifications}
+                onOpenNotifications={handleMarkAllRead}
               />
               {!isOnline && (
                 <div className="mx-5 mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warning-bg text-warning text-[11px]">

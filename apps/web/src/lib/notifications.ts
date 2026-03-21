@@ -39,12 +39,13 @@ export function generateProjectNotifications(
   projects: ProjectData[],
 ): AppNotification[] {
   const notifications: AppNotification[] = [];
-  const now = new Date().toISOString();
 
   for (const project of projects) {
     if (project.status !== "ACTIVE") continue;
     const pid = project.id ?? "";
     const pName = project.name;
+    // Use project's updatedAt as the base timestamp — reflects when data last changed
+    const projectTimestamp = project.updatedAt || project.createdAt;
 
     // 1. Budget overrun (urgent): totalSpent > totalBudget * 0.95
     if (project.totalBudget > 0 && project.totalSpent > 0) {
@@ -60,7 +61,7 @@ export function generateProjectNotifications(
           projectId: pid,
           projectName: pName,
           href: `/project/${pid}/budget`,
-          createdAt: now,
+          createdAt: projectTimestamp,
           read: false,
         });
       }
@@ -79,7 +80,7 @@ export function generateProjectNotifications(
         projectId: pid,
         projectName: pName,
         href: `/project/${pid}/daily-log`,
-        createdAt: now,
+        createdAt: lastActivity || projectTimestamp,
         read: false,
       });
     }
@@ -96,7 +97,7 @@ export function generateProjectNotifications(
         projectId: pid,
         projectName: pName,
         href: `/project/${pid}/overview`,
-        createdAt: now,
+        createdAt: projectTimestamp,
         read: false,
       });
     }
@@ -113,7 +114,7 @@ export function generateProjectNotifications(
           projectId: pid,
           projectName: pName,
           href: `/project/${pid}/team`,
-          createdAt: now,
+          createdAt: projectTimestamp,
           read: false,
         });
       }
@@ -129,7 +130,7 @@ export function generateProjectNotifications(
         projectId: pid,
         projectName: pName,
         href: `/project/${pid}/budget`,
-        createdAt: now,
+        createdAt: projectTimestamp,
         read: false,
       });
     }
@@ -148,7 +149,7 @@ export function generateProjectNotifications(
           projectId: pid,
           projectName: pName,
           href: `/project/${pid}/schedule`,
-          createdAt: now,
+          createdAt: projectTimestamp,
           read: false,
         });
       }
@@ -164,7 +165,7 @@ export function generateProjectNotifications(
         projectId: pid,
         projectName: pName,
         href: `/project/${pid}/inspections`,
-        createdAt: now,
+        createdAt: projectTimestamp,
         read: false,
       });
     }
@@ -179,7 +180,7 @@ export function generateProjectNotifications(
         projectId: pid,
         projectName: pName,
         href: `/project/${pid}/inspections`,
-        createdAt: now,
+        createdAt: projectTimestamp,
         read: false,
       });
     }
@@ -199,15 +200,21 @@ export function generateDetailedNotifications(
   dailyLogs: DailyLogData[],
 ): AppNotification[] {
   const notifications: AppNotification[] = [];
-  const now = new Date().toISOString();
   const pid = project.id ?? "";
   const pName = project.name;
+  const projectTimestamp = project.updatedAt || project.createdAt;
 
   // Critical punch list items
   const criticalPunch = punchListItems.filter(
     (item) => item.severity === "critical" && item.status !== "resolved"
   );
   if (criticalPunch.length > 0) {
+    // Use the most recent critical punch item's creation time
+    const latestPunchTime = criticalPunch
+      .map((p) => p.createdAt)
+      .filter(Boolean)
+      .sort()
+      .pop() || projectTimestamp;
     notifications.push({
       id: `critical-punch-${pid}`,
       type: "urgent",
@@ -216,7 +223,7 @@ export function generateDetailedNotifications(
       projectId: pid,
       projectName: pName,
       href: `/project/${pid}/punch-list`,
-      createdAt: now,
+      createdAt: latestPunchTime,
       read: false,
     });
   }
@@ -232,7 +239,7 @@ export function generateDetailedNotifications(
       projectId: pid,
       projectName: pName,
       href: `/project/${pid}/overview`,
-      createdAt: now,
+      createdAt: projectTimestamp,
       read: false,
     });
   }
@@ -240,7 +247,8 @@ export function generateDetailedNotifications(
   // No recent daily logs for active project
   if (dailyLogs.length > 0) {
     const mostRecent = dailyLogs[0];
-    const logDays = daysSince(mostRecent.createdAt || mostRecent.date);
+    const mostRecentDate = mostRecent.createdAt || mostRecent.date;
+    const logDays = daysSince(mostRecentDate);
     if (logDays >= 5 && logDays < 7) {
       notifications.push({
         id: `log-reminder-${pid}`,
@@ -250,7 +258,7 @@ export function generateDetailedNotifications(
         projectId: pid,
         projectName: pName,
         href: `/project/${pid}/daily-log`,
-        createdAt: now,
+        createdAt: mostRecentDate || projectTimestamp,
         read: false,
       });
     }

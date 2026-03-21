@@ -1,8 +1,8 @@
 // TODO: Many hardcoded strings need t() wrapping
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTopbar } from "../../../layout";
 import {
@@ -279,6 +279,21 @@ export function OverviewClient() {
   const [coSubmitting, setCoSubmitting] = useState(false);
   const [coResolvingId, setCoResolvingId] = useState<string | null>(null);
   const [coResolveNote, setCoResolveNote] = useState("");
+  const searchParams = useSearchParams();
+  const highlightTaskId = searchParams.get("task");
+  const scrolledToTaskRef = useRef(false);
+
+  // Scroll to a specific task when linked from dashboard
+  useEffect(() => {
+    if (!highlightTaskId || tasks.length === 0 || scrolledToTaskRef.current) return;
+    const el = document.getElementById(`task-${highlightTaskId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-clay/40");
+      scrolledToTaskRef.current = true;
+      setTimeout(() => el.classList.remove("ring-2", "ring-clay/40"), 3000);
+    }
+  }, [highlightTaskId, tasks]);
 
   useEffect(() => {
     if (!user) return;
@@ -627,7 +642,7 @@ export function OverviewClient() {
           </div>
           <div className="space-y-3">
             {pendingReviewTasks.map((task) => (
-              <Card key={task.id} padding="sm" className="border-l-3 border-l-warning">
+              <Card key={task.id} id={`task-${task.id}`} padding="sm" className="border-l-3 border-l-warning">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">

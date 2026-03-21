@@ -8,6 +8,7 @@ interface NotificationBellProps {
   notifications: AppNotification[];
   onDismiss: (id: string) => void;
   onDismissAll: () => void;
+  onOpen?: () => void;
 }
 
 const typeBorderColor: Record<string, string> = {
@@ -37,7 +38,7 @@ function formatNotificationTime(timestamp: string): string {
   return `${diffDays}d ago`;
 }
 
-export const NotificationBell = memo(function NotificationBell({ notifications, onDismiss, onDismissAll }: NotificationBellProps) {
+export const NotificationBell = memo(function NotificationBell({ notifications, onDismiss, onDismissAll, onOpen }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -65,7 +66,11 @@ export const NotificationBell = memo(function NotificationBell({ notifications, 
     <div className="relative">
       <button
         ref={buttonRef}
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          const willOpen = !open;
+          setOpen(willOpen);
+          if (willOpen && onOpen) onOpen();
+        }}
         className="relative p-1.5 rounded-lg text-earth hover:bg-warm transition-colors"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
       >

@@ -14,6 +14,7 @@ interface TopbarProps {
   notifications?: AppNotification[];
   onDismissNotification?: (id: string) => void;
   onDismissAllNotifications?: () => void;
+  onOpenNotifications?: () => void;
 }
 
 const badgeStyles = {
@@ -31,6 +32,7 @@ export const Topbar = memo(function Topbar({
   notifications = [],
   onDismissNotification,
   onDismissAllNotifications,
+  onOpenNotifications,
 }: TopbarProps) {
   return (
     <header className="px-4 sm:px-6 py-4 bg-background flex items-center justify-between shrink-0 sticky top-0 z-30">
@@ -57,6 +59,7 @@ export const Topbar = memo(function Topbar({
           notifications={notifications}
           onDismiss={onDismissNotification ?? (() => {})}
           onDismissAll={onDismissAllNotifications ?? (() => {})}
+          onOpen={onOpenNotifications}
         />
       </div>
     </header>
