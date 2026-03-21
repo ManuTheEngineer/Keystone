@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import {
@@ -9,6 +9,7 @@ import {
   subscribeToContacts,
   subscribeToBudgetItems,
   addGeneratedDocument,
+  addDocument,
   type DocumentData,
   type ProjectData,
   type ContactData,
@@ -25,7 +26,7 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { DocumentFillForm } from "@/components/ui/DocumentFillForm";
 import { DocumentPreview } from "@/components/ui/DocumentPreview";
-import { FileText, ChevronDown, Plus, FileCheck } from "lucide-react";
+import { FileText, ChevronDown, Plus, FileCheck, Upload } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
   getTemplatesForPhase,
@@ -90,6 +91,8 @@ function DocumentTemplateCard({
   );
 }
 
+const PHASE_NAMES_DOC = ["DEFINE", "FINANCE", "LAND", "DESIGN", "APPROVE", "ASSEMBLE", "BUILD", "VERIFY", "OPERATE"];
+
 export function DocumentsClient() {
   const params = useParams();
   const { setTopbar } = useTopbar();
@@ -113,6 +116,33 @@ export function DocumentsClient() {
   const [previewTemplateId, setPreviewTemplateId] = useState("");
   const [previewPhase, setPreviewPhase] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !user || !project) return;
+    setUploading(true);
+    try {
+      const { uploadVaultFile } = await import("@/lib/services/vault-upload-service");
+      const { fileUrl, fileSize, mimeType } = await uploadVaultFile(user.uid, projectId, file, "document");
+      const phaseName = PHASE_NAMES_DOC[project.currentPhase] ?? "DEFINE";
+      await addDocument(user.uid, {
+        projectId,
+        name: file.name.replace(/\.[^.]+$/, ""),
+        type: "OTHER",
+        fileUrl,
+        phase: phaseName,
+        date: new Date().toISOString(),
+      });
+      showToast("Document uploaded", "success");
+    } catch {
+      showToast("Upload failed", "error");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   // Subscribe to data
   useEffect(() => {
@@ -240,7 +270,7 @@ export function DocumentsClient() {
         subtitle={`${docs.length} document${docs.length !== 1 ? "s" : ""}`}
       />
 
-      {/* Stats row */}
+      {/* Stats row + upload */}
       <div className="flex items-center gap-3 mb-4">
         <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-[var(--radius)] bg-surface">
           <FileText size={12} className="text-muted" />
@@ -254,6 +284,21 @@ export function DocumentsClient() {
             <span className="text-[10px] text-muted">generated</span>
           </div>
         )}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-2 px-3 py-2 border border-border rounded-[var(--radius)] bg-surface text-earth hover:bg-warm transition-colors text-[11px] font-medium ml-auto disabled:opacity-40"
+        >
+          <Upload size={12} />
+          {uploading ? "Uploading..." : "Upload document"}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
       </div>
 
       {/* Template Library */}

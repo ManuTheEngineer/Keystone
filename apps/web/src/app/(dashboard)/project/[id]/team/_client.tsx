@@ -831,13 +831,17 @@ export function TeamClient() {
     return perfMap;
   }, [tasks]);
 
-  // Trades filled count
+  // Trades filled count — match contact role to trade by name, localName, or ID substring
   const filledTrades = currentPhaseTrades.filter((trade) =>
-    contacts.some(
-      (c) =>
-        c.role?.toLowerCase() === trade.name.toLowerCase() ||
-        c.role?.toLowerCase() === trade.localName?.toLowerCase()
-    )
+    contacts.some((c) => {
+      const role = c.role?.toLowerCase() ?? "";
+      const tradeName = trade.name.toLowerCase();
+      const tradeLocal = trade.localName?.toLowerCase() ?? "";
+      const tradeId = trade.id.toLowerCase();
+      return role === tradeName || role === tradeLocal || role === tradeId
+        || tradeName.includes(role) || role.includes(tradeName)
+        || (tradeLocal && (tradeLocal.includes(role) || role.includes(tradeLocal)));
+    })
   ).length;
 
   // Handlers
@@ -901,7 +905,8 @@ export function TeamClient() {
   }
 
   async function handleShareAccess(contact: ContactData) {
-    if (!user || !profile) return;
+    if (!user) { showToast("Sign in to share access", "error"); return; }
+    if (!profile) { showToast("Loading profile...", "info"); return; }
     try {
       const result = await generateContractorLink(
         user.uid, projectId, contact.id!, contact.name, contact.role, profile.plan
