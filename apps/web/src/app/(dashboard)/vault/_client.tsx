@@ -144,6 +144,9 @@ function BudgetHealthBar({ spent, budget }: { spent: number; budget: number }) {
 
 interface KebabMenuProps {
   project: ProjectData;
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
   onSetPriority: (priority: number | null) => void;
   onPause: () => void;
   onResume: () => void;
@@ -151,13 +154,12 @@ interface KebabMenuProps {
   onView: () => void;
 }
 
-function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete, onView }: KebabMenuProps) {
-  const [open, setOpen] = useState(false);
+function KebabMenu({ project, isOpen, onToggle, onClose, onSetPriority, onPause, onResume, onDelete, onView }: KebabMenuProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
   useEffect(() => {
-    if (open && buttonRef.current) {
+    if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const menuWidth = 180;
       const menuHeight = 260;
@@ -169,7 +171,7 @@ function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete, onView
       if (left < 8) left = 8;
       setMenuPos({ top, left });
     }
-  }, [open]);
+  }, [isOpen]);
 
   return (
     <div className="relative">
@@ -178,18 +180,18 @@ function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete, onView
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          setOpen(!open);
+          onToggle();
         }}
         className="p-1 rounded text-muted hover:text-earth hover:bg-warm transition-colors"
         aria-label="Project actions"
       >
         <MoreVertical size={14} />
       </button>
-      {open && (
+      {isOpen && (
         <>
           <div
             className="fixed inset-0 z-40"
-            onClick={() => setOpen(false)}
+            onClick={onClose}
           />
           <div
             className="fixed w-[180px] bg-surface border border-border rounded-lg shadow-lg z-50 py-1"
@@ -200,7 +202,7 @@ function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete, onView
               onClick={(e) => {
                 e.stopPropagation();
                 onView();
-                setOpen(false);
+                onClose();
               }}
               className="w-full text-left px-3 py-1.5 text-[12px] text-earth hover:bg-warm/50 transition-colors flex items-center gap-2"
             >
@@ -223,7 +225,7 @@ function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete, onView
                   onClick={(e) => {
                     e.stopPropagation();
                     onSetPriority(isActive ? null : level);
-                    setOpen(false);
+                    onClose();
                   }}
                   className={`w-full text-left px-3 py-1.5 text-[12px] hover:bg-warm/50 transition-colors flex items-center gap-2 ${isActive ? "text-earth font-medium" : "text-muted"}`}
                 >
@@ -242,7 +244,7 @@ function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete, onView
                 onClick={(e) => {
                   e.stopPropagation();
                   onPause();
-                  setOpen(false);
+                  onClose();
                 }}
                 className="w-full text-left px-3 py-1.5 text-[12px] text-muted hover:bg-warm/50 transition-colors flex items-center gap-2"
               >
@@ -254,7 +256,7 @@ function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete, onView
                 onClick={(e) => {
                   e.stopPropagation();
                   onResume();
-                  setOpen(false);
+                  onClose();
                 }}
                 className="w-full text-left px-3 py-1.5 text-[12px] text-muted hover:bg-warm/50 transition-colors flex items-center gap-2"
               >
@@ -269,7 +271,7 @@ function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete, onView
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete();
-                setOpen(false);
+                onClose();
               }}
               className="w-full text-left px-3 py-1.5 text-[12px] text-danger hover:bg-danger/5 transition-colors flex items-center gap-2"
             >
@@ -310,6 +312,7 @@ export function VaultClient() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -728,6 +731,9 @@ export function VaultClient() {
                 <div onClick={(e) => e.preventDefault()}>
                   <KebabMenu
                     project={p}
+                    isOpen={openMenuId === p.id}
+                    onToggle={() => setOpenMenuId(openMenuId === p.id ? null : p.id ?? null)}
+                    onClose={() => setOpenMenuId(null)}
                     onSetPriority={(priority) => { if (p.id) handleSetPriority(p.id, priority); }}
                     onPause={() => { if (p.id) handlePause(p.id); }}
                     onResume={() => { if (p.id) handleResume(p.id); }}
@@ -779,6 +785,9 @@ export function VaultClient() {
                   <div onClick={(e) => e.preventDefault()}>
                     <KebabMenu
                       project={p}
+                      isOpen={openMenuId === p.id}
+                      onToggle={() => setOpenMenuId(openMenuId === p.id ? null : p.id ?? null)}
+                      onClose={() => setOpenMenuId(null)}
                       onSetPriority={(priority) => {
                         if (p.id) handleSetPriority(p.id, priority);
                       }}
