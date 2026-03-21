@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTopbar } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
@@ -12,7 +13,6 @@ import {
   deleteProject,
   type ProjectData,
 } from "@/lib/services/project-service";
-import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Badge } from "@/components/ui/Badge";
 import { MarketBadge } from "@/components/ui/MarketBadge";
 import { getMarketData, formatCurrencyCompact, USD_CONFIG } from "@keystone/market-data";
@@ -20,7 +20,6 @@ import type { Market } from "@keystone/market-data";
 import {
   ArrowRight,
   Search,
-  Filter,
   MoreVertical,
   Pause,
   Play,
@@ -28,7 +27,35 @@ import {
   FolderOpen,
   TrendingUp,
   ArrowUpDown,
+  Eye,
+  LayoutGrid,
+  List,
+  Download,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+function formatRelativeTime(timestamp: string): string {
+  if (!timestamp) return "";
+  const now = Date.now();
+  const then = new Date(timestamp).getTime();
+  const diffMs = now - then;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHrs = Math.floor(diffMin / 60);
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  const diffDays = Math.floor(diffHrs / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
 
 /* ------------------------------------------------------------------ */
 /*  Circular progress ring                                            */
@@ -94,6 +121,24 @@ function PriorityIndicator({ priority }: { priority: number | undefined }) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Budget health bar                                                 */
+/* ------------------------------------------------------------------ */
+
+function BudgetHealthBar({ spent, budget }: { spent: number; budget: number }) {
+  if (!budget || budget <= 0) return null;
+  const ratio = spent / budget;
+  const pct = Math.min(100, Math.round(ratio * 100));
+  const color = ratio > 0.95 ? "bg-danger" : ratio > 0.80 ? "bg-warning" : "bg-success";
+  return (
+    <div className="w-full">
+      <div className="w-full h-1.5 bg-warm rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Kebab menu                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -103,9 +148,10 @@ interface KebabMenuProps {
   onPause: () => void;
   onResume: () => void;
   onDelete: () => void;
+  onView: () => void;
 }
 
-function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete }: KebabMenuProps) {
+function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete, onView }: KebabMenuProps) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
@@ -114,14 +160,12 @@ function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete }: Keba
     if (open && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const menuWidth = 180;
-      const menuHeight = 220; // approximate height
+      const menuHeight = 260;
       let top = rect.bottom + 4;
       let left = rect.right - menuWidth;
-      // If menu would go below viewport, open upward
       if (top + menuHeight > window.innerHeight) {
         top = rect.top - menuHeight - 4;
       }
-      // Keep within left edge
       if (left < 8) left = 8;
       setMenuPos({ top, left });
     }
@@ -151,6 +195,21 @@ function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete }: Keba
             className="fixed w-[180px] bg-surface border border-border rounded-lg shadow-lg z-50 py-1"
             style={{ top: menuPos.top, left: menuPos.left }}
           >
+            {/* View project */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onView();
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-1.5 text-[12px] text-earth hover:bg-warm/50 transition-colors flex items-center gap-2"
+            >
+              <Eye size={12} />
+              View project
+            </button>
+
+            <div className="h-px bg-border my-1" />
+
             {/* Priority options */}
             <div className="px-3 py-1.5 text-[10px] uppercase tracking-[0.1em] text-muted font-medium">
               Set priority
@@ -231,6 +290,7 @@ function KebabMenu({ project, onSetPriority, onPause, onResume, onDelete }: Keba
 type StatusFilter = "all" | "ACTIVE" | "PAUSED" | "COMPLETED";
 type MarketFilter = "all" | "USA" | "WA";
 type SortOption = "priority" | "recent" | "progress";
+type ViewMode = "grid" | "list";
 
 /* ------------------------------------------------------------------ */
 /*  Vault client                                                      */
@@ -240,13 +300,16 @@ export function VaultClient() {
   const { setTopbar } = useTopbar();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const router = useRouter();
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [marketFilter, setMarketFilter] = useState<MarketFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("priority");
+  const [sortAscending, setSortAscending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   useEffect(() => {
     if (!user) return;
@@ -257,13 +320,6 @@ export function VaultClient() {
   useEffect(() => {
     setTopbar("Portfolio", `${projects.length} project${projects.length !== 1 ? "s" : ""}`, "info");
   }, [setTopbar, projects.length]);
-
-  // Aggregate portfolio stats
-  const portfolioStats = useMemo(() => {
-    const totalBudget = projects.reduce((sum, p) => sum + (p.totalBudget || 0), 0);
-    const totalSpent = projects.reduce((sum, p) => sum + (p.totalSpent || 0), 0);
-    return { totalBudget, totalSpent };
-  }, [projects]);
 
   // Filter and sort
   const filteredProjects = useMemo(() => {
@@ -293,35 +349,48 @@ export function VaultClient() {
 
     // Sort
     result.sort((a, b) => {
+      let cmp = 0;
       if (sortOption === "priority") {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
         const pa = a.priority ?? 999;
         const pb = b.priority ?? 999;
-        if (pa !== pb) return pa - pb;
+        if (pa !== pb) { cmp = pa - pb; }
+        else {
+          const ua = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+          const ub = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+          cmp = ub - ua;
+        }
+      } else if (sortOption === "recent") {
         const ua = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
         const ub = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-        return ub - ua;
+        cmp = ub - ua;
+      } else if (sortOption === "progress") {
+        cmp = (b.progress || 0) - (a.progress || 0);
       }
-      if (sortOption === "recent") {
-        const ua = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-        const ub = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-        return ub - ua;
-      }
-      if (sortOption === "progress") {
-        return (b.progress || 0) - (a.progress || 0);
-      }
-      return 0;
+      return sortAscending ? -cmp : cmp;
     });
 
     return result;
-  }, [projects, statusFilter, marketFilter, sortOption, searchQuery]);
+  }, [projects, statusFilter, marketFilter, sortOption, sortAscending, searchQuery]);
+
+  // Stats from filtered set
+  const portfolioStats = useMemo(() => {
+    const totalBudget = filteredProjects.reduce((sum, p) => sum + (p.totalBudget || 0), 0);
+    const totalSpent = filteredProjects.reduce((sum, p) => sum + (p.totalSpent || 0), 0);
+    const avgProgress = filteredProjects.length > 0
+      ? Math.round(filteredProjects.reduce((sum, p) => sum + (p.progress || 0), 0) / filteredProjects.length)
+      : 0;
+    return { totalBudget, totalSpent, avgProgress };
+  }, [filteredProjects]);
+
+  const isFiltered = statusFilter !== "all" || marketFilter !== "all" || searchQuery.trim() !== "";
 
   const handleSetPriority = useCallback(async (projectId: string, priority: number | null) => {
     if (!user) return;
     try {
       await updateProjectPriority(user.uid, projectId, priority);
-      showToast("Priority updated", "success");
+      showToast(priority ? `Priority set to ${priority === 1 ? "High" : priority === 2 ? "Medium" : "Low"}` : "Priority cleared", "success");
     } catch {
       showToast("Failed to update priority", "error");
     }
@@ -364,27 +433,79 @@ export function VaultClient() {
     ? getMarketData((projects[0]?.market as Market) ?? "USA").currency
     : USD_CONFIG;
 
+  const handleSortClick = useCallback((sort: SortOption) => {
+    if (sortOption === sort) {
+      setSortAscending((prev) => !prev);
+    } else {
+      setSortOption(sort);
+      setSortAscending(false);
+    }
+  }, [sortOption]);
+
   return (
     <div className="animate-fade-in">
       {/* Portfolio header */}
       <div className="mb-6">
-        <h1
-          className="text-[26px] text-earth mb-1"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          Project Portfolio
-        </h1>
-        <div className="flex items-center gap-4 text-[12px] text-muted">
-          <span>
-            <span className="font-data text-earth">{projects.length}</span> total projects
-          </span>
-          <span>
-            <span className="font-data text-earth">{formatCurrencyCompact(portfolioStats.totalBudget, primaryCurrency)}</span> total budget
-          </span>
-          <span>
-            <span className="font-data text-earth">{formatCurrencyCompact(portfolioStats.totalSpent, primaryCurrency)}</span> total spent
-          </span>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1
+              className="text-[26px] text-earth mb-1"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
+              Project Portfolio
+            </h1>
+            <div className="flex items-center gap-4 text-[12px] text-muted">
+              <span>
+                <span className="font-data text-earth">{filteredProjects.length}</span>
+                {isFiltered && <span className="text-muted/60"> of {projects.length}</span>}
+                {" "}project{filteredProjects.length !== 1 ? "s" : ""}
+              </span>
+              {portfolioStats.totalBudget > 0 && (
+                <>
+                  <span>
+                    <span className="font-data text-earth">{formatCurrencyCompact(portfolioStats.totalBudget, primaryCurrency)}</span> budget
+                  </span>
+                  <span>
+                    <span className="font-data text-earth">{formatCurrencyCompact(portfolioStats.totalSpent, primaryCurrency)}</span> spent
+                  </span>
+                  <span>
+                    <span className="font-data text-earth">{portfolioStats.avgProgress}%</span> avg progress
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+          {/* View mode toggle + Export */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-surface border border-border rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-1.5 rounded transition-colors ${viewMode === "grid" ? "bg-earth text-warm" : "text-muted hover:text-earth"}`}
+                aria-label="Grid view"
+              >
+                <LayoutGrid size={14} />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 rounded transition-colors ${viewMode === "list" ? "bg-earth text-warm" : "text-muted hover:text-earth"}`}
+                aria-label="List view"
+              >
+                <List size={14} />
+              </button>
+            </div>
+          </div>
         </div>
+
+        {/* Budget health bar for portfolio */}
+        {portfolioStats.totalBudget > 0 && (
+          <div className="mt-3">
+            <BudgetHealthBar spent={portfolioStats.totalSpent} budget={portfolioStats.totalBudget} />
+            <div className="flex items-center justify-between mt-1 text-[10px] text-muted">
+              <span>{Math.round((portfolioStats.totalSpent / portfolioStats.totalBudget) * 100)}% of budget spent</span>
+              <span className="font-data text-success">{formatCurrencyCompact(portfolioStats.totalBudget - portfolioStats.totalSpent, primaryCurrency)} remaining</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filter bar */}
@@ -404,7 +525,7 @@ export function VaultClient() {
         {/* Status filter */}
         <div className="flex items-center gap-1 bg-surface border border-border rounded-xl p-0.5">
           {(["all", "ACTIVE", "PAUSED", "COMPLETED"] as StatusFilter[]).map((status) => {
-            const labels: Record<StatusFilter, string> = { all: "All", ACTIVE: "Active", PAUSED: "Paused", COMPLETED: "Completed" };
+            const labels: Record<StatusFilter, string> = { all: "All", ACTIVE: "Active", PAUSED: "Paused", COMPLETED: "Done" };
             return (
               <button
                 key={status}
@@ -424,7 +545,7 @@ export function VaultClient() {
         {/* Market filter */}
         <div className="flex items-center gap-1 bg-surface border border-border rounded-xl p-0.5">
           {(["all", "USA", "WA"] as MarketFilter[]).map((market) => {
-            const labels: Record<MarketFilter, string> = { all: "All", USA: "USA", WA: "West Africa" };
+            const labels: Record<MarketFilter, string> = { all: "All", USA: "USA", WA: "W. Africa" };
             return (
               <button
                 key={market}
@@ -441,29 +562,32 @@ export function VaultClient() {
           })}
         </div>
 
-        {/* Sort */}
+        {/* Sort with direction toggle */}
         <div className="flex items-center gap-1 bg-surface border border-border rounded-xl p-0.5">
-          <ArrowUpDown size={12} className="text-muted ml-2" />
           {(["priority", "recent", "progress"] as SortOption[]).map((sort) => {
             const labels: Record<SortOption, string> = { priority: "Priority", recent: "Recent", progress: "Progress" };
+            const isActive = sortOption === sort;
             return (
               <button
                 key={sort}
-                onClick={() => setSortOption(sort)}
-                className={`text-[11px] px-2.5 py-1 rounded-lg transition-colors ${
-                  sortOption === sort
+                onClick={() => handleSortClick(sort)}
+                className={`text-[11px] px-2.5 py-1 rounded-lg transition-colors flex items-center gap-0.5 ${
+                  isActive
                     ? "bg-earth text-warm font-medium"
                     : "text-muted hover:text-earth"
                 }`}
               >
                 {labels[sort]}
+                {isActive && (
+                  sortAscending ? <ChevronUp size={10} /> : <ChevronDown size={10} />
+                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Project grid */}
+      {/* Project grid / list */}
       {filteredProjects.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center py-16">
           <FolderOpen size={48} className="text-muted/30 mb-4" />
@@ -502,14 +626,122 @@ export function VaultClient() {
               >
                 No projects match your filters
               </h2>
-              <p className="text-[13px] text-muted">
+              <p className="text-[13px] text-muted mb-4">
+                {filteredProjects.length} of {projects.length} projects shown.
                 Try adjusting your search or filter criteria.
               </p>
+              <button
+                onClick={() => {
+                  setStatusFilter("all");
+                  setMarketFilter("all");
+                  setSearchQuery("");
+                }}
+                className="text-[12px] text-clay hover:text-earth transition-colors font-medium"
+              >
+                Clear all filters
+              </button>
             </>
           )}
         </div>
+      ) : viewMode === "list" ? (
+        /* ============================================================ */
+        /*  LIST / TABLE VIEW                                           */
+        /* ============================================================ */
+        <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-[var(--shadow-sm)]">
+          {/* Table header */}
+          <div className="grid grid-cols-[1fr_100px_100px_80px_80px_100px_40px] gap-2 px-4 py-2.5 border-b border-border bg-warm/30 text-[10px] uppercase tracking-[0.1em] text-muted font-medium">
+            <span>Project</span>
+            <span>Phase</span>
+            <span>Budget</span>
+            <span>Spent</span>
+            <span>Progress</span>
+            <span>Last Active</span>
+            <span />
+          </div>
+          {filteredProjects.map((p) => {
+            const marketData = getMarketData(p.market as Market);
+            const isPaused = p.status === "PAUSED";
+            const isCompleted = p.status === "COMPLETED";
+            const budgetRatio = p.totalBudget > 0 ? p.totalSpent / p.totalBudget : 0;
+            const budgetColor = budgetRatio > 0.95 ? "text-danger" : budgetRatio > 0.80 ? "text-warning" : "text-earth";
+
+            return (
+              <Link
+                key={p.id}
+                href={`/project/${p.id}/overview`}
+                className={`grid grid-cols-[1fr_100px_100px_80px_80px_100px_40px] gap-2 px-4 py-3 border-b border-border/40 hover:bg-warm/20 transition-colors cursor-pointer items-center ${isPaused ? "opacity-70" : ""} ${isCompleted ? "opacity-80" : ""}`}
+              >
+                {/* Name + badges */}
+                <div className="flex items-center gap-2 min-w-0">
+                  <PriorityIndicator priority={p.priority} />
+                  <span className="text-[13px] text-earth font-medium truncate" style={{ fontFamily: "var(--font-heading)" }}>
+                    {p.name}
+                  </span>
+                  <MarketBadge market={p.market as Market} />
+                  {p.isDemo && (
+                    <Badge variant="info" className="rounded-full text-[9px]">[Demo]</Badge>
+                  )}
+                </div>
+
+                {/* Phase */}
+                <div>
+                  <Badge
+                    variant={isPaused ? "warning" : isCompleted ? "success" : p.currentPhase >= 5 ? "warning" : "info"}
+                    className="rounded-full text-[9px]"
+                  >
+                    {isPaused ? "Paused" : isCompleted ? "Done" : p.phaseName}
+                  </Badge>
+                </div>
+
+                {/* Budget */}
+                <span className="text-[12px] font-data text-earth">
+                  {formatCurrencyCompact(p.totalBudget, marketData.currency)}
+                </span>
+
+                {/* Spent */}
+                <span className={`text-[12px] font-data ${budgetColor}`}>
+                  {formatCurrencyCompact(p.totalSpent, marketData.currency)}
+                </span>
+
+                {/* Progress */}
+                <div className="flex items-center gap-1.5">
+                  <div className="w-8 h-1.5 bg-warm rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${p.progress}%` }} />
+                  </div>
+                  <span className="text-[11px] font-data text-earth">{p.progress}%</span>
+                </div>
+
+                {/* Last active */}
+                <span className="text-[11px] text-muted">
+                  {p.updatedAt ? formatRelativeTime(p.updatedAt) : ""}
+                </span>
+
+                {/* Menu */}
+                <div onClick={(e) => e.preventDefault()}>
+                  <KebabMenu
+                    project={p}
+                    onSetPriority={(priority) => { if (p.id) handleSetPriority(p.id, priority); }}
+                    onPause={() => { if (p.id) handlePause(p.id); }}
+                    onResume={() => { if (p.id) handleResume(p.id); }}
+                    onDelete={() => { setDeleteConfirm(p.id ?? null); }}
+                    onView={() => router.push(`/project/${p.id}/overview`)}
+                  />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 animate-stagger">
+        /* ============================================================ */
+        /*  CARD GRID VIEW                                              */
+        /* ============================================================ */
+        <div className={`grid gap-3 animate-stagger ${
+          filteredProjects.length === 1
+            ? "grid-cols-1 max-w-md"
+            : filteredProjects.length === 2
+            ? "grid-cols-1 md:grid-cols-2 max-w-2xl"
+            : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+        }`}>
           {filteredProjects.map((p) => {
             const marketData = getMarketData(p.market as Market);
             const isWestAfrica = ["TOGO", "GHANA", "BENIN"].includes(p.market);
@@ -518,14 +750,12 @@ export function VaultClient() {
               : "border-t-[var(--color-accent-usa)]";
             const isPaused = p.status === "PAUSED";
             const isCompleted = p.status === "COMPLETED";
-            const lastActivity = p.updatedAt
-              ? new Date(p.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-              : "";
 
             return (
-              <div
+              <Link
                 key={p.id}
-                className={`bg-surface rounded-2xl shadow-[var(--shadow-sm)] p-5 border border-border border-t-[3px] ${topBorderColor} card-hover ${isPaused ? "opacity-70" : ""} ${isCompleted ? "opacity-80" : ""}`}
+                href={`/project/${p.id}/overview`}
+                className={`block bg-surface rounded-2xl shadow-[var(--shadow-sm)] p-5 border border-border border-t-[3px] ${topBorderColor} cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${isPaused ? "opacity-70" : ""} ${isCompleted ? "opacity-80" : ""}`}
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-2">
@@ -538,24 +768,27 @@ export function VaultClient() {
                     </h3>
                     <MarketBadge market={p.market as Market} />
                   </div>
-                  <KebabMenu
-                    project={p}
-                    onSetPriority={(priority) => {
-                      if (p.id) handleSetPriority(p.id, priority);
-                    }}
-                    onPause={() => {
-                      if (p.id) handlePause(p.id);
-                    }}
-                    onResume={() => {
-                      if (p.id) handleResume(p.id);
-                    }}
-                    onDelete={() => {
-                      setDeleteConfirm(p.id ?? null);
-                    }}
-                  />
+                  <div onClick={(e) => e.preventDefault()}>
+                    <KebabMenu
+                      project={p}
+                      onSetPriority={(priority) => {
+                        if (p.id) handleSetPriority(p.id, priority);
+                      }}
+                      onPause={() => {
+                        if (p.id) handlePause(p.id);
+                      }}
+                      onResume={() => {
+                        if (p.id) handleResume(p.id);
+                      }}
+                      onDelete={() => {
+                        setDeleteConfirm(p.id ?? null);
+                      }}
+                      onView={() => router.push(`/project/${p.id}/overview`)}
+                    />
+                  </div>
                 </div>
 
-                {/* Phase + priority */}
+                {/* Phase + priority + demo badge */}
                 <div className="flex items-center gap-2 mb-3">
                   <Badge
                     variant={
@@ -569,16 +802,17 @@ export function VaultClient() {
                   </Badge>
                   <PriorityIndicator priority={p.priority} />
                   {p.isDemo && (
-                    <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Sample
-                    </span>
+                    <Badge variant="info" className="rounded-full text-[9px]">[Demo]</Badge>
                   )}
                 </div>
 
                 {/* Progress + budget */}
-                <div className="flex items-center gap-3 mb-3">
-                  <ProgressRing progress={p.progress} size={40} />
-                  <div className="flex flex-col gap-0.5 text-[11px] text-muted">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="shrink-0">
+                    <ProgressRing progress={p.progress} size={40} />
+                    <span className="block text-[8px] text-muted text-center mt-0.5">Progress</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 text-[11px] text-muted flex-1 min-w-0">
                     <span>
                       Budget:{" "}
                       <span className="font-data text-earth">
@@ -594,6 +828,11 @@ export function VaultClient() {
                   </div>
                 </div>
 
+                {/* Budget health bar */}
+                <div className="mb-3">
+                  <BudgetHealthBar spent={p.totalSpent} budget={p.totalBudget} />
+                </div>
+
                 {/* Description */}
                 {p.details && (
                   <p className="text-[11px] text-muted mb-3 truncate">{p.details}</p>
@@ -601,20 +840,19 @@ export function VaultClient() {
 
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-2 border-t border-border/40">
-                  {lastActivity && (
+                  {p.updatedAt && (
                     <span className="text-[10px] text-muted/60">
-                      Last active: {lastActivity}
+                      {formatRelativeTime(p.updatedAt)}
                     </span>
                   )}
-                  <Link
-                    href={`/project/${p.id}/overview`}
-                    className="inline-flex items-center gap-1 text-[12px] font-medium text-clay hover:text-earth transition-colors ml-auto"
+                  <span
+                    className="inline-flex items-center gap-1 text-[12px] font-medium text-clay ml-auto"
                   >
                     Open
                     <ArrowRight size={12} />
-                  </Link>
+                  </span>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
