@@ -485,7 +485,15 @@ export default function NewProjectPage() {
   const { setTopbar } = useTopbar();
   const { user, profile } = useAuth();
   const router = useRouter();
-  const [step, setStep] = useState(0);
+  const [step, setStepRaw] = useState(0);
+  const [maxStepReached, setMaxStepReached] = useState(0);
+  const [validationError, setValidationError] = useState("");
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const setStep = useCallback((s: number) => {
+    setStepRaw(s);
+    setMaxStepReached((prev) => Math.max(prev, s));
+    setValidationError("");
+  }, []);
   const [state, setState] = useState<WizardState>(() => {
     // Pre-fill from Deal Analyzer URL params
     if (typeof window === "undefined") return INITIAL_STATE;
@@ -523,8 +531,34 @@ export default function NewProjectPage() {
   useEffect(() => {
     if (state.fromAnalyzer) {
       setStep(9);
+    } else {
+      // Restore draft from localStorage
+      try {
+        const draft = localStorage.getItem("keystone-new-project-draft");
+        if (draft) {
+          const parsed = JSON.parse(draft);
+          if (parsed.state) setState(parsed.state);
+          if (typeof parsed.step === "number") {
+            setStepRaw(parsed.step);
+            setMaxStepReached(parsed.maxStep ?? parsed.step);
+          }
+        }
+      } catch {}
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-save draft to localStorage
+  useEffect(() => {
+    if (state.fromAnalyzer) return;
+    try {
+      localStorage.setItem("keystone-new-project-draft", JSON.stringify({ state, step, maxStep: maxStepReached }));
+    } catch {}
+  }, [state, step, maxStepReached]);
+
+  // Clear draft after project creation
+  function clearDraft() {
+    try { localStorage.removeItem("keystone-new-project-draft"); } catch {}
+  }
 
   // Fetch existing project count for plan limit enforcement
   useEffect(() => {
@@ -539,6 +573,20 @@ export default function NewProjectPage() {
   useEffect(() => {
     setTopbar("New project", "Setup wizard", "info");
   }, [setTopbar]);
+
+  // Enter key advances to next step
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Enter" && !e.shiftKey && !creating) {
+        // Don't trigger if user is typing in an input/textarea
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (canProceed()) handleNext();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
 
   function update<K extends keyof WizardState>(key: K, value: WizardState[K]) {
     setState((prev) => {
@@ -727,6 +775,7 @@ export default function NewProjectPage() {
         }),
       ]);
 
+      clearDraft();
       router.push(`/project/${projectId}/overview`);
     } catch (err: any) {
       console.error("Failed to create project:", err);
@@ -736,7 +785,28 @@ export default function NewProjectPage() {
     }
   }
 
+  function getValidationMessage(): string {
+    switch (step) {
+      case 0: return state.goal === "" ? "Select a goal to continue" : "";
+      case 1: return state.market === "" ? "Select a market to continue" : "";
+      case 2:
+        if (state.market === "USA") return !/^\d{5}(-\d{4})?$/.test(state.city.trim()) ? "Enter a valid 5-digit ZIP code" : "";
+        return state.city.trim().length === 0 ? "Enter a city or region" : "";
+      case 3: return state.propertyType === "" ? "Select a property type" : "";
+      case 4: return state.sizeCategory === "custom" && state.customSize <= 0 ? "Enter a custom size greater than 0" : "";
+      case 5: return state.landOption === "" ? "Select a land option" : "";
+      case 6: return state.financingType === "" ? "Select a financing method" : "";
+      case 9: return state.projectName.trim().length === 0 ? "Enter a project name" : "";
+      default: return "";
+    }
+  }
+
   function handleNext() {
+    if (!canProceed()) {
+      setValidationError(getValidationMessage());
+      return;
+    }
+    setValidationError("");
     if (step < STEP_COUNT - 1) {
       setStep(step + 1);
     } else {
@@ -746,12 +816,18 @@ export default function NewProjectPage() {
 
   function handleBack() {
     if (state.fromAnalyzer && step === 9) {
-      // Go back to analyzer instead of stepping through pre-filled wizard
       router.back();
     } else if (step > 0) {
-      setStep(step - 1);
+      setStepRaw(step - 1);
+      setValidationError("");
     } else {
-      router.push("/dashboard");
+      // On step 0, show confirmation if any data has been entered
+      const hasData = state.goal !== "" || state.market !== "" || state.city.trim() !== "";
+      if (hasData) {
+        setShowCancelConfirm(true);
+      } else {
+        router.push("/dashboard");
+      }
     }
   }
 
@@ -1719,38 +1795,58 @@ export default function NewProjectPage() {
   return (
     <div className="max-w-xl mx-auto py-8 animate-fade-in">
       {/* Step indicator */}
-      <div className="flex gap-1 justify-center mb-8 flex-wrap">
-        {STEP_LABELS.map((label, i) => (
-          <div key={i} className="flex items-center gap-1">
-            <button
-              onClick={() => { if (i < step) setStep(i); }}
-              disabled={i > step}
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-data font-medium transition-all ${
-                i === step
-                  ? "bg-earth text-warm"
-                  : i < step
-                  ? "bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600"
-                  : "bg-surface-alt text-muted cursor-default"
-              }`}
-              title={label}
-            >
-              {i < step ? (
-                <svg width="10" height="8" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              ) : (
-                i + 1
+      <div className="flex gap-1 justify-center mb-4 flex-wrap" role="navigation" aria-label="Wizard steps">
+        {STEP_LABELS.map((label, i) => {
+          const isCompleted = i < step || (i <= maxStepReached && i !== step);
+          const isCurrent = i === step;
+          const isReachable = i <= maxStepReached;
+          return (
+            <div key={i} className="flex items-center gap-1">
+              <button
+                onClick={() => { if (isReachable && !isCurrent) setStep(i); }}
+                disabled={!isReachable}
+                aria-label={`Step ${i + 1}: ${label}${isCompleted && !isCurrent ? " (completed)" : isCurrent ? " (current)" : ""}`}
+                aria-current={isCurrent ? "step" : undefined}
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-data font-medium transition-all focus:outline-none focus:ring-2 focus:ring-clay/30 ${
+                  isCurrent
+                    ? "bg-earth text-warm"
+                    : isCompleted
+                    ? "bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600"
+                    : "bg-surface-alt text-muted cursor-default"
+                }`}
+                title={label}
+              >
+                {isCompleted && !isCurrent ? (
+                  <svg width="10" height="8" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                ) : (
+                  i + 1
+                )}
+              </button>
+              {i < STEP_LABELS.length - 1 && (
+                <div className={`w-4 h-[2px] ${i < maxStepReached || (i < step) ? "bg-emerald-500" : "bg-border"}`} />
               )}
-            </button>
-            {i < STEP_LABELS.length - 1 && (
-              <div className={`w-4 h-[2px] ${i < step ? "bg-emerald-500" : "bg-border"}`} />
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Step title label */}
-      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-clay/60 text-center mb-1">
-        Step {step + 1} of {STEP_COUNT}
-      </p>
+      {/* Progress bar + step label */}
+      <div className="max-w-xs mx-auto mb-4">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-clay/60">
+            Step {step + 1} of {STEP_COUNT}
+          </p>
+          <p className="text-[10px] font-data font-medium text-muted">
+            {Math.round(((step + 1) / STEP_COUNT) * 100)}%
+          </p>
+        </div>
+        <div className="w-full h-1 bg-warm rounded-full overflow-hidden">
+          <div
+            className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+            style={{ width: `${((step + 1) / STEP_COUNT) * 100}%` }}
+          />
+        </div>
+      </div>
 
       {/* Pre-filled from Deal Analyzer banner */}
       {state.fromAnalyzer && step < 8 && (
@@ -1775,8 +1871,16 @@ export default function NewProjectPage() {
         </div>
       )}
 
+      {/* Validation error */}
+      {validationError && (
+        <div className="flex items-center gap-2 justify-center mt-4 text-[12px] text-danger animate-fade-in">
+          <AlertTriangle size={14} className="shrink-0" />
+          {validationError}
+        </div>
+      )}
+
       {/* Nav buttons */}
-      <div className="flex justify-center gap-2 mt-8">
+      <div className="flex justify-center gap-2 mt-4">
         <button
           onClick={handleBack}
           className="px-6 py-2.5 text-[13px] border border-border-dark rounded-[var(--radius)] bg-surface text-earth hover:bg-surface-alt transition-colors"
@@ -1785,12 +1889,53 @@ export default function NewProjectPage() {
         </button>
         <button
           onClick={handleNext}
-          disabled={!canProceed() || creating}
-          className="px-6 py-2.5 text-[13px] rounded-[var(--radius)] btn-earth hover:bg-earth-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={creating}
+          className={`px-6 py-2.5 text-[13px] rounded-[var(--radius)] transition-colors ${
+            canProceed()
+              ? "btn-earth hover:bg-earth-light"
+              : "bg-muted/20 text-muted/60 border border-border cursor-not-allowed"
+          }`}
         >
           {step === STEP_COUNT - 1 ? (creating ? "Creating..." : "Create project") : "Next"}
         </button>
       </div>
+
+      {/* Cancel confirmation dialog */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-earth/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface rounded-xl shadow-lg border border-border p-6 max-w-sm w-full">
+            <h3
+              className="text-[18px] text-earth mb-2"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
+              Discard progress?
+            </h3>
+            <p className="text-[13px] text-muted mb-6 leading-relaxed">
+              You have unsaved changes. Your wizard progress will be saved as a draft — you can continue later.
+            </p>
+            <div className="flex items-center gap-3 justify-end">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="px-4 py-2 text-[13px] font-medium rounded-lg border border-border text-earth hover:bg-warm transition-colors"
+              >
+                Keep editing
+              </button>
+              <button
+                onClick={() => { clearDraft(); router.push("/dashboard"); }}
+                className="px-4 py-2 text-[13px] font-medium rounded-lg bg-danger text-white hover:bg-danger/90 transition-colors"
+              >
+                Discard and leave
+              </button>
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="px-4 py-2 text-[13px] font-medium rounded-lg bg-earth text-warm hover:bg-earth/90 transition-colors"
+              >
+                Save draft and leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
