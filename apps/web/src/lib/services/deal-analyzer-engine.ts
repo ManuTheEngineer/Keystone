@@ -121,7 +121,7 @@ const FEATURE_COSTS_USD: Record<string, number> = {
   "sprinkler": 4000,
 };
 
-// WA costs in CFA (FCFA). 1 USD ~ 615 CFA.
+// WA costs in CFA (FCFA). 1 USD ~ 607 CFA (approx, fluctuates with EUR/USD).
 // Single garage: ~$9,750 USD (6M CFA) -- concrete block, tin roof
 // Pool: ~$26K USD (16M CFA) -- labor-intensive but cheaper materials
 const FEATURE_COSTS_WA: Record<string, number> = {

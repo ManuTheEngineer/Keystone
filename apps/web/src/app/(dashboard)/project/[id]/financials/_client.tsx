@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import {
@@ -99,6 +99,8 @@ export function FinancialsClient() {
   // Currency converter state (West Africa)
   const [convertAmount, setConvertAmount] = useState("1000");
   const [convertResult, setConvertResult] = useState<ReturnType<typeof convertCurrency> | null>(null);
+  const [liveExchangeRate, setLiveExchangeRate] = useState<number | null>(null);
+  const [rateLoading, setRateLoading] = useState(false);
 
   // Phased funding state (West Africa)
   const [phaseFunding, setPhaseFunding] = useState<Record<string, number>>({});
@@ -148,6 +150,23 @@ export function FinancialsClient() {
         }
       })
       .catch(() => {});
+  }, [project?.market]);
+
+  // Fetch live exchange rate for West African markets
+  useEffect(() => {
+    if (!project || project.market === "USA") return;
+    setRateLoading(true);
+    fetch("https://open.er-api.com/v6/latest/USD")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.rates) {
+          const targetCurrency = project.market === "GHANA" ? "GHS" : "XOF";
+          const rate = data.rates[targetCurrency];
+          if (rate) setLiveExchangeRate(rate);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setRateLoading(false));
   }, [project?.market]);
 
   // ---------------------------------------------------------------------------
@@ -215,7 +234,8 @@ export function FinancialsClient() {
   }
 
   function handleCurrencyConvert() {
-    const rate = market === "GHANA" ? 15.5 : 615;
+    const fallbackRate = market === "GHANA" ? 10.96 : 567.76;
+    const rate = liveExchangeRate ?? fallbackRate;
     const toCurr = market === "GHANA" ? "GHS" : "XOF";
     const input: CurrencyConversionInput = {
       amount: Number(convertAmount) || 0,
@@ -835,7 +855,7 @@ export function FinancialsClient() {
               <p>
                 {market === "GHANA"
                   ? "The Ghana Cedi (GHS) fluctuates against the USD. Check current rates before making large transfers. Consider using services like Wise, WorldRemit, or Remitly for competitive transfer rates."
-                  : "The CFA Franc (XOF) is pegged to the Euro at a fixed rate of 655.957 XOF per EUR. The USD/XOF rate fluctuates based on the EUR/USD exchange rate. The default rate of 615 XOF per USD is an approximation -- verify the current rate before transfers."}
+                  : `The CFA Franc (XOF) is pegged to the Euro at a fixed rate of 655.957 XOF per EUR. The USD/XOF rate fluctuates with the EUR/USD exchange rate. ${liveExchangeRate ? `Current live rate: 1 USD = ${liveExchangeRate.toFixed(2)} XOF (fetched today).` : "Rate shown is an approximation."} Always verify with your bank or transfer service before sending money.`}
               </p>
             </div>
           </Card>

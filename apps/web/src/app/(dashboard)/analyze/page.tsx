@@ -121,7 +121,8 @@ const WA_FEATURES = [
   { id: "security-post", label: "Security", Icon: ShieldCheck },
 ];
 
-const EXCHANGE_RATES: Record<string, number> = { TOGO: 615, GHANA: 15.5, BENIN: 615 };
+// Fallback rates — overridden by live rates when fetched
+const DEFAULT_EXCHANGE_RATES: Record<string, number> = { TOGO: 567.76, GHANA: 10.96, BENIN: 567.76 };
 
 type ResultTab = "summary" | "breakdown" | "location" | "scenarios";
 
@@ -343,8 +344,25 @@ export default function AnalyzePage() {
   const [showCreate, setShowCreate] = useState(false);
   const [createName, setCreateName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [liveRates, setLiveRates] = useState<Record<string, number>>(DEFAULT_EXCHANGE_RATES);
 
   useEffect(() => { setTopbar("Deal Analyzer", undefined, undefined); }, [setTopbar]);
+
+  // Fetch live exchange rates
+  useEffect(() => {
+    fetch("https://open.er-api.com/v6/latest/USD")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.rates) {
+          setLiveRates({
+            TOGO: data.rates.XOF ?? DEFAULT_EXCHANGE_RATES.TOGO,
+            GHANA: data.rates.GHS ?? DEFAULT_EXCHANGE_RATES.GHANA,
+            BENIN: data.rates.XOF ?? DEFAULT_EXCHANGE_RATES.BENIN,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
   useEffect(() => {
     if (!user?.uid) return;
     getUserAnalyses(user.uid).then(setSavedAnalyses).catch(() => {});
@@ -431,7 +449,7 @@ export default function AnalyzePage() {
   // Cross market
   const crossMarket = useMemo(() => {
     if (!results || !input.market) return [];
-    const toUSD = (a: number, m: string) => { const r = EXCHANGE_RATES[m]; return r ? Math.round(a / r) : a; };
+    const toUSD = (a: number, m: string) => { const r = liveRates[m]; return r ? Math.round(a / r) : a; };
     return (["USA", "TOGO", "GHANA", "BENIN"] as MarketType[]).map((m) => {
       try {
         const r = m === input.market ? results : calculateAnalysis({ ...input, market: m } as any);
@@ -443,7 +461,7 @@ export default function AnalyzePage() {
   // Dual currency
   const dualUSD = useMemo(() => {
     if (!input.market || input.market === "USA" || !results) return null;
-    const rate = EXCHANGE_RATES[input.market];
+    const rate = liveRates[input.market];
     return rate ? Math.round(results.totalCost / rate) : null;
   }, [input.market, results]);
 
