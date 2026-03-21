@@ -82,6 +82,14 @@ function renderMarkdown(text: string) {
   return text.split("\n").map((line, i) => {
     if (line.trim() === "") return <p key={i} className="h-2" />;
 
+    // Headings: ### h3, ## h2, # h1
+    const h3Match = line.match(/^###\s+(.*)$/);
+    if (h3Match) return <p key={i} className="text-[12px] font-bold text-earth mt-2 mb-1">{renderInline(h3Match[1])}</p>;
+    const h2Match = line.match(/^##\s+(.*)$/);
+    if (h2Match) return <p key={i} className="text-[13px] font-bold text-earth mt-3 mb-1">{renderInline(h2Match[1])}</p>;
+    const h1Match = line.match(/^#\s+(.*)$/);
+    if (h1Match) return <p key={i} className="text-[14px] font-bold text-earth mt-3 mb-1.5">{renderInline(h1Match[1])}</p>;
+
     // Numbered list
     const numMatch = line.match(/^(\d+)\.\s+(.*)$/);
     if (numMatch) {
@@ -138,7 +146,7 @@ export function AIAssistantClient() {
   const projectId = params.id as string;
 
   const [project, setProject] = useState<ProjectData | null>(null);
-  const [messages, setMessages] = useState<AIMessage[]>([]);
+  const [allMessages, setAllMessages] = useState<AIMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [mode, setMode] = useState<Mode>("general");
@@ -147,6 +155,12 @@ export function AIAssistantClient() {
   const [conversationLoaded, setConversationLoaded] = useState(false);
   const [aiUsage, setAiUsage] = useState<AIUsage | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Filter messages for current mode tab
+  const messages = useMemo(() =>
+    allMessages.filter((m: any) => !m.mode || m.mode === mode),
+    [allMessages, mode]
+  );
 
   /* ---------- subscriptions ---------- */
 
@@ -157,7 +171,7 @@ export function AIAssistantClient() {
       subscribeToConversation(user.uid, projectId, (saved) => {
         if (!conversationLoaded) {
           if (saved.length > 0) {
-            setMessages(saved as AIMessage[]);
+            setAllMessages(saved as AIMessage[]);
             setConversationRestored(true);
             setTimeout(() => setConversationRestored(false), 3000);
           }
@@ -232,9 +246,7 @@ export function AIAssistantClient() {
   const persistMessages = useCallback(
     (msgs: AIMessage[]) => {
       if (user && msgs.length > 0) {
-        saveConversation(user.uid, projectId, msgs).catch(() => {
-          // Silently fail; will retry on next message
-        });
+        saveConversation(user.uid, projectId, msgs).catch(() => {});
       }
     },
     [user, projectId]
@@ -242,68 +254,64 @@ export function AIAssistantClient() {
 
   const handleClearChat = useCallback(async () => {
     if (!user) return;
-    setMessages([]);
-    await clearConversation(user.uid, projectId).catch(() => {
-      // Silently fail
-    });
-  }, [user, projectId]);
+    // Clear only current mode's messages
+    setAllMessages((prev) => prev.filter((m: any) => m.mode && m.mode !== mode));
+    const remaining = allMessages.filter((m: any) => m.mode && m.mode !== mode);
+    saveConversation(user.uid, projectId, remaining).catch(() => {});
+  }, [user, projectId, mode, allMessages]);
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || sending) return;
 
     setError(null);
-    const newMessages: AIMessage[] = [...messages, { role: "user", content: text }];
-    setMessages(newMessages);
+    const userMsg = { role: "user" as const, content: text, mode };
+    const newAll = [...allMessages, userMsg];
+    setAllMessages(newAll);
     setInput("");
     setSending(true);
 
     try {
-      const result = await sendAIMessage(newMessages, projectContext, mode);
+      const result = await sendAIMessage(messages.concat(userMsg), projectContext, mode);
       if (result.usage) setAiUsage(result.usage);
-      const finalMessages = [...newMessages, { role: "assistant" as const, content: result.message }];
-      setMessages(finalMessages);
-      persistMessages(finalMessages);
+      const assistantMsg = { role: "assistant" as const, content: result.message, mode };
+      const finalAll = [...newAll, assistantMsg];
+      setAllMessages(finalAll);
+      persistMessages(finalAll);
     } catch (err: unknown) {
       const errMsg: string = err instanceof Error ? err.message : "";
 
       if (errMsg === "AI_NOT_CONFIGURED") {
-        const finalMessages: AIMessage[] = [
-          ...newMessages,
-          {
-            role: "assistant",
-            content:
-              "The AI assistant is not yet configured. To enable it, add your CLAUDE_API_KEY as an environment variable in your Vercel project settings and redeploy.\n\nIn the meantime, you can find construction guidance in the Learn section.",
-          },
-        ];
-        setMessages(finalMessages);
-        persistMessages(finalMessages);
+        const assistantMsg = {
+          role: "assistant" as const, mode,
+          content: "The AI assistant is not yet configured. To enable it, add your CLAUDE_API_KEY as an environment variable in your Vercel project settings and redeploy.\n\nIn the meantime, you can find construction guidance in the Learn section.",
+        };
+        const finalAll = [...newAll, assistantMsg];
+        setAllMessages(finalAll);
+        persistMessages(finalAll);
       } else if (errMsg.startsWith("RATE_LIMITED:")) {
         const parts = errMsg.split(":");
         const used = Number(parts[1]) || 0;
         const limit = Number(parts[2]) || 0;
         setAiUsage({ used, limit, plan: "" });
         setError(`You've used ${used} of ${limit} daily queries. Upgrade your plan for more.`);
-        // Remove the pending user message since it wasn't processed
-        setMessages(messages);
+        setAllMessages(allMessages); // revert
       } else if (errMsg === "Not authenticated") {
         setError("You must be signed in to use the AI assistant.");
-        setMessages(messages);
+        setAllMessages(allMessages); // revert
       } else {
-        const finalMessages: AIMessage[] = [
-          ...newMessages,
-          {
-            role: "assistant",
-            content: "Unable to reach the AI service. Please check your connection and try again.",
-          },
-        ];
-        setMessages(finalMessages);
-        persistMessages(finalMessages);
+        const assistantMsg = {
+          role: "assistant" as const, mode,
+          content: "Unable to reach the AI service. Please check your connection and try again.",
+        };
+        const finalAll = [...newAll, assistantMsg];
+        setAllMessages(finalAll);
+        persistMessages(finalAll);
       }
     } finally {
       setSending(false);
     }
-  }, [input, sending, messages, projectContext, mode, persistMessages]);
+  }, [input, sending, allMessages, messages, projectContext, mode, persistMessages]);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -325,19 +333,27 @@ export function AIAssistantClient() {
 
       {/* Mode selector */}
       <div className="flex gap-1.5 pb-3 mb-1 overflow-x-auto">
-        {MODES.map((m) => (
-          <button
-            key={m.key}
-            onClick={() => setMode(m.key)}
-            className={`px-3 py-1 text-[11px] rounded-full whitespace-nowrap transition-all duration-150 ${
-              mode === m.key
-                ? "bg-earth text-warm font-medium"
-                : "bg-surface border border-border text-muted hover:border-emerald-400 hover:text-emerald-700"
-            }`}
-          >
-            {m.label}
-          </button>
-        ))}
+        {MODES.map((m) => {
+          const count = allMessages.filter((msg: any) => msg.mode === m.key).length;
+          return (
+            <button
+              key={m.key}
+              onClick={() => setMode(m.key)}
+              className={`px-3 py-1 text-[11px] rounded-full whitespace-nowrap transition-all duration-150 flex items-center gap-1.5 ${
+                mode === m.key
+                  ? "bg-earth text-warm font-medium"
+                  : "bg-surface border border-border text-muted hover:border-emerald-400 hover:text-emerald-700"
+              }`}
+            >
+              {m.label}
+              {count > 0 && (
+                <span className={`text-[9px] font-data min-w-[14px] h-[14px] rounded-full flex items-center justify-center ${
+                  mode === m.key ? "bg-warm/30 text-warm" : "bg-surface-alt text-muted"
+                }`}>{count}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Conversation restored indicator */}
@@ -450,7 +466,7 @@ export function AIAssistantClient() {
       )}
 
       {/* Input */}
-      <div className="flex items-center gap-2 pt-3 border-t border-border">
+      <div className="flex items-center gap-2 pt-3 border-t border-border relative z-50">
         <input
           type="text"
           value={input}
