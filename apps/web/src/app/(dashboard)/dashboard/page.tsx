@@ -1115,20 +1115,42 @@ export default function DashboardPage() {
                         </Badge>
                       </div>
 
-                      {/* Key metric */}
-                      <div className="flex items-center gap-1.5 mb-1">
-                        {keyMetric.variant === "danger" && <AlertTriangle size={12} className="text-danger shrink-0" />}
-                        {keyMetric.variant === "warning" && <Clock size={12} className="text-warning shrink-0" />}
-                        {keyMetric.variant === "success" && <CheckCircle2 size={12} className="text-success shrink-0" />}
-                        <span className={`font-data text-[13px] font-semibold ${
-                          keyMetric.variant === "danger" ? "text-danger" :
-                          keyMetric.variant === "warning" ? "text-warning" :
-                          "text-earth"
-                        }`}>
-                          {keyMetric.value}
-                        </span>
-                        <span className="text-[11px] text-muted">{keyMetric.label}</span>
-                      </div>
+                      {/* Key metric (only show when it's not default progress — the ring already shows that) */}
+                      {keyMetric.label !== "Progress" && (
+                        <div className="flex items-center gap-1.5 mb-1">
+                          {keyMetric.variant === "danger" && <AlertTriangle size={12} className="text-danger shrink-0" />}
+                          {keyMetric.variant === "warning" && <Clock size={12} className="text-warning shrink-0" />}
+                          <span className={`font-data text-[13px] font-semibold ${
+                            keyMetric.variant === "danger" ? "text-danger" :
+                            keyMetric.variant === "warning" ? "text-warning" :
+                            "text-earth"
+                          }`}>
+                            {keyMetric.value}
+                          </span>
+                          <span className="text-[11px] text-muted">{keyMetric.label}</span>
+                        </div>
+                      )}
+
+                      {/* Budget bar */}
+                      {p.totalBudget > 0 && (
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-20 h-1.5 bg-warm rounded-full overflow-hidden shrink-0">
+                            <div
+                              className={`h-full rounded-full ${
+                                p.totalSpent / p.totalBudget > 0.95 ? "bg-danger"
+                                : p.totalSpent / p.totalBudget > 0.80 ? "bg-warning"
+                                : "bg-success"
+                              }`}
+                              style={{ width: `${Math.min(100, (p.totalSpent / p.totalBudget) * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-muted font-data">
+                            {formatCurrencyCompact(p.totalSpent, marketData.currency)}
+                            {" / "}
+                            {formatCurrencyCompact(p.totalBudget, marketData.currency)}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Next action */}
                       <span
@@ -1236,46 +1258,6 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Budget Overview */}
-          {stats.totalBudget > 0 && (
-            <div className="mb-6 lg:mb-0">
-              <SectionLabel>Budget Overview</SectionLabel>
-              <Card padding="sm">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <DollarSign size={14} className="text-clay" />
-                      <span className="text-[12px] text-muted">Spent</span>
-                    </div>
-                    <span className="text-[13px] font-data font-semibold text-earth">
-                      {formatCurrencyCompact(stats.totalInvested, primaryCurrency)}
-                    </span>
-                  </div>
-                  <div className="w-full h-2 bg-warm rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        stats.totalInvested / stats.totalBudget > 0.95
-                          ? "bg-danger"
-                          : stats.totalInvested / stats.totalBudget > 0.80
-                          ? "bg-warning"
-                          : "bg-success"
-                      }`}
-                      style={{ width: `${Math.min(100, (stats.totalInvested / stats.totalBudget) * 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-muted">
-                    <span>
-                      {Math.round((stats.totalInvested / stats.totalBudget) * 100)}% of{" "}
-                      {formatCurrencyCompact(stats.totalBudget, primaryCurrency)} budget
-                    </span>
-                    <span className="font-data font-medium text-success">
-                      {formatCurrencyCompact(stats.totalBudget - stats.totalInvested, primaryCurrency)} remaining
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
         </div>
 
         {/* -------------------------------------------------------- */}
