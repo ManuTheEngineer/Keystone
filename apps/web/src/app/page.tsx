@@ -545,13 +545,13 @@ export default function LandingPage() {
             Start free and upgrade as your projects grow.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {/* Foundation */}
+            {/* Starter */}
             <div className="bg-surface rounded-xl p-6 border border-border card-hover flex flex-col">
               <h3
                 className="text-[18px] text-earth mb-1"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                Foundation
+                Starter
               </h3>
               <p className="text-[13px] text-muted mb-4">For first-time explorers</p>
               <div className="mb-6">

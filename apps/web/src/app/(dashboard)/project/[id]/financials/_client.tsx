@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import {
@@ -35,6 +35,7 @@ import {
 } from "@keystone/market-data";
 import type { Market, LocationData } from "@keystone/market-data";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { LearnTooltip } from "@/components/ui/LearnTooltip";
 import { useTranslation } from "@/lib/hooks/use-translation";
 import { useToast } from "@/components/ui/Toast";
 
@@ -432,13 +433,13 @@ export function FinancialsClient() {
             {loanResult && (
               <div className="mt-2 pt-2 border-t border-border/20">
                 <div className="grid grid-cols-4 gap-2 mb-1.5">
-                  {[
-                    { label: "DTI ratio", value: formatPercent(loanResult.dtiRatio) },
-                    { label: "Max loan", value: `$${loanResult.maxLoanAmount.toLocaleString()}` },
-                    { label: "Monthly PITI", value: `$${loanResult.monthlyPITI.toLocaleString()}` },
-                    { label: "Status", value: loanResult.qualified ? "Qualified" : "Not qualified", color: loanResult.qualified ? "text-success" : "text-danger" },
-                  ].map((r) => (
-                    <div key={r.label} className="text-center">
+                  {([
+                    { key: "dti", label: <><LearnTooltip term="DTI" explanation="Debt-to-Income ratio — the percentage of your monthly income that goes to debt payments.">DTI</LearnTooltip> ratio</> as ReactNode, value: formatPercent(loanResult.dtiRatio) },
+                    { key: "max-loan", label: "Max loan" as ReactNode, value: `$${loanResult.maxLoanAmount.toLocaleString()}` },
+                    { key: "piti", label: "Monthly PITI" as ReactNode, value: `$${loanResult.monthlyPITI.toLocaleString()}` },
+                    { key: "status", label: "Status" as ReactNode, value: loanResult.qualified ? "Qualified" : "Not qualified", color: loanResult.qualified ? "text-success" : "text-danger" },
+                  ] as { key: string; label: ReactNode; value: string; color?: string }[]).map((r) => (
+                    <div key={r.key} className="text-center">
                       <div className={`font-data text-[12px] font-medium ${r.color || "text-earth"}`}>{r.value}</div>
                       <div className="text-[8px] text-muted uppercase tracking-wider">{r.label}</div>
                     </div>

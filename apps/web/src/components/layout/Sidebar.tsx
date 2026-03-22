@@ -60,7 +60,7 @@ function makeNav(items: { id: string; label: string; Icon: React.ComponentType<{
 
 const mainNav = makeNav([
   { id: "dashboard", label: "Dashboard", Icon: LayoutGrid },
-  { id: "portfolio", label: "Portfolio", Icon: FolderOpen },
+  { id: "portfolio", label: "Vault", Icon: FolderOpen },
   { id: "analyze", label: "Deal Analyzer", Icon: Calculator },
   { id: "new-project", label: "New project", Icon: Plus },
 ]);
@@ -151,7 +151,8 @@ export function Sidebar({
     .toUpperCase()
     .slice(0, 2);
 
-  const planLabel = userPlan.charAt(0) + userPlan.slice(1).toLowerCase() + " plan";
+  const PLAN_DISPLAY: Record<string, string> = { FOUNDATION: "Starter", BUILDER: "Builder", DEVELOPER: "Developer", ENTERPRISE: "Enterprise" };
+  const planLabel = (PLAN_DISPLAY[userPlan] ?? userPlan.charAt(0) + userPlan.slice(1).toLowerCase()) + " plan";
 
   const showLangBadge = projectMarket === "TOGO" || projectMarket === "BENIN";
 

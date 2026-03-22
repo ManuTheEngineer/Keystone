@@ -73,6 +73,13 @@ const FOUNDATION_FEATURES = [
 
 const TIER_ORDER: PlanTier[] = ["FOUNDATION", "BUILDER", "DEVELOPER", "ENTERPRISE"];
 
+const TIER_DISPLAY_NAME: Record<PlanTier, string> = {
+  FOUNDATION: "Starter",
+  BUILDER: "Builder",
+  DEVELOPER: "Developer",
+  ENTERPRISE: "Enterprise",
+};
+
 const DURATION_OPTIONS = [
   { value: 48, label: "48 hours" },
   { value: 72, label: "3 days" },
@@ -431,7 +438,7 @@ export function SettingsClient() {
       } else {
         showToast(
           result.revokedUsers > 0
-            ? `Trial code revoked. ${result.revokedUsers} user(s) downgraded to Foundation.`
+            ? `Trial code revoked. ${result.revokedUsers} user(s) downgraded to Starter.`
             : "Trial code revoked.",
           "success"
         );
@@ -712,7 +719,7 @@ export function SettingsClient() {
           </div>
           <div className="flex items-center gap-2">
             <p className="text-[13px] font-medium text-earth">
-              {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()}
+              {TIER_DISPLAY_NAME[currentPlan] ?? currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()}
             </p>
             {isAdmin && (
               <span className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-clay/10 text-clay rounded-full">
@@ -761,7 +768,7 @@ export function SettingsClient() {
           {TIER_ORDER.map((tier) => {
             const isCurrent = tier === currentPlan;
             const isFoundation = tier === "FOUNDATION";
-            const tierName = tier.charAt(0) + tier.slice(1).toLowerCase();
+            const tierName = TIER_DISPLAY_NAME[tier] ?? tier.charAt(0) + tier.slice(1).toLowerCase();
             const features = isFoundation ? FOUNDATION_FEATURES : PLAN_CONFIG[tier as Exclude<PlanTier, "FOUNDATION">].features;
             const config = isFoundation ? null : PLAN_CONFIG[tier as Exclude<PlanTier, "FOUNDATION">];
             const price = config
@@ -893,7 +900,7 @@ export function SettingsClient() {
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle size={14} className="text-warning shrink-0" />
               <p className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
-                Downgrade to {downgradeTarget.charAt(0) + downgradeTarget.slice(1).toLowerCase()}
+                Downgrade to {TIER_DISPLAY_NAME[downgradeTarget] ?? downgradeTarget.charAt(0) + downgradeTarget.slice(1).toLowerCase()}
               </p>
             </div>
 
@@ -902,7 +909,7 @@ export function SettingsClient() {
             ) : (
               <div className="space-y-1.5 text-[10px] text-earth mb-2.5">
                 <p>
-                  Current {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()} plan stays active
+                  Current {TIER_DISPLAY_NAME[currentPlan] ?? currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()} plan stays active
                   {subscriptionEndDate
                     ? <> until <span className="font-data font-semibold">{subscriptionEndDate}</span>.</>
                     : <> until the end of your billing period.</>
@@ -910,10 +917,10 @@ export function SettingsClient() {
                 </p>
                 <p>
                   {downgradeTarget === "FOUNDATION" ? (
-                    <>After that, you move to Foundation (free). No further charges.</>
+                    <>After that, you move to Starter (free). No further charges.</>
                   ) : (
                     <>
-                      New {downgradeTarget.charAt(0) + downgradeTarget.slice(1).toLowerCase()} plan begins at{" "}
+                      New {TIER_DISPLAY_NAME[downgradeTarget] ?? downgradeTarget.charAt(0) + downgradeTarget.slice(1).toLowerCase()} plan begins at{" "}
                       <span className="font-data font-semibold">
                         {formatPrice(PLAN_CONFIG[downgradeTarget as Exclude<PlanTier, "FOUNDATION">]?.monthlyPrice ?? 0)}/mo
                       </span>.
@@ -1185,7 +1192,7 @@ export function SettingsClient() {
                         return (
                           <tr key={tc.code} className="border-b border-border/50">
                             <td className="py-1.5 pr-2 font-mono tracking-wider text-earth">{tc.code}</td>
-                            <td className="py-1.5 pr-2 text-muted">{tc.tier.charAt(0) + tc.tier.slice(1).toLowerCase()}</td>
+                            <td className="py-1.5 pr-2 text-muted">{TIER_DISPLAY_NAME[tc.tier as PlanTier] ?? tc.tier.charAt(0) + tc.tier.slice(1).toLowerCase()}</td>
                             <td className="py-1.5 pr-2 text-muted">{tc.durationHours}h</td>
                             <td className="py-1.5 pr-2 text-muted">{tc.usedCount}/{tc.maxUses === 0 ? "Unl." : tc.maxUses}</td>
                             <td className="py-1.5 pr-2 text-muted">{new Date(tc.expiresAt).toLocaleDateString()}</td>

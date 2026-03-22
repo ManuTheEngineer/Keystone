@@ -133,7 +133,7 @@ export default function TermsOfServicePage() {
               6. Payment Terms
             </h2>
             <p className="mb-3">
-              Keystone offers multiple subscription plans, including a free Foundation tier. Paid plans (Builder, Developer, Enterprise) are billed monthly or annually as selected at the time of purchase.
+              Keystone offers multiple subscription plans, including a free Starter tier. Paid plans (Builder, Developer, Enterprise) are billed monthly or annually as selected at the time of purchase.
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>Subscription fees are charged at the beginning of each billing period.</li>
