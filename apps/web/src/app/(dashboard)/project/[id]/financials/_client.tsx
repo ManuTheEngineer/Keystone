@@ -101,6 +101,7 @@ export function FinancialsClient() {
   const [convertResult, setConvertResult] = useState<ReturnType<typeof convertCurrency> | null>(null);
   const [liveExchangeRate, setLiveExchangeRate] = useState<number | null>(null);
   const [rateLoading, setRateLoading] = useState(false);
+  const [rateFetchedAt, setRateFetchedAt] = useState<string | null>(null);
 
   // Phased funding state (West Africa)
   const [phaseFunding, setPhaseFunding] = useState<Record<string, number>>({});
@@ -153,7 +154,7 @@ export function FinancialsClient() {
   }, [project?.market]);
 
   // Fetch live exchange rate for West African markets
-  useEffect(() => {
+  const fetchLiveRate = useCallback(() => {
     if (!project || project.market === "USA") return;
     setRateLoading(true);
     fetch("https://open.er-api.com/v6/latest/USD")
@@ -162,12 +163,17 @@ export function FinancialsClient() {
         if (data?.rates) {
           const targetCurrency = project.market === "GHANA" ? "GHS" : "XOF";
           const rate = data.rates[targetCurrency];
-          if (rate) setLiveExchangeRate(rate);
+          if (rate) {
+            setLiveExchangeRate(rate);
+            setRateFetchedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+          }
         }
       })
       .catch(() => {})
       .finally(() => setRateLoading(false));
   }, [project?.market]);
+
+  useEffect(() => { fetchLiveRate(); }, [fetchLiveRate]);
 
   // ---------------------------------------------------------------------------
   // Guard
@@ -234,7 +240,7 @@ export function FinancialsClient() {
   }
 
   function handleCurrencyConvert() {
-    const fallbackRate = market === "GHANA" ? 10.96 : 567.76;
+    const fallbackRate = market === "GHANA" ? 10.95 : 567.73;
     const rate = liveExchangeRate ?? fallbackRate;
     const toCurr = market === "GHANA" ? "GHS" : "XOF";
     const input: CurrencyConversionInput = {
@@ -842,9 +848,22 @@ export function FinancialsClient() {
                     {convertResult.convertedAmount.toLocaleString()}{" "}
                     {convertResult.toCurrency}
                   </div>
-                  <div className="text-[10px] text-muted">
-                    Rate: 1 USD = {convertResult.exchangeRate}{" "}
-                    {convertResult.toCurrency}
+                  <div className="text-[10px] text-muted flex items-center justify-center gap-1.5">
+                    <span>Rate: 1 USD = {convertResult.exchangeRate.toFixed(2)} {convertResult.toCurrency}</span>
+                    {liveExchangeRate ? (
+                      <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[8px] font-medium">
+                        LIVE{rateFetchedAt ? ` ${rateFetchedAt}` : ""}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-warning/10 text-warning text-[8px] font-medium">
+                        APPROX
+                      </span>
+                    )}
+                    <button onClick={fetchLiveRate} disabled={rateLoading} className="text-clay hover:text-earth transition-colors" title="Refresh rate">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={rateLoading ? "animate-spin" : ""}>
+                        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
                 <FormulaToggle formula={convertResult.formula} />
