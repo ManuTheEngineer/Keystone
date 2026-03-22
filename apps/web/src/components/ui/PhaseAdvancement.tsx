@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card } from "./Card";
-import { SectionLabel } from "./SectionLabel";
 import {
   advanceProjectPhase,
   subscribeToMilestoneProgress,
@@ -16,7 +14,7 @@ import {
   PHASE_NAMES,
 } from "@keystone/market-data";
 import type { Market } from "@keystone/market-data";
-import { ChevronRight, Check, AlertTriangle, ShieldCheck } from "lucide-react";
+import { ChevronRight, Check } from "lucide-react";
 
 interface PhaseAdvancementProps {
   project: ProjectData;
@@ -24,6 +22,42 @@ interface PhaseAdvancementProps {
   tasks: TaskData[];
   onAdvance: () => void;
 }
+
+// Plain-language descriptions of what each phase transition means
+const TRANSITION_CONTEXT: Record<string, { why: string; what: string }> = {
+  FINANCE: {
+    why: "Before you look at money, you need to know exactly what you want to build and where.",
+    what: "Next you will explore financing options, set a real budget, and understand what you can afford.",
+  },
+  LAND: {
+    why: "Securing financing first means you know your budget when evaluating land.",
+    what: "Next you will search for land, verify zoning, and confirm the site can support your build.",
+  },
+  DESIGN: {
+    why: "You need land secured before an architect can design for the specific site conditions.",
+    what: "Next you will work with an architect, finalize floor plans, and select materials.",
+  },
+  APPROVE: {
+    why: "Complete designs are required before submitting for permits and approvals.",
+    what: "Next you will submit plans to authorities and obtain building permits.",
+  },
+  ASSEMBLE: {
+    why: "Permits in hand means you are legally cleared to start hiring and contracting.",
+    what: "Next you will hire contractors, negotiate contracts, and set up the payment schedule.",
+  },
+  BUILD: {
+    why: "Your team and contracts need to be locked in before breaking ground.",
+    what: "Next is actual construction — foundation, framing, mechanical systems, and finishes.",
+  },
+  VERIFY: {
+    why: "Construction must be substantially complete before final inspections.",
+    what: "Next you will complete punch list items, pass final inspections, and get your certificate of occupancy.",
+  },
+  OPERATE: {
+    why: "All inspections passed and the home is officially ready for use.",
+    what: "Your project is complete. Move in, list for rent, or prepare for sale.",
+  },
+};
 
 export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdvancementProps) {
   const market = project.market as Market;
@@ -48,6 +82,7 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
   const isLastPhase = currentPhaseIndex >= PHASE_ORDER.length - 1;
   const nextPhaseKey = !isLastPhase ? PHASE_ORDER[currentPhaseIndex + 1] : null;
   const nextPhaseName = nextPhaseKey ? PHASE_NAMES[nextPhaseKey] : null;
+  const context = nextPhaseKey ? TRANSITION_CONTEXT[nextPhaseKey] : null;
 
   const milestones = phaseDef.milestones;
   const phaseTasks = tasks.filter((t) => t.phase === currentPhaseIndex || t.phase == null);
@@ -55,7 +90,6 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
   // Derive milestone completion from task status (primary) + Firebase (fallback)
   const nonPendingTasks = phaseTasks.filter((t) => t.status !== "pending-review");
   const milestoneCompleted = milestones.map((_, i) => {
-    // First check task-based completion (source of truth)
     const hasIdx = nonPendingTasks.some((t) => t.milestoneIndex != null);
     let milestoneTasks: TaskData[];
     if (hasIdx) {
@@ -66,7 +100,6 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
       milestoneTasks = sorted.slice(i * perMs, (i + 1) * perMs);
     }
     const tasksDone = milestoneTasks.length > 0 && milestoneTasks.every((t) => t.done || t.status === "cancelled");
-    // Use task status OR Firebase progress (whichever says complete)
     return tasksDone || firebaseProgress[i] === true;
   });
 
@@ -75,6 +108,7 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
   const incompleteTasks = phaseTasks.filter((t) => !t.done && t.status !== "cancelled");
   const allTasksDone = incompleteTasks.length === 0;
   const canAdvance = allMilestonesChecked && allTasksDone;
+  const progressPct = milestones.length > 0 ? Math.round((checkedCount / milestones.length) * 100) : 0;
 
   // Auto-sync Firebase
   useEffect(() => {
@@ -99,86 +133,80 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
     }
   }
 
-  // Don't render if last phase and everything complete
+  // Last phase complete
   if (isLastPhase && allMilestonesChecked && allTasksDone) {
     return (
-      <div className="mt-4 mb-5">
-        <Card padding="sm" className="border-l-[3px] border-l-success bg-success/3">
-          <div className="flex items-center gap-2 text-[12px] text-success font-medium py-1">
-            <Check size={16} />
-            All phases complete
-          </div>
-        </Card>
+      <div className="mt-5 p-4 rounded-xl bg-success/5 border border-success/20">
+        <div className="flex items-center gap-2 text-[13px] text-success font-medium">
+          <Check size={16} />
+          Project complete
+        </div>
       </div>
     );
   }
 
-  const [expanded, setExpanded] = useState(false);
-
   return (
-    <div className="mt-4 mb-5">
-      {canAdvance ? (
+    <div className="mt-5">
+      {/* Section label */}
+      <p className="text-[10px] font-medium text-earth/40 tracking-wide mb-2">
+        {canAdvance ? "Ready to move on" : `Before you start ${nextPhaseName?.toLowerCase() ?? "the next phase"}`}
+      </p>
+
+      {/* Milestone checklist — always visible */}
+      <div className="space-y-0.5 mb-3">
+        {milestones.map((ms, i) => {
+          const done = milestoneCompleted[i];
+          return (
+            <div key={i} className="flex items-center gap-2 py-[3px]">
+              <div className={`w-3.5 h-3.5 rounded-[4px] border-[1.5px] shrink-0 flex items-center justify-center transition-colors ${
+                done ? "bg-success/15 border-success/50" : "border-sand"
+              }`}>
+                {done && <Check size={9} className="text-success" />}
+              </div>
+              <span className={`text-[11px] ${done ? "text-muted" : "text-earth"}`}>{ms.name}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Progress + context */}
+      {!canAdvance && (
+        <div className="flex items-center gap-3 mb-3">
+          <div className="flex-1 h-[3px] bg-sand/30 rounded-full overflow-hidden">
+            <div className="h-full bg-success/70 rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
+          </div>
+          <span className="text-[10px] font-data text-muted/50 shrink-0">{progressPct}%</span>
+        </div>
+      )}
+
+      {/* Why this matters — educational context for novices */}
+      {!canAdvance && context && (
+        <p className="text-[10px] text-muted/60 leading-relaxed mb-3">
+          {context.why}
+        </p>
+      )}
+
+      {/* Advance button */}
+      {canAdvance && (
         <button
           onClick={handleAdvance}
           disabled={advancing}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 text-[13px] font-medium rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 text-[13px] font-medium rounded-xl bg-earth text-warm hover:bg-earth/90 transition-colors"
         >
-          {advancing ? (
-            "Advancing..."
-          ) : (
+          {advancing ? "Moving to next phase..." : (
             <>
-              <ShieldCheck size={16} />
-              Advance to {nextPhaseName}
+              Move to {nextPhaseName}
               <ChevronRight size={14} />
             </>
           )}
         </button>
-      ) : (
-        <div className="rounded-xl border border-border/40 overflow-hidden">
-          {/* Gate header — clickable to expand */}
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-warm/5 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <ShieldCheck size={14} className="text-clay/50" />
-              <span className="text-[12px] font-medium text-earth">Advance to {nextPhaseName}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-data text-muted">
-                {checkedCount}/{milestones.length}
-              </span>
-              <div className="w-12 h-1 bg-sand/30 rounded-full overflow-hidden">
-                <div className="h-full bg-success rounded-full transition-all" style={{ width: `${milestones.length > 0 ? (checkedCount / milestones.length) * 100 : 0}%` }} />
-              </div>
-              <ChevronRight size={12} className={`text-muted/40 transition-transform ${expanded ? "rotate-90" : ""}`} />
-            </div>
-          </button>
+      )}
 
-          {/* Expanded — milestone checklist */}
-          {expanded && (
-            <div className="border-t border-border/20 px-4 py-2">
-              {milestones.map((ms, i) => {
-                const done = milestoneCompleted[i];
-                return (
-                  <div key={i} className="flex items-center gap-2 py-1.5">
-                    <div className={`w-3 h-3 rounded-[3px] border-[1.5px] shrink-0 flex items-center justify-center ${
-                      done ? "bg-success/20 border-success/40" : "border-sand"
-                    }`}>
-                      {done && <Check size={8} className="text-success" />}
-                    </div>
-                    <span className={`text-[11px] flex-1 ${done ? "text-muted line-through" : "text-earth"}`}>{ms.name}</span>
-                  </div>
-                );
-              })}
-              {incompleteTasks.length > 0 && (
-                <p className="text-[10px] text-muted/50 pt-1 mt-1 border-t border-border/10">
-                  {incompleteTasks.length} task{incompleteTasks.length !== 1 ? "s" : ""} remaining
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+      {/* What comes next — shown when ready */}
+      {canAdvance && context && (
+        <p className="text-[10px] text-muted/50 mt-2 leading-relaxed">
+          {context.what}
+        </p>
       )}
     </div>
   );
