@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { Plus, Filter, ListChecks, AlertTriangle } from "lucide-react";
+import { Plus, Filter, ListChecks } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
@@ -162,57 +162,48 @@ export function PunchListClient() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3 mb-5">
-        <Card padding="sm">
-          <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">Total</p>
-          <p className="text-[16px] font-semibold text-earth font-data">{items.length}</p>
-        </Card>
-        <Card padding="sm">
-          <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">Open</p>
-          <p className="text-[16px] font-semibold text-danger font-data">{openCount}</p>
-        </Card>
-        <Card padding="sm">
-          <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">In progress</p>
-          <p className="text-[16px] font-semibold text-warning font-data">{inProgressCount}</p>
-        </Card>
-        <Card padding="sm">
-          <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">Resolved</p>
-          <p className="text-[16px] font-semibold text-success font-data">{resolvedCount}</p>
-        </Card>
+      <div className="grid grid-cols-4 gap-2 mb-4">
+        <div className="px-2.5 py-1.5 rounded-[var(--radius)] border border-border bg-surface">
+          <p className="text-[9px] text-muted uppercase tracking-wide">Total</p>
+          <p className="text-[13px] font-semibold text-earth font-data">{items.length}</p>
+        </div>
+        <div className="px-2.5 py-1.5 rounded-[var(--radius)] border border-border bg-surface">
+          <p className="text-[9px] text-muted uppercase tracking-wide">Open</p>
+          <p className="text-[13px] font-semibold text-danger font-data">{openCount}</p>
+        </div>
+        <div className="px-2.5 py-1.5 rounded-[var(--radius)] border border-border bg-surface">
+          <p className="text-[9px] text-muted uppercase tracking-wide">In progress</p>
+          <p className="text-[13px] font-semibold text-warning font-data">{inProgressCount}</p>
+        </div>
+        <div className="px-2.5 py-1.5 rounded-[var(--radius)] border border-border bg-surface">
+          <p className="text-[9px] text-muted uppercase tracking-wide">Resolved</p>
+          <p className="text-[13px] font-semibold text-success font-data">{resolvedCount}</p>
+        </div>
       </div>
 
-      {/* Controls row */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Filter size={14} className="text-muted" />
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="text-[11px] px-2 py-1.5 border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500"
-          >
-            <option value="all">All statuses</option>
-            <option value="open">Open</option>
-            <option value="in-progress">In progress</option>
-            <option value="resolved">Resolved</option>
-          </select>
-          <select
-            value={filterSeverity}
-            onChange={(e) => setFilterSeverity(e.target.value)}
-            className="text-[11px] px-2 py-1.5 border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500"
-          >
-            <option value="all">All severities</option>
-            <option value="critical">Critical</option>
-            <option value="major">Major</option>
-            <option value="minor">Minor</option>
-          </select>
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors"
+      {/* Filters */}
+      <div className="flex items-center gap-2 mb-3">
+        <Filter size={12} className="text-muted" />
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="text-[10px] px-2 py-1 border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay"
         >
-          <Plus size={14} />
-          Add item
-        </button>
+          <option value="all">All statuses</option>
+          <option value="open">Open</option>
+          <option value="in-progress">In progress</option>
+          <option value="resolved">Resolved</option>
+        </select>
+        <select
+          value={filterSeverity}
+          onChange={(e) => setFilterSeverity(e.target.value)}
+          className="text-[10px] px-2 py-1 border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay"
+        >
+          <option value="all">All severities</option>
+          <option value="critical">Critical</option>
+          <option value="major">Major</option>
+          <option value="minor">Minor</option>
+        </select>
       </div>
 
       {/* Add item form */}
@@ -342,79 +333,42 @@ export function PunchListClient() {
           </Card>
         )
       ) : (
-        <div className="space-y-2 animate-stagger">
+        <div className="border border-border rounded-[var(--radius)] divide-y divide-border">
           {filteredItems.map((item) => (
-            <Card key={item.id} padding="sm">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge variant={SEVERITY_BADGE[item.severity]}><span className={item.severity === "critical" ? "animate-gentle-pulse" : ""}>{item.severity}</span></Badge>
-                    <Badge variant={STATUS_BADGE[item.status]}>{item.status}</Badge>
-                    <span className="text-[10px] text-muted font-data">{item.trade}</span>
-                  </div>
-                  <p className="text-[12px] text-earth leading-relaxed">{item.description}</p>
-                  {item.notes && (
-                    <p className="text-[10px] text-muted mt-1">{item.notes}</p>
-                  )}
+            <div key={item.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-warm/20 transition-colors">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Badge variant={SEVERITY_BADGE[item.severity]}><span className={item.severity === "critical" ? "animate-gentle-pulse" : ""}>{item.severity}</span></Badge>
+                <Badge variant={STATUS_BADGE[item.status]}>{item.status}</Badge>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] text-earth truncate">{item.description}</p>
+                <div className="flex items-center gap-2 text-[9px] text-muted">
+                  <span className="font-data">{item.trade}</span>
+                  {item.notes && <span className="truncate">{item.notes}</span>}
                   {item.createdAt && (
-                    <p className="text-[10px] text-muted/50 mt-1 font-data">
-                      Added{" "}
-                      {new Date(item.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                      {item.resolvedAt &&
-                        ` -- Resolved ${new Date(item.resolvedAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}`}
-                    </p>
+                    <span className="font-data shrink-0">
+                      {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {item.resolvedAt && ` — ${new Date(item.resolvedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                    </span>
                   )}
-                </div>
-                <div className="shrink-0">
-                  <select
-                    value={item.status}
-                    onChange={(e) =>
-                      handleStatusChange(
-                        item,
-                        e.target.value as "open" | "in-progress" | "resolved"
-                      )
-                    }
-                    className="text-[10px] px-2 py-1 border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 transition-all"
-                  >
-                    <option value="open">Open</option>
-                    <option value="in-progress">In progress</option>
-                    <option value="resolved">Resolved</option>
-                  </select>
                 </div>
               </div>
-            </Card>
+              <select
+                value={item.status}
+                onChange={(e) =>
+                  handleStatusChange(item, e.target.value as "open" | "in-progress" | "resolved")
+                }
+                className="shrink-0 text-[9px] px-1.5 py-0.5 border border-border rounded bg-surface text-earth focus:outline-none focus:border-clay"
+              >
+                <option value="open">Open</option>
+                <option value="in-progress">In progress</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Educational footer */}
-      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-[var(--radius)] p-4 mt-5">
-        <div className="flex items-start gap-2.5">
-          <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-          <div>
-            <p className="text-[12px] font-medium mb-1">What is a punch list?</p>
-            <p className="text-[11px] leading-relaxed opacity-80">
-              A punch list (sometimes called a snag list) is a document that tracks deficiencies,
-              incomplete work, or items that need correction before a construction project can be
-              considered complete. Items are typically identified during walk-throughs and
-              inspections. Each item should be assigned to the responsible trade so
-              the right contractor can address it. Critical items must be resolved before
-              proceeding to the next phase or obtaining occupancy approval. Tracking severity
-              helps prioritize which items to address first -- critical safety or structural
-              issues always take precedence over cosmetic concerns.
-            </p>
-            <p className="text-[10px] mt-2 opacity-60">
-              This is educational guidance. Consult a licensed professional for your specific situation.
-            </p>
-          </div>
-        </div>
-      </div>
     </>
   );
 }

@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { ClipboardCheck, ChevronDown, ChevronRight, Shield } from "lucide-react";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { ChevronDown, ChevronRight } from "lucide-react";
+// EmptyState removed — using subtle inline text instead
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTopbar } from "../../../layout";
@@ -20,7 +20,7 @@ import { useTranslation } from "@/lib/hooks/use-translation";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { AlertBanner } from "@/components/ui/AlertBanner";
+// AlertBanner removed — education blocks removed
 import { InspectionChecklist } from "@/components/ui/InspectionChecklist";
 import {
   getInspectionsForPhase,
@@ -193,23 +193,6 @@ export function InspectionsClient() {
         projectId={projectId}
       />
 
-      {/* What to expect tip card */}
-      {market === "USA" ? (
-        <Card padding="md" className="mb-4 bg-warm/30 border-sand/30">
-          <p className="text-[12px] font-semibold text-earth mb-2">What to expect during an inspection</p>
-          <p className="text-[11px] text-muted leading-relaxed">
-            The building inspector will visit your site to verify that work meets code requirements. Schedule inspections before covering any work (do not drywall before the rough-in inspection). The inspector will either pass the inspection, or note corrections needed. Common reasons for failure: missing fire blocking, incorrect nail spacing, improper electrical connections. Fix corrections and schedule a re-inspection.
-          </p>
-        </Card>
-      ) : (
-        <Card padding="md" className="mb-4 bg-warm/30 border-sand/30">
-          <p className="text-[12px] font-semibold text-earth mb-2">Why quality checkpoints matter</p>
-          <p className="text-[11px] text-muted leading-relaxed">
-            Formal inspections are less common in West Africa, but quality checkpoints are essential. Before every concrete pour, have your architect or a trusted third party inspect the rebar placement, spacing, and concrete mix. Once concrete is poured, you cannot fix problems without costly demolition.
-          </p>
-        </Card>
-      )}
-
       {/* Summary stat bar */}
       <div className="flex items-center gap-4 mb-4 px-3 py-2.5 rounded-[var(--radius)] bg-warm border border-sand/30">
         <div className="flex items-center gap-1.5 text-[11px]">
@@ -230,28 +213,19 @@ export function InspectionsClient() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-5 animate-stagger">
-        <Card padding="sm">
-          <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">This phase</p>
-          <p className="text-[16px] font-semibold text-earth font-data">
-            {currentPhaseInspections.length}
-          </p>
-          <p className="text-[10px] text-muted">inspections</p>
-        </Card>
-        <Card padding="sm">
-          <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">Items done</p>
-          <p className="text-[16px] font-semibold text-earth font-data">
-            {completedCurrentItems}/{totalCurrentItems}
-          </p>
-          <p className="text-[10px] text-muted">checklist items</p>
-        </Card>
-        <Card padding="sm">
-          <p className="text-[10px] text-muted uppercase tracking-wide mb-0.5">Passed</p>
-          <p className="text-[16px] font-semibold text-success font-data">
-            {passedCount}
-          </p>
-          <p className="text-[10px] text-muted">of {currentPhaseInspections.length}</p>
-        </Card>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="px-2.5 py-1.5 rounded-[var(--radius)] border border-border bg-surface">
+          <p className="text-[9px] text-muted uppercase tracking-wide">This phase</p>
+          <p className="text-[13px] font-semibold text-earth font-data">{currentPhaseInspections.length}</p>
+        </div>
+        <div className="px-2.5 py-1.5 rounded-[var(--radius)] border border-border bg-surface">
+          <p className="text-[9px] text-muted uppercase tracking-wide">Items done</p>
+          <p className="text-[13px] font-semibold text-earth font-data">{completedCurrentItems}/{totalCurrentItems}</p>
+        </div>
+        <div className="px-2.5 py-1.5 rounded-[var(--radius)] border border-border bg-surface">
+          <p className="text-[9px] text-muted uppercase tracking-wide">Passed</p>
+          <p className="text-[13px] font-semibold text-success font-data">{passedCount}/{currentPhaseInspections.length}</p>
+        </div>
       </div>
 
       {/* Current phase inspections — only show if there are inspections */}
@@ -270,11 +244,8 @@ export function InspectionsClient() {
         </>
       )}
 
-      {/* No inspections for this phase — show a brief note, not a big empty state */}
-      {currentPhaseInspections.length === 0 && upcomingPhases.length > 0 && (
-        <div className="mb-5 px-3 py-2.5 rounded-[var(--radius)] bg-warm/20 border border-sand/30 text-[11px] text-muted">
-          No inspections required for the {PHASE_NAMES[currentPhaseKey]} phase. Inspections start in the {upcomingPhases[0]?.phase ? PHASE_NAMES[upcomingPhases[0].phase] : "next"} phase.
-        </div>
+      {currentPhaseInspections.length === 0 && (
+        <p className="text-[11px] text-muted mb-4">No inspections for this phase.</p>
       )}
 
       {/* Completed phases */}
@@ -393,27 +364,6 @@ export function InspectionsClient() {
         </>
       )}
 
-      {/* Educational footer */}
-      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-[var(--radius)] p-4 mt-2">
-        <div className="flex items-start gap-2.5">
-          <Shield size={16} className="shrink-0 mt-0.5" />
-          <div>
-            <p className="text-[12px] font-medium mb-1">Why inspections matter</p>
-            <p className="text-[11px] leading-relaxed opacity-80">
-              Inspections verify that construction work meets building codes and safety standards.
-              In the USA, formal inspections by licensed inspectors are required before proceeding
-              to the next construction phase. In West African markets like Togo, many inspections
-              are informal -- conducted by the owner or a hired professional -- but they are equally
-              critical for ensuring structural integrity and long-term durability.
-              Skipping inspections can lead to costly rework, safety hazards, or failed final
-              inspections that delay occupancy.
-            </p>
-            <p className="text-[10px] mt-2 opacity-60">
-              This is educational guidance. Consult a licensed professional for your specific situation.
-            </p>
-          </div>
-        </div>
-      </div>
     </>
   );
 }

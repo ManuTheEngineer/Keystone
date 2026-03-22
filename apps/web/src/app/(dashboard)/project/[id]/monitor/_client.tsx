@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import {
@@ -29,14 +29,14 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { useTranslation } from "@/lib/hooks/use-translation";
 import { Card } from "@/components/ui/Card";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { Badge } from "@/components/ui/Badge";
+// Badge import removed — not used on this page
 import {
   getMarketData,
   getPhaseDefinition,
   PHASE_ORDER,
   PHASE_NAMES,
 } from "@keystone/market-data";
-import type { Market, ProjectPhase, MilestoneDefinition } from "@keystone/market-data";
+import type { Market, MilestoneDefinition } from "@keystone/market-data";
 import { usePWA } from "@/lib/hooks/use-pwa";
 import { openPresentation, type PresentationData } from "@/lib/services/presentation-service";
 import {
@@ -55,8 +55,6 @@ import {
   Send,
   Wifi,
   WifiOff,
-  ChevronDown,
-  ChevronUp,
   Calendar,
   Users,
   Image,
@@ -261,10 +259,6 @@ function MilestonePaymentTracker({ milestones, photos, totalBudget, currency }: 
     <Card padding="md">
       <SectionLabel>Milestone payment tracker</SectionLabel>
 
-      <p className="text-[11px] text-muted leading-relaxed mb-3">
-        Milestone-based payments protect both you and your contractors. Instead of paying a lump sum upfront, you release funds as specific milestones are completed and verified with photos. This ensures work is done before money changes hands. A typical draw schedule releases 10% at foundation, 20% at framing, 15% at rough-in, and so on.
-      </p>
-
       {paymentMilestones.length === 0 ? (
         <p className="text-[11px] text-muted py-4 text-center">No payment milestones defined for this phase</p>
       ) : (
@@ -362,13 +356,13 @@ function WeeklySummary({ logs, photos, budgetItems, project }: WeeklySummaryProp
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5">
         {summaryItems.map((item, i) => (
-          <div key={i} className="flex items-center gap-2 bg-surface rounded-[var(--radius)] p-2.5 border border-border">
-            <div className="text-clay/60">{item.icon}</div>
-            <div>
-              <p className="text-[13px] font-data font-semibold text-earth">{item.value}</p>
-              <p className="text-[9px] text-muted">{item.label}</p>
+          <div key={i} className="flex items-center gap-1.5 bg-surface rounded-[var(--radius)] px-2 py-1.5 border border-border">
+            <div className="text-clay/50 shrink-0">{item.icon}</div>
+            <div className="min-w-0">
+              <p className="text-[12px] font-data font-semibold text-earth truncate">{item.value}</p>
+              <p className="text-[8px] text-muted truncate">{item.label}</p>
             </div>
           </div>
         ))}
@@ -430,19 +424,17 @@ function ActivityLog({ logs, photos }: ActivityLogProps) {
       {recent.length === 0 ? (
         <p className="text-[11px] text-muted text-center py-4">No activity recorded yet</p>
       ) : (
-        <div className="max-h-[320px] overflow-y-auto space-y-0 animate-stagger">
+        <div className="max-h-[280px] overflow-y-auto">
           {recent.map((entry, i) => (
             <div
               key={i}
-              className={`flex items-start gap-2.5 py-2 px-1 ${
+              className={`flex items-center gap-2 py-1 px-1 ${
                 i < recent.length - 1 ? "border-b border-border" : ""
               }`}
             >
-              <div className="mt-0.5 shrink-0">{typeIcon(entry.type)}</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] text-foreground leading-relaxed">{entry.description}</p>
-                <p className="text-[9px] text-muted mt-0.5">{entry.timestamp}</p>
-              </div>
+              <div className="shrink-0">{typeIcon(entry.type)}</div>
+              <p className="flex-1 min-w-0 text-[10px] text-foreground truncate">{entry.description}</p>
+              <span className="text-[8px] text-muted font-data shrink-0">{entry.timestamp}</span>
             </div>
           ))}
         </div>
@@ -598,10 +590,16 @@ function MaterialTracker({ materials, projectId, userId }: MaterialTrackerProps)
       {/* Table */}
       {/* TODO: Replace inline empty state below with shared <EmptyState> component for consistency */}
       {materials.length === 0 ? (
-        <div className="flex flex-col items-center py-6 text-muted">
-          <Package size={20} className="mb-1.5 opacity-40" />
-          <p className="text-[11px]">No materials tracked yet</p>
-          <p className="text-[9px] mt-0.5">Track materials to prevent theft and overcharging</p>
+        <div className="py-3 px-2">
+          <p className="text-[10px] text-muted mb-2">No materials tracked yet. Add materials to track:</p>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9px] text-muted/70">
+            <span>Name and supplier</span>
+            <span>Quantity ordered</span>
+            <span>Quantity delivered</span>
+            <span>Unit price</span>
+            <span>Delivery status</span>
+            <span>Discrepancy alerts</span>
+          </div>
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -802,21 +800,6 @@ export function MonitorClient() {
         <MaterialTracker materials={materials} projectId={projectId} userId={user?.uid ?? ""} />
       </div>
 
-      {/* Educational note */}
-      <div className="p-4 rounded-[var(--radius)] bg-emerald-50 border border-emerald-200 text-[12px] text-emerald-800 leading-relaxed">
-        <p className="font-semibold mb-1">About the remote monitoring panel</p>
-        <p>
-          This panel is designed for diaspora builders managing construction from overseas.
-          Photo evidence with timestamps and GPS coordinates is the primary trust mechanism
-          for verifying contractor progress. Milestone payments should only be released after
-          photo verification confirms the work is complete. Track materials to ensure
-          deliveries match orders and prevent overcharging.
-        </p>
-        <p className="text-[10px] text-emerald-600/70 italic mt-2">
-          This is a monitoring tool. For structural, electrical, or legal decisions, consult
-          a licensed professional in your project&apos;s jurisdiction.
-        </p>
-      </div>
     </div>
   );
 }
