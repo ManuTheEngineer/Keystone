@@ -645,7 +645,7 @@ export function BudgetClient() {
             ))}
           </div>
           <div>
-            <p className="text-[8px] text-warm/50 uppercase tracking-wider">Contingency</p>
+            <p className="text-[8px] text-warm/50 uppercase tracking-wider">Contingency (budget line item)</p>
             <p className="font-data text-sm text-warm font-medium">
               {(() => {
                 const c = items.find(i => i.category.toLowerCase().includes("contingency"));

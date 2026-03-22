@@ -82,10 +82,10 @@ const projectNav = makeNav([
 ]);
 
 const projectNavGroups = [
-  { label: "Planning", items: ["overview", "budget", "schedule", "financials"] },
-  { label: "Execution", items: ["team", "documents", "photos", "daily-log"] },
-  { label: "Quality", items: ["inspections", "punch-list", "monitor"] },
-  { label: "Tools", items: ["ai-assistant", "vault"] },
+  { label: "Planning", i18nKey: "nav.group.planning", items: ["overview", "budget", "schedule", "financials"] },
+  { label: "Execution", i18nKey: "nav.group.execution", items: ["team", "documents", "photos", "daily-log"] },
+  { label: "Quality", i18nKey: "nav.group.quality", items: ["inspections", "punch-list", "monitor"] },
+  { label: "Tools", i18nKey: "nav.group.tools", items: ["ai-assistant", "vault"] },
 ];
 
 const projectNavMap = new Map(projectNav.map((item) => [item.id, item]));
@@ -259,7 +259,7 @@ export function Sidebar({
         <nav className="py-3 shrink-0">
           {!collapsed && (
             <p className="pl-4 pr-3 mb-1.5 text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium">
-              Main
+              {t("nav.group.main", locale ?? "en")}
             </p>
           )}
           {mainNav.map(renderNavItem)}
@@ -293,7 +293,7 @@ export function Sidebar({
                       })}
                       className="w-full pl-4 pr-3 mt-3 mb-1 flex items-center justify-between text-[9px] uppercase tracking-[2px] text-[#D4A574]/30 font-medium hover:text-[#D4A574]/50 transition-colors"
                     >
-                      {group.label}
+                      {group.i18nKey ? t(group.i18nKey, locale ?? "en") : group.label}
                       <ChevronDown
                         size={12}
                         className={`transition-transform duration-200 ${isGroupOpen ? "" : "-rotate-90"}`}

@@ -439,7 +439,7 @@ export function VaultClient() {
 
   return (
     <div className="animate-fade-in">
-      {/* Portfolio header */}
+      {/* Vault header */}
       <div className="mb-6">
         <div className="flex items-start justify-between">
           <div>
@@ -447,7 +447,7 @@ export function VaultClient() {
               className="text-[26px] text-earth mb-1"
               style={{ fontFamily: "var(--font-heading)" }}
             >
-              Project Portfolio
+              Vault
             </h1>
             <div className="flex items-center gap-4 text-[12px] text-muted">
               <span>
@@ -493,7 +493,7 @@ export function VaultClient() {
           </div>
         </div>
 
-        {/* Budget health bar for portfolio — only when all projects share a currency */}
+        {/* Budget health bar for vault — only when all projects share a currency */}
         {portfolioStats.totalBudget > 0 && portfolioStats.singleCurrency && (
           <div className="mt-3">
             <BudgetHealthBar spent={portfolioStats.totalSpent} budget={portfolioStats.totalBudget} />
@@ -594,7 +594,7 @@ export function VaultClient() {
                 className="text-[20px] text-earth mb-2"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                Your portfolio is empty
+                Your vault is empty
               </h2>
               <p className="text-[13px] text-muted mb-6 max-w-sm leading-relaxed">
                 Start with the Deal Analyzer to evaluate your first opportunity, or create a new project directly.

@@ -637,9 +637,9 @@ export function OverviewClient() {
           { label: "Progress", value: `${computedProgress}%`, sub: `${completedTasks.length}/${tasks.length} tasks`, href: undefined as string | undefined },
           { label: "Budget", value: fmtCompact(project.totalBudget), sub: `${budgetUtilization}% spent`, href: `/project/${projectId}/budget` },
           { label: "Spent", value: fmtCompact(project.totalSpent), sub: fmtCompact(project.totalBudget - project.totalSpent) + " left", href: `/project/${projectId}/budget` },
-          { label: "Timeline", value: `Wk ${project.currentWeek}`, sub: `of ${project.totalWeeks}`, href: `/project/${projectId}/schedule` },
+          { label: "Timeline", value: `Wk ${project.currentWeek}`, sub: `of est. ${project.totalWeeks} wks`, href: `/project/${projectId}/schedule` },
           { label: "Team", value: String(contacts.length), sub: "contacts", href: `/project/${projectId}/team` },
-          { label: "Open", value: String(openPunch + activeTasks.length), sub: "items", href: `/project/${projectId}/punch-list` },
+          { label: "Tasks left", value: String(activeTasks.length), sub: "incomplete", href: undefined as string | undefined },
         ].map((kpi) => {
           const inner = (
             <>

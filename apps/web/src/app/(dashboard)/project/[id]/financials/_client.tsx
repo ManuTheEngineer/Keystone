@@ -340,7 +340,7 @@ export function FinancialsClient() {
           { label: "Budget", value: fmtCompact(project.totalBudget) },
           { label: "Spent", value: fmtCompact(project.totalSpent) },
           { label: "Remaining", value: fmtCompact(remaining), warn: remaining < 0 },
-          { label: "Contingency", value: fmtCompact(contingencyResult.contingencyAmount), sub: formatPercent(contingencyResult.adjustedPct) },
+          { label: "Safety cushion (adjusted)", value: fmtCompact(contingencyResult.contingencyAmount), sub: formatPercent(contingencyResult.adjustedPct) },
         ].map((kpi) => (
           <div key={kpi.label} className="flex-1 bg-surface px-3 py-2 text-center">
             <p className={`text-[14px] font-data font-bold leading-tight ${kpi.warn ? "text-danger" : "text-earth"}`}>{kpi.value}</p>

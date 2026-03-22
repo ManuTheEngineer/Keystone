@@ -49,6 +49,10 @@ export function formatCurrency(amount: number, config: CurrencyConfig): string {
 }
 
 export function formatCurrencyCompact(amount: number, config: CurrencyConfig): string {
+  if (amount === 0) {
+    return config.position === "prefix" ? `${config.symbol}0` : `0 ${config.symbol}`;
+  }
+
   const absAmount = Math.abs(amount);
   const sign = amount < 0 ? "-" : "";
 

@@ -15,7 +15,7 @@ import { useToast } from "@/components/ui/Toast";
 import { signOut, resendVerificationEmail } from "@/lib/services/auth-service";
 import { subscribeToUserProjects, subscribeToPunchListItems, subscribeToTasks, subscribeToDailyLogs, type ProjectData, type PunchListItemData, type TaskData, type DailyLogData } from "@/lib/services/project-service";
 import { LocaleContext } from "@/lib/hooks/use-locale";
-import { getLocaleForMarket } from "@/lib/i18n";
+
 import { AIMentor } from "@/components/ui/AIMentor";
 import { generateProjectNotifications, generateDetailedNotifications, sortNotifications, type AppNotification } from "@/lib/notifications";
 
@@ -288,8 +288,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const isProjectRoute = pathname.includes("/project/");
   const projectName = isProjectRoute ? (currentProject?.name ?? "Project") : undefined;
-  // User's explicit language preference takes priority over market-derived locale
-  const locale = (profile?.locale as "en" | "fr" | "es") || (currentProject ? getLocaleForMarket(currentProject.market ?? "") : "en");
+  // User's explicit language preference takes priority; default to "en" — never
+  // derive UI language from the project's market (a Togo project does NOT mean
+  // the user wants French UI).
+  const locale = (profile?.locale as "en" | "fr" | "es") || "en";
 
   return (
     <AuthGuard>

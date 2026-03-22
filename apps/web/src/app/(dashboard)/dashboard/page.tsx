@@ -1332,7 +1332,7 @@ export default function DashboardPage() {
                     />
                     <div className="flex items-center gap-2 min-w-0 shrink-0">
                       {item.type === "budget" && <DollarSign size={13} className="text-muted shrink-0" />}
-                      {item.type === "task" && <ListChecks size={13} className="text-muted shrink-0" />}
+                      {item.type === "task" && <CheckCircle2 size={13} className="text-muted shrink-0" />}
                       {item.type === "punch" && <AlertTriangle size={13} className="text-muted shrink-0" />}
                       {item.type === "inspection" && <ClipboardCheck size={13} className="text-muted shrink-0" />}
                       {item.type === "milestone" && <Calendar size={13} className="text-muted shrink-0" />}
@@ -1341,7 +1341,7 @@ export default function DashboardPage() {
                       {item.projectName}
                     </span>
                     <p className="text-[12px] text-earth leading-snug truncate flex-1">
-                      {item.description}
+                      {item.type === "task" ? `Task: ${item.description}` : item.description}
                     </p>
                   </Link>
                 ))}

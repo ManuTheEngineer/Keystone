@@ -745,14 +745,41 @@ const translations: Record<string, Record<Locale, string>> = {
     es: "B\u00f3veda de archivos",
   },
   "project.portfolio": {
-    en: "Portfolio",
-    fr: "Portefeuille",
-    es: "Portafolio",
+    en: "Vault",
+    fr: "Coffre",
+    es: "B\u00f3veda",
   },
   "project.newProject": {
     en: "New project",
     fr: "Nouveau projet",
     es: "Nuevo proyecto",
+  },
+
+  // ── Sidebar Section Headers ────────────────────────────────────────
+  "nav.group.main": {
+    en: "Main",
+    fr: "Principal",
+    es: "Principal",
+  },
+  "nav.group.planning": {
+    en: "Planning",
+    fr: "Planification",
+    es: "Planificaci\u00f3n",
+  },
+  "nav.group.execution": {
+    en: "Execution",
+    fr: "Ex\u00e9cution",
+    es: "Ejecuci\u00f3n",
+  },
+  "nav.group.quality": {
+    en: "Quality",
+    fr: "Qualit\u00e9",
+    es: "Calidad",
+  },
+  "nav.group.tools": {
+    en: "Tools",
+    fr: "Outils",
+    es: "Herramientas",
   },
 
   // ── Contractor Portal ───────────────────────────────────────────────
