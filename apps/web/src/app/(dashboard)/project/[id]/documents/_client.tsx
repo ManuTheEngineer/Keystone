@@ -297,7 +297,7 @@ function DocViewerModal({ doc, onClose }: { doc: DocumentData; onClose: () => vo
         </div>
         <div className="flex-1 overflow-auto p-4 min-h-0">
           {isPdf && url ? (
-            <iframe src={url} className="w-full h-full min-h-[500px] rounded border border-border" />
+            <iframe src={url} sandbox="allow-scripts allow-same-origin" className="w-full h-full min-h-[500px] rounded border border-border" />
           ) : isImage && url ? (
             <img src={url} alt={doc.name} className="max-w-full max-h-[70vh] mx-auto rounded" />
           ) : (

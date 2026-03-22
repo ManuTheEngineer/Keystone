@@ -142,20 +142,32 @@ export default function LandingPage() {
               >
                 About
               </a>
-              <Link
-                href="/login"
-                className="block text-[14px] text-muted hover:text-earth py-2 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/register"
-                className="block w-full text-center px-5 py-3 text-[14px] font-medium rounded-full btn-earth"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Start free
-              </Link>
+              {user ? (
+                <Link
+                  href="/dashboard"
+                  className="block w-full text-center px-5 py-3 text-[14px] font-medium rounded-full btn-earth btn-hover"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Go to Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="block text-[14px] text-muted hover:text-earth py-2 transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="block w-full text-center px-5 py-3 text-[14px] font-medium rounded-full btn-earth"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Start free
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}

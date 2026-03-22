@@ -572,6 +572,7 @@ export function OverviewClient() {
       await deleteProject(user.uid, projectId);
       router.push("/dashboard");
     } catch {
+      showToast("Failed to delete project", "error");
       setDeletingProject(false);
     }
   }

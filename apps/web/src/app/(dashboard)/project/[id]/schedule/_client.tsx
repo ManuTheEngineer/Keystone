@@ -362,6 +362,8 @@ export function ScheduleClient() {
     }
   }, [project, setTopbar]);
 
+  const market = (project?.market ?? "USA") as Market;
+
   const handleToggleMilestone = useCallback(
     async (phaseKey: string, milestoneIndex: number, completed: boolean, totalMilestones: number) => {
       if (!user) return;
@@ -390,7 +392,7 @@ export function ScheduleClient() {
         showToast("Failed to update milestone", "error");
       }
     },
-    [user, projectId, allMilestoneProgress, project, showToast]
+    [user, projectId, allMilestoneProgress, market, showToast]
   );
 
   const handleDateChange = useCallback(
@@ -412,7 +414,6 @@ export function ScheduleClient() {
     </div>
   );
 
-  const market = project.market as Market;
   const marketData = getMarketData(market);
   const phases = marketData.phases;
   const currentPhaseIndex = project.currentPhase;

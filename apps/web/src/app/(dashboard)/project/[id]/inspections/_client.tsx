@@ -7,6 +7,14 @@ import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useTopbar } from "../../../layout";
 import {
+  ref,
+  push,
+  set,
+  onValue,
+  type Unsubscribe,
+} from "firebase/database";
+import { db } from "@/lib/firebase";
+import {
   subscribeToProject,
   subscribeToInspectionResults,
   addInspectionResult,
@@ -112,7 +120,23 @@ export function InspectionsClient() {
     if (!user) return;
     const unsub1 = subscribeToProject(user.uid, projectId, setProject);
     const unsub2 = subscribeToInspectionResults(user.uid, projectId, setResults);
-    return () => { unsub1(); unsub2(); };
+    // Subscribe to custom inspections from Firebase
+    const customRef = ref(db, `users/${user.uid}/projects/${projectId}/customInspections`);
+    const unsub3 = onValue(customRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) {
+        setCustomInspections([]);
+        return;
+      }
+      const items: CustomInspection[] = Object.entries(data).map(([key, val]: [string, any]) => ({
+        id: val.id ?? key,
+        name: val.name,
+        type: val.type,
+        phase: val.phase,
+      }));
+      setCustomInspections(items);
+    });
+    return () => { unsub1(); unsub2(); unsub3(); };
   }, [user, projectId]);
 
   const market = (project?.market ?? "USA") as Market;
@@ -266,19 +290,24 @@ export function InspectionsClient() {
     }
   }, [user, recordingId, recordForm, activeInspections, resultMap, projectId, selectedPhase, currentPhaseKey, showToast]);
 
-  const addCustomInspection = useCallback(() => {
-    if (!addForm.name.trim() || !addForm.phase) return;
+  const addCustomInspection = useCallback(async () => {
+    if (!addForm.name.trim() || !addForm.phase || !user) return;
     const newInsp: CustomInspection = {
       id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       name: addForm.name.trim(),
       type: addForm.type,
       phase: addForm.phase as ProjectPhase,
     };
-    setCustomInspections((prev) => [...prev, newInsp]);
-    setAddForm({ name: "", type: "informal", phase: "" });
-    setShowAddForm(false);
-    showToast("Inspection added", "success");
-  }, [addForm, showToast]);
+    try {
+      const customRef = ref(db, `users/${user.uid}/projects/${projectId}/customInspections/${newInsp.id}`);
+      await set(customRef, newInsp);
+      setAddForm({ name: "", type: "informal", phase: "" });
+      setShowAddForm(false);
+      showToast("Inspection added", "success");
+    } catch {
+      showToast("Failed to save inspection", "error");
+    }
+  }, [addForm, showToast, user, projectId]);
 
   // ============================================================
   // Render

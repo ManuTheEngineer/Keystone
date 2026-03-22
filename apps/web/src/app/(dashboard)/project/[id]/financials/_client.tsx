@@ -81,8 +81,8 @@ export function FinancialsClient() {
   const [items, setItems] = useState<BudgetItemData[]>([]);
 
   // Loan calculator state (USA)
-  const [loanIncome, setLoanIncome] = useState("85000");
-  const [loanDebts, setLoanDebts] = useState("450");
+  const [loanIncome, setLoanIncome] = useState("");
+  const [loanDebts, setLoanDebts] = useState("");
   const [loanDown, setLoanDown] = useState(String(project?.downPaymentPct ?? 20));
   const [loanRate, setLoanRate] = useState(String(project?.loanRate ?? 7.25));
   const [liveRate, setLiveRate] = useState<number | null>(null);
@@ -214,7 +214,7 @@ export function FinancialsClient() {
     complexity: "moderate",
     market: market,
     phaseIndex: project.currentPhase ?? 0,
-    firstTimeBuild: true,
+    firstTimeBuild: ((project as any).completedPhases ?? 0) < 8,
   };
   const contingencyResult = calculateContingency(contingencyInput);
 
@@ -223,6 +223,7 @@ export function FinancialsClient() {
   // ---------------------------------------------------------------------------
 
   function handleLoanCalc() {
+    if (!project) return;
     const input: LoanQualificationInput = {
       annualIncome: Number(loanIncome) || 0,
       monthlyDebts: Number(loanDebts) || 0,
@@ -230,7 +231,7 @@ export function FinancialsClient() {
       interestRate: Number(loanRate) || 7,
       loanTermYears: Number(loanTerm) || 30,
       propertyTaxRate: locationData?.propertyTaxRate ?? 1.2,
-      insuranceAnnual: 1800,
+      insuranceAnnual: project.totalBudget > 0 ? Math.round(project.totalBudget * 0.005) : 1800,
     };
     setLoanResult(calculateLoanQualification(input));
   }

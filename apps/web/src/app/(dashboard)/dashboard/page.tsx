@@ -732,9 +732,15 @@ export default function DashboardPage() {
     return sortedProjects.filter((p) => p.status === "ACTIVE").slice(0, 3);
   }, [sortedProjects]);
 
+  // Stable list of priority project IDs to avoid subscription churn
+  const priorityProjectIds = useMemo(() => {
+    return priorityProjects.map((p) => p.id).filter(Boolean).join(",");
+  }, [priorityProjects]);
+
   // Subscribe to tasks and punch list for priority projects (for action items)
   useEffect(() => {
-    if (!user || priorityProjects.length === 0) {
+    const ids = priorityProjectIds.split(",").filter(Boolean);
+    if (!user || ids.length === 0) {
       setProjectTasks({});
       setProjectPunchList({});
       return;
@@ -744,10 +750,7 @@ export default function DashboardPage() {
     const tasksCollected: Record<string, TaskData[]> = {};
     const punchCollected: Record<string, PunchListItemData[]> = {};
 
-    for (const proj of priorityProjects) {
-      const pid = proj.id;
-      if (!pid) continue;
-
+    for (const pid of ids) {
       unsubs.push(
         subscribeToTasks(user.uid, pid, (tasks) => {
           tasksCollected[pid] = tasks;
@@ -765,7 +768,7 @@ export default function DashboardPage() {
     return () => {
       for (const unsub of unsubs) unsub();
     };
-  }, [user, priorityProjects]);
+  }, [user, priorityProjectIds]);
 
   // Build action items from priority projects
   const actionItems = useMemo(() => {

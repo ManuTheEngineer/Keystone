@@ -277,7 +277,7 @@ export function DailyLogClient() {
     }).length;
     const avgCrew =
       total > 0
-        ? Math.round(logs.reduce((s, l) => s + l.crew, 0) / total)
+        ? Math.round(logs.reduce((s, l) => s + (Number(l.crew) || 0), 0) / total)
         : 0;
 
     let daysSinceLast = -1; // -1 means no entries

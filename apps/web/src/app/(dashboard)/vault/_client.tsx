@@ -290,6 +290,7 @@ export function VaultClient() {
   const [sortAscending, setSortAscending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteProjectName, setDeleteProjectName] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -416,6 +417,7 @@ export function VaultClient() {
       showToast("Failed to delete project", "error");
     }
     setDeleteConfirm(null);
+    setDeleteProjectName("");
     setDeleting(false);
   }, [user, deleting, showToast]);
 
@@ -860,36 +862,47 @@ export function VaultClient() {
       )}
 
       {/* Delete confirmation modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-earth/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface rounded-xl shadow-lg border border-border p-6 max-w-sm w-full">
-            <h3
-              className="text-[18px] text-earth mb-2"
-              style={{ fontFamily: "var(--font-heading)" }}
-            >
-              Delete project?
-            </h3>
-            <p className="text-[13px] text-muted mb-6 leading-relaxed">
-              This action cannot be undone. All project data, budget items, documents, photos, and logs will be permanently removed.
-            </p>
-            <div className="flex items-center gap-3 justify-end">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-[13px] font-medium rounded-lg border border-border text-earth hover:bg-warm transition-colors"
+      {deleteConfirm && (() => {
+        const deleteTarget = projects.find((p) => p.id === deleteConfirm);
+        const targetName = deleteTarget?.name ?? "";
+        return (
+          <div className="fixed inset-0 bg-earth/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-surface rounded-xl shadow-lg border border-border p-6 max-w-sm w-full">
+              <h3
+                className="text-[18px] text-earth mb-2"
+                style={{ fontFamily: "var(--font-heading)" }}
               >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(deleteConfirm)}
-                disabled={deleting}
-                className="px-4 py-2 text-[13px] font-medium rounded-lg bg-danger text-white hover:bg-danger/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {deleting ? "Deleting..." : "Delete permanently"}
-              </button>
+                Delete project?
+              </h3>
+              <p className="text-[13px] text-muted mb-3 leading-relaxed">
+                This will permanently delete <strong className="text-earth">{targetName}</strong> and all its data. This action cannot be undone. Type the project name to confirm.
+              </p>
+              <input
+                type="text"
+                value={deleteProjectName}
+                onChange={(e) => setDeleteProjectName(e.target.value)}
+                placeholder={targetName}
+                className="px-3 py-2 text-[13px] border border-border rounded-lg bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-danger w-full mb-4"
+              />
+              <div className="flex items-center gap-3 justify-end">
+                <button
+                  onClick={() => { setDeleteConfirm(null); setDeleteProjectName(""); }}
+                  className="px-4 py-2 text-[13px] font-medium rounded-lg border border-border text-earth hover:bg-warm transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDelete(deleteConfirm)}
+                  disabled={deleting || deleteProjectName !== targetName}
+                  className="px-4 py-2 text-[13px] font-medium rounded-lg bg-danger text-white hover:bg-danger/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {deleting ? "Deleting..." : "Delete permanently"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

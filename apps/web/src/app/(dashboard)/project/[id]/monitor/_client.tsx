@@ -119,7 +119,7 @@ function LiveCameraFeed({ projectId, userId }: { projectId: string; userId: stri
     try {
       await set(ref(db, `users/${userId}/projects/${projectId}/cameras/${camId}`), null);
       setCameras((prev) => prev.filter((c) => c.id !== camId));
-      if (activeCamera >= cameras.length - 1) setActiveCamera(0);
+      setActiveCamera((prev) => prev >= cameras.length - 2 ? 0 : prev);
       showToast("Camera removed", "success");
     } catch { showToast("Failed to remove", "error"); }
   }
@@ -285,6 +285,7 @@ interface PhotoFeedProps {
 }
 
 function PhotoFeed({ photos, projectId, project, contacts }: PhotoFeedProps) {
+  const { showToast } = useToast();
   const [dateFilter, setDateFilter] = useState<"all" | "week" | "month">("all");
 
   const now = new Date();
@@ -396,7 +397,7 @@ function PhotoFeed({ photos, projectId, project, contacts }: PhotoFeedProps) {
           } else {
             // Copy message to clipboard as fallback
             navigator.clipboard.writeText(decodeURIComponent(msg));
-            alert("Message copied to clipboard. Send it to your contractor via WhatsApp, SMS, or email.");
+            showToast("Message copied to clipboard", "success");
           }
         }}
         className="w-full mt-3 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius)] border border-sand/40 text-[11px] text-earth hover:bg-warm/50 transition-colors"
