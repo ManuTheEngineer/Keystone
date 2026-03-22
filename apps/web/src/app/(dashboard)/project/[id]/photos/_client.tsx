@@ -23,7 +23,7 @@ import { getMarketData, getPhaseDefinition, PHASE_ORDER, PHASE_NAMES } from "@ke
 import type { Market, ProjectPhase } from "@keystone/market-data";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useTranslation } from "@/lib/hooks/use-translation";
-import { ImageIcon, Plus, Loader2, X, ChevronLeft, ChevronRight, MapPin, Calendar, Camera } from "lucide-react";
+import { ImageIcon, Plus, Loader2, X, MapPin, Calendar, Camera } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export function PhotosClient() {
@@ -288,22 +288,22 @@ export function PhotosClient() {
 
       {/* Upload form modal */}
       {showUploadForm && (
-        <Card className="mb-5 border-earth">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[13px] font-semibold text-earth">
+        <Card padding="sm" className="mb-4 border-earth">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-[12px] font-semibold text-earth">
               Upload {selectedFiles.length} photo{selectedFiles.length !== 1 ? "s" : ""}
             </h3>
             <button onClick={handleCancelUpload} className="text-muted hover:text-earth">
-              <X size={16} />
+              <X size={14} />
             </button>
           </div>
 
           {/* File previews */}
-          <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+          <div className="flex gap-1.5 mb-3 overflow-x-auto">
             {selectedFiles.map((file, i) => (
               <div
                 key={i}
-                className="w-16 h-16 rounded-[var(--radius)] overflow-hidden border border-border flex-shrink-0"
+                className="w-12 h-12 rounded-[var(--radius)] overflow-hidden border border-border flex-shrink-0"
               >
                 <img
                   src={previewUrls[i]}
@@ -314,8 +314,8 @@ export function PhotosClient() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-            <div className="flex flex-col gap-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
+            <div className="flex flex-col gap-0.5">
               <label className="text-[9px] uppercase tracking-wider text-muted font-medium">
                 Phase
               </label>
@@ -325,7 +325,7 @@ export function PhotosClient() {
                   setUploadPhase(e.target.value);
                   setUploadMilestone("");
                 }}
-                className="text-[12px] px-2.5 py-1.5 rounded-[var(--radius)] border border-border bg-surface text-earth focus:outline-none focus:border-earth"
+                className="text-[11px] px-2 py-1 rounded-[var(--radius)] border border-border bg-surface text-earth focus:outline-none focus:border-earth"
               >
                 <option value="">Select phase</option>
                 {PHASE_ORDER.map((phase) => (
@@ -334,12 +334,9 @@ export function PhotosClient() {
                   </option>
                 ))}
               </select>
-              <span className="text-[9px] text-muted">
-                Which construction phase does this photo document?
-              </span>
             </div>
 
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-0.5">
               <label className="text-[9px] uppercase tracking-wider text-muted font-medium">
                 Milestone
               </label>
@@ -347,66 +344,61 @@ export function PhotosClient() {
                 value={uploadMilestone}
                 onChange={(e) => setUploadMilestone(e.target.value)}
                 disabled={!uploadPhase}
-                className="text-[12px] px-2.5 py-1.5 rounded-[var(--radius)] border border-border bg-surface text-earth focus:outline-none focus:border-earth disabled:opacity-50"
+                className="text-[11px] px-2 py-1 rounded-[var(--radius)] border border-border bg-surface text-earth focus:outline-none focus:border-earth disabled:opacity-50"
               >
-                <option value="">Select milestone (optional)</option>
+                <option value="">Optional</option>
                 {uploadPhaseMilestones.map((m) => (
                   <option key={m.name} value={m.name}>
                     {m.name}
                   </option>
                 ))}
               </select>
-              <span className="text-[9px] text-muted">
-                Link this photo to a specific milestone for verification.
-              </span>
+            </div>
+
+            <div className="flex flex-col gap-0.5 col-span-2 sm:col-span-1">
+              <label className="text-[9px] uppercase tracking-wider text-muted font-medium">
+                Caption
+              </label>
+              <input
+                type="text"
+                value={uploadCaption}
+                onChange={(e) => setUploadCaption(e.target.value)}
+                placeholder="Describe what this photo shows..."
+                className="text-[11px] px-2 py-1 rounded-[var(--radius)] border border-border bg-surface text-earth focus:outline-none focus:border-earth placeholder:text-muted/50"
+              />
             </div>
           </div>
 
-          <div className="flex flex-col gap-1 mb-4">
-            <label className="text-[9px] uppercase tracking-wider text-muted font-medium">
-              Caption
-            </label>
-            <input
-              type="text"
-              value={uploadCaption}
-              onChange={(e) => setUploadCaption(e.target.value)}
-              placeholder="Describe what this photo shows..."
-              className="text-[12px] px-2.5 py-1.5 rounded-[var(--radius)] border border-border bg-surface text-earth focus:outline-none focus:border-earth placeholder:text-muted/50"
-            />
-            <span className="text-[9px] text-muted">
-              A caption helps you and your team identify photos later.
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[9px] text-muted flex items-center gap-1">
+              <MapPin size={10} />
+              GPS auto-captured
             </span>
-          </div>
-
-          <div className="flex items-center gap-2 text-[10px] text-muted mb-4">
-            <MapPin size={12} />
-            Geolocation will be auto-captured if available.
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={handleUploadSubmit}
-              disabled={uploading}
-              className="flex items-center gap-1.5 px-4 py-2 text-[12px] font-medium rounded-[var(--radius)] bg-earth text-warm hover:bg-earth-light transition-colors disabled:opacity-50"
-            >
-              {uploading ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Plus size={14} />
-                  Upload
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleCancelUpload}
-              className="px-4 py-2 text-[12px] text-muted hover:text-earth rounded-[var(--radius)] border border-border hover:border-earth transition-colors"
-            >
-              Cancel
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleCancelUpload}
+                className="px-3 py-1 text-[11px] text-muted hover:text-earth rounded-[var(--radius)] border border-border hover:border-earth transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUploadSubmit}
+                disabled={uploading}
+                className="flex items-center gap-1 px-3 py-1 text-[11px] font-medium rounded-[var(--radius)] bg-earth text-warm hover:bg-earth-light transition-colors disabled:opacity-50"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={12} />
+                    Upload
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </Card>
       )}
@@ -417,41 +409,12 @@ export function PhotosClient() {
         ({filteredPhotos.length})
       </SectionLabel>
       {filteredPhotos.length === 0 && !showUploadForm && (
-        <div className="text-center py-12 animate-fade-in">
-          <div className="w-16 h-16 rounded-2xl bg-warm flex items-center justify-center mx-auto mb-4">
-            <Camera size={28} className="text-clay" />
-          </div>
-          <h3 className="text-[16px] text-earth mb-2" style={{ fontFamily: "var(--font-heading)" }}>
-            Document your build
-          </h3>
-          <p className="text-[12px] text-muted max-w-md mx-auto mb-4 leading-relaxed">
-            Construction photos verify progress for milestone payments, document hidden conditions before walls close up, and protect you in disputes. Take photos before every concrete pour and before every inspection.
-          </p>
-          <button
-            onClick={() => setShowUploadForm(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium bg-earth text-warm rounded-xl hover:bg-earth-light transition-colors"
-          >
-            <Camera size={14} />
-            Upload your first photos
-          </button>
-          <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto mt-6">
-            <div className="p-3 bg-surface border border-border rounded-xl text-center">
-              <p className="text-[18px] font-bold text-earth font-data">1</p>
-              <p className="text-[9px] text-muted mt-1">Before each phase</p>
-            </div>
-            <div className="p-3 bg-surface border border-border rounded-xl text-center">
-              <p className="text-[18px] font-bold text-earth font-data">2</p>
-              <p className="text-[9px] text-muted mt-1">During inspections</p>
-            </div>
-            <div className="p-3 bg-surface border border-border rounded-xl text-center">
-              <p className="text-[18px] font-bold text-earth font-data">3</p>
-              <p className="text-[9px] text-muted mt-1">At milestones</p>
-            </div>
-          </div>
-          <p className="text-[10px] text-muted mt-4 max-w-sm mx-auto">
-            Photos are automatically tagged with the date and organized by phase. GPS coordinates are captured when available for location verification, essential for remote monitoring.
-          </p>
-        </div>
+        <EmptyState
+          icon={<Camera size={24} />}
+          title="No photos yet"
+          description="Upload construction photos to document progress and verify milestones."
+          action={{ label: "Upload photos", onClick: () => setShowUploadForm(true) }}
+        />
       )}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 mb-5 animate-stagger">
         {filteredPhotos.map((photo, idx) => (
@@ -533,7 +496,7 @@ export function PhotosClient() {
           <SectionLabel>
             Milestone verification -- {PHASE_NAMES[currentPhaseKey as ProjectPhase]}
           </SectionLabel>
-          <div className="space-y-2 mb-5">
+          <div className="space-y-1 mb-4">
             {currentPhaseDef.milestones.map((milestone) => {
               const milestonePhotos = currentPhasePhotos.filter(
                 (p) => p.caption?.trim().toLowerCase().includes(milestone.name.trim().toLowerCase())
@@ -541,72 +504,53 @@ export function PhotosClient() {
               const hasPhotos = milestonePhotos.length > 0;
 
               return (
-                <Card key={milestone.name} padding="sm">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[12px] font-medium text-earth truncate">
-                          {milestone.name}
-                        </span>
-                        {milestone.verificationRequired && (
-                          <Badge variant={hasPhotos ? "success" : "warning"}>
-                            {hasPhotos ? `${milestonePhotos.length} photo${milestonePhotos.length !== 1 ? "s" : ""}` : "Needs photos"}
-                          </Badge>
-                        )}
-                        {!milestone.verificationRequired && hasPhotos && (
-                          <Badge variant="info">
-                            {milestonePhotos.length} photo{milestonePhotos.length !== 1 ? "s" : ""}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-[9px] text-muted mt-0.5 line-clamp-1">
-                        {milestone.description}
-                      </p>
-                    </div>
-
-                    {/* Thumbnail strip */}
-                    {hasPhotos && (
-                      <div className="flex gap-1 ml-3 flex-shrink-0">
-                        {milestonePhotos.slice(0, 3).map((p) => (
-                          <div
-                            key={p.id}
-                            className="w-8 h-8 rounded overflow-hidden border border-border"
-                          >
-                            <img
-                              src={p.fileUrl}
-                              alt={p.caption || "Project photo"}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ))}
-                        {milestonePhotos.length > 3 && (
-                          <div className="w-8 h-8 rounded border border-border flex items-center justify-center bg-surface-alt">
-                            <span className="text-[8px] font-data text-muted">
-                              +{milestonePhotos.length - 3}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                <div
+                  key={milestone.name}
+                  className="flex items-center justify-between px-3 py-1.5 border border-border rounded-[var(--radius)] bg-surface hover:bg-surface-alt transition-colors"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-[11px] font-medium text-earth truncate">
+                      {milestone.name}
+                    </span>
+                    {milestone.verificationRequired && (
+                      <Badge variant={hasPhotos ? "success" : "warning"}>
+                        {hasPhotos ? `${milestonePhotos.length}` : "Needs photos"}
+                      </Badge>
+                    )}
+                    {!milestone.verificationRequired && hasPhotos && (
+                      <Badge variant="info">
+                        {milestonePhotos.length}
+                      </Badge>
                     )}
                   </div>
-                </Card>
+
+                  {hasPhotos && (
+                    <div className="flex gap-0.5 ml-2 flex-shrink-0">
+                      {milestonePhotos.slice(0, 3).map((p) => (
+                        <div
+                          key={p.id}
+                          className="w-6 h-6 rounded overflow-hidden border border-border"
+                        >
+                          <img
+                            src={p.fileUrl}
+                            alt={p.caption || "Project photo"}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                      {milestonePhotos.length > 3 && (
+                        <span className="text-[8px] font-data text-muted self-center ml-0.5">
+                          +{milestonePhotos.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
         </>
       )}
-
-      {/* Educational note */}
-      <div className="p-4 rounded-[var(--radius)] bg-warm border border-sand/30 text-[12px] text-earth leading-relaxed">
-        <p className="font-semibold mb-1">Why photo documentation matters</p>
-        <p>
-          Timestamped, geotagged photos serve as your evidence trail. They verify contractor
-          progress, document conditions before walls close up (critical for rough-in inspections),
-          and provide proof of work for draw requests to lenders. For diaspora builders managing
-          remotely, photos are the primary trust mechanism. Images are automatically compressed
-          to under 800KB for reliable upload on slow connections.
-        </p>
-      </div>
 
       {/* Lightbox */}
       {lightboxIndex !== null && (

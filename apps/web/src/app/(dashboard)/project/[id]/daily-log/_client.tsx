@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useTranslation } from "@/lib/hooks/use-translation";
 import { Plus, ClipboardList, Pencil, Trash2 } from "lucide-react";
@@ -22,7 +21,6 @@ import {
 } from "@/lib/services/project-service";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Card } from "@/components/ui/Card";
-import { getMarketData } from "@keystone/market-data";
 import type { Market } from "@keystone/market-data";
 
 const WEATHER_PRESETS_EN = [
@@ -206,112 +204,106 @@ export function DailyLogClient() {
       <SectionLabel>Recent entries</SectionLabel>
 
       {showForm && (
-        <Card padding="md" className="mb-4 animate-expand">
-          <div className="space-y-4">
-            {/* Weather preset buttons */}
-            <div>
-              <label className="block text-[12px] font-medium text-earth mb-1.5">Weather</label>
-              <div className="flex flex-wrap gap-1.5">
-                {weatherPresets.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() =>
-                      setWeatherPreset(weatherPreset === preset.id ? "" : preset.id)
-                    }
-                    className={`px-3 py-1.5 text-[11px] rounded-full border transition-colors ${
-                      weatherPreset === preset.id
-                        ? "border-earth border-2 bg-surface-alt text-earth font-medium"
-                        : "border-border bg-surface text-muted hover:border-border-dark"
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
+        <Card padding="sm" className="mb-3 animate-expand">
+          <div className="space-y-2">
+            {/* Weather + Temp + Crew — single row */}
+            <div className="grid grid-cols-[1fr_auto_auto] gap-2 items-end">
+              <div>
+                <label className="block text-[9px] uppercase tracking-wider text-muted font-medium mb-1">Weather</label>
+                <div className="flex flex-wrap gap-1">
+                  {weatherPresets.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() =>
+                        setWeatherPreset(weatherPreset === preset.id ? "" : preset.id)
+                      }
+                      className={`px-2 py-0.5 text-[10px] rounded-full border transition-colors ${
+                        weatherPreset === preset.id
+                          ? "border-earth bg-surface-alt text-earth font-medium"
+                          : "border-border bg-surface text-muted hover:border-border-dark"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-
-            {/* Temperature input */}
-            <div>
-              <label className="block text-[12px] font-medium text-earth mb-1.5">
-                Temperature ({tempSymbol})
-              </label>
-              <div className="flex items-center gap-2">
+              <div>
+                <label className="block text-[9px] uppercase tracking-wider text-muted font-medium mb-1">Temp</label>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    value={temperature}
+                    onChange={(e) => setTemperature(e.target.value)}
+                    placeholder={isUSAMarket ? "75" : "28"}
+                    className="px-2 py-1 text-[11px] font-data border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-earth w-14"
+                  />
+                  <span className="text-[10px] text-muted font-data">{tempSymbol}</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[9px] uppercase tracking-wider text-muted font-medium mb-1">Crew</label>
                 <input
                   type="number"
-                  value={temperature}
-                  onChange={(e) => setTemperature(e.target.value)}
-                  placeholder={isUSAMarket ? "e.g. 75" : "e.g. 28"}
-                  className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-24"
+                  min={1}
+                  value={crew}
+                  onChange={(e) => setCrew(e.target.value)}
+                  className="px-2 py-1 text-[11px] font-data border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-earth w-14"
                 />
-                <span className="text-[11px] text-muted">{tempSymbol}</span>
               </div>
             </div>
 
-            <div>
-              <label className="block text-[12px] font-medium text-earth mb-1.5">Crew size</label>
-              <input
-                type="number"
-                min={1}
-                value={crew}
-                onChange={(e) => setCrew(e.target.value)}
-                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
-              />
+            {/* Quick tags */}
+            <div className="flex flex-wrap gap-1">
+              {[
+                "Concrete poured",
+                "Framing completed",
+                "Inspection passed",
+                "Weather delay",
+                "Material delivered",
+                "Change order",
+                "No work today",
+              ].map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setContent((prev) => prev ? prev + " " + tag + "." : tag + ".")}
+                  className="px-2 py-0.5 text-[9px] rounded-full border border-border bg-surface text-muted hover:border-earth hover:text-earth transition-colors"
+                >
+                  {tag}
+                </button>
+              ))}
             </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-[12px] font-medium text-earth">Content</label>
-                <span className="text-[10px] text-muted">Or use voice</span>
-              </div>
-              {/* Quick tags */}
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {[
-                  "Concrete poured",
-                  "Framing completed",
-                  "Inspection passed",
-                  "Weather delay",
-                  "Material delivered",
-                  "Change order",
-                  "No work today",
-                ].map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => setContent((prev) => prev ? prev + " " + tag + "." : tag + ".")}
-                    className="px-2 py-1 text-[10px] rounded-full border border-border bg-surface text-muted hover:border-earth hover:text-earth transition-colors"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder={"What happened on site today? Consider noting:\n- Which trades were working and what they completed\n- Any materials delivered\n- Problems or delays encountered\n- Decisions made\n- Photos taken (reference by description)"}
-                rows={4}
-                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full resize-none"
+
+            {/* Content */}
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="What happened on site today?"
+              rows={3}
+              className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-earth w-full resize-none"
+            />
+            <div className="flex items-center justify-between">
+              <VoiceNote
+                onTranscript={(text) => setContent((prev) => prev ? prev + " " + text : text)}
+                placeholder="Dictate entry"
               />
-              <div className="mt-2">
-                <VoiceNote
-                  onTranscript={(text) => setContent((prev) => prev ? prev + " " + text : text)}
-                  placeholder="Tap to dictate your daily log entry"
-                />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="btn-secondary text-[11px] px-3 py-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !content.trim()}
+                  className="btn-primary text-[11px] px-3 py-1"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </button>
               </div>
-            </div>
-            <div className="flex items-center gap-2 justify-end pt-2">
-              <button
-                onClick={() => setShowForm(false)}
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving || !content.trim()}
-                className="btn-primary"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
             </div>
           </div>
         </Card>
@@ -324,7 +316,7 @@ export function DailyLogClient() {
           action={{ label: "Add first entry", onClick: () => setShowForm(true) }}
         />
       ) : (
-        <div className="space-y-2 animate-stagger">
+        <div className="space-y-1 animate-stagger">
           {logs.map((entry, i) => {
             const isEditing = editingLogId === entry.id;
             const isDeleteConfirm = deleteConfirmId === entry.id;
@@ -333,96 +325,92 @@ export function DailyLogClient() {
               <div
                 key={entry.id}
                 id={`daily-log-day-${entry.day}`}
-                className="p-3 border border-border rounded-[var(--radius)] bg-surface border-l-[3px] hover:shadow-[var(--shadow-sm)] transition-shadow"
+                className="px-2.5 py-1.5 border border-border rounded-[var(--radius)] bg-surface border-l-[3px] hover:bg-surface-alt transition-colors"
                 style={{ borderLeftColor: getWeatherBorderColor(entry.weather) }}
               >
-                <div className="flex gap-3">
-                  {/* Day badge */}
-                  <div className="shrink-0 w-10 h-10 rounded-[var(--radius)] bg-warm flex flex-col items-center justify-center">
-                    <span className="text-[8px] uppercase tracking-wider text-muted leading-none">Day</span>
-                    <span className="text-[14px] font-data font-semibold text-earth leading-tight">{entry.day}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    {isEditing ? (
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-[10px] text-muted font-medium mb-0.5">Weather</label>
-                            <input
-                              type="text"
-                              value={editWeather}
-                              onChange={(e) => setEditWeather(e.target.value)}
-                              className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] text-muted font-medium mb-0.5">Crew size</label>
-                            <input
-                              type="number"
-                              min={0}
-                              value={editCrew}
-                              onChange={(e) => setEditCrew(e.target.value)}
-                              className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[10px] text-muted font-medium mb-0.5">Content</label>
-                          <textarea
-                            value={editContent}
-                            onChange={(e) => setEditContent(e.target.value)}
-                            rows={3}
-                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full resize-none"
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEditLogSave(entry.id!)}
-                            disabled={editSaving || !editContent.trim()}
-                            className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
-                          >
-                            {editSaving ? "Saving..." : "Save"}
-                          </button>
-                          <button
-                            onClick={() => setEditingLogId(null)}
-                            className="px-3 py-1.5 text-[11px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
+                {isEditing ? (
+                  <div className="space-y-2 py-1">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[9px] uppercase tracking-wider text-muted font-medium mb-0.5">Weather</label>
+                        <input
+                          type="text"
+                          value={editWeather}
+                          onChange={(e) => setEditWeather(e.target.value)}
+                          className="px-2 py-1 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-earth w-full"
+                        />
                       </div>
-                    ) : (
-                      <>
-                        <div className="text-[10px] text-muted font-data mb-1">
-                          {entry.date} | {entry.weather} | Crew: {entry.crew}
-                        </div>
-                        <div className="text-[12px] text-muted leading-relaxed">{entry.content}</div>
-                      </>
-                    )}
+                      <div>
+                        <label className="block text-[9px] uppercase tracking-wider text-muted font-medium mb-0.5">Crew</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={editCrew}
+                          onChange={(e) => setEditCrew(e.target.value)}
+                          className="px-2 py-1 text-[11px] font-data border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-earth w-full"
+                        />
+                      </div>
+                    </div>
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      rows={2}
+                      className="px-2 py-1 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-earth w-full resize-none"
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleEditLogSave(entry.id!)}
+                        disabled={editSaving || !editContent.trim()}
+                        className="px-3 py-1 text-[10px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                      >
+                        {editSaving ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        onClick={() => setEditingLogId(null)}
+                        className="px-3 py-1 text-[10px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    {/* Day number */}
+                    <span className="text-[13px] font-data font-semibold text-earth w-8 text-center shrink-0">{entry.day}</span>
 
-                  {/* Edit / Delete buttons */}
-                  {!isEditing && (
-                    <div className="flex items-start gap-1 shrink-0">
+                    {/* Meta row */}
+                    <span className="text-[9px] text-muted font-data shrink-0">{entry.date}</span>
+                    <span className="text-[9px] text-muted">|</span>
+                    <span className="text-[9px] text-muted font-data shrink-0">{entry.weather}</span>
+                    <span className="text-[9px] text-muted">|</span>
+                    <span className="text-[9px] text-muted font-data shrink-0">Crew {entry.crew}</span>
+
+                    <span className="mx-1 w-px h-4 bg-border shrink-0" />
+
+                    {/* Content */}
+                    <span className="text-[11px] text-slate truncate flex-1 min-w-0">{entry.content}</span>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-0.5 shrink-0 ml-1">
                       <button
                         onClick={() => startEditLog(entry)}
-                        className="p-1 text-muted hover:text-earth transition-colors"
+                        className="p-0.5 text-muted hover:text-earth transition-colors"
                         title="Edit entry"
                       >
-                        <Pencil size={14} />
+                        <Pencil size={12} />
                       </button>
                       {isDeleteConfirm ? (
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleDeleteLog(entry.id!)}
                             disabled={deletingLogId === entry.id}
-                            className="px-2 py-1 text-[10px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="px-1.5 py-0.5 text-[9px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors disabled:opacity-40"
                           >
-                            {deletingLogId === entry.id ? "..." : "Confirm"}
+                            {deletingLogId === entry.id ? "..." : "Yes"}
                           </button>
                           <button
                             onClick={() => setDeleteConfirmId(null)}
-                            className="px-2 py-1 text-[10px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                            className="px-1.5 py-0.5 text-[9px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
                           >
                             No
                           </button>
@@ -430,29 +418,21 @@ export function DailyLogClient() {
                       ) : (
                         <button
                           onClick={() => setDeleteConfirmId(entry.id!)}
-                          className="p-1 text-muted hover:text-danger transition-colors"
+                          className="p-0.5 text-muted hover:text-danger transition-colors"
                           title="Delete entry"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={12} />
                         </button>
                       )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      <div className="mt-4">
-        <Link
-          href={`/project/${projectId}/ai-assistant`}
-          className="inline-flex px-4 py-2 text-[12px] border border-border-dark rounded-[var(--radius)] bg-surface text-earth hover:bg-surface-alt transition-colors"
-        >
-          Add today's entry with AI assist
-        </Link>
-      </div>
     </>
   );
 }
