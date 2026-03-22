@@ -513,7 +513,7 @@ export function ProductDemo() {
     return () => { clearInterval(tick); clearInterval(advance); };
   }, [playing]);
 
-  const go = (i: number) => { setScene(i); setProgress(0); };
+  const go = (i: number) => { setScene(i); setProgress(0); setPlaying(false); };
   const s = SCENES[scene];
 
   return (

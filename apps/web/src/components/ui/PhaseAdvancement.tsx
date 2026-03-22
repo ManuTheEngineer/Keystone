@@ -14,7 +14,7 @@ import {
   PHASE_NAMES,
 } from "@keystone/market-data";
 import type { Market } from "@keystone/market-data";
-import { ChevronRight, Check } from "lucide-react";
+import { ChevronRight, Check, ArrowRight, Sparkles } from "lucide-react";
 
 interface PhaseAdvancementProps {
   project: ProjectData;
@@ -22,6 +22,18 @@ interface PhaseAdvancementProps {
   tasks: TaskData[];
   onAdvance: () => void;
 }
+
+// Phase-specific next steps to show after advancement
+const NEXT_STEPS: Record<string, string[]> = {
+  FINANCE: ["Review your estimated budget", "Explore financing options", "Set savings targets if cash-funding"],
+  LAND: ["Research target neighborhoods", "Verify zoning and buildability", "Get property surveys if needed"],
+  DESIGN: ["Select an architect or designer", "Finalize floor plans and materials", "Get structural engineering review"],
+  APPROVE: ["Submit plans to building department", "Address any plan review comments", "Obtain building permits"],
+  ASSEMBLE: ["Interview and compare contractors", "Negotiate contracts and payment terms", "Set up insurance and site security"],
+  BUILD: ["Break ground on foundation", "Track daily progress and crew", "Document everything with photos"],
+  VERIFY: ["Complete punch list items", "Schedule final inspections", "Obtain certificate of occupancy"],
+  OPERATE: ["Set up property insurance", "Organize warranty documents", "Move in, list for rent, or prepare for sale"],
+};
 
 // Plain-language descriptions of what each phase transition means
 const TRANSITION_CONTEXT: Record<string, { why: string; what: string }> = {
@@ -67,6 +79,7 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
 
   const [firebaseProgress, setFirebaseProgress] = useState<boolean[]>([]);
   const [advancing, setAdvancing] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     if (!project.id) return;
@@ -127,20 +140,61 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
       const newPhase = currentPhaseIndex + 1;
       const phaseName = `Phase ${newPhase}: ${PHASE_NAMES[nextPhaseKey]}`;
       await advanceProjectPhase(userId, project.id!, newPhase, phaseName);
+      setShowCelebration(true);
       onAdvance();
     } finally {
       setAdvancing(false);
     }
   }
 
+  // Celebration modal after advancing
+  if (showCelebration && nextPhaseKey) {
+    const steps = NEXT_STEPS[nextPhaseKey] ?? [];
+    return (
+      <div className="mt-5 p-5 rounded-xl bg-success/5 border border-success/20 text-center">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Sparkles size={18} className="text-success" />
+          <span className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
+            Phase complete
+          </span>
+        </div>
+        <p className="text-[12px] text-muted mb-4">
+          {PHASE_NAMES[currentPhaseKey]} is done. You are now in <strong className="text-earth">{nextPhaseName}</strong>.
+        </p>
+        {steps.length > 0 && (
+          <div className="text-left mb-4 space-y-1.5">
+            <p className="text-[9px] text-muted uppercase tracking-wider font-medium">What to do next</p>
+            {steps.map((step, i) => (
+              <div key={i} className="flex items-start gap-2 text-[11px]">
+                <ArrowRight size={10} className="text-success shrink-0 mt-0.5" />
+                <span className="text-earth">{step}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <button
+          onClick={() => setShowCelebration(false)}
+          className="px-4 py-2 text-[11px] font-medium rounded-lg bg-earth text-warm hover:bg-earth/90 transition-colors"
+        >
+          Get started
+        </button>
+      </div>
+    );
+  }
+
   // Last phase complete
   if (isLastPhase && allMilestonesChecked && allTasksDone) {
     return (
-      <div className="mt-5 p-4 rounded-xl bg-success/5 border border-success/20">
-        <div className="flex items-center gap-2 text-[13px] text-success font-medium">
-          <Check size={16} />
-          Project complete
+      <div className="mt-5 p-5 rounded-xl bg-success/5 border border-success/20 text-center">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Sparkles size={18} className="text-success" />
+          <span className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
+            Project complete
+          </span>
         </div>
+        <p className="text-[12px] text-muted">
+          Congratulations! All phases are done and your project is ready.
+        </p>
       </div>
     );
   }

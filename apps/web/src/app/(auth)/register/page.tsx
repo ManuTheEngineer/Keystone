@@ -48,6 +48,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [market, setMarket] = useState("USA");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -69,27 +70,16 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
 
-    // Validate all fields (Bug #2: empty form shows no error)
-    if (!name.trim()) {
-      setError("Please enter your name.");
-      return;
-    }
-    if (!email.trim()) {
-      setError("Please enter your email address.");
-      return;
-    }
-    // Bug #1: validate email format before sending to Firebase
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-    // Bug #3: don't reset checkbox — just validate it
-    if (!agreedToTerms) {
-      setError("Please agree to the Terms of Service and Privacy Policy.");
+    // Validate all fields — collect inline errors
+    const errs: Record<string, string> = {};
+    if (!name.trim()) errs.name = "Please enter your name.";
+    if (!email.trim()) errs.email = "Please enter your email address.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errs.email = "Please enter a valid email address.";
+    if (password.length < 6) errs.password = "Password must be at least 6 characters.";
+    if (!agreedToTerms) errs.terms = "Please agree to continue.";
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setError(Object.values(errs)[0]);
       return;
     }
 
@@ -159,11 +149,12 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => { setName(e.target.value); setFieldErrors((p) => { const n = { ...p }; delete n.name; return n; }); }}
                   required
-                  className="w-full px-4 py-3.5 text-[14px] border border-border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
+                  className={`w-full px-4 py-3.5 text-[14px] border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:ring-2 transition-colors ${fieldErrors.name ? "border-danger focus:border-danger focus:ring-danger/20" : "border-border focus:border-clay focus:ring-clay/20"}`}
                   placeholder="Ayo Kessington"
                 />
+                {fieldErrors.name && <p className="text-[11px] text-danger mt-1">{fieldErrors.name}</p>}
               </div>
 
               <div>
@@ -173,11 +164,12 @@ export default function RegisterPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => { const n = { ...p }; delete n.email; return n; }); }}
                   required
-                  className="w-full px-4 py-3.5 text-[14px] border border-border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
+                  className={`w-full px-4 py-3.5 text-[14px] border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:ring-2 transition-colors ${fieldErrors.email ? "border-danger focus:border-danger focus:ring-danger/20" : "border-border focus:border-clay focus:ring-clay/20"}`}
                   placeholder="you@example.com"
                 />
+                {fieldErrors.email && <p className="text-[11px] text-danger mt-1">{fieldErrors.email}</p>}
               </div>
 
               <div>
@@ -188,10 +180,10 @@ export default function RegisterPage() {
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => { const n = { ...p }; delete n.password; return n; }); }}
                     required
                     minLength={6}
-                    className="w-full px-4 py-3.5 pr-12 text-[14px] border border-border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
+                    className={`w-full px-4 py-3.5 pr-12 text-[14px] border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:ring-2 transition-colors ${fieldErrors.password ? "border-danger focus:border-danger focus:ring-danger/20" : "border-border focus:border-clay focus:ring-clay/20"}`}
                     placeholder={t("auth.minChars", browserLocale)}
                   />
                   <button
@@ -233,7 +225,7 @@ export default function RegisterPage() {
                       onClick={() => setMarket(m.id)}
                       className={`py-2.5 text-[12px] font-medium rounded-lg border transition-colors ${
                         market === m.id
-                          ? "border-emerald-500 bg-emerald-50 text-earth"
+                          ? "border-clay bg-warm text-earth"
                           : "border-border bg-surface text-muted hover:border-sand"
                       }`}
                     >
@@ -249,7 +241,7 @@ export default function RegisterPage() {
                   type="checkbox"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded border-border accent-emerald-500"
+                  className="mt-0.5 w-4 h-4 rounded border-border accent-clay"
                 />
                 <span>
                   {t("auth.agreeTerms", browserLocale)}{" "}
@@ -258,10 +250,11 @@ export default function RegisterPage() {
                   <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-clay underline">{t("auth.privacy", browserLocale)}</a>
                 </span>
               </label>
+              {fieldErrors.terms && <p className="text-[11px] text-danger -mt-3">{fieldErrors.terms}</p>}
 
               <button
                 type="submit"
-                disabled={loading || !agreedToTerms}
+                disabled={loading}
                 className="w-full py-3.5 text-[15px] font-medium rounded-xl btn-earth active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:active:scale-100"
               >
                 {loading ? t("auth.creating", browserLocale) : t("auth.createAccount", browserLocale)}
