@@ -73,7 +73,7 @@ export function BudgetDonutChart({ items, total, currency, hideLegend, compact }
   return (
     <div className={compact ? "" : "bg-surface border border-border rounded-[var(--radius)] p-4"}>
       {!compact && <h3 className="text-sm font-medium text-earth mb-3">Budget Breakdown</h3>}
-      <div className="chart-container" style={{ height: compact ? 140 : isMobile ? 200 : 256 }}>
+      <div className="chart-container" style={{ height: compact ? 160 : isMobile ? 200 : 256 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
