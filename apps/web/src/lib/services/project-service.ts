@@ -1297,9 +1297,44 @@ export async function toggleMilestoneProgress(
   current[index] = completed;
   await set(progressRef, current);
 
-  // NOTE: No reverse sync from milestones→tasks. Tasks must be completed
-  // individually by the user with evidence/notes. Milestones auto-derive
-  // from task completion via approveTask(), not the other way around.
+  // Bidirectional sync: Schedule milestone → Overview tasks
+  // When checked: tasks become "pending-review" (user must provide evidence on Overview)
+  // When unchecked: completed tasks reopen to "in-progress"
+  try {
+    const { PHASE_ORDER } = await import("@keystone/market-data");
+    const phaseIndex = PHASE_ORDER.indexOf(phase as any);
+    if (phaseIndex === -1) return;
+
+    const tasksSnap = await get(ref(db, `users/${userId}/projects/${projectId}/tasks`));
+    if (!tasksSnap.exists()) return;
+
+    const now = new Date().toISOString();
+    const updates: Record<string, unknown> = {};
+
+    tasksSnap.forEach((child) => {
+      const t = child.val();
+      if (t.phase === phaseIndex && t.milestoneIndex === index) {
+        if (completed && !t.done && t.status !== "cancelled" && t.status !== "pending-review") {
+          // Milestone checked on Schedule → mark tasks as pending-review
+          // User must provide evidence on Overview to fully complete
+          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/status`] = "pending-review";
+          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/completionNote`] = "Marked from Schedule — provide details on Overview";
+          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/completedAt`] = now;
+        } else if (!completed && t.done && t.status !== "cancelled") {
+          // Milestone unchecked → reopen tasks
+          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/done`] = false;
+          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/status`] = "in-progress";
+          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/completedAt`] = null;
+        }
+      }
+    });
+
+    if (Object.keys(updates).length > 0) {
+      await update(ref(db), updates);
+    }
+  } catch {
+    // Non-blocking: sync is best-effort
+  }
 }
 
 // --- Milestone Dates ---
