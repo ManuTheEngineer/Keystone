@@ -1,7 +1,7 @@
 // TODO: Many hardcoded strings need t() wrapping
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTopbar } from "../../../layout";
@@ -491,2294 +491,374 @@ export function OverviewClient() {
     }
   }
 
+
+  // =========================================================================
+  // Computed values for KPI strip
+  // =========================================================================
+  const openPunch = punchListItems.filter((p) => p.status !== "resolved").length;
+
+  // Recent activity feed — unified from logs, photos, change orders
+  const recentActivity = [
+    ...dailyLogs.slice(0, 3).map((l) => ({
+      type: "log" as const,
+      text: `Day ${l.day}${l.weather ? ` — ${l.weather}` : ""}${l.crew ? `, Crew ${l.crew}` : ""}`,
+      date: l.createdAt || l.date,
+    })),
+    ...photos.slice(0, 2).map((p) => ({
+      type: "photo" as const,
+      text: `Photo${p.phase ? `: ${p.phase}` : ""}${p.caption ? ` — ${p.caption}` : ""}`,
+      date: p.date || "",
+    })),
+    ...changeOrders.slice(0, 2).map((co) => ({
+      type: "change" as const,
+      text: `CO: ${co.description}`,
+      date: co.createdAt || "",
+    })),
+    ...punchListItems.filter((p) => p.status !== "resolved").slice(0, 2).map((p) => ({
+      type: "punch" as const,
+      text: `Punch: ${p.description}`,
+      date: p.createdAt || "",
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6);
+
+  // AI insights
+  const topInsights = useMemo(() => {
+    try { return generateOverviewInsights(project, budgetItems, tasks, dailyLogs, contacts).slice(0, 3); } catch { return []; }
+  }, [project, budgetItems, tasks, dailyLogs, contacts]);
+
+  // Milestones for current phase
+  const milestones = phaseDef?.milestones ?? [];
+
+  // Build milestone groups from tasks
+  const milestoneGroups = useMemo(() => {
+    const nonPending = currentPhaseTasks.filter((t) => t.status !== "pending-review");
+    const hasIdx = nonPending.some((t) => t.milestoneIndex != null);
+    const sorted = [...nonPending].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const groups: { msIdx: number; milestone: typeof milestones[0]; tasks: typeof nonPending }[] = [];
+
+    if (milestones.length > 0) {
+      if (hasIdx) {
+        for (let mi = 0; mi < milestones.length; mi++) {
+          const msTasks = sorted.filter((t) => t.milestoneIndex === mi);
+          const ungrouped = mi === milestones.length - 1 ? sorted.filter((t) => t.milestoneIndex == null) : [];
+          groups.push({ msIdx: mi, milestone: milestones[mi], tasks: [...msTasks, ...ungrouped] });
+        }
+      } else {
+        const perMs = Math.max(1, Math.ceil(sorted.length / milestones.length));
+        for (let mi = 0; mi < milestones.length; mi++) {
+          groups.push({ msIdx: mi, milestone: milestones[mi], tasks: sorted.slice(mi * perMs, (mi + 1) * perMs) });
+        }
+      }
+    }
+    return groups;
+  }, [currentPhaseTasks, milestones]);
+
   return (
     <>
-      <PageHeader
-        title="Overview"
-        projectName={project.name}
-        projectId={projectId}
-        subtitle={phaseDef ? phaseDef.name : currentPhaseKey}
-        action={{
-          label: "Export",
-          onClick: () => setShowExportModal(true),
-          icon: <Download size={16} />,
-        }}
-      />
-
-      {/* Action buttons row */}
-      <div className="flex justify-end gap-2 -mt-4 mb-4">
-        {profile && ["BUILDER", "DEVELOPER", "ENTERPRISE"].includes(profile.plan) && (
-          <button
-            onClick={() => {
-              const shareUrl = `${window.location.origin}/project/${projectId}/overview`;
-              navigator.clipboard.writeText(shareUrl);
-              alert("Project link copied to clipboard. Share it with family or advisors to let them view your progress.");
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-lg border border-border text-earth hover:bg-warm transition-colors"
-          >
-            <Share2 size={14} />
-            Share
-          </button>
-        )}
-        <button
-          onClick={() => setShowPresentationModal(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-lg border border-border text-earth hover:bg-warm transition-colors"
-        >
-          <Briefcase size={14} />
-          Presentations
-        </button>
+      {/* ================================================================= */}
+      {/*  KPI STRIP — dense, no cards, monospace data                      */}
+      {/* ================================================================= */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Badge variant={phase >= 6 ? "warning" : "info"} className="rounded text-[10px]">
+            Phase {phase}
+          </Badge>
+          <span className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
+            {PHASE_NAMES_EN[phase]}
+          </span>
+          <MarketBadge market={market} />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setShowExportModal(true)} className="p-1.5 rounded text-muted hover:text-earth hover:bg-warm transition-colors" title="Export"><Download size={14} /></button>
+          <button onClick={() => setShowPresentationModal(true)} className="p-1.5 rounded text-muted hover:text-earth hover:bg-warm transition-colors" title="Presentations"><Briefcase size={14} /></button>
+        </div>
       </div>
 
-      {/* Phase tracker - always shown */}
-      <PhaseTracker currentPhase={project.currentPhase} completedPhases={project.completedPhases} />
-
-      {/* Phase education - compact tip, not the full 9-phase list */}
-      {education && phaseDef && (
-        <div className="mt-2 mb-3 px-4 py-3 bg-warm/30 border border-border/40 rounded-xl">
-          <p className="text-[11px] text-muted leading-relaxed">
-            <span className="font-semibold text-earth">{phaseDef.name}:</span> {education.summary}
-            {phaseDef.typicalDurationWeeks && (
-              <span className="text-clay font-data"> ({phaseDef.typicalDurationWeeks.min}-{phaseDef.typicalDurationWeeks.max} weeks typical)</span>
-            )}
-          </p>
-        </div>
-      )}
-
-      {/* Document Readiness - shown for all phases */}
-      {(() => {
-        const docAnalysis = analyzeDocumentCompleteness(
-          phase,
-          market,
-          documents,
-          vaultFiles
-        );
-        if (docAnalysis.complete.length + docAnalysis.missing.length === 0) return null;
-        return (
-          <CollapsibleSection title="Documents Needed" count={docAnalysis.missing.length}>
-            <DocumentReadiness
-              analysis={docAnalysis}
-              projectId={projectId}
-              phaseName={PHASE_NAMES_EN[phase] ?? "Current"}
-            />
-          </CollapsibleSection>
-        );
-      })()}
-
-      {/* Phase tracker already shows the 9 phases visually above */}
-
-      {/* Stat cards - always shown, collapsible for early phases */}
-      <CollapsibleSection title="Your Progress" defaultOpen={phase >= 6}>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1 mb-3 animate-stagger">
-          <StatCard value={`${computedProgress}%`} label={tasks.length > 0 ? `${completedTasks.length}/${tasks.length} tasks` : "Progress"} />
-          <StatCard
-            value={fmtCompact(project.totalSpent)}
-            label={`Spent of ${fmtCompact(project.totalBudget)}`}
-          />
-          <StatCard value={`Wk ${project.currentWeek}`} label={`Of est. ${project.totalWeeks}`} />
-          <StatCard value={String(project.openItems)} label="Open items" />
-        </div>
-      </CollapsibleSection>
-
-      {/* Setup Review Banner -- shown when wizard/analyzer generated tasks need approval */}
-      {pendingReviewTasks.filter((t) => t.completedBy === "Deal Analyzer" || t.completedBy === "Project Wizard").length > 0 && (
-        <div className="mb-5 p-4 bg-clay/5 border border-clay/20 rounded-xl">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-clay/10 flex items-center justify-center shrink-0 mt-0.5">
-              <ClipboardCheck size={18} className="text-clay" />
-            </div>
-            <div className="flex-1">
-              <h4 className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
-                Review your project setup
-              </h4>
-              <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
-                {pendingReviewTasks.filter((t) => t.completedBy === "Deal Analyzer" || t.completedBy === "Project Wizard").length} tasks were pre-filled from your {pendingReviewTasks.some((t) => t.completedBy === "Deal Analyzer") ? "deal analysis" : "project setup"}. Review the evidence below, edit if needed, then approve or reject each one.
-              </p>
-              <a href="#pending-review" className="inline-flex items-center gap-1 mt-2 text-[11px] font-medium text-clay hover:underline">
-                <ArrowDown size={12} />
-                Go to review queue
-              </a>
-            </div>
+      {/* KPI row */}
+      <div className="flex items-stretch gap-px mb-4 bg-border/30 rounded-lg overflow-hidden">
+        {[
+          { label: "Progress", value: `${computedProgress}%`, sub: `${completedTasks.length}/${tasks.length} tasks` },
+          { label: "Budget", value: fmtCompact(project.totalBudget), sub: `${budgetUtilization}% spent` },
+          { label: "Spent", value: fmtCompact(project.totalSpent), sub: fmtCompact(project.totalBudget - project.totalSpent) + " left" },
+          { label: "Timeline", value: `Wk ${project.currentWeek}`, sub: `of ${project.totalWeeks}` },
+          { label: "Team", value: String(contacts.length), sub: "contacts" },
+          { label: "Open", value: String(openPunch + activeTasks.length), sub: "items" },
+        ].map((kpi) => (
+          <div key={kpi.label} className="flex-1 bg-surface px-3 py-2 text-center min-w-0">
+            <p className="text-[15px] font-bold font-data text-earth leading-tight truncate">{kpi.value}</p>
+            <p className="text-[8px] text-muted uppercase tracking-wider leading-tight">{kpi.label}</p>
+            <p className="text-[9px] font-data text-muted/60 leading-tight truncate">{kpi.sub}</p>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
 
-      {/* Deal Analysis Snapshot */}
-      {project.dealScore != null && project.dealScore > 0 && (
-        <div className="mb-5 p-4 bg-surface border border-border rounded-xl">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
-              Original Deal Analysis
-            </h4>
-            <Link
-              href="/analyze"
-              className="text-[11px] text-clay hover:underline"
-            >
-              Re-analyze
-            </Link>
-          </div>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <p className="text-[10px] text-muted uppercase tracking-wide">Deal Score</p>
-              <p className={`text-[18px] font-bold font-data ${
-                project.dealScore >= 65 ? "text-success" : project.dealScore >= 50 ? "text-warning" : "text-danger"
-              }`}>{project.dealScore}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-muted uppercase tracking-wide">Budget Variance</p>
-              <p className={`text-[18px] font-bold font-data ${
-                project.totalSpent <= project.totalBudget ? "text-success" : "text-danger"
-              }`}>
-                {project.totalBudget > 0
-                  ? `${project.totalSpent <= project.totalBudget ? "" : "+"}${Math.round(((project.totalSpent - project.totalBudget) / project.totalBudget) * 100)}%`
-                  : "N/A"}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] text-muted uppercase tracking-wide">Remaining</p>
-              <p className="text-[18px] font-bold font-data text-earth">
-                {fmtCompact(Math.max(0, project.totalBudget - project.totalSpent))}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Progress bar — full width, thin */}
+      <div className="h-1 bg-warm rounded-full overflow-hidden mb-5">
+        <div className="h-full bg-success rounded-full transition-all duration-500" style={{ width: `${computedProgress}%` }} />
+      </div>
 
-      {/* Pending Review Queue */}
+      {/* ================================================================= */}
+      {/*  REVIEW BANNER — only when items exist                            */}
+      {/* ================================================================= */}
       {pendingReviewTasks.length > 0 && (
-        <div className="mb-5" id="pending-review">
-          <div className="flex items-center gap-2 mb-3">
-            <SectionLabel>Pending Review</SectionLabel>
-            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-warning/15 text-warning text-[11px] font-data font-semibold">
-              {pendingReviewTasks.length}
-            </span>
+        <div className="flex items-center justify-between px-3 py-2 mb-4 rounded-lg bg-warning/8 border border-warning/20" id="pending-review">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={13} className="text-warning shrink-0" />
+            <span className="text-[12px] text-earth font-medium">{pendingReviewTasks.length} item{pendingReviewTasks.length !== 1 ? "s" : ""} need your review</span>
           </div>
-          <div className="space-y-3">
-            {pendingReviewTasks.map((task) => (
-              <Card key={task.id} id={`task-${task.id}`} padding="sm" className="border-l-3 border-l-warning">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-sm font-medium text-earth">{task.label}</span>
-                      {task.trade && (
-                        <Badge variant="info">{task.trade}</Badge>
-                      )}
-                    </div>
-                    {task.assignedName && (
-                      <p className="text-xs text-muted mb-1">
-                        Submitted by {task.assignedName}
-                      </p>
-                    )}
-                    {task.completionNote && (
-                      <p className="text-xs text-slate bg-warm/50 rounded px-2 py-1.5 mb-2">
-                        {task.completionNote}
-                      </p>
-                    )}
-                    {task.completionPhotos && task.completionPhotos.length > 0 && (
-                      <div className="flex gap-2 mb-2 flex-wrap">
-                        {task.completionPhotos.map((photo, idx) => (
-                          <a
-                            key={idx}
-                            href={photo.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block w-14 h-14 rounded overflow-hidden border border-border hover:border-clay transition-colors"
-                          >
-                            <img
-                              src={photo.url}
-                              alt={photo.caption || `Photo ${idx + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-3 text-[11px] text-muted">
-                      {task.completedAt && (
-                        <span className="flex items-center gap-1">
-                          <Clock size={12} />
-                          {new Date(task.completedAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      )}
-                      {task.price != null && (
-                        <span className="font-data font-medium text-earth">
-                          {project.currency === "XOF"
-                            ? `${task.price.toLocaleString()} FCFA`
-                            : `$${task.price.toLocaleString()}`}
-                        </span>
-                      )}
-                      {(task.rejectionCount ?? 0) > 0 && (
-                        <span className="text-danger font-medium">
-                          Rejected {task.rejectionCount}x previously
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action buttons */}
-                {rejectingTaskId === task.id ? (
-                  <div className="mt-3 pt-3 border-t border-border">
-                    <label className="block text-xs font-medium text-earth mb-1">
-                      Rejection reason (minimum 10 characters)
-                    </label>
-                    <textarea
-                      value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
-                      placeholder="Explain what needs to be corrected..."
-                      className="w-full rounded border border-border bg-white px-3 py-2 text-sm text-slate placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-clay/30 resize-none"
-                      rows={3}
-                    />
-                    <div className="flex items-center gap-2 mt-2">
-                      <button
-                        disabled={rejectionReason.trim().length < 10 || reviewLoading === task.id}
-                        onClick={async () => {
-                          if (!user || !task.id) return;
-                          setReviewLoading(task.id);
-                          try {
-                            await rejectTask(
-                              user.uid,
-                              projectId,
-                              task.id,
-                              rejectionReason.trim(),
-                              task.rejectionCount ?? 0
-                            );
-                            showToast("Task rejected and sent back to contractor", "success");
-                            setRejectingTaskId(null);
-                            setRejectionReason("");
-                          } catch {
-                            showToast("Failed to reject task", "error");
-                          } finally {
-                            setReviewLoading(null);
-                          }
-                        }}
-                        className="px-3 py-1.5 text-xs font-medium rounded border border-danger text-danger hover:bg-danger/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {reviewLoading === task.id ? "Rejecting..." : "Confirm Reject"}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setRejectingTaskId(null);
-                          setRejectionReason("");
-                        }}
-                        className="px-3 py-1.5 text-xs font-medium rounded text-muted hover:text-earth transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
-                    <button
-                      disabled={reviewLoading === task.id}
-                      onClick={async () => {
-                        if (!user || !task.id) return;
-                        setReviewLoading(task.id);
-                        try {
-                          await approveTask(user.uid, projectId, task.id);
-                          if (task.price) {
-                            await updateTask(user.uid, projectId, task.id, { paymentStatus: "authorized" });
-                            showToast(`Task approved. Payment of ${task.currency ?? "$"}${task.price.toLocaleString()} authorized.`, "success");
-                          } else {
-                            showToast("Task approved.", "success");
-                          }
-                          // Prompt rating if task was assigned to a contractor
-                          if (task.assignedTo) {
-                            setRatingTaskId(task.id);
-                            setRatingStars(5);
-                            setRatingComment("");
-                          }
-                        } catch {
-                          showToast("Failed to approve task", "error");
-                        } finally {
-                          setReviewLoading(null);
-                        }
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-success text-white hover:bg-success/90 disabled:opacity-40 transition-colors"
-                    >
-                      <Check size={14} />
-                      {reviewLoading === task.id ? "Approving..." : "Approve"}
-                    </button>
-                    <button
-                      disabled={reviewLoading === task.id}
-                      onClick={() => {
-                        setRejectingTaskId(task.id!);
-                        setRejectionReason("");
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded border border-danger text-danger hover:bg-danger/10 disabled:opacity-40 transition-colors"
-                    >
-                      <XCircle size={14} />
-                      Reject
-                    </button>
-                  </div>
-                )}
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Payments Due — tasks approved with price, awaiting payment release */}
-      {(() => {
-        const paymentsDue = tasks.filter((t) => t.done && t.price && t.paymentStatus === "authorized");
-        if (paymentsDue.length === 0) return null;
-        const totalDue = paymentsDue.reduce((s, t) => s + (t.price ?? 0), 0);
-        const cur = marketData?.currency;
-        return (
-          <div className="mb-4">
-            <SectionLabel>
-              Payments Due ({paymentsDue.length})
-            </SectionLabel>
-            <Card padding="sm">
-              <div className="flex items-center justify-between mb-3 px-1">
-                <span className="text-[12px] text-muted">Total due</span>
-                <span className="text-[14px] font-bold text-earth font-data">
-                  {cur ? formatCurrencyCompact(totalDue, cur) : `$${totalDue.toLocaleString()}`}
-                </span>
-              </div>
-              <div className="space-y-2">
-                {paymentsDue.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between p-2.5 border border-border rounded-lg">
-                    <div>
-                      <p className="text-[12px] font-medium text-earth">{task.label}</p>
-                      <p className="text-[10px] text-muted">{task.assignedName} · {task.trade}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[12px] font-data font-semibold text-earth">
-                        {cur ? formatCurrencyCompact(task.price ?? 0, cur) : `$${(task.price ?? 0).toLocaleString()}`}
-                      </span>
-                      <button
-                        onClick={async () => {
-                          if (!user || !task.id) return;
-                          await updateTask(user.uid, projectId, task.id, { paymentStatus: "released" });
-                          showToast(`Payment released for ${task.label}.`, "success");
-                        }}
-                        className="px-2.5 py-1 text-[10px] font-medium bg-success text-white rounded-lg hover:bg-success/90 transition-colors"
-                      >
-                        Release
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
-        );
-      })()}
-
-      {/* Change Orders */}
-      {(changeOrders.length > 0 || showAddChangeOrder) && (
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <SectionLabel>Change Orders</SectionLabel>
-              {changeOrders.filter((co) => co.status === "pending").length > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-warning/15 text-warning text-[11px] font-data font-semibold">
-                  {changeOrders.filter((co) => co.status === "pending").length}
-                </span>
-              )}
-            </div>
-            {!showAddChangeOrder && (
+          <div className="flex items-center gap-1">
+            {pendingReviewTasks.slice(0, 3).map((task) => (
               <button
-                onClick={() => setShowAddChangeOrder(true)}
-                className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
+                key={task.id}
+                onClick={() => {
+                  setCompletingTaskId(null);
+                  // Show inline review for this task
+                }}
+                className="text-[10px] px-2 py-0.5 rounded bg-warning/10 text-warning hover:bg-warning/20 transition-colors truncate max-w-[120px]"
               >
-                <FilePlus size={12} /> New
+                {task.label}
               </button>
-            )}
-          </div>
-
-          {/* Add change order form */}
-          {showAddChangeOrder && (
-            <Card padding="sm" className="mb-3">
-              <h4 className="text-[12px] font-semibold text-earth mb-2">New Change Order</h4>
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={coDescription}
-                  onChange={(e) => setCoDescription(e.target.value)}
-                  placeholder="Description of the change"
-                  className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
-                  autoFocus
-                />
-                <textarea
-                  value={coReason}
-                  onChange={(e) => setCoReason(e.target.value)}
-                  placeholder="Reason for the change"
-                  rows={2}
-                  className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 resize-none"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] text-muted mb-0.5">
-                      Price impact ({marketData?.currency?.symbol || "$"})
-                    </label>
-                    <input
-                      type="number"
-                      value={coPriceImpact}
-                      onChange={(e) => setCoPriceImpact(e.target.value)}
-                      placeholder="0 (+ or -)"
-                      step="any"
-                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-muted mb-0.5">Schedule impact (days)</label>
-                    <input
-                      type="number"
-                      value={coScheduleImpact}
-                      onChange={(e) => setCoScheduleImpact(e.target.value)}
-                      placeholder="0"
-                      min="0"
-                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    disabled={!coDescription.trim() || !coReason.trim() || coSubmitting}
-                    onClick={async () => {
-                      if (!user) return;
-                      setCoSubmitting(true);
-                      try {
-                        await createChangeOrder(user.uid, {
-                          projectId,
-                          description: coDescription.trim(),
-                          reason: coReason.trim(),
-                          priceImpact: Number(coPriceImpact) || 0,
-                          scheduleImpact: Number(coScheduleImpact) || 0,
-                          initiatedBy: "owner",
-                          initiatorName: profile?.name || user.email || "Owner",
-                          status: "pending",
-                        });
-                        showToast("Change order created.", "success");
-                        setCoDescription("");
-                        setCoReason("");
-                        setCoPriceImpact("");
-                        setCoScheduleImpact("");
-                        setShowAddChangeOrder(false);
-                      } catch {
-                        showToast("Failed to create change order.", "error");
-                      } finally {
-                        setCoSubmitting(false);
-                      }
-                    }}
-                    className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
-                  >
-                    {coSubmitting ? "Creating..." : "Create"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowAddChangeOrder(false);
-                      setCoDescription("");
-                      setCoReason("");
-                      setCoPriceImpact("");
-                      setCoScheduleImpact("");
-                    }}
-                    className="p-1 text-muted hover:text-earth transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* Change order list */}
-          <div className="space-y-2">
-            {changeOrders.map((co) => (
-              <Card
-                key={co.id}
-                padding="sm"
-                className={`border-l-3 ${
-                  co.status === "pending"
-                    ? "border-l-warning"
-                    : co.status === "approved"
-                    ? "border-l-success"
-                    : "border-l-danger"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[12px] font-medium text-earth">{co.description}</span>
-                      <Badge
-                        variant={
-                          co.status === "pending" ? "warning" : co.status === "approved" ? "success" : "danger"
-                        }
-                      >
-                        {co.status.charAt(0).toUpperCase() + co.status.slice(1)}
-                      </Badge>
-                    </div>
-                    <p className="text-[11px] text-muted mt-0.5">{co.reason}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-[11px] text-muted mt-1">
-                  <span className="font-data">
-                    {co.priceImpact >= 0 ? "+" : ""}
-                    {marketData?.currency?.symbol || "$"}{Math.abs(co.priceImpact).toLocaleString()}
-                  </span>
-                  {co.scheduleImpact > 0 && (
-                    <span className="font-data">+{co.scheduleImpact} day{co.scheduleImpact !== 1 ? "s" : ""}</span>
-                  )}
-                  <span>By {co.initiatorName}</span>
-                  <span>
-                    {new Date(co.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </span>
-                </div>
-                {co.resolvedNote && (
-                  <p className="text-[11px] text-slate bg-warm/50 rounded px-2 py-1 mt-1.5">{co.resolvedNote}</p>
-                )}
-                {co.status === "pending" && (
-                  <>
-                    {coResolvingId === co.id ? (
-                      <div className="mt-2 pt-2 border-t border-border">
-                        <textarea
-                          value={coResolveNote}
-                          onChange={(e) => setCoResolveNote(e.target.value)}
-                          placeholder="Optional note..."
-                          rows={2}
-                          className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 resize-none mb-2"
-                        />
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={async () => {
-                              if (!user || !co.id) return;
-                              try {
-                                await resolveChangeOrder(user.uid, projectId, co.id, "approved", coResolveNote.trim() || undefined);
-                                showToast("Change order approved.", "success");
-                              } catch {
-                                showToast("Failed to approve change order.", "error");
-                              } finally {
-                                setCoResolvingId(null);
-                                setCoResolveNote("");
-                              }
-                            }}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded bg-success text-white hover:bg-success/90 transition-colors"
-                          >
-                            <Check size={14} /> Approve
-                          </button>
-                          <button
-                            onClick={async () => {
-                              if (!user || !co.id) return;
-                              try {
-                                await resolveChangeOrder(user.uid, projectId, co.id, "rejected", coResolveNote.trim() || undefined);
-                                showToast("Change order rejected.", "success");
-                              } catch {
-                                showToast("Failed to reject change order.", "error");
-                              } finally {
-                                setCoResolvingId(null);
-                                setCoResolveNote("");
-                              }
-                            }}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-danger text-danger hover:bg-danger/10 transition-colors"
-                          >
-                            <XCircle size={14} /> Reject
-                          </button>
-                          <button
-                            onClick={() => { setCoResolvingId(null); setCoResolveNote(""); }}
-                            className="px-3 py-1.5 text-xs text-muted hover:text-earth transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
-                        <button
-                          onClick={() => { setCoResolvingId(co.id!); setCoResolveNote(""); }}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded bg-success text-white hover:bg-success/90 transition-colors"
-                        >
-                          <Check size={14} /> Approve
-                        </button>
-                        <button
-                          onClick={() => { setCoResolvingId(co.id!); setCoResolveNote(""); }}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-danger text-danger hover:bg-danger/10 transition-colors"
-                        >
-                          <XCircle size={14} /> Reject
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </Card>
             ))}
           </div>
         </div>
       )}
 
-      {/* Materials Summary */}
-      {materials.length > 0 && (
-        <div className="mb-4">
-          <SectionLabel>Materials Summary</SectionLabel>
-          <Card padding="sm">
-            {(() => {
-              const byStatus = {
-                ordered: materials.filter((m) => m.status === "ordered"),
-                partial: materials.filter((m) => m.status === "partial"),
-                delivered: materials.filter((m) => m.status === "delivered"),
-                verified: materials.filter((m) => m.status === "verified"),
-              };
-              const totalCost = materials.reduce((s, m) => s + m.quantityOrdered * m.unitPrice, 0);
-              const cur = marketData?.currency;
-              return (
-                <>
-                  <div className="flex items-center gap-2 mb-3 px-1">
-                    <Package size={14} className="text-clay" />
-                    <span className="text-[12px] font-medium text-earth">{materials.length} materials tracked</span>
-                    <span className="ml-auto text-[12px] font-data font-semibold text-earth">
-                      {cur ? formatCurrencyCompact(totalCost, cur) : `$${totalCost.toLocaleString()}`}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-2 text-center">
-                    <div className="p-2 rounded-lg bg-warning-bg/50">
-                      <div className="text-[14px] font-data font-semibold text-warning">{byStatus.ordered.length}</div>
-                      <div className="text-[9px] text-muted uppercase tracking-wider">Ordered</div>
-                    </div>
-                    <div className="p-2 rounded-lg bg-info-bg/50">
-                      <div className="text-[14px] font-data font-semibold text-info">{byStatus.partial.length}</div>
-                      <div className="text-[9px] text-muted uppercase tracking-wider">Partial</div>
-                    </div>
-                    <div className="p-2 rounded-lg bg-success-bg/50">
-                      <div className="text-[14px] font-data font-semibold text-success">{byStatus.delivered.length}</div>
-                      <div className="text-[9px] text-muted uppercase tracking-wider">Delivered</div>
-                    </div>
-                    <div className="p-2 rounded-lg bg-emerald-50">
-                      <div className="text-[14px] font-data font-semibold text-emerald-700">{byStatus.verified.length}</div>
-                      <div className="text-[9px] text-muted uppercase tracking-wider">Verified</div>
-                    </div>
-                  </div>
-                  {/* Show materials with pending delivery */}
-                  {(byStatus.ordered.length > 0 || byStatus.partial.length > 0) && (
-                    <div className="mt-3 space-y-1.5">
-                      {[...byStatus.ordered, ...byStatus.partial].slice(0, 5).map((mat) => (
-                        <div key={mat.id} className="flex items-center justify-between px-2 py-1.5 border border-border rounded-lg text-[11px]">
-                          <div>
-                            <span className="font-medium text-earth">{mat.name}</span>
-                            {mat.supplier && <span className="text-muted ml-1.5">({mat.supplier})</span>}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-data text-muted">{mat.quantityDelivered}/{mat.quantityOrdered}</span>
-                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${
-                              mat.status === "ordered"
-                                ? "bg-warning-bg text-warning"
-                                : "bg-info-bg text-info"
-                            }`}>
-                              {mat.status === "ordered" ? "Ordered" : "Partial"}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-          </Card>
-        </div>
-      )}
+      {/* ================================================================= */}
+      {/*  TWO-PANEL LAYOUT                                                 */}
+      {/* ================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
 
-      {/* Location Context Card */}
-      {(() => {
-        if (!project.city) return null;
-        const locData = getClosestLocation(project.city, project.market);
-        if (!locData) return null;
-        return (
-          <Card padding="sm" className="mb-5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-clay/60">Location context</span>
-              <span className="text-[10px] text-muted font-data">
-                {locData.city}{locData.state ? `, ${locData.state}` : ""}
+        {/* ─── LEFT PANEL: Milestone Workflow ─── */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
+              {getPhaseName(phase, project?.market)}
+            </h3>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-data text-muted bg-warm/40 px-2 py-0.5 rounded">
+                {currentPhaseDone.length}/{currentPhaseTasks.filter((t) => t.status !== "pending-review").length}
               </span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mb-3">
-              <div>
-                <div className="font-data text-[14px] font-medium text-earth">{locData.costIndex.toFixed(2)}x</div>
-                <div className="text-[9px] text-muted uppercase tracking-wider">Cost index</div>
-                <div className="text-[10px] text-muted mt-0.5">{getCostComparisonText(locData.costIndex)}</div>
+              <div className="w-16 h-1 bg-warm rounded-full overflow-hidden">
+                <div className="h-full bg-success rounded-full" style={{ width: `${currentPhaseProgress}%` }} />
               </div>
-              <div>
-                <div className="font-data text-[14px] font-medium text-earth">{locData.propertyTaxRate}%</div>
-                <div className="text-[9px] text-muted uppercase tracking-wider">Property tax</div>
-              </div>
-              <div>
-                <div className="font-data text-[14px] font-medium text-earth">{getClimateLabel(locData.climate)}</div>
-                <div className="text-[9px] text-muted uppercase tracking-wider">Climate</div>
-              </div>
-              <div>
-                <div className="font-data text-[13px] font-medium text-earth">{formatMonthList(locData.buildingSeasonMonths)}</div>
-                <div className="text-[9px] text-muted uppercase tracking-wider">Build season</div>
-              </div>
-            </div>
-            <p className="text-[10px] text-muted leading-relaxed border-t border-border pt-2">{locData.localNotes}</p>
-          </Card>
-        );
-      })()}
-
-      {/* AI Insights */}
-      {(() => {
-        const insights = generateOverviewInsights(project, budgetItems, tasks, dailyLogs, contacts);
-        const topInsights = insights.sort((a, b) => b.priority - a.priority).slice(0, 3);
-        if (topInsights.length === 0) return null;
-        return (
-          <CollapsibleSection title="AI Insights" count={topInsights.length}>
-            <div className="space-y-2">
-              {topInsights.map((insight, i) => (
-                <AIInsight key={i} type={insight.type} title={insight.title} content={insight.content} action={insight.action} />
-              ))}
-            </div>
-          </CollapsibleSection>
-        );
-      })()}
-
-      {/* What should I do next? */}
-      {(() => {
-        const nextActions = getNextActions(
-          project,
-          budgetItems,
-          contacts,
-          tasks,
-          documents,
-          dailyLogs,
-          photos,
-          punchListItems,
-          projectId
-        );
-        if (nextActions.length === 0) return null;
-        return (
-          <div className="mb-5">
-            <SectionLabel>What should I do next?</SectionLabel>
-            <div className="space-y-2">
-              {nextActions.slice(0, 4).map((action, i) => (
-                <Link
-                  key={i}
-                  href={action.href}
-                  className="flex items-start gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface hover:bg-warm transition-colors group card-hover"
-                >
-                  <div
-                    className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                      action.priority === "high"
-                        ? "bg-danger"
-                        : action.priority === "medium"
-                        ? "bg-warning"
-                        : "bg-info"
-                    }`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-earth">{action.title}</p>
-                    <p className="text-[11px] text-muted leading-relaxed mt-0.5">{action.description}</p>
-                  </div>
-                  <ArrowRight size={14} className="text-muted shrink-0 mt-1 group-hover:text-earth transition-colors" />
-                </Link>
-              ))}
             </div>
           </div>
-        );
-      })()}
 
-      {/* ----------------------------------------------------------------- */}
-      {/* PHASE 0-1: Define / Finance — Planning workspace                  */}
-      {/* ----------------------------------------------------------------- */}
-      {phase <= 1 && (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 mb-5">
-            {/* Current Phase Task Workflow */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-[14px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
-                    {getPhaseName(phase, project?.market)}
-                  </h3>
-                  <span className="text-[11px] font-data text-muted bg-warm/40 px-2 py-0.5 rounded">
-                    {currentPhaseDone.length}/{currentPhaseTasks.length}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-24 h-1 bg-warm rounded-full overflow-hidden">
-                    <div className="h-full bg-success rounded-full" style={{ width: `${currentPhaseProgress}%`, transition: "width 0.5s" }} />
-                  </div>
-                  <span className="text-[10px] font-data text-muted">{currentPhaseProgress}%</span>
-                </div>
-              </div>
+          {/* Milestone groups */}
+          {milestoneGroups.length > 0 ? (
+            <div className="space-y-1 mb-4">
+              {milestoneGroups.map(({ msIdx, milestone, tasks: groupTasks }) => {
+                const allDone = groupTasks.length > 0 && groupTasks.every((t) => t.done);
+                const doneCount = groupTasks.filter((t) => t.done).length;
 
-              {currentPhaseTasks.length === 0 ? (
-                <Card padding="sm">
-                  <p className="text-[12px] text-muted py-3 text-center">No tasks for this phase.</p>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {/* Group tasks under milestones */}
-                  {(() => {
-                    const nonPending = currentPhaseTasks.filter((t) => t.status !== "pending-review");
-                    // Get phase milestones for labels — use the same phaseDef from outer scope
-                    const milestones = phaseDef?.milestones ?? [];
+                return (
+                  <div key={msIdx}>
+                    {/* Milestone header */}
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-t bg-surface-alt/50 border-b border-border/30 ${allDone ? "opacity-50" : ""}`}>
+                      <div className={`w-2.5 h-2.5 rounded-sm shrink-0 ${allDone ? "bg-success" : "bg-border"}`} />
+                      <span className={`text-[10px] font-semibold uppercase tracking-[0.06em] flex-1 ${allDone ? "text-muted" : "text-earth"}`}>
+                        {milestone.name}
+                      </span>
+                      <span className="text-[9px] font-data text-muted">{doneCount}/{groupTasks.length}</span>
+                      {milestone.requiresInspection && (
+                        <span className="text-[7px] text-warning font-medium px-1 py-0.5 rounded bg-warning/8 border border-warning/15">INSP</span>
+                      )}
+                    </div>
 
-                    // Distribute tasks across milestones
-                    const milestoneGroups: { msIdx: number; milestone: typeof milestones[0]; tasks: typeof nonPending }[] = [];
-
-                    if (milestones.length > 0) {
-                      // Check if tasks have milestoneIndex
-                      const hasIdx = nonPending.some((t) => t.milestoneIndex != null);
-                      const sorted = [...nonPending].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-
-                      if (hasIdx) {
-                        // New tasks: group by milestoneIndex
-                        for (let mi = 0; mi < milestones.length; mi++) {
-                          milestoneGroups.push({
-                            msIdx: mi,
-                            milestone: milestones[mi],
-                            tasks: sorted.filter((t) => t.milestoneIndex === mi),
-                          });
-                        }
-                        // Ungrouped tasks (no milestoneIndex)
-                        const ungrouped = sorted.filter((t) => t.milestoneIndex == null);
-                        if (ungrouped.length > 0) {
-                          // Add to last milestone
-                          milestoneGroups[milestoneGroups.length - 1].tasks.push(...ungrouped);
-                        }
-                      } else {
-                        // Legacy: distribute evenly
-                        const perMs = Math.max(1, Math.ceil(sorted.length / milestones.length));
-                        for (let mi = 0; mi < milestones.length; mi++) {
-                          milestoneGroups.push({
-                            msIdx: mi,
-                            milestone: milestones[mi],
-                            tasks: sorted.slice(mi * perMs, (mi + 1) * perMs),
-                          });
-                        }
-                      }
-                    } else {
-                      // No milestones defined — show flat
-                      return nonPending.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((task, idx) => {
+                    {/* Task rows */}
+                    <div className="border-x border-b border-border/30 rounded-b divide-y divide-border/15 mb-1">
+                      {groupTasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((task) => {
                         const isOpen = completingTaskId === task.id;
                         const isDone = task.done;
-                        const stepNum = idx + 1;
-                        return null; // Will fall through to flat rendering below
-                      });
-                    }
+                        const isPending = task.status === "pending-review";
 
-                    return milestoneGroups.map(({ msIdx, milestone, tasks: groupTasks }) => {
-                      const allDone = groupTasks.length > 0 && groupTasks.every((t) => t.done);
-                      const doneCount = groupTasks.filter((t) => t.done).length;
+                        return (
+                          <div key={task.id} id={`task-${task.id}`} className={`transition-colors ${isOpen ? "bg-warm/15" : "hover:bg-warm/8"}`}>
+                            <button
+                              onClick={() => {
+                                if (isDone) return;
+                                if (isPending) { document.getElementById("pending-review")?.scrollIntoView({ behavior: "smooth" }); return; }
+                                setCompletingTaskId(isOpen ? null : task.id!);
+                                setCompletionNote("");
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-left"
+                              disabled={isDone}
+                            >
+                              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isDone ? "bg-success" : isPending ? "bg-warning" : "bg-border"}`} />
+                              <span className={`text-[11px] flex-1 min-w-0 truncate ${isDone ? "text-muted line-through" : "text-earth"}`}>{task.label}</span>
+                              {isDone && task.completedAt && (
+                                <span className="text-[8px] font-data text-muted/40 shrink-0">
+                                  {new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                </span>
+                              )}
+                              {isPending && <span className="text-[8px] px-1 py-0.5 rounded bg-warning/10 text-warning font-medium shrink-0">Review</span>}
+                              {!isDone && !isPending && <ChevronDown size={10} className={`text-muted/30 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />}
+                            </button>
 
-                      return (
-                        <div key={msIdx} className="mb-1">
-                          {/* Milestone header — compact row */}
-                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-t bg-surface-alt/50 border-b border-border/30 ${allDone ? "opacity-50" : ""}`}>
-                            <div className={`w-3 h-3 rounded-sm shrink-0 ${allDone ? "bg-success" : "bg-border"}`} />
-                            <span className={`text-[11px] font-semibold uppercase tracking-[0.06em] flex-1 ${allDone ? "text-muted" : "text-earth"}`}>
-                              {milestone.name}
-                            </span>
-                            <span className="text-[10px] font-data text-muted">{doneCount}/{groupTasks.length}</span>
-                            {milestone.requiresInspection && (
-                              <span className="text-[8px] text-warning font-medium px-1.5 py-0.5 rounded bg-warning/8 border border-warning/15">INSP</span>
-                            )}
-                            {milestone.requiresPayment && milestone.paymentPct && (
-                              <span className="text-[8px] text-info font-medium font-data px-1.5 py-0.5 rounded bg-info/8 border border-info/15">{milestone.paymentPct}%</span>
-                            )}
-                          </div>
-                          {/* Task rows — tight, professional */}
-                          <div className="border-x border-b border-border/30 rounded-b mb-2 divide-y divide-border/20">
-                  {groupTasks
-                    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-                    .map((task, idx) => {
-                      const isOpen = completingTaskId === task.id;
-                      const isPending = task.status === "pending-review";
-                      const isDone = task.done;
-                      const stepNum = idx + 1;
-
-                      return (
-                        <div key={task.id} id={`task-${task.id}`} className={`transition-colors ${isOpen ? "bg-warm/20" : "hover:bg-warm/10"}`}>
-                          {/* Task row — compact, professional */}
-                          <button
-                            onClick={() => {
-                              if (isDone) return;
-                              if (isPending) {
-                                document.getElementById("pending-review")?.scrollIntoView({ behavior: "smooth" });
-                                return;
-                              }
-                              setCompletingTaskId(isOpen ? null : task.id!);
-                              setCompletionNote("");
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left"
-                            disabled={isDone}
-                          >
-                            {/* Status dot */}
-                            <div className={`w-2 h-2 rounded-full shrink-0 ${
-                              isDone ? "bg-success" : isPending ? "bg-warning" : "bg-border"
-                            }`} />
-
-                            <span className={`text-[12px] flex-1 min-w-0 truncate ${isDone ? "text-muted line-through" : "text-earth"}`}>
-                              {task.label}
-                            </span>
-
-                            {/* Meta */}
-                            {isDone && task.completedAt && (
-                              <span className="text-[9px] font-data text-muted/50 shrink-0">
-                                {new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                              </span>
-                            )}
-                            {isPending && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-warning/10 text-warning font-medium shrink-0">Review</span>
-                            )}
-                            {task.assignedName && !isDone && (
-                              <span className="text-[9px] text-muted/60 shrink-0 truncate max-w-[80px]">{task.assignedName}</span>
-                            )}
-                            {!isDone && !isPending && (
-                              <ChevronDown size={12} className={`text-muted/30 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                            )}
-                          </button>
-
-                          {/* Expanded completion form */}
-                          {isOpen && !isDone && !isPending && (
-                            <div className="px-4 pb-4 pt-0">
-                              <div className="border-t border-border/30 pt-3 space-y-3">
-                                {/* 1. Closing rationale */}
-                                <div>
-                                  <p className="text-[11px] font-semibold text-earth mb-1.5">Closing rationale</p>
-                                  <div className="flex flex-wrap gap-1 mb-2">
-                                    {["Verified and confirmed", "Researched and decided", "Document uploaded", "Meeting completed", "Reviewed and approved"].map((q) => (
-                                      <button key={q} onClick={() => setCompletionNote((prev) => prev ? `${prev}. ${q}` : q)}
-                                        className="px-2.5 py-1 rounded-lg text-[10px] font-medium bg-warm/50 text-muted hover:text-earth hover:bg-warm border border-transparent transition-all">
-                                        + {q}
-                                      </button>
-                                    ))}
+                            {/* Completion form — inline */}
+                            {isOpen && !isDone && !isPending && (
+                              <div className="px-3 pb-2 pt-1">
+                                <textarea
+                                  value={completionNote}
+                                  onChange={(e) => setCompletionNote(e.target.value)}
+                                  placeholder="Describe what was done..."
+                                  className="w-full px-2.5 py-1.5 text-[11px] bg-white border border-border/40 rounded text-earth placeholder:text-muted/40 focus:outline-none focus:border-clay/30 resize-none"
+                                  rows={2}
+                                />
+                                <div className="flex items-center justify-between mt-1.5">
+                                  <div className="flex items-center gap-1">
+                                    <Link href={`/project/${projectId}/documents`} className="text-[9px] text-clay hover:underline">Attach doc</Link>
+                                    <span className="text-muted/30">|</span>
+                                    <Link href={`/project/${projectId}/photos`} className="text-[9px] text-clay hover:underline">Add photo</Link>
                                   </div>
-                                  <textarea
-                                    value={completionNote}
-                                    onChange={(e) => setCompletionNote(e.target.value)}
-                                    placeholder="Describe what was done, key decisions made, and any reference numbers..."
-                                    className="w-full px-3 py-2.5 text-[12px] bg-white border border-border/50 rounded-lg text-earth placeholder:text-muted/40 focus:outline-none focus:ring-2 focus:ring-clay/15 focus:border-clay/30 resize-none"
-                                    rows={2}
-                                  />
-                                </div>
-
-                                {/* 2. Attach artifacts -- links to other pages */}
-                                <div>
-                                  <p className="text-[11px] font-semibold text-earth mb-1.5">Attach supporting evidence</p>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <Link
-                                      href={`/project/${projectId}/documents`}
-                                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-warm/20 hover:bg-warm/40 transition-colors text-[10px] text-earth font-medium"
+                                  <div className="flex items-center gap-1.5">
+                                    <button onClick={() => { setCompletingTaskId(null); setCompletionNote(""); }} className="text-[9px] text-muted hover:text-earth">Cancel</button>
+                                    <button
+                                      disabled={completionLoading || !completionNote.trim()}
+                                      onClick={async () => {
+                                        if (!user || !task.id) return;
+                                        setCompletionLoading(true);
+                                        try {
+                                          await updateTask(user.uid, projectId, task.id, {
+                                            done: true, status: "done",
+                                            completedAt: new Date().toISOString(),
+                                            completedBy: user.uid,
+                                            completionNote: completionNote.trim(),
+                                          });
+                                          await approveTask(user.uid, projectId, task.id, completionNote.trim());
+                                          const nextTask = currentPhaseTasks
+                                            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                                            .find((t) => !t.done && t.status !== "pending-review" && t.id !== task.id);
+                                          setCompletingTaskId(nextTask?.id ?? null);
+                                          setCompletionNote("");
+                                          showToast("Task completed", "success");
+                                        } catch { showToast("Failed", "error"); }
+                                        finally { setCompletionLoading(false); }
+                                      }}
+                                      className="px-3 py-1 text-[10px] font-medium rounded bg-success text-white hover:bg-success/90 disabled:opacity-40 transition-colors"
                                     >
-                                      <FileText size={13} className="text-clay shrink-0" />
-                                      Upload document
-                                    </Link>
-                                    <Link
-                                      href={`/project/${projectId}/photos`}
-                                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-warm/20 hover:bg-warm/40 transition-colors text-[10px] text-earth font-medium"
-                                    >
-                                      <Camera size={13} className="text-clay shrink-0" />
-                                      Upload photos
-                                    </Link>
+                                      {completionLoading ? "..." : "Complete"}
+                                    </button>
                                   </div>
-                                  <p className="text-[9px] text-muted mt-1">Upload files in Documents or Photos, then describe them in the rationale above.</p>
-                                </div>
-
-                                {/* 3. Actions */}
-                                <div className="flex items-center justify-between pt-1">
-                                  <button
-                                    onClick={() => { setCompletingTaskId(null); setCompletionNote(""); }}
-                                    className="text-[11px] text-muted hover:text-earth transition-colors"
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    disabled={completionLoading || !completionNote.trim()}
-                                    onClick={async () => {
-                                      if (!user || !task.id) return;
-                                      setCompletionLoading(true);
-                                      try {
-                                        await updateTask(user.uid, projectId, task.id, {
-                                          done: true, status: "done",
-                                          completedAt: new Date().toISOString(),
-                                          completedBy: user.uid,
-                                          completionNote: completionNote.trim(),
-                                        });
-                                        await approveTask(user.uid, projectId, task.id, completionNote.trim());
-                                        const nextTask = currentPhaseTasks
-                                          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-                                          .find((t) => !t.done && t.status !== "pending-review" && t.id !== task.id);
-                                        setCompletingTaskId(nextTask?.id ?? null);
-                                        setCompletionNote("");
-                                        showToast("Task completed", "success");
-                                      } catch {
-                                        showToast("Failed to complete task", "error");
-                                      } finally {
-                                        setCompletionLoading(false);
-                                      }
-                                    }}
-                                    className="flex items-center gap-1.5 px-5 py-2 text-[12px] font-semibold rounded-lg bg-success text-white hover:bg-success/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
-                                  >
-                                    <Check size={13} />
-                                    {completionLoading ? "Saving..." : "Complete & Next"}
-                                  </button>
                                 </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-
-                  {/* Phase complete -- show what's next */}
-                  {currentPhaseProgress === 100 && currentPhaseTasks.length > 0 && (
-                    <div className="rounded-xl border border-success/20 bg-success/3 overflow-hidden">
-                      <div className="flex items-center gap-3 px-4 py-3">
-                        <div className="w-9 h-9 rounded-xl bg-success/10 flex items-center justify-center">
-                          <CheckCircle2 size={20} className="text-success" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-[13px] font-semibold text-success" style={{ fontFamily: "var(--font-heading)" }}>
-                            {PHASE_NAMES_EN[phase]} phase complete!
-                          </p>
-                          <p className="text-[11px] text-muted mt-0.5">
-                            {phase < 8
-                              ? `All ${currentPhaseTasks.length} tasks done. Advancing to ${["Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate", "Done"][phase]}.`
-                              : "Congratulations! Your project is complete."}
-                          </p>
-                        </div>
-                      </div>
-                      {phase < 8 && (
-                        <div className="px-4 py-3 border-t border-success/10 bg-success/5">
-                          <p className="text-[10px] font-semibold text-earth mb-2">Recommended before moving on:</p>
-                          <div className="flex flex-wrap gap-2">
-                            <Link href={`/project/${projectId}/documents`}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-border/50 text-[10px] font-medium text-earth hover:bg-warm/30 transition-colors">
-                              <FileText size={11} className="text-clay" /> Review documents
-                            </Link>
-                            <Link href={`/project/${projectId}/budget`}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-border/50 text-[10px] font-medium text-earth hover:bg-warm/30 transition-colors">
-                              <DollarSign size={11} className="text-clay" /> Check budget
-                            </Link>
-                            <Link href={`/project/${projectId}/photos`}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-border/50 text-[10px] font-medium text-earth hover:bg-warm/30 transition-colors">
-                              <Camera size={11} className="text-clay" /> Add progress photos
-                            </Link>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Phase gate — advance to next phase */}
-            {user && project && (
-              <PhaseAdvancement
-                project={project}
-                userId={user.uid}
-                tasks={tasks}
-                onAdvance={() => {
-                  showToast("Phase advanced successfully", "success");
-                }}
-              />
-            )}
-
-            {/* Budget estimate preview */}
-            <div>
-              <SectionLabel>Budget Preview</SectionLabel>
-              <BudgetDonutChart
-                items={budgetItems.map((b) => ({
-                  category: b.category,
-                  amount: b.estimated,
-                }))}
-                total={project.totalBudget}
-                currency={marketData.currency}
-              />
-            </div>
-          </div>
-
-          {/* Financing hint */}
-          <Card padding="md" className="mb-5">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-[var(--radius)] bg-warm flex items-center justify-center shrink-0">
-                <DollarSign size={18} className="text-clay" />
-              </div>
-              <div>
-                <p className="text-[12px] font-medium text-earth mb-0.5">
-                  {market === "USA" ? "Loan Qualification Quick-Check" : "Savings Tracker"}
-                </p>
-                <p className="text-[11px] text-muted leading-relaxed">
-                  {market === "USA" ? (
-                    <>
-                      Most construction loans require 20-25% down and a{" "}
-                      <LearnTooltip
-                        term="DTI (Debt-to-Income Ratio)"
-                        explanation="Your total monthly debts divided by your gross monthly income. Lenders typically require this to be below 43% for construction loans."
-                        whyItMatters="If your DTI is too high, you will not qualify for a construction loan. Paying down existing debts before applying can improve your ratio."
-                      >
-                        <span className="underline decoration-dotted cursor-help">debt-to-income ratio</span>
-                      </LearnTooltip>{" "}
-                      below 43%. Set your budget and financing details to see estimated qualification.
-                    </>
-                  ) : (
-                    "Building in phases with cash is the most common approach. Track your savings milestones and plan each construction phase around your funding availability."
-                  )}
-                </p>
-              </div>
-            </div>
-          </Card>
-        </>
-      )}
-
-      {/* ----------------------------------------------------------------- */}
-      {/* PHASE 2-4: Land / Design / Approve — Document-heavy planning      */}
-      {/* ----------------------------------------------------------------- */}
-      {phase >= 2 && phase <= 4 && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-            {/* Document checklist */}
-            <div>
-              <SectionLabel>Documents Needed</SectionLabel>
-              <Card padding="sm">
-                {(() => {
-                  const templates = getTemplatesForPhase(market, currentPhaseKey);
-                  const docItems = templates.length > 0
-                    ? templates.map((t) => ({ label: t.name, required: t.required }))
-                    : [
-                        { label: "Site survey / plat", required: true },
-                        { label: "Architectural plans", required: phase >= 3 },
-                        { label: "Building permit application", required: phase >= 4 },
-                        { label: "Contractor bids", required: phase >= 4 },
-                      ];
-                  return docItems.map((doc, i, arr) => (
-                    <div
-                      key={i}
-                      className={`flex items-center gap-2.5 py-2 text-[12px] ${
-                        i < arr.length - 1 ? "border-b border-border" : ""
-                      }`}
-                    >
-                      <FileText size={14} className="text-muted shrink-0" />
-                      <span className="flex-1 text-earth">{doc.label}</span>
-                      {doc.required && (
-                        <Badge variant="info">Required</Badge>
-                      )}
-                    </div>
-                  ));
-                })()}
-              </Card>
-            </div>
-
-            {/* Budget breakdown chart */}
-            <div>
-              <SectionLabel>Budget Breakdown</SectionLabel>
-              <CategoryBreakdownChart
-                items={budgetItems.map((b) => ({
-                  category: b.category,
-                  estimated: b.estimated,
-                  actual: b.actual,
-                }))}
-                currency={marketData.currency}
-              />
-            </div>
-          </div>
-
-          {/* Timeline preview */}
-          <Card padding="md" className="mb-5">
-            <h4 className="text-[12px] font-semibold text-earth mb-2">Timeline Preview</h4>
-            <div className="flex items-center gap-2 text-[11px] text-muted mb-2">
-              <CalendarCheck size={14} className="text-clay" />
-              <span>
-                Estimated {project.totalWeeks} weeks total
-                {phaseDef ? ` -- current phase: ${phaseDef.typicalDurationWeeks.min}-${phaseDef.typicalDurationWeeks.max} weeks typical` : ""}
-              </span>
-            </div>
-            <ProgressBar
-              value={project.totalWeeks > 0 ? Math.round((project.currentWeek / project.totalWeeks) * 100) : 0}
-              color="var(--color-info)"
-            />
-            <div className="flex justify-between text-[9px] text-muted mt-1 font-data">
-              <span>Week {project.currentWeek}</span>
-              <span>Week {project.totalWeeks}</span>
-            </div>
-          </Card>
-
-          {/* Next steps */}
-          <Card padding="md" className="mb-5">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-[12px] font-semibold text-earth">Next Steps</h4>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <button
-                    onClick={() => setShowMilestoneDropdown(!showMilestoneDropdown)}
-                    className="flex items-center gap-1 text-[11px] text-clay hover:underline cursor-pointer"
-                  >
-                    <ListChecks size={12} /> From milestones
-                  </button>
-                  {showMilestoneDropdown && (
-                    <MilestoneDropdown
-                      milestones={phaseDef?.milestones ?? []}
-                      existingTasks={tasks}
-                      onClose={() => setShowMilestoneDropdown(false)}
-                      onCreate={handleBulkCreateFromMilestones}
-                    />
-                  )}
-                </div>
-                <button
-                  onClick={() => setShowAddTask(true)}
-                  className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
-                >
-                  <Plus size={12} /> Add task
-                </button>
-              </div>
-            </div>
-            {showAddTask && (
-              <div className="mb-3 space-y-2 border border-border rounded-[var(--radius)] p-3 bg-surface">
-                <input
-                  type="text"
-                  value={newTaskLabel}
-                  onChange={(e) => setNewTaskLabel(e.target.value)}
-                  placeholder="Task name"
-                  className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
-                  autoFocus
-                />
-                <textarea
-                  value={taskDescription}
-                  onChange={(e) => setTaskDescription(e.target.value)}
-                  placeholder="Detailed instructions for the contractor"
-                  rows={2}
-                  className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 resize-none"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] text-muted mb-0.5">Assign to</label>
-                    <select
-                      value={selectedContactId}
-                      onChange={(e) => setSelectedContactId(e.target.value)}
-                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth focus:outline-none focus:border-emerald-500"
-                    >
-                      <option value="">Unassigned</option>
-                      {contacts.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}{c.role ? ` (${c.role})` : ""}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-muted mb-0.5">Priority</label>
-                    <select
-                      value={taskPriority}
-                      onChange={(e) => setTaskPriority(e.target.value as "normal" | "urgent" | "critical")}
-                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth focus:outline-none focus:border-emerald-500"
-                    >
-                      <option value="normal">Normal</option>
-                      <option value="urgent">Urgent</option>
-                      <option value="critical">Critical</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-muted mb-0.5">Price ({marketData?.currency?.symbol || "$"})</label>
-                    <input
-                      type="number"
-                      value={taskPrice}
-                      onChange={(e) => setTaskPrice(e.target.value)}
-                      placeholder="0"
-                      min="0"
-                      step="any"
-                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-muted mb-0.5">Due date</label>
-                    <input
-                      type="date"
-                      value={taskDueDate}
-                      onChange={(e) => setTaskDueDate(e.target.value)}
-                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="flex items-center gap-2 text-[11px] text-earth cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={requirePhoto}
-                      onChange={(e) => setRequirePhoto(e.target.checked)}
-                      className="rounded border-border text-emerald-600 focus:ring-emerald-500"
-                    />
-                    Require photo proof
-                  </label>
-                  <label className="flex items-center gap-2 text-[11px] text-earth cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={requireApproval}
-                      onChange={(e) => setRequireApproval(e.target.checked)}
-                      className="rounded border-border text-emerald-600 focus:ring-emerald-500"
-                    />
-                    Require my approval
-                  </label>
-                </div>
-                {tasks.filter(t => !t.done && t.id).length > 0 && (
-                  <div>
-                    <label className="block text-[10px] text-muted mb-0.5">Depends on (prerequisites)</label>
-                    <div className="max-h-[100px] overflow-y-auto border border-border rounded-[var(--radius)] bg-white p-1.5 space-y-1">
-                      {tasks.filter(t => !t.done && t.id).map(t => (
-                        <label key={t.id} className="flex items-center gap-2 text-[11px] text-earth cursor-pointer hover:bg-warm/30 rounded px-1 py-0.5">
-                          <input
-                            type="checkbox"
-                            checked={taskDependsOn.includes(t.id!)}
-                            onChange={(e) => {
-                              if (e.target.checked) setTaskDependsOn(prev => [...prev, t.id!]);
-                              else setTaskDependsOn(prev => prev.filter(id => id !== t.id!));
-                            }}
-                            className="rounded border-border text-emerald-600 focus:ring-emerald-500"
-                          />
-                          {t.label}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    onClick={handleAddTask}
-                    disabled={!newTaskLabel.trim()}
-                    className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={resetTaskForm}
-                    className="p-1 text-muted hover:text-earth transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-            )}
-            <div className="space-y-2">
-              {activeTasks.slice(0, 4).map((task, i) => {
-                const blockInfo = isTaskBlocked(task, tasks);
-                return (
-                <div key={task.id} className="space-y-0.5">
-                  <div className="flex items-center gap-2 text-[12px]">
-                    {blockInfo.blocked ? (
-                      <Lock size={14} className="text-muted/50 shrink-0" />
-                    ) : (
-                      <div
-                        className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
-                        onClick={() => setCompletingTaskId(completingTaskId === task.id ? null : task.id!)}
-                      />
-                    )}
-                    {editingTaskId === task.id ? (
-                      <input
-                        type="text"
-                        value={editingTaskLabel}
-                        onChange={(e) => setEditingTaskLabel(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleEditTaskSave(task.id!);
-                          if (e.key === "Escape") { setEditingTaskId(null); setEditingTaskLabel(""); }
-                        }}
-                        onBlur={() => handleEditTaskSave(task.id!)}
-                        className="flex-1 px-2 py-0.5 text-[12px] border border-border rounded bg-surface text-earth focus:outline-none focus:border-emerald-500"
-                        autoFocus
-                      />
-                    ) : (
-                      <span
-                        className={`cursor-pointer hover:text-earth transition-colors ${blockInfo.blocked ? "text-muted/50" : "text-muted"}`}
-                        onClick={() => { setEditingTaskId(task.id!); setEditingTaskLabel(task.label); }}
-                        title="Click to edit"
-                      >
-                        {task.label}
-                      </span>
-                    )}
-                    {blockInfo.blocked ? (
-                      <Badge variant="default">Blocked</Badge>
-                    ) : (
-                      <Badge variant={task.status === "in-progress" ? "warning" : "info"}>
-                        {task.status === "in-progress" ? "In progress" : "Upcoming"}
-                      </Badge>
-                    )}
-                    <button
-                      onClick={() => handleDeleteTask(task.id!)}
-                      className="p-0.5 text-muted hover:text-danger transition-colors shrink-0"
-                      title="Delete task"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                  {blockInfo.blocked && (
-                    <p className="text-[10px] text-muted/60 pl-6">Blocked by: {blockInfo.blockedBy.join(", ")}</p>
-                  )}
-                  {/* Completion panel -- add evidence before marking done */}
-                  {completingTaskId === task.id && !blockInfo.blocked && (
-                    <div className="ml-6 mt-2 p-3.5 bg-surface rounded-xl border border-success/20 shadow-sm">
-                      <div className="flex items-center gap-2 mb-2.5">
-                        <div className="w-5 h-5 rounded-full bg-success/10 flex items-center justify-center">
-                          <Check size={11} className="text-success" />
-                        </div>
-                        <p className="text-[11px] font-semibold text-earth">Complete: {task.label}</p>
-                      </div>
-                      {/* Quick options */}
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {["Verified and confirmed", "Researched and decided", "Document obtained", "Meeting completed", "Reviewed and approved"].map((q) => (
-                          <button key={q} onClick={() => setCompletionNote(q)}
-                            className={`px-2 py-1 rounded-md text-[9px] font-medium transition-all ${completionNote === q ? "bg-success/10 text-success border border-success/30" : "bg-warm/40 text-muted hover:text-earth border border-transparent"}`}>
-                            {q}
-                          </button>
-                        ))}
-                      </div>
-                      <textarea
-                        value={completionNote}
-                        onChange={(e) => setCompletionNote(e.target.value)}
-                        placeholder="Add details: what was done, key decisions, documents referenced..."
-                        className="w-full px-3 py-2 text-[11px] bg-white border border-border/50 rounded-lg text-earth placeholder:text-muted/40 focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success/40 resize-none"
-                        rows={2}
-                      />
-                      <div className="flex items-center justify-between mt-2.5">
-                        <button
-                          onClick={() => { setCompletingTaskId(null); setCompletionNote(""); }}
-                          className="px-3 py-1.5 text-[11px] text-muted hover:text-earth transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          disabled={completionLoading || !completionNote.trim()}
-                          onClick={async () => {
-                            if (!user || !task.id) return;
-                            setCompletionLoading(true);
-                            try {
-                              await updateTask(user.uid, projectId, task.id, {
-                                done: true, status: "done",
-                                completedAt: new Date().toISOString(),
-                                completedBy: user.uid,
-                                completionNote: completionNote.trim(),
-                              });
-                              await approveTask(user.uid, projectId, task.id, completionNote.trim());
-                              setCompletingTaskId(null);
-                              setCompletionNote("");
-                              showToast("Task completed", "success");
-                            } catch {
-                              showToast("Failed to complete task", "error");
-                            } finally {
-                              setCompletionLoading(false);
-                            }
-                          }}
-                          className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-semibold rounded-lg bg-success text-white hover:bg-success/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
-                        >
-                          <Check size={12} />
-                          {completionLoading ? "Saving..." : "Mark Complete"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                );
-              })}
-              {activeTasks.length === 0 && !showAddTask && (
-                <p className="text-[11px] text-muted">No active tasks. Add tasks to plan your next steps.</p>
-              )}
-            </div>
-          </Card>
-        </>
-      )}
-
-      {/* ----------------------------------------------------------------- */}
-      {/* PHASE 5: Assemble — Team building                                 */}
-      {/* ----------------------------------------------------------------- */}
-      {phase === 5 && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-            {/* Team roster */}
-            <div>
-              <SectionLabel>Team Roster</SectionLabel>
-              <Card padding="sm">
-                {(() => {
-                  const neededTrades = getTradesForPhase(market, "BUILD");
-                  const hiredNames = contacts.map((c) => c.role.toLowerCase());
-                  return (
-                    <>
-                      <div className="flex items-center justify-between text-[11px] text-muted mb-2 pb-2 border-b border-border">
-                        <span>{contacts.length} hired</span>
-                        <span>{neededTrades.length} trades needed for Build phase</span>
-                      </div>
-                      {neededTrades.slice(0, 8).map((trade, i, arr) => {
-                        const hired = hiredNames.some(
-                          (h) => h.includes(trade.name.toLowerCase().split(" ")[0])
-                        );
-                        return (
-                          <div
-                            key={trade.id}
-                            className={`flex items-center justify-between py-1.5 text-[12px] ${
-                              i < arr.length - 1 ? "border-b border-border" : ""
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <Users size={12} className="text-muted" />
-                              <span className="text-earth">{trade.name}</span>
-                            </div>
-                            <Badge variant={hired ? "success" : "warning"}>
-                              {hired ? "Hired" : "Needed"}
-                            </Badge>
+                            )}
                           </div>
                         );
                       })}
-                    </>
-                  );
-                })()}
-              </Card>
-            </div>
-
-            {/* Contract status + Budget finalization */}
-            <div className="space-y-3">
-              <div>
-                <SectionLabel>Contract Status</SectionLabel>
-                <Card padding="md">
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div>
-                      <p className="font-data text-lg font-medium text-earth">{contacts.length}</p>
-                      <p className="text-[9px] text-muted uppercase tracking-wider">Contractors</p>
-                    </div>
-                    <div>
-                      <p className="font-data text-lg font-medium text-earth">{budgetItems.length}</p>
-                      <p className="text-[9px] text-muted uppercase tracking-wider">Budget Lines</p>
                     </div>
                   </div>
-                </Card>
-              </div>
-              <div>
-                <SectionLabel>Budget Finalization</SectionLabel>
-                <Card padding="md">
-                  <p className="text-[12px] text-earth font-medium mb-1">Review your budget before breaking ground</p>
-                  <p className="text-[11px] text-muted leading-relaxed mb-3">
-                    Ensure all estimates are confirmed with contractor bids. Add contingency (recommended 15%) for unexpected costs.
-                  </p>
-                  <div className="flex justify-between text-[11px] mb-1">
-                    <span className="text-muted">Budget utilization</span>
-                    <span className="font-data text-earth">{budgetUtilization}%</span>
-                  </div>
-                  <ProgressBar
-                    value={budgetUtilization}
-                    color={budgetUtilization > 95 ? "var(--color-danger)" : budgetUtilization > 80 ? "var(--color-warning)" : "var(--color-success)"}
-                  />
-                </Card>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ----------------------------------------------------------------- */}
-      {/* PHASE 6: Build — Construction command center                      */}
-      {/* ----------------------------------------------------------------- */}
-      {phase === 6 && (
-        <>
-          {/* Daily Pulse Bar */}
-          <div className="mb-4">
-            <DailyPulseBar
-              weather={dailyLogs[0]?.weather ?? ""}
-              crewSize={dailyLogs[0]?.crew ?? 0}
-              activeTrades={contacts.slice(0, 3).map((c) => c.role.split(" ")[0])}
-              lastLogHoursAgo={
-                dailyLogs[0]?.createdAt
-                  ? Math.max(0, (Date.now() - new Date(dailyLogs[0].createdAt).getTime()) / 3600000)
-                  : -1
-              }
-            />
-          </div>
-
-          {/* Spend Velocity + Progress S-Curve */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            <SpendVelocityChart
-              planned={generatePlannedSpend(project.totalBudget, project.totalWeeks)}
-              actual={generateActualSpend(project.totalSpent, project.currentWeek)}
-              currency={marketData.currency}
-            />
-            <ProgressSCurve
-              planned={generatePlannedProgress(project.totalWeeks)}
-              actual={generateActualProgress(project.progress, project.currentWeek)}
-              currentWeek={project.currentWeek}
-            />
-          </div>
-
-          {/* Active tasks */}
-          <div className="flex items-center justify-between mb-2">
-            <SectionLabel>Active Tasks</SectionLabel>
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] text-muted font-data">{activeTasks.length} open</span>
-              <div className="relative">
-                <button
-                  onClick={() => setShowMilestoneDropdown(!showMilestoneDropdown)}
-                  className="flex items-center gap-1 text-[11px] text-clay hover:underline cursor-pointer"
-                >
-                  <ListChecks size={12} /> From milestones
-                </button>
-                {showMilestoneDropdown && (
-                  <MilestoneDropdown
-                    milestones={phaseDef?.milestones ?? []}
-                    existingTasks={tasks}
-                    onClose={() => setShowMilestoneDropdown(false)}
-                    onCreate={handleBulkCreateFromMilestones}
-                  />
-                )}
-              </div>
-              <button
-                onClick={() => setShowAddTask(true)}
-                className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
-              >
-                <Plus size={12} /> Add task
-              </button>
-            </div>
-          </div>
-
-          {/* Inline add task */}
-          {showAddTask && (
-            <Card padding="sm" className="mb-2">
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={newTaskLabel}
-                  onChange={(e) => setNewTaskLabel(e.target.value)}
-                  placeholder="Task name"
-                  className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
-                  autoFocus
-                />
-                <textarea
-                  value={taskDescription}
-                  onChange={(e) => setTaskDescription(e.target.value)}
-                  placeholder="Detailed instructions for the contractor"
-                  rows={2}
-                  className="w-full px-3 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 resize-none"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] text-muted mb-0.5">Assign to</label>
-                    <select
-                      value={selectedContactId}
-                      onChange={(e) => setSelectedContactId(e.target.value)}
-                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth focus:outline-none focus:border-emerald-500"
-                    >
-                      <option value="">Unassigned</option>
-                      {contacts.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}{c.role ? ` (${c.role})` : ""}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-muted mb-0.5">Priority</label>
-                    <select
-                      value={taskPriority}
-                      onChange={(e) => setTaskPriority(e.target.value as "normal" | "urgent" | "critical")}
-                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth focus:outline-none focus:border-emerald-500"
-                    >
-                      <option value="normal">Normal</option>
-                      <option value="urgent">Urgent</option>
-                      <option value="critical">Critical</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-muted mb-0.5">Price ({marketData?.currency?.symbol || "$"})</label>
-                    <input
-                      type="number"
-                      value={taskPrice}
-                      onChange={(e) => setTaskPrice(e.target.value)}
-                      placeholder="0"
-                      min="0"
-                      step="any"
-                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-muted mb-0.5">Due date</label>
-                    <input
-                      type="date"
-                      value={taskDueDate}
-                      onChange={(e) => setTaskDueDate(e.target.value)}
-                      className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-white text-earth focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="flex items-center gap-2 text-[11px] text-earth cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={requirePhoto}
-                      onChange={(e) => setRequirePhoto(e.target.checked)}
-                      className="rounded border-border text-emerald-600 focus:ring-emerald-500"
-                    />
-                    Require photo proof
-                  </label>
-                  <label className="flex items-center gap-2 text-[11px] text-earth cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={requireApproval}
-                      onChange={(e) => setRequireApproval(e.target.checked)}
-                      className="rounded border-border text-emerald-600 focus:ring-emerald-500"
-                    />
-                    Require my approval
-                  </label>
-                </div>
-                {tasks.filter(t => !t.done && t.id).length > 0 && (
-                  <div>
-                    <label className="block text-[10px] text-muted mb-0.5">Depends on (prerequisites)</label>
-                    <div className="max-h-[100px] overflow-y-auto border border-border rounded-[var(--radius)] bg-white p-1.5 space-y-1">
-                      {tasks.filter(t => !t.done && t.id).map(t => (
-                        <label key={t.id} className="flex items-center gap-2 text-[11px] text-earth cursor-pointer hover:bg-warm/30 rounded px-1 py-0.5">
-                          <input
-                            type="checkbox"
-                            checked={taskDependsOn.includes(t.id!)}
-                            onChange={(e) => {
-                              if (e.target.checked) setTaskDependsOn(prev => [...prev, t.id!]);
-                              else setTaskDependsOn(prev => prev.filter(id => id !== t.id!));
-                            }}
-                            className="rounded border-border text-emerald-600 focus:ring-emerald-500"
-                          />
-                          {t.label}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    onClick={handleAddTask}
-                    disabled={!newTaskLabel.trim()}
-                    className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={resetTaskForm}
-                    className="p-1 text-muted hover:text-earth transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {activeTasks.length > 0 && (
-            <Card padding="sm" className="mb-4">
-              {activeTasks.slice(0, 6).map((task, i) => {
-                const blockInfo = isTaskBlocked(task, tasks);
-                return (
-                <div
-                  key={task.id}
-                  className={`py-1.5 text-[12px] ${
-                    i < Math.min(activeTasks.length, 6) - 1 ? "border-b border-border" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    {blockInfo.blocked ? (
-                      <Lock size={14} className="text-muted/50 shrink-0" />
-                    ) : (
-                      <div
-                        className="w-4 h-4 rounded border-[1.5px] border-border-dark shrink-0 cursor-pointer hover:border-emerald-500 transition-colors"
-                        onClick={() => setCompletingTaskId(completingTaskId === task.id ? null : task.id!)}
-                      />
-                    )}
-                    {editingTaskId === task.id ? (
-                      <input
-                        type="text"
-                        value={editingTaskLabel}
-                        onChange={(e) => setEditingTaskLabel(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleEditTaskSave(task.id!);
-                          if (e.key === "Escape") { setEditingTaskId(null); setEditingTaskLabel(""); }
-                        }}
-                        onBlur={() => handleEditTaskSave(task.id!)}
-                        className="flex-1 px-2 py-0.5 text-[12px] border border-border rounded bg-surface text-earth focus:outline-none focus:border-emerald-500"
-                        autoFocus
-                      />
-                    ) : (
-                      <span
-                        className={`flex-1 cursor-pointer hover:text-earth transition-colors ${blockInfo.blocked ? "text-muted/50" : "text-muted"}`}
-                        onClick={() => { setEditingTaskId(task.id!); setEditingTaskLabel(task.label); }}
-                        title="Click to edit"
-                      >
-                        {task.label}
-                      </span>
-                    )}
-                    {blockInfo.blocked ? (
-                      <Badge variant="default">Blocked</Badge>
-                    ) : (
-                      <Badge variant={task.status === "in-progress" ? "warning" : "info"}>
-                        {task.status === "in-progress" ? "In progress" : "Upcoming"}
-                      </Badge>
-                    )}
-                    <button
-                      onClick={() => handleDeleteTask(task.id!)}
-                      className="p-0.5 text-muted hover:text-danger transition-colors shrink-0"
-                      title="Delete task"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                  {blockInfo.blocked && (
-                    <p className="text-[10px] text-muted/60 pl-6 mt-0.5">Blocked by: {blockInfo.blockedBy.join(", ")}</p>
-                  )}
-                  {/* Completion panel */}
-                  {completingTaskId === task.id && !blockInfo.blocked && (
-                    <div className="ml-6 mt-1.5 p-3 bg-warm/30 rounded-lg border border-border/40">
-                      <p className="text-[10px] font-medium text-earth mb-1.5">How did you complete this?</p>
-                      <textarea
-                        value={completionNote}
-                        onChange={(e) => setCompletionNote(e.target.value)}
-                        placeholder="Describe what was done, decisions made, or relevant details..."
-                        className="w-full px-2.5 py-2 text-[11px] bg-white/80 border border-border/50 rounded-lg text-earth placeholder:text-muted/40 focus:outline-none focus:ring-1 focus:ring-clay/30 resize-none"
-                        rows={2}
-                        autoFocus
-                      />
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          disabled={completionLoading}
-                          onClick={async () => {
-                            if (!user || !task.id) return;
-                            setCompletionLoading(true);
-                            try {
-                              await updateTask(user.uid, projectId, task.id, {
-                                done: true, status: "done",
-                                completedAt: new Date().toISOString(),
-                                completedBy: user.uid,
-                                completionNote: completionNote.trim() || "Completed",
-                              });
-                              await approveTask(user.uid, projectId, task.id, completionNote.trim() || "Completed");
-                              setCompletingTaskId(null);
-                              setCompletionNote("");
-                              showToast("Task completed", "success");
-                            } catch {
-                              showToast("Failed to complete task", "error");
-                            } finally {
-                              setCompletionLoading(false);
-                            }
-                          }}
-                          className="px-3 py-1.5 text-[11px] font-medium rounded-lg bg-success text-white hover:bg-success/90 disabled:opacity-50 transition-colors"
-                        >
-                          {completionLoading ? "Saving..." : "Mark Complete"}
-                        </button>
-                        <button
-                          onClick={() => { setCompletingTaskId(null); setCompletionNote(""); }}
-                          className="px-3 py-1.5 text-[11px] text-muted hover:text-earth transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
                 );
               })}
-            </Card>
+            </div>
+          ) : (
+            <div className="text-[11px] text-muted py-4 text-center">No tasks for this phase yet.</div>
           )}
 
-          {/* Risk alerts + Milestone timeline */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            <div>
-              <SectionLabel>Risk Alerts</SectionLabel>
-              <div className="space-y-1.5">
-                {project.totalSpent > project.totalBudget * 0.9 && (
-                  <AlertBanner variant="danger">
-                    Budget {Math.round((project.totalSpent / project.totalBudget) * 100)}% spent with {100 - project.progress}% of work remaining
-                  </AlertBanner>
-                )}
-                {project.totalSpent > project.totalBudget * 0.75 && project.progress < 50 && (
-                  <AlertBanner variant="danger">
-                    Spend rate exceeds progress rate -- review scope and costs
-                  </AlertBanner>
-                )}
-                {activeTasks.length > 5 && (
-                  <AlertBanner variant="warning">
-                    {activeTasks.length} open tasks -- consider prioritizing critical path items
-                  </AlertBanner>
-                )}
-                {dailyLogs.length > 0 && dailyLogs[0].crew === 0 && (
-                  <AlertBanner variant="warning">
-                    No crew reported on latest log -- verify site activity
-                  </AlertBanner>
-                )}
-                {activeTasks.length <= 5 && project.progress < 100 && project.totalSpent <= project.totalBudget * 0.9 && (
-                  <AlertBanner variant="info">
-                    Project on track -- {activeTasks.length} active tasks in current sub-phase
-                  </AlertBanner>
-                )}
-              </div>
-            </div>
-            <div>
-              <SectionLabel>Milestones</SectionLabel>
-              {phaseDef ? (
-                <MilestoneTimeline
-                  milestones={phaseDef.milestones.map((m, i) => {
-                    const phaseProgress = allMilestoneProgress[currentPhaseKey] ?? [];
-                    const isComplete = phaseProgress[i] ?? false;
-                    const firstIncomplete = phaseDef.milestones.findIndex(
-                      (_, idx) => !(phaseProgress[idx] ?? false)
-                    );
-                    return {
-                      name: m.name,
-                      status: isComplete
-                        ? "completed" as const
-                        : i === firstIncomplete
-                        ? "current" as const
-                        : "upcoming" as const,
-                      paymentPct: m.paymentPct,
-                    };
-                  })}
-                />
-              ) : (
-                <Card padding="sm">
-                  <p className="text-[11px] text-muted py-2">No milestone data available for this market.</p>
-                </Card>
-              )}
-            </div>
-          </div>
-
-          {/* Recent photos strip */}
-          {photos.length > 0 && (
-            <div className="mb-4">
-              <SectionLabel>Recent Photos</SectionLabel>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {photos.slice(0, 4).map((photo) => (
-                  <div
-                    key={photo.id}
-                    className="aspect-square bg-warm border border-border rounded-[var(--radius)] overflow-hidden relative"
-                  >
-                    {photo.fileUrl ? (
-                      <img
-                        src={photo.fileUrl}
-                        alt={photo.caption || "Site photo"}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Camera size={20} className="text-muted" />
-                      </div>
-                    )}
-                    {photo.caption && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-earth/70 px-1.5 py-1">
-                        <p className="text-[9px] text-warm truncate">{photo.caption}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* Phase Gate */}
+          {user && project && (
+            <PhaseAdvancement project={project} userId={user.uid} tasks={tasks} onAdvance={() => showToast("Phase advanced", "success")} />
           )}
+        </div>
 
-          {/* Quick action buttons */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
-            <Link
-              href={`/project/${projectId}/daily-log`}
-              className="flex flex-col items-center gap-1.5 py-3 bg-surface border border-border rounded-[var(--radius)] hover:bg-warm transition-colors"
-            >
-              <ClipboardList size={18} className="text-clay" />
-              <span className="text-[10px] text-earth font-medium">Add daily log</span>
-            </Link>
-            <Link
-              href={`/project/${projectId}/photos`}
-              className="flex flex-col items-center gap-1.5 py-3 bg-surface border border-border rounded-[var(--radius)] hover:bg-warm transition-colors"
-            >
-              <Camera size={18} className="text-clay" />
-              <span className="text-[10px] text-earth font-medium">Upload photo</span>
-            </Link>
-            <Link
-              href={`/project/${projectId}/budget`}
-              className="flex flex-col items-center gap-1.5 py-3 bg-surface border border-border rounded-[var(--radius)] hover:bg-warm transition-colors"
-            >
-              <DollarSign size={18} className="text-clay" />
-              <span className="text-[10px] text-earth font-medium">Record expense</span>
-            </Link>
-            <button
-              onClick={() => setShowAddChangeOrder(true)}
-              className="flex flex-col items-center gap-1.5 py-3 bg-surface border border-border rounded-[var(--radius)] hover:bg-warm transition-colors"
-            >
-              <FilePlus size={18} className="text-clay" />
-              <span className="text-[10px] text-earth font-medium">Change order</span>
-            </button>
-          </div>
-        </>
-      )}
+        {/* ─── RIGHT PANEL: Activity + Alerts ─── */}
+        <div className="space-y-4">
 
-      {/* ----------------------------------------------------------------- */}
-      {/* PHASE 7: Verify — Punch list and inspections                     */}
-      {/* ----------------------------------------------------------------- */}
-      {phase === 7 && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-            {/* Punch list donut */}
-            <div>
-              <SectionLabel>Punch List Status</SectionLabel>
-              <PunchListDonut
-                open={punchListItems.filter((p) => p.status === "open").length}
-                inProgress={punchListItems.filter((p) => p.status === "in-progress").length}
-                resolved={punchListItems.filter((p) => p.status === "resolved").length}
+          {/* Spend vs Progress (Build phase) */}
+          {phase >= 6 && project.totalBudget > 0 && (
+            <div className="bg-surface border border-border/40 rounded-lg p-3">
+              <p className="text-[9px] font-semibold text-muted uppercase tracking-wider mb-2">Spend vs Progress</p>
+              <SpendVelocityChart
+                planned={generatePlannedSpend(project.totalBudget, project.totalWeeks)}
+                actual={generateActualSpend(project.totalSpent, project.currentWeek)}
+                currency={marketData.currency}
               />
             </div>
+          )}
 
-            {/* Inspection summary + Final payment tracker */}
-            <div className="space-y-3">
-              <div>
-                <SectionLabel>Inspection Summary</SectionLabel>
-                <Card padding="md">
-                  <div className="space-y-2">
-                    {[
-                      { label: "Final building inspection", status: project.progress >= 95 ? "Scheduled" : "Pending" },
-                      { label: "Final mechanical inspection", status: project.progress >= 90 ? "Passed" : "Pending" },
-                      { label: "Certificate of Occupancy", status: project.progress >= 98 ? "Applied" : "Pending" },
-                    ].map((insp, i, arr) => (
-                      <div
-                        key={i}
-                        className={`flex items-center justify-between py-1.5 text-[12px] ${
-                          i < arr.length - 1 ? "border-b border-border" : ""
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <ShieldCheck size={14} className="text-muted" />
-                          <span className="text-earth">{insp.label}</span>
-                        </div>
-                        <Badge variant={insp.status === "Passed" ? "success" : insp.status === "Scheduled" ? "warning" : "info"}>
-                          {insp.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
+          {/* Budget snapshot (non-Build phases) */}
+          {phase < 6 && project.totalBudget > 0 && (
+            <div className="bg-surface border border-border/40 rounded-lg p-3">
+              <p className="text-[9px] font-semibold text-muted uppercase tracking-wider mb-2">Budget</p>
+              <div className="flex items-center justify-between text-[11px] mb-1">
+                <span className="text-muted">Spent</span>
+                <span className="font-data text-earth">{fmtCompact(project.totalSpent)} / {fmtCompact(project.totalBudget)}</span>
               </div>
-              <div>
-                <SectionLabel>Final Payment Tracker</SectionLabel>
-                <Card padding="md">
-                  <div className="flex justify-between text-[11px] mb-1">
-                    <span className="text-muted">Payments released</span>
-                    <span className="font-data text-earth">{budgetUtilization}%</span>
-                  </div>
-                  <ProgressBar
-                    value={budgetUtilization}
-                    color={budgetUtilization > 95 ? "var(--color-success)" : "var(--color-warning)"}
-                  />
-                  <div className="grid grid-cols-2 gap-3 mt-3 text-center">
-                    <div>
-                      <p className="font-data text-sm font-medium text-earth">{fmtCompact(project.totalSpent)}</p>
-                      <p className="text-[9px] text-muted uppercase">Released</p>
-                    </div>
-                    <div>
-                      <p className="font-data text-sm font-medium text-earth">{fmtCompact(project.totalBudget - project.totalSpent)}</p>
-                      <p className="text-[9px] text-muted uppercase">Retained</p>
-                    </div>
-                  </div>
-                </Card>
+              <div className="h-1.5 bg-warm rounded-full overflow-hidden">
+                <div className={`h-full rounded-full ${budgetUtilization > 90 ? "bg-danger" : budgetUtilization > 70 ? "bg-warning" : "bg-success"}`} style={{ width: `${budgetUtilization}%` }} />
               </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ----------------------------------------------------------------- */}
-      {/* PHASE 8: Operate — Post-construction management                  */}
-      {/* ----------------------------------------------------------------- */}
-      {phase === 8 && (
-        <>
-          {/* Purpose-specific cards */}
-          {project.purpose === "RENT" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-              <div>
-                <SectionLabel>Rental Income</SectionLabel>
-                <Card padding="md">
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-[var(--radius)] bg-warm flex items-center justify-center shrink-0">
-                      <TrendingUp size={18} className="text-clay" />
-                    </div>
-                    <div>
-                      <p className="text-[12px] font-medium text-earth mb-0.5">Track Rental Income</p>
-                      <p className="text-[11px] text-muted leading-relaxed">
-                        Set up your rental units, track monthly income, expenses, and occupancy rates.
-                        Your total construction cost was {fmtCompact(project.totalSpent)}.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-              <div>
-                <SectionLabel>Occupancy</SectionLabel>
-                <Card padding="md" className="text-center">
-                  <p className="font-data text-2xl font-medium text-earth">--</p>
-                  <p className="text-[9px] text-muted uppercase tracking-wider mt-1">Occupancy Rate</p>
-                  <p className="text-[11px] text-muted mt-2">Set up units to begin tracking.</p>
-                </Card>
-              </div>
+              {(project.dealScore ?? 0) > 0 && (
+                <div className="flex items-center justify-between mt-2 text-[10px]">
+                  <span className="text-muted">Deal Score</span>
+                  <span className={`font-data font-semibold ${(project.dealScore ?? 0) >= 65 ? "text-success" : (project.dealScore ?? 0) >= 50 ? "text-warning" : "text-danger"}`}>{project.dealScore}</span>
+                </div>
+              )}
             </div>
           )}
 
-          {project.purpose === "SELL" && (
-            <div className="mb-5">
-              <SectionLabel>Market Readiness</SectionLabel>
-              <Card padding="sm">
-                {[
-                  { label: "Final inspection passed", done: true },
-                  { label: "Certificate of Occupancy obtained", done: false },
-                  { label: "Professional photography complete", done: false },
-                  { label: "Property listing prepared", done: false },
-                  { label: "Staging complete", done: false },
-                ].map((item, i, arr) => (
-                  <div
-                    key={i}
-                    className={`flex items-center gap-2.5 py-2 text-[12px] ${
-                      i < arr.length - 1 ? "border-b border-border" : ""
-                    }`}
-                  >
-                    <div
-                      className={`w-4 h-4 rounded border-[1.5px] shrink-0 flex items-center justify-center ${
-                        item.done ? "bg-success border-success" : "border-border-dark"
-                      }`}
-                    >
-                      {item.done && (
-                        <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                          <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
+          {/* Recent Activity */}
+          <div className="bg-surface border border-border/40 rounded-lg p-3">
+            <p className="text-[9px] font-semibold text-muted uppercase tracking-wider mb-2">Recent Activity</p>
+            {recentActivity.length > 0 ? (
+              <div className="space-y-0">
+                {recentActivity.map((item, i) => (
+                  <div key={i} className="flex items-start gap-2 py-1.5 border-b border-border/15 last:border-b-0">
+                    <div className={`w-1 h-1 rounded-full mt-1.5 shrink-0 ${
+                      item.type === "log" ? "bg-info" : item.type === "photo" ? "bg-emerald-500" : item.type === "punch" ? "bg-danger" : "bg-warning"
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-earth truncate">{item.text}</p>
+                      {item.date && (
+                        <p className="text-[8px] text-muted/50 font-data">
+                          {new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </p>
                       )}
                     </div>
-                    <span className={`flex-1 ${item.done ? "text-muted line-through opacity-50" : "text-earth"}`}>
-                      {item.label}
-                    </span>
                   </div>
                 ))}
-              </Card>
-            </div>
-          )}
-
-          {project.purpose === "OCCUPY" && (
-            <Card padding="md" className="mb-5">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-[var(--radius)] bg-warm flex items-center justify-center shrink-0">
-                  <Home size={18} className="text-clay" />
-                </div>
-                <div>
-                  <p className="text-[12px] font-medium text-earth mb-0.5">Welcome Home</p>
-                  <p className="text-[11px] text-muted leading-relaxed">
-                    Your construction project is complete. Track warranty items, schedule maintenance,
-                    and keep records of your home in one place.
-                  </p>
-                </div>
               </div>
-            </Card>
+            ) : (
+              <p className="text-[10px] text-muted py-2">No recent activity</p>
+            )}
+          </div>
+
+          {/* Alerts */}
+          {topInsights.length > 0 && (
+            <div className="bg-surface border border-border/40 rounded-lg p-3">
+              <p className="text-[9px] font-semibold text-muted uppercase tracking-wider mb-2">Insights</p>
+              <div className="space-y-1.5">
+                {topInsights.map((insight, i) => (
+                  <div key={i} className="flex items-start gap-1.5 text-[10px]">
+                    <AlertTriangle size={10} className="text-warning shrink-0 mt-0.5" />
+                    <span className="text-earth">{insight.content}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
-          {/* Warranty + Maintenance */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-            <div>
-              <SectionLabel>Warranty Reminders</SectionLabel>
-              <Card padding="sm">
-                {[
-                  { label: "General contractor warranty (1 year)", expires: "Mar 2027" },
-                  { label: "Roof warranty (20 years)", expires: "Mar 2046" },
-                  { label: "HVAC equipment warranty (10 years)", expires: "Mar 2036" },
-                  { label: "Appliance warranties (varies)", expires: "Check manuals" },
-                ].map((w, i, arr) => (
-                  <div
-                    key={i}
-                    className={`flex items-center justify-between py-2 text-[12px] ${
-                      i < arr.length - 1 ? "border-b border-border" : ""
-                    }`}
-                  >
-                    <span className="text-earth">{w.label}</span>
-                    <span className="text-[10px] font-data text-muted">{w.expires}</span>
-                  </div>
-                ))}
-              </Card>
-            </div>
-            <div>
-              <SectionLabel>Maintenance Schedule</SectionLabel>
-              <Card padding="sm">
-                {[
-                  { task: "HVAC filter replacement", frequency: "Every 3 months" },
-                  { task: "Gutter cleaning", frequency: "Twice yearly" },
-                  { task: "Water heater flush", frequency: "Annually" },
-                  { task: "Roof inspection", frequency: "Annually" },
-                  { task: "Pest inspection", frequency: "Annually" },
-                ].map((m, i, arr) => (
-                  <div
-                    key={i}
-                    className={`flex items-center justify-between py-2 text-[12px] ${
-                      i < arr.length - 1 ? "border-b border-border" : ""
-                    }`}
-                  >
-                    <span className="text-earth">{m.task}</span>
-                    <span className="text-[10px] text-muted">{m.frequency}</span>
-                  </div>
-                ))}
-              </Card>
-            </div>
+          {/* Quick links */}
+          <div className="grid grid-cols-2 gap-1.5">
+            {[
+              { label: "Budget", href: `/project/${projectId}/budget`, icon: <DollarSign size={12} /> },
+              { label: "Schedule", href: `/project/${projectId}/schedule`, icon: <CalendarCheck size={12} /> },
+              { label: "Documents", href: `/project/${projectId}/documents`, icon: <FileText size={12} /> },
+              { label: "Daily Log", href: `/project/${projectId}/daily-log`, icon: <ClipboardList size={12} /> },
+            ].map((link) => (
+              <Link key={link.label} href={link.href}
+                className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-border/30 text-[10px] text-muted hover:text-earth hover:bg-warm/20 transition-colors">
+                {link.icon}
+                {link.label}
+              </Link>
+            ))}
           </div>
-        </>
-      )}
-
-      {/* ----------------------------------------------------------------- */}
-      {/* Common bottom section: Project details + Completed tasks          */}
-      {/* Shown for all phases                                             */}
-      {/* ----------------------------------------------------------------- */}
-      <CollapsibleSection title="Project Details">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <Card padding="sm">
-            <DetailRow label="Market" value={<MarketBadge market={market} />} />
-            <DetailRow label="Purpose" value={project.purpose} />
-            <DetailRow label="Type" value={project.propertyType === "SFH" ? "Single-family home" : project.propertyType ? project.propertyType.charAt(0) + project.propertyType.slice(1).toLowerCase() : ""} />
-            {phaseDef && (
-              <DetailRow label="Method" value={phaseDef.constructionMethod} />
-            )}
-            <DetailRow label="Details" value={project.details} last />
-          </Card>
-          <div className="mt-2">
-            <button
-              onClick={() => setShowDeleteProject(true)}
-              className="text-[11px] text-danger hover:underline cursor-pointer"
-            >
-              Delete project
-            </button>
-          </div>
-        </div>
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-clay/60 mb-2">
-            Completed Tasks {completedTasks.length > 0 && <span className="text-success font-data">({completedTasks.length})</span>}
-          </p>
-          <Card padding="sm">
-            {completedTasks.length === 0 ? (
-              <p className="text-[11px] text-muted py-2">None yet. Complete tasks above to track your progress.</p>
-            ) : (
-              completedTasks.slice(0, 8).map((task, i) => (
-                <div
-                  key={task.id}
-                  className={`py-2 ${i < Math.min(completedTasks.length, 8) - 1 ? "border-b border-border/40" : ""}`}
-                >
-                  <div className="flex items-center gap-2 text-[11px]">
-                    <div className="w-4 h-4 rounded border-[1.5px] bg-success border-success shrink-0 flex items-center justify-center">
-                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                        <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                    <span className="flex-1 text-muted">{task.label}</span>
-                    {task.completedAt && (
-                      <span className="text-[9px] text-muted/50 font-data shrink-0">
-                        {new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      </span>
-                    )}
-                  </div>
-                  {task.completionNote && task.completionNote !== "Completed" && (
-                    <p className="ml-6 mt-1 text-[10px] text-muted/70 leading-relaxed bg-success/5 px-2 py-1 rounded">
-                      {task.completionNote}
-                    </p>
-                  )}
-                </div>
-              ))
-            )}
-            {completedTasks.length > 8 && (
-              <p className="text-[10px] text-muted text-center pt-1">+{completedTasks.length - 8} more completed</p>
-            )}
-          </Card>
         </div>
       </div>
-      </CollapsibleSection>
 
-      {/* Contractor Rating Prompt */}
+      {/* ================================================================= */}
+      {/*  MODALS                                                           */}
+      {/* ================================================================= */}
+
       {ratingTaskId && (() => {
         const ratedTask = tasks.find((t) => t.id === ratingTaskId);
         if (!ratedTask) return null;
