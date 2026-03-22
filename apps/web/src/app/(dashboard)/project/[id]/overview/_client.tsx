@@ -28,6 +28,7 @@ import {
   addTask,
   deleteTask,
   deleteProject,
+  updateProject,
   approveTask,
   rejectTask,
   addContractorRating,
@@ -271,6 +272,7 @@ export function OverviewClient() {
   const [completionNote, setCompletionNote] = useState("");
   const [completionLoading, setCompletionLoading] = useState(false);
   const [completionPhotos, setCompletionPhotos] = useState<{ url: string; caption?: string }[]>([]);
+  const [completionCost, setCompletionCost] = useState("");
   const [photoUploading, setPhotoUploading] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [showDeleteProject, setShowDeleteProject] = useState(false);
@@ -815,7 +817,7 @@ export function OverviewClient() {
                                     </div>
                                   )}
                                   <div className="flex items-center justify-between mt-2">
-                                    <button onClick={() => { setCompletingTaskId(null); setCompletionNote(""); setCompletionPhotos([]); }}
+                                    <button onClick={() => { setCompletingTaskId(null); setCompletionNote(""); setCompletionPhotos([]); setCompletionCost(""); }}
                                       className="text-[9px] text-muted hover:text-earth">Close</button>
                                     <div className="flex items-center gap-1.5">
                                       <button
@@ -893,6 +895,19 @@ export function OverviewClient() {
                                   </div>
                                 )}
 
+                                {/* Optional cost tracking */}
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <label className="text-[9px] text-muted shrink-0">Cost (optional)</label>
+                                  <input
+                                    type="number"
+                                    value={completionCost}
+                                    onChange={(e) => setCompletionCost(e.target.value)}
+                                    placeholder="0.00"
+                                    className="w-24 px-2 py-1 text-[10px] border border-border/40 rounded bg-white font-data text-earth focus:outline-none focus:border-clay/30"
+                                  />
+                                  <span className="text-[8px] text-muted/40">{marketData.currency.code}</span>
+                                </div>
+
                                 <div className="flex items-center justify-between mt-1.5">
                                   <div className="flex items-center gap-1">
                                     <Link href={`/project/${projectId}/documents`} className="text-[9px] text-clay hover:underline">Attach doc</Link>
@@ -915,7 +930,7 @@ export function OverviewClient() {
                                     </button>
                                   </div>
                                   <div className="flex items-center gap-1.5">
-                                    <button onClick={() => { setCompletingTaskId(null); setCompletionNote(""); setCompletionPhotos([]); }} className="text-[9px] text-muted hover:text-earth">Cancel</button>
+                                    <button onClick={() => { setCompletingTaskId(null); setCompletionNote(""); setCompletionPhotos([]); setCompletionCost(""); }} className="text-[9px] text-muted hover:text-earth">Cancel</button>
                                     <button
                                       disabled={completionLoading || !completionNote.trim()}
                                       onClick={async () => {
@@ -931,15 +946,28 @@ export function OverviewClient() {
                                           if (completionPhotos.length > 0) {
                                             taskUpdate.completionPhotos = completionPhotos.map((p) => ({ url: p.url, timestamp: new Date().toISOString() }));
                                           }
+                                          const costAmount = Number(completionCost) || 0;
+                                          if (costAmount > 0) {
+                                            taskUpdate.cost = costAmount;
+                                          }
                                           await updateTask(user.uid, projectId, task.id, taskUpdate);
                                           await approveTask(user.uid, projectId, task.id, completionNote.trim());
+                                          // Update project totalSpent if cost was entered
+                                          if (costAmount > 0) {
+                                            try {
+                                              await updateProject(user.uid, projectId, {
+                                                totalSpent: (project.totalSpent || 0) + costAmount,
+                                              });
+                                            } catch { /* non-blocking */ }
+                                          }
                                           const nextTask = currentPhaseTasks
                                             .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                                             .find((t) => !t.done && t.status !== "pending-review" && t.id !== task.id);
                                           setCompletingTaskId(nextTask?.id ?? null);
                                           setCompletionNote("");
                                           setCompletionPhotos([]);
-                                          showToast("Task completed", "success");
+                                          setCompletionCost("");
+                                          showToast(costAmount > 0 ? `Task completed — ${marketData.currency.symbol}${costAmount.toLocaleString()} logged` : "Task completed", "success");
                                         } catch (err) { console.error("Task completion error:", err); showToast("Failed to complete task", "error"); }
                                         finally { setCompletionLoading(false); }
                                       }}

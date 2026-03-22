@@ -323,7 +323,7 @@ export function PunchListClient() {
           <EmptyState
             icon={<ListChecks size={28} />}
             title="No punch list items"
-            description="Add deficiency items found during inspections or walkthroughs to track them through resolution."
+            description="Track things that need fixing before your project is complete. Add items as you find them during inspections or site visits."
             action={{ label: "Add item", onClick: () => setShowForm(true) }}
           />
         ) : (

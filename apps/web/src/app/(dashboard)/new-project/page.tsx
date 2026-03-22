@@ -1409,7 +1409,7 @@ export default function NewProjectPage() {
         )}
 
         <MentorTip>
-          Bigger is not always better. Every extra square foot adds cost to build, heat, cool, and maintain. Choose the size that matches your budget and goals. You can always expand later.
+          Bigger is not always better. Every extra {sizeUnit === "sqft" ? "square foot" : "square meter"} adds cost to build, heat, cool, and maintain. Choose the size that matches your budget and goals. You can always expand later.
         </MentorTip>
       </div>
     );

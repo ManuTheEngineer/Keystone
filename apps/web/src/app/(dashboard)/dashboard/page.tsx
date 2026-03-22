@@ -1480,7 +1480,7 @@ export default function DashboardPage() {
               </Link>
 
               <Link
-                href="/vault?view=exports"
+                href={projects[0]?.id ? `/project/${projects[0].id}/overview` : "/vault"}
                 className="flex items-center gap-3 bg-surface border border-border/60 rounded-2xl px-4 py-3 card-hover"
               >
                 <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
@@ -1488,7 +1488,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="text-[13px] font-semibold text-earth">Export Reports</div>
-                  <div className="text-[11px] text-muted">Download project summaries</div>
+                  <div className="text-[11px] text-muted">PDF, CSV, and presentations from Overview</div>
                 </div>
               </Link>
             </div>
