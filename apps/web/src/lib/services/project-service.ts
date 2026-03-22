@@ -1297,43 +1297,9 @@ export async function toggleMilestoneProgress(
   current[index] = completed;
   await set(progressRef, current);
 
-  // Reverse sync: when a milestone is toggled from the Schedule page,
-  // update the corresponding Overview tasks to match.
-  try {
-    const { PHASE_ORDER } = await import("@keystone/market-data");
-    const phaseIndex = PHASE_ORDER.indexOf(phase as any);
-    if (phaseIndex === -1) return;
-
-    const tasksSnap = await get(ref(db, `users/${userId}/projects/${projectId}/tasks`));
-    if (!tasksSnap.exists()) return;
-
-    const now = new Date().toISOString();
-    const updates: Record<string, unknown> = {};
-
-    tasksSnap.forEach((child) => {
-      const t = child.val();
-      // Match tasks that belong to this phase + milestone index
-      if (t.phase === phaseIndex && t.milestoneIndex === index) {
-        if (completed && !t.done && t.status !== "cancelled") {
-          // Milestone checked on Schedule -> mark task done
-          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/done`] = true;
-          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/status`] = "done";
-          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/completedAt`] = now;
-        } else if (!completed && t.done && t.status !== "cancelled") {
-          // Milestone unchecked on Schedule -> reopen task
-          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/done`] = false;
-          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/status`] = "in-progress";
-          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/completedAt`] = null;
-        }
-      }
-    });
-
-    if (Object.keys(updates).length > 0) {
-      await update(ref(db), updates);
-    }
-  } catch {
-    // Non-blocking: reverse sync is best-effort
-  }
+  // NOTE: No reverse sync from milestones→tasks. Tasks must be completed
+  // individually by the user with evidence/notes. Milestones auto-derive
+  // from task completion via approveTask(), not the other way around.
 }
 
 // --- Milestone Dates ---
