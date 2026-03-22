@@ -369,9 +369,11 @@ export function VaultClient() {
   const isFiltered = statusFilter !== "all" || marketFilter !== "all" || searchQuery.trim() !== "";
 
   useEffect(() => {
-    const count = filteredProjects.length;
-    const suffix = isFiltered ? ` of ${projects.length}` : "";
-    setTopbar("Portfolio", `${count}${suffix} project${count !== 1 ? "s" : ""}`, "info");
+    try {
+      const count = filteredProjects.length;
+      const suffix = isFiltered ? ` of ${projects.length}` : "";
+      setTopbar("Vault", `${count}${suffix} project${count !== 1 ? "s" : ""}`, "info");
+    } catch { /* layout may not be mounted on back-navigation */ }
   }, [setTopbar, filteredProjects.length, projects.length, isFiltered]);
 
   const handleSetPriority = useCallback(async (projectId: string, priority: number | null) => {
