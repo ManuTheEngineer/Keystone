@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useTopbar } from "../../../layout";
 import {
@@ -82,14 +82,14 @@ export function FinancialsClient() {
   // Loan calculator state (USA)
   const [loanIncome, setLoanIncome] = useState("85000");
   const [loanDebts, setLoanDebts] = useState("450");
-  const [loanDown, setLoanDown] = useState("20");
-  const [loanRate, setLoanRate] = useState("7.25");
+  const [loanDown, setLoanDown] = useState(String(project?.downPaymentPct ?? 20));
+  const [loanRate, setLoanRate] = useState(String(project?.loanRate ?? 7.25));
   const [liveRate, setLiveRate] = useState<number | null>(null);
   const [loanTerm, setLoanTerm] = useState("30");
   const [loanResult, setLoanResult] = useState<ReturnType<typeof calculateLoanQualification> | null>(null);
 
   // Rental yield state (RENT purpose)
-  const [rentMonthly, setRentMonthly] = useState("2000");
+  const [rentMonthly, setRentMonthly] = useState(String(project?.monthlyRent ?? 2000));
   const [rentVacancy, setRentVacancy] = useState("8");
   const [rentExpenses, setRentExpenses] = useState("2");
   const [rentalResult, setRentalResult] = useState<ReturnType<typeof calculateRentalYield> | null>(null);
@@ -133,6 +133,16 @@ export function FinancialsClient() {
       );
     }
   }, [project, setTopbar]);
+
+  // Pre-fill calculator fields from wizard data saved on the project
+  const projectLoadedRef = useRef(false);
+  useEffect(() => {
+    if (!project || projectLoadedRef.current) return;
+    projectLoadedRef.current = true;
+    if (project.downPaymentPct != null) setLoanDown(String(project.downPaymentPct));
+    if (project.loanRate != null) setLoanRate(String(project.loanRate));
+    if (project.monthlyRent != null && project.monthlyRent > 0) setRentMonthly(String(project.monthlyRent));
+  }, [project]);
 
   // Fetch live 30-year mortgage rate from FRED
   useEffect(() => {

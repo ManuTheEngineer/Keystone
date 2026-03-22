@@ -46,6 +46,11 @@ export interface ProjectData {
   bathrooms?: number;
   stories?: number;
   features?: string[] | null;
+  downPaymentPct?: number;
+  loanRate?: number;
+  timelineMonths?: number;
+  targetSalePrice?: number;
+  monthlyRent?: number;
   analysisId?: string; // Link back to the Deal Analyzer analysis
   isDemo?: boolean;
   priority?: number; // 1, 2, 3 (1 = highest)
