@@ -194,7 +194,7 @@ export default function PrivacyPolicyPage() {
             <p>
               If you have questions about this privacy policy or how we handle your data, contact us at{" "}
               <a
-                href="mailto:privacy@keystone.build"
+                href="mailto:ManuTheEngineer@outlook.com?subject=Keystone Privacy"
                 className="text-clay underline hover:text-earth transition-colors"
               >
                 privacy@keystone.build

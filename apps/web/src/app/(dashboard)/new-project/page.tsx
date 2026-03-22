@@ -764,8 +764,8 @@ export default function NewProjectPage() {
         downPaymentPct: state.downPaymentPct,
         loanRate: state.loanRate,
         timelineMonths: state.timelineMonths,
-        targetSalePrice: state.targetSalePrice || undefined,
-        monthlyRent: state.monthlyRent || undefined,
+        targetSalePrice: state.targetSalePrice > 0 ? state.targetSalePrice : 0,
+        monthlyRent: state.monthlyRent > 0 ? state.monthlyRent : 0,
       });
 
       // Auto-generate budget + seed initial tasks in parallel

@@ -21,6 +21,7 @@ import {
   ArrowRight,
   Menu,
   X,
+  ChevronDown,
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -787,6 +788,35 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Section: FAQ */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 bg-surface">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-[28px] sm:text-[32px] text-earth text-center mb-12" style={{ fontFamily: "var(--font-heading)" }}>
+            Common questions
+          </h2>
+          <div className="space-y-0">
+            {[
+              { q: "Do I need construction experience to use Keystone?", a: "No. Keystone is built specifically for first-time builders with zero construction knowledge. Every step includes plain-language explanations, and the AI assistant can answer questions about any construction topic." },
+              { q: "How does the free plan work?", a: "The free Starter plan lets you manage one full project with basic budget tracking, daily logs, photos, and 10 AI queries per day. No credit card required. Upgrade when you need more projects or advanced features." },
+              { q: "Can I use Keystone for projects in West Africa?", a: "Yes. Keystone has dedicated support for Togo, Ghana, and Benin with local cost benchmarks, CFA franc currency, reinforced concrete construction methods, phased cash funding, and French language support." },
+              { q: "How does the deal analyzer work?", a: "Enter your target location, property type, and size. Keystone pulls real Census, HUD, and BLS data to estimate costs, calculates a deal score from 0-100, and shows you exactly what your project would cost before you commit." },
+              { q: "Is my project data secure?", a: "Your data is stored on Google Cloud (Firebase) with encryption at rest and in transit. Only you can access your project data. We never share or sell your information." },
+              { q: "Can I manage a project remotely?", a: "Yes. The photo verification system, daily logs, and remote monitor are designed for diaspora builders who manage construction from abroad. Timestamped, geotagged photos provide transparent progress tracking." },
+            ].map((faq, i) => (
+              <details key={i} className="group border-b border-border/50">
+                <summary className="flex items-center justify-between py-4 cursor-pointer text-[15px] text-earth font-medium hover:text-clay transition-colors list-none">
+                  {faq.q}
+                  <ChevronDown size={16} className="text-muted shrink-0 ml-4 group-open:rotate-180 transition-transform" />
+                </summary>
+                <p className="pb-4 text-[14px] text-muted leading-relaxed -mt-1">
+                  {faq.a}
+                </p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Section 8: About */}
       <section id="about" className="py-16 sm:py-24 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
@@ -890,7 +920,7 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <a href="mailto:ManuTheEngineer@outlook.com?subject=Keystone Support" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
-                    support@keystone.build
+                    ManuTheEngineer@outlook.com
                   </a>
                 </li>
               </ul>

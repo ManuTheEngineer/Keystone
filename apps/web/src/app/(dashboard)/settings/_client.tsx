@@ -451,19 +451,23 @@ export function SettingsClient() {
   }
 
   async function handleRedeemTrialCode() {
-    if (!user || !redeemCode.trim()) return;
+    if (!user || !redeemCode.trim()) {
+      showToast("Please enter a trial code.", "error");
+      return;
+    }
     setRedeeming(true);
     try {
       const result = await redeemTrialCode(user.uid, redeemCode.trim().toUpperCase());
       if (result.success) {
         const expiry = result.expiresAt ? new Date(result.expiresAt).toLocaleDateString() : "";
-        showToast(`Trial activated: ${result.tier} tier until ${expiry}`, "success");
+        showToast(`Trial activated! ${result.tier} tier until ${expiry}`, "success");
         setRedeemCode("");
       } else {
-        showToast(result.error ?? "Failed to redeem code.", "error");
+        showToast(result.error ?? "Invalid code. Please check and try again.", "error");
       }
-    } catch {
-      showToast("Failed to redeem code. Please try again.", "error");
+    } catch (err) {
+      console.error("Trial code redemption error:", err);
+      showToast("Failed to redeem code. Check your connection and try again.", "error");
     } finally {
       setRedeeming(false);
     }

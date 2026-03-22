@@ -223,7 +223,7 @@ export default function TermsOfServicePage() {
             <p>
               If you have questions about these terms, contact us at{" "}
               <a
-                href="mailto:legal@keystone.build"
+                href="mailto:ManuTheEngineer@outlook.com?subject=Keystone Legal"
                 className="text-clay underline hover:text-earth transition-colors"
               >
                 legal@keystone.build
