@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTopbar } from "../layout";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { createProject, getUserProjects, generateBudgetFromSpecs, seedInitialTasks, type Market, type BuildPurpose, type PropertyType } from "@/lib/services/project-service";
+import { createProject, getUserProjects, generateBudgetFromSpecs, seedInitialTasks, type Market, type BuildPurpose, type PropertyType, type WizardCostBreakdown } from "@/lib/services/project-service";
 import { getPlanLimits } from "@/lib/stripe-config";
 import type { PlanTier } from "@/lib/stripe-config";
 import {
@@ -717,7 +717,7 @@ export default function NewProjectPage() {
       const limits = getPlanLimits((profile?.plan as PlanTier) ?? "FOUNDATION");
       if (limits.projects !== Infinity && projectCount >= limits.projects) {
         setPlanError(
-          `Your ${profile?.plan ?? "Foundation"} plan allows ${limits.projects} project${limits.projects === 1 ? "" : "s"} (demo projects don't count). Upgrade your plan to create more.`
+          `Your ${profile?.plan === "FOUNDATION" ? "Starter" : profile?.plan ?? "Starter"} plan allows ${limits.projects} project${limits.projects === 1 ? "" : "s"} (demo projects don't count). Upgrade your plan to create more.`
         );
         return;
       }
@@ -770,7 +770,13 @@ export default function NewProjectPage() {
 
       // Auto-generate budget + seed initial tasks in parallel
       await Promise.allSettled([
-        generateBudgetFromSpecs(user.uid, projectId, costs.total, market, state.features),
+        generateBudgetFromSpecs(user.uid, projectId, costs.total, market, state.features, {
+          land: costs.land,
+          construction: costs.construction,
+          softCosts: costs.soft,
+          financingCosts: costs.financing,
+          contingency: costs.contingency,
+        }),
         seedInitialTasks(user.uid, projectId, {
           market,
           purpose: purpose,
@@ -786,7 +792,7 @@ export default function NewProjectPage() {
       ]);
 
       clearDraft();
-      router.push(`/project/${projectId}/overview`);
+      router.push(`/project/${projectId}/overview?welcome=1`);
     } catch (err: any) {
       console.error("Failed to create project:", err);
       setPlanError(err?.message || "Failed to create project. Please try again.");

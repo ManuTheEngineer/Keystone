@@ -294,6 +294,19 @@ export function OverviewClient() {
   const [coResolveNote, setCoResolveNote] = useState("");
   const searchParams = useSearchParams();
   const highlightTaskId = searchParams.get("task");
+  const isWelcome = searchParams.get("welcome") === "1";
+  const [showWelcome, setShowWelcome] = useState(false);
+  const welcomeShownRef = useRef(false);
+
+  // Show welcome banner once when arriving from wizard
+  useEffect(() => {
+    if (isWelcome && !welcomeShownRef.current && project) {
+      welcomeShownRef.current = true;
+      setShowWelcome(true);
+      // Clean URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [isWelcome, project]);
   const scrolledToTaskRef = useRef(false);
 
   // Scroll to a specific task when linked from dashboard
@@ -602,6 +615,35 @@ export function OverviewClient() {
       <div className="h-1 bg-warm rounded-full overflow-hidden mb-5">
         <div className="h-full bg-success rounded-full transition-all duration-500" style={{ width: `${computedProgress}%` }} />
       </div>
+
+      {/* ================================================================= */}
+      {/*  WELCOME BANNER — shown once after project creation               */}
+      {/* ================================================================= */}
+      {showWelcome && (
+        <div className="mb-4 p-4 rounded-lg bg-success/5 border border-success/20">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[14px] font-semibold text-earth mb-1" style={{ fontFamily: "var(--font-heading)" }}>
+                Your project is ready
+              </p>
+              <p className="text-[11px] text-muted leading-relaxed mb-2">
+                Start by reviewing the items below. Each one confirms a decision you made during setup.
+                Once all tasks are complete, you can advance to the next phase.
+              </p>
+              <div className="flex items-center gap-3 text-[10px]">
+                <Link href={`/project/${projectId}/budget`} className="text-clay hover:underline">Review budget</Link>
+                <span className="text-muted/30">|</span>
+                <Link href={`/project/${projectId}/schedule`} className="text-clay hover:underline">View timeline</Link>
+                <span className="text-muted/30">|</span>
+                <Link href={`/project/${projectId}/documents`} className="text-clay hover:underline">Check documents</Link>
+              </div>
+            </div>
+            <button onClick={() => setShowWelcome(false)} className="text-muted hover:text-earth p-1">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ================================================================= */}
       {/*  REVIEW BANNER — only when items exist                            */}
