@@ -300,10 +300,18 @@ export function SettingsClient() {
         await deleteUser(user);
       } catch {
         // Auth deletion failed (requires recent login) — data is already gone
-        // Sign out so user can't access empty account
+      }
+      // Always sign out — even if deleteUser failed, data is gone
+      try {
+        const { signOut } = await import("firebase/auth");
+        const { auth } = await import("@/lib/firebase");
+        await signOut(auth);
+      } catch {
+        // Best effort
       }
       router.push("/");
-    } catch {
+    } catch (err) {
+      console.error("Delete account error:", err);
       setDeleteError("Account deletion failed. Please try again.");
       setDeleting(false);
     }
