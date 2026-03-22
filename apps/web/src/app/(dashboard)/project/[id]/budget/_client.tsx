@@ -344,18 +344,22 @@ export function BudgetClient() {
       {/* ================================================================= */}
       {/*  TOP: Donut + KPIs                                                */}
       {/* ================================================================= */}
-      <div className="flex items-start gap-5 mb-5">
-        {/* Donut — compact */}
-        <div className="w-[180px] shrink-0">
-          <BudgetDonutChart
-            items={items.map((b) => ({ category: b.category, amount: b.estimated }))}
-            total={project.totalBudget}
-            currency={marketData.currency}
-          />
-        </div>
+      <div className="flex items-start gap-4 mb-4">
+        {/* Donut — compact, no legend (table rows are the legend) */}
+        {items.length > 0 && (
+          <div className="w-[140px] shrink-0">
+            <BudgetDonutChart
+              items={items.map((b) => ({ category: b.category, amount: b.estimated }))}
+              total={project.totalBudget}
+              currency={marketData.currency}
+              hideLegend
+              compact
+            />
+          </div>
+        )}
 
         {/* KPIs + insights */}
-        <div className="flex-1 min-w-0 pt-1">
+        <div className="flex-1 min-w-0">
           {/* KPI row */}
           <div className="grid grid-cols-4 gap-3 mb-3">
             {[

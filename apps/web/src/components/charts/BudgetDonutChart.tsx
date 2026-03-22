@@ -26,6 +26,8 @@ interface BudgetDonutChartProps {
   items: BudgetDonutItem[];
   total: number;
   currency: CurrencyConfig;
+  hideLegend?: boolean;
+  compact?: boolean;
 }
 
 function CustomTooltip({
@@ -49,7 +51,7 @@ function CustomTooltip({
   );
 }
 
-export function BudgetDonutChart({ items, total, currency }: BudgetDonutChartProps) {
+export function BudgetDonutChart({ items, total, currency, hideLegend, compact }: BudgetDonutChartProps) {
   const isMobile = useIsMobile();
 
   if (!items || items.length === 0) {
@@ -69,9 +71,9 @@ export function BudgetDonutChart({ items, total, currency }: BudgetDonutChartPro
   }));
 
   return (
-    <div className="bg-surface border border-border rounded-[var(--radius)] p-4">
-      <h3 className="text-sm font-medium text-earth mb-3">Budget Breakdown</h3>
-      <div className="chart-container" style={{ height: isMobile ? 200 : 256 }}>
+    <div className={compact ? "" : "bg-surface border border-border rounded-[var(--radius)] p-4"}>
+      {!compact && <h3 className="text-sm font-medium text-earth mb-3">Budget Breakdown</h3>}
+      <div className="chart-container" style={{ height: compact ? 140 : isMobile ? 200 : 256 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -112,17 +114,19 @@ export function BudgetDonutChart({ items, total, currency }: BudgetDonutChartPro
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 justify-center">
-        {data.map((entry, index) => (
-          <div key={index} className="flex items-center gap-1.5">
-            <span
-              className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: entry.fill }}
-            />
-            <span className="text-xs text-muted">{entry.category}</span>
-          </div>
-        ))}
-      </div>
+      {!hideLegend && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 justify-center">
+          {data.map((entry, index) => (
+            <div key={index} className="flex items-center gap-1.5">
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: entry.fill }}
+              />
+              <span className="text-xs text-muted">{entry.category}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
