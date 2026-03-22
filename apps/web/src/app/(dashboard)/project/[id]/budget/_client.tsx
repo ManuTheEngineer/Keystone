@@ -344,7 +344,7 @@ export function BudgetClient() {
       {/* ================================================================= */}
       {/*  TOP: Donut + KPIs side by side                                   */}
       {/* ================================================================= */}
-      <div className="grid grid-cols-[200px_1fr] gap-5 mb-4 items-center">
+      <div className="grid grid-cols-[220px_1fr] gap-5 mb-4 items-center">
         {/* Donut — proper size, no legend */}
         {items.length > 0 ? (
           <BudgetDonutChart

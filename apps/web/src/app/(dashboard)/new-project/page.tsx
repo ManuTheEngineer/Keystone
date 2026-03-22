@@ -36,6 +36,7 @@ import {
   Sparkles,
   Calculator,
   ArrowRight,
+  X,
 } from "lucide-react";
 import { LearnTooltip } from "@/components/ui/LearnTooltip";
 import {
@@ -487,6 +488,7 @@ export default function NewProjectPage() {
   const router = useRouter();
   const [step, setStepRaw] = useState(0);
   const [maxStepReached, setMaxStepReached] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [validationError, setValidationError] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const setStep = useCallback((s: number) => {
@@ -542,6 +544,9 @@ export default function NewProjectPage() {
             setStepRaw(parsed.step);
             setMaxStepReached(parsed.maxStep ?? parsed.step);
           }
+          if (Array.isArray(parsed.completedSteps)) {
+            setCompletedSteps(new Set(parsed.completedSteps));
+          }
         }
       } catch {}
     }
@@ -551,9 +556,9 @@ export default function NewProjectPage() {
   useEffect(() => {
     if (state.fromAnalyzer) return;
     try {
-      localStorage.setItem("keystone-new-project-draft", JSON.stringify({ state, step, maxStep: maxStepReached }));
+      localStorage.setItem("keystone-new-project-draft", JSON.stringify({ state, step, maxStep: maxStepReached, completedSteps: Array.from(completedSteps) }));
     } catch {}
-  }, [state, step, maxStepReached]);
+  }, [state, step, maxStepReached, completedSteps]);
 
   // Clear draft after project creation
   function clearDraft() {
@@ -807,6 +812,8 @@ export default function NewProjectPage() {
       return;
     }
     setValidationError("");
+    // Mark current step as completed
+    setCompletedSteps((prev) => new Set(prev).add(step));
     if (step < STEP_COUNT - 1) {
       setStep(step + 1);
     } else {
@@ -828,6 +835,23 @@ export default function NewProjectPage() {
       } else {
         router.push("/dashboard");
       }
+    }
+  }
+
+  function handleCancel() {
+    const hasData = state.goal !== "" || state.market !== "" || state.city.trim() !== "" || state.projectName.trim() !== "";
+    if (hasData || step > 0) {
+      setShowCancelConfirm(true);
+    } else {
+      router.push("/dashboard");
+    }
+  }
+
+  function handleStepClick(targetStep: number) {
+    // Allow clicking on completed steps or steps up to maxStepReached
+    if (targetStep <= maxStepReached) {
+      setStepRaw(targetStep);
+      setValidationError("");
     }
   }
 
@@ -1794,14 +1818,35 @@ export default function NewProjectPage() {
 
   return (
     <div className="max-w-xl mx-auto py-8 animate-fade-in">
-      {/* Minimal progress — thin bar only, no step counter */}
-      <div className="max-w-xs mx-auto mb-6">
-        <div className="w-full h-0.5 bg-warm rounded-full overflow-hidden">
-          <div
-            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-            style={{ width: `${((step + 1) / STEP_COUNT) * 100}%` }}
-          />
-        </div>
+      {/* Step indicator dots */}
+      <div className="flex items-center justify-center gap-1 mb-6">
+        {STEP_LABELS.map((label, i) => {
+          const isCompleted = completedSteps.has(i);
+          const isCurrent = i === step;
+          const isReachable = i <= maxStepReached;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => handleStepClick(i)}
+              disabled={!isReachable}
+              title={label}
+              className={`
+                w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium transition-all duration-200
+                ${isCurrent
+                  ? "bg-clay text-white ring-2 ring-clay/30 ring-offset-1"
+                  : isCompleted
+                    ? "bg-[#2D6A4F] text-white cursor-pointer hover:bg-[#245a42]"
+                    : isReachable
+                      ? "bg-sand/40 text-earth/70 cursor-pointer hover:bg-sand/60"
+                      : "bg-warm/50 text-muted/30 cursor-default"
+                }
+              `}
+            >
+              {isCompleted && !isCurrent ? <Check size={12} strokeWidth={2.5} /> : i + 1}
+            </button>
+          );
+        })}
       </div>
 
       {/* Pre-filled from Deal Analyzer banner */}
@@ -1838,18 +1883,27 @@ export default function NewProjectPage() {
       {/* Nav buttons */}
       <div className="flex justify-center gap-2 mt-4">
         <button
-          onClick={handleBack}
-          className="px-6 py-2.5 text-[13px] border border-border-dark rounded-[var(--radius)] bg-surface text-earth hover:bg-surface-alt transition-colors"
+          onClick={handleCancel}
+          className="px-4 py-2.5 text-[13px] border border-border rounded-[var(--radius)] bg-surface text-muted hover:text-danger hover:border-danger/30 transition-colors"
+          title="Cancel and return to dashboard"
         >
-          {step === 0 ? "Cancel" : "Back"}
+          <X size={14} />
         </button>
+        {step > 0 && (
+          <button
+            onClick={handleBack}
+            className="px-6 py-2.5 text-[13px] border border-border-dark rounded-[var(--radius)] bg-surface text-earth hover:bg-surface-alt transition-colors"
+          >
+            Back
+          </button>
+        )}
         <button
           onClick={handleNext}
-          disabled={creating}
+          disabled={creating || !canProceed()}
           className={`px-6 py-2.5 text-[13px] rounded-[var(--radius)] transition-colors ${
-            canProceed()
+            canProceed() && !creating
               ? "btn-earth hover:bg-earth-light"
-              : "bg-muted/20 text-muted/60 border border-border cursor-not-allowed"
+              : "bg-warm/60 text-sand border border-warm cursor-not-allowed opacity-50"
           }`}
         >
           {step === STEP_COUNT - 1 ? (creating ? "Creating..." : "Create project") : "Next"}

@@ -73,15 +73,15 @@ export function BudgetDonutChart({ items, total, currency, hideLegend, compact }
   return (
     <div className={compact ? "" : "bg-surface border border-border rounded-[var(--radius)] p-4"}>
       {!compact && <h3 className="text-sm font-medium text-earth mb-3">Budget Breakdown</h3>}
-      <div className="chart-container" style={{ height: compact ? 160 : isMobile ? 200 : 256 }}>
+      <div className="chart-container" style={{ height: compact ? 180 : isMobile ? 200 : 256 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
-              cy="45%"
-              innerRadius={isMobile ? "45%" : "55%"}
-              outerRadius={isMobile ? "70%" : "80%"}
+              cy="48%"
+              innerRadius={compact ? "40%" : isMobile ? "45%" : "55%"}
+              outerRadius={compact ? "72%" : isMobile ? "70%" : "80%"}
               dataKey="amount"
               nameKey="category"
               stroke="none"
@@ -93,21 +93,21 @@ export function BudgetDonutChart({ items, total, currency, hideLegend, compact }
             <Tooltip content={<CustomTooltip currency={currency} />} />
             <text
               x="50%"
-              y="42%"
+              y="45%"
               textAnchor="middle"
               dominantBaseline="central"
               className="fill-earth"
-              style={{ fontSize: isMobile ? "11px" : "14px", fontFamily: "var(--font-data, monospace)", fontWeight: 600 }}
+              style={{ fontSize: compact ? "11px" : isMobile ? "11px" : "14px", fontFamily: "var(--font-data, monospace)", fontWeight: 600 }}
             >
               {formatCurrency(total, currency)}
             </text>
             <text
               x="50%"
-              y="50%"
+              y="53%"
               textAnchor="middle"
               dominantBaseline="central"
               className="fill-muted"
-              style={{ fontSize: isMobile ? "8px" : "10px" }}
+              style={{ fontSize: compact ? "8px" : isMobile ? "8px" : "10px" }}
             >
               Total Budget
             </text>

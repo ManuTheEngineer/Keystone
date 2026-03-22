@@ -23,7 +23,6 @@ import { generateDocument } from "@/lib/services/document-generator";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useTranslation } from "@/lib/hooks/use-translation";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { Card } from "@/components/ui/Card";
 import { DocumentFillForm } from "@/components/ui/DocumentFillForm";
 import { DocumentPreview } from "@/components/ui/DocumentPreview";
 import { FileText, ChevronDown, Plus, FileCheck, Upload } from "lucide-react";
@@ -58,23 +57,23 @@ function DocumentTemplateCard({
 }) {
   const style = TYPE_COLORS[template.type] ?? TYPE_COLORS.DEFAULT;
   return (
-    <div className="flex items-start gap-3 p-3 border border-border rounded-[var(--radius)] bg-surface hover:border-border-dark transition-all card-hover">
+    <div className="flex items-start gap-2 p-2 border border-border rounded-[var(--radius)] bg-surface hover:border-border-dark transition-all card-hover">
       <div
-        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${style.bg} ${style.text}`}
+        className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${style.bg} ${style.text}`}
       >
-        <FileText size={14} />
+        <FileText size={12} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[12px] font-medium text-earth">{template.name}</div>
-        <div className="text-[10px] text-muted mt-0.5 line-clamp-3 leading-relaxed">{template.description}</div>
-        <div className="flex flex-wrap gap-1 mt-1.5">
+        <div className="text-[11px] font-medium text-earth leading-tight">{template.name}</div>
+        <div className="text-[9px] text-muted mt-0.5 line-clamp-2 leading-snug">{template.description}</div>
+        <div className="flex flex-wrap gap-1 mt-1">
           <span
-            className={`text-[9px] px-1.5 py-0.5 rounded-full ${style.bg} ${style.text} font-medium`}
+            className={`text-[8px] px-1.5 py-0.5 rounded-full ${style.bg} ${style.text} font-medium`}
           >
             {template.type}
           </span>
           {template.required && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-danger-bg text-danger font-medium">
+            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-danger-bg text-danger font-medium">
               Required
             </span>
           )}
@@ -82,9 +81,9 @@ function DocumentTemplateCard({
       </div>
       <button
         onClick={() => onUse(template)}
-        className="shrink-0 flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors"
+        className="shrink-0 flex items-center gap-1 px-2 py-1 text-[9px] font-medium bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors"
       >
-        <Plus size={10} />
+        <Plus size={9} />
         Use
       </button>
     </div>
@@ -271,25 +270,25 @@ export function DocumentsClient() {
       />
 
       {/* Stats row + upload */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-[var(--radius)] bg-surface">
-          <FileText size={12} className="text-muted" />
-          <span className="text-[11px] text-earth font-medium font-data">{docs.length}</span>
-          <span className="text-[10px] text-muted">total</span>
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-1.5 px-2 py-1.5 border border-border rounded-[var(--radius)] bg-surface">
+          <FileText size={11} className="text-muted" />
+          <span className="text-[10px] text-earth font-medium font-data">{docs.length}</span>
+          <span className="text-[9px] text-muted">total</span>
         </div>
         {generatedCount > 0 && (
-          <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-[var(--radius)] bg-surface">
-            <FileCheck size={12} className="text-emerald-600" />
-            <span className="text-[11px] text-earth font-medium font-data">{generatedCount}</span>
-            <span className="text-[10px] text-muted">generated</span>
+          <div className="flex items-center gap-1.5 px-2 py-1.5 border border-border rounded-[var(--radius)] bg-surface">
+            <FileCheck size={11} className="text-success" />
+            <span className="text-[10px] text-earth font-medium font-data">{generatedCount}</span>
+            <span className="text-[9px] text-muted">generated</span>
           </div>
         )}
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-2 px-3 py-2 border border-border rounded-[var(--radius)] bg-surface text-earth hover:bg-warm transition-colors text-[11px] font-medium ml-auto disabled:opacity-40"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors text-[10px] font-medium ml-auto disabled:opacity-40"
         >
-          <Upload size={12} />
+          <Upload size={11} />
           {uploading ? "Uploading..." : "Upload document"}
         </button>
         <input
@@ -302,14 +301,14 @@ export function DocumentsClient() {
       </div>
 
       {/* Template Library */}
-      <div className="mb-5">
-        <div className="flex items-center justify-between mb-2">
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-1.5">
           <SectionLabel>Template library</SectionLabel>
           <div className="relative">
             <select
               value={phaseFilter}
               onChange={(e) => setPhaseFilter(e.target.value as "current" | "all")}
-              className="appearance-none pr-6 pl-2 py-1 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth cursor-pointer focus:outline-none focus:border-emerald-500"
+              className="appearance-none pr-6 pl-2 py-1 text-[10px] border border-border rounded-[var(--radius)] bg-surface text-earth cursor-pointer focus:outline-none focus:border-clay"
             >
               <option value="current">
                 Current phase ({PHASE_NAMES[currentPhaseKey]})
@@ -317,19 +316,19 @@ export function DocumentsClient() {
               <option value="all">All phases</option>
             </select>
             <ChevronDown
-              size={12}
+              size={10}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
             />
           </div>
         </div>
 
         {/* Type filter pills */}
-        <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+        <div className="flex gap-1 mb-2 overflow-x-auto pb-1">
           {["ALL", "CONTRACT", "CHECKLIST", "REPORT", "PERMIT", "BID", "LEGAL"].map((type) => (
             <button
               key={type}
               onClick={() => setTypeFilter(type)}
-              className={`px-3 py-1 text-[10px] rounded-full whitespace-nowrap transition-all duration-150 ${
+              className={`px-2.5 py-0.5 text-[9px] rounded-full whitespace-nowrap transition-all duration-150 ${
                 typeFilter === type
                   ? "bg-earth text-warm font-medium"
                   : "bg-surface border border-border text-muted hover:border-border-dark hover:text-earth"
@@ -341,17 +340,30 @@ export function DocumentsClient() {
         </div>
 
         {templates.length === 0 ? (
-          <Card padding="md" className="text-center">
-            <p className="text-[12px] text-muted">
-              No document templates available for{" "}
-              {phaseFilter === "current"
-                ? `the ${PHASE_NAMES[currentPhaseKey]} phase`
-                : "any phase"}
-              .
+          <div className="flex flex-col items-center gap-2 py-6 border border-dashed border-border rounded-[var(--radius)] bg-surface">
+            <FileText size={20} className="text-sand" />
+            <p className="text-[11px] text-muted">
+              No templates for {phaseFilter === "current" ? `the ${PHASE_NAMES[currentPhaseKey]} phase` : "the selected filters"}.
             </p>
-          </Card>
+            <div className="flex gap-2">
+              {phaseFilter === "current" && (
+                <button
+                  onClick={() => setPhaseFilter("all")}
+                  className="text-[10px] font-medium text-clay hover:text-earth transition-colors underline underline-offset-2"
+                >
+                  Browse all phases
+                </button>
+              )}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[10px] font-medium text-clay hover:text-earth transition-colors underline underline-offset-2"
+              >
+                Upload your own document
+              </button>
+            </div>
+          </div>
         ) : (
-          <div className="space-y-2 animate-stagger">
+          <div className="space-y-1.5 animate-stagger">
             {templates.map((template) => (
               <DocumentTemplateCard
                 key={template.id}
@@ -367,9 +379,9 @@ export function DocumentsClient() {
       <SectionLabel>All project documents</SectionLabel>
       {docs.length === 0 ? (
         <EmptyState
-          icon={<FileText size={28} />}
+          icon={<FileText size={24} />}
           title="No documents yet"
-          description="Generate contracts, checklists, and forms from templates, or documents will appear as you progress through project phases."
+          description="Use a template above or upload your own files to get started."
         />
       ) : (
         <div className="space-y-0">
@@ -379,7 +391,7 @@ export function DocumentsClient() {
             return (
               <div
                 key={doc.id}
-                className={`flex items-center gap-3 py-2.5 cursor-pointer hover:bg-warm/50 transition-colors rounded-[var(--radius)] px-1 ${
+                className={`flex items-center gap-2 py-2 cursor-pointer hover:bg-warm/50 transition-colors rounded-[var(--radius)] px-1 ${
                   i < docs.length - 1 ? "border-b border-border" : ""
                 }`}
                 onClick={() => {
@@ -389,32 +401,42 @@ export function DocumentsClient() {
                 }}
               >
                 <div
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${style.bg} ${style.text}`}
+                  className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${style.bg} ${style.text}`}
                 >
-                  <FileText size={16} />
+                  <FileText size={13} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <div className="text-[13px] font-medium text-earth truncate">{doc.name}</div>
+                    <div className="text-[11px] font-medium text-earth truncate">{doc.name}</div>
                     {isGenerated && (
-                      <FileCheck size={10} className="text-emerald-600 shrink-0" />
+                      <FileCheck size={9} className="text-success shrink-0" />
                     )}
                   </div>
-                  <div className="text-[10px] text-muted">
+                  <div className="text-[9px] text-muted">
                     {doc.phase} / {doc.date}
                   </div>
                 </div>
-                <span
-                  className="text-[10px] text-info cursor-pointer hover:underline shrink-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (doc.fileUrl) {
+                {doc.fileUrl ? (
+                  <span
+                    className="text-[9px] text-clay font-medium cursor-pointer hover:underline shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       window.open(doc.fileUrl, "_blank");
-                    }
-                  }}
-                >
-                  {doc.fileUrl ? "View" : "No file"}
-                </span>
+                    }}
+                  >
+                    View
+                  </span>
+                ) : (
+                  <button
+                    className="text-[9px] text-clay font-medium cursor-pointer hover:underline shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                  >
+                    Attach file
+                  </button>
+                )}
               </div>
             );
           })}

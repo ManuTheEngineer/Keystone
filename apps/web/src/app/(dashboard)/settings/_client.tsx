@@ -484,7 +484,7 @@ export function SettingsClient() {
       <PageHeader title={t("settings.title")} />
 
       {/* Tab navigation */}
-      <div className="flex gap-1 mb-5 border-b border-border overflow-x-auto">
+      <div className="flex gap-1 mb-4 border-b border-border overflow-x-auto">
         {([
           { id: "profile" as const, label: t("settings.profile") },
           { id: "plan" as const, label: t("settings.plan") },
@@ -494,7 +494,7 @@ export function SettingsClient() {
           <button
             key={tab.id}
             onClick={() => setSettingsTab(tab.id)}
-            className={`px-4 py-2.5 text-[12px] font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
+            className={`px-3 py-2 text-[11px] font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
               settingsTab === tab.id
                 ? "border-clay text-earth"
                 : "border-transparent text-muted hover:text-earth"
@@ -511,45 +511,44 @@ export function SettingsClient() {
       {settingsTab === "profile" && (
       <>
       <SectionLabel>{t("settings.profile")}</SectionLabel>
-      <Card padding="md" className="mb-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
-            <User size={20} className="text-clay" />
+      <Card padding="sm" className="mb-4">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-8 h-8 rounded-full bg-warm flex items-center justify-center">
+            <User size={16} className="text-clay" />
           </div>
           <div>
             <p className="text-[13px] font-medium text-earth">{displayName || "User"}</p>
-            <p className="text-[11px] text-muted">{user?.email ?? ""}</p>
+            <p className="text-[10px] text-muted">{user?.email ?? ""}</p>
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div>
-            <label className="block text-[11px] text-muted font-medium mb-1">{t("settings.displayName")}</label>
+            <label className="block text-[9px] text-muted font-medium uppercase tracking-wide mb-0.5">{t("settings.displayName")}</label>
             <input
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full input-focus"
+              className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-clay w-full input-focus"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] text-muted font-medium mb-1">{t("auth.email")}</label>
+            <label className="block text-[9px] text-muted font-medium uppercase tracking-wide mb-0.5">{t("auth.email")}</label>
             <input
               type="text"
               value={user?.email ?? ""}
               disabled
-              className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface-alt text-muted w-full cursor-not-allowed"
+              className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface-alt text-muted w-full cursor-not-allowed"
             />
-            <p className="text-[10px] text-muted mt-0.5">Email cannot be changed here.</p>
           </div>
 
           <div>
-            <label className="block text-[11px] text-muted font-medium mb-1">{t("settings.timezone")}</label>
+            <label className="block text-[9px] text-muted font-medium uppercase tracking-wide mb-0.5">{t("settings.timezone")}</label>
             <select
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+              className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay w-full"
             >
               {TIMEZONES.map((tz) => (
                 <option key={tz} value={tz}>{tz}</option>
@@ -558,11 +557,11 @@ export function SettingsClient() {
           </div>
 
           <div>
-            <label className="block text-[11px] text-muted font-medium mb-1">{t("settings.currency")}</label>
+            <label className="block text-[9px] text-muted font-medium uppercase tracking-wide mb-0.5">{t("settings.currency")}</label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+              className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay w-full"
             >
               {CURRENCIES.map((c) => (
                 <option key={c.code} value={c.code}>{c.label}</option>
@@ -571,7 +570,7 @@ export function SettingsClient() {
           </div>
 
           <div>
-            <label className="block text-[11px] text-muted font-medium mb-1">{t("settings.language")}</label>
+            <label className="block text-[9px] text-muted font-medium uppercase tracking-wide mb-0.5">{t("settings.language")}</label>
             <select
               value={profile?.locale ?? "en"}
               onChange={async (e) => {
@@ -583,7 +582,7 @@ export function SettingsClient() {
                   "Language updated.", "success"
                 );
               }}
-              className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+              className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay w-full"
             >
               <option value="en">English</option>
               <option value="fr">Français</option>
@@ -591,21 +590,21 @@ export function SettingsClient() {
             </select>
           </div>
 
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-2 pt-0.5">
             <button
               onClick={handleSaveProfile}
               disabled={profileSaving}
-              className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 btn-hover"
+              className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 btn-hover"
             >
               {profileSaving ? t("label.loading") : t("settings.saveChanges")}
             </button>
             {profileSuccess && (
-              <span className="flex items-center gap-1 text-[11px] text-success">
-                <Check size={14} /> Saved
+              <span className="flex items-center gap-1 text-[10px] text-success">
+                <Check size={12} /> Saved
               </span>
             )}
             {profileMessage && (
-              <span className="text-[11px] text-danger">{profileMessage}</span>
+              <span className="text-[10px] text-danger">{profileMessage}</span>
             )}
           </div>
         </div>
@@ -615,71 +614,68 @@ export function SettingsClient() {
       {/* Security Section                                                   */}
       {/* ================================================================= */}
       <SectionLabel>{t("settings.security")}</SectionLabel>
-      <Card padding="md" className="mb-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
-            <Shield size={20} className="text-clay" />
+      <Card padding="sm" className="mb-4">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-8 h-8 rounded-full bg-warm flex items-center justify-center">
+            <Shield size={16} className="text-clay" />
           </div>
-          <div>
-            <p className="text-[13px] font-medium text-earth">Password</p>
-            <p className="text-[11px] text-muted">Manage your account password</p>
-          </div>
+          <p className="text-[13px] font-medium text-earth">Password</p>
         </div>
 
         {passwordSuccess && (
-          <div className="flex items-center gap-2 p-2 mb-3 rounded-[var(--radius)] bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800">
-            <Check size={14} /> Password updated successfully.
+          <div className="flex items-center gap-2 p-2 mb-2 rounded-[var(--radius)] bg-emerald-50 border border-emerald-200 text-[10px] text-emerald-800">
+            <Check size={12} /> Password updated successfully.
           </div>
         )}
 
         {!showPasswordForm ? (
           <button
             onClick={() => setShowPasswordForm(true)}
-            className="flex items-center gap-1 text-[12px] text-info hover:underline cursor-pointer"
+            className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
           >
             {t("settings.changePassword")}
-            <ChevronDown size={14} />
+            <ChevronDown size={12} />
           </button>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">Current password</label>
+              <label className="block text-[9px] text-muted font-medium uppercase tracking-wide mb-0.5">Current password</label>
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-clay w-full"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">New password</label>
+              <label className="block text-[9px] text-muted font-medium uppercase tracking-wide mb-0.5">New password</label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="At least 6 characters"
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-clay w-full"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-muted font-medium mb-1">Confirm new password</label>
+              <label className="block text-[9px] text-muted font-medium uppercase tracking-wide mb-0.5">Confirm new password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-clay w-full"
               />
             </div>
 
             {passwordError && (
-              <p className="text-[11px] text-danger">{passwordError}</p>
+              <p className="text-[10px] text-danger">{passwordError}</p>
             )}
 
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2 pt-0.5">
               <button
                 onClick={handleUpdatePassword}
                 disabled={passwordSaving || !currentPassword || !newPassword || !confirmPassword}
-                className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
+                className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
               >
                 {passwordSaving ? "Updating..." : "Update password"}
               </button>
@@ -691,7 +687,7 @@ export function SettingsClient() {
                   setNewPassword("");
                   setConfirmPassword("");
                 }}
-                className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                className="px-3 py-1.5 text-[11px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
               >
                 Cancel
               </button>
@@ -709,41 +705,34 @@ export function SettingsClient() {
       {settingsTab === "plan" && (
       <>
       <SectionLabel>Plan</SectionLabel>
-      <Card padding="md" className="mb-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
-            <CreditCard size={20} className="text-clay" />
+      <Card padding="sm" className="mb-4">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-8 h-8 rounded-full bg-warm flex items-center justify-center">
+            <CreditCard size={16} className="text-clay" />
           </div>
           <div className="flex items-center gap-2">
-            <div>
-              <p className="text-[13px] font-medium text-earth">
-                Current plan: {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()}
-              </p>
-              <p className="text-[11px] text-muted">Compare plans and features</p>
-            </div>
+            <p className="text-[13px] font-medium text-earth">
+              {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()}
+            </p>
             {isAdmin && (
               <span className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-clay/10 text-clay rounded-full">
-                Enterprise (Admin)
+                Admin
               </span>
             )}
             {isTrialing && (
-              <span className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-warning/10 text-warning rounded-full">
-                Trial: {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()} : expires {profile?.trialExpiresAt ? new Date(profile.trialExpiresAt).toLocaleDateString() : ""}
+              <span className="px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wider bg-warning/10 text-warning rounded-full">
+                Trial -- expires {profile?.trialExpiresAt ? new Date(profile.trialExpiresAt).toLocaleDateString() : ""}
               </span>
             )}
           </div>
         </div>
 
-        <p className="text-[11px] text-muted leading-relaxed mb-4">
-          Your current plan determines how many projects you can manage and how many AI queries you can make per day. Most individual builders start with Foundation and upgrade to Builder when they start their second project.
-        </p>
-
         {/* Billing interval toggle */}
         {!isAdmin && (
-          <div className="flex items-center justify-center gap-2 mb-4">
+          <div className="flex items-center justify-center gap-1.5 mb-3">
             <button
               onClick={() => setBillingInterval("monthly")}
-              className={`px-3 py-1.5 text-[11px] font-medium rounded-full transition-colors ${
+              className={`px-2.5 py-1 text-[10px] font-medium rounded-full transition-colors ${
                 billingInterval === "monthly"
                   ? "bg-earth text-warm"
                   : "bg-surface-alt text-muted hover:text-earth"
@@ -753,31 +742,22 @@ export function SettingsClient() {
             </button>
             <button
               onClick={() => setBillingInterval("annual")}
-              className={`px-3 py-1.5 text-[11px] font-medium rounded-full transition-colors flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 text-[10px] font-medium rounded-full transition-colors flex items-center gap-1 ${
                 billingInterval === "annual"
                   ? "bg-earth text-warm"
                   : "bg-surface-alt text-muted hover:text-earth"
               }`}
             >
               Annual
-              <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-success text-white rounded-full">
+              <span className="px-1.5 py-0.5 text-[8px] font-semibold bg-success text-white rounded-full">
                 Save 20%
               </span>
             </button>
           </div>
         )}
 
-        {/* Free plan upgrade prompt */}
-        {currentPlan === "FOUNDATION" && !hasActiveSubscription && !isAdmin && (
-          <div className="mb-4 p-3 rounded-xl bg-warm/50 border border-sand/30">
-            <p className="text-[12px] text-earth">
-              <span className="font-medium">You are on the free plan.</span> Upgrade to unlock more projects, AI queries, document generation, and exports.
-            </p>
-          </div>
-        )}
-
         {/* Tier cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {TIER_ORDER.map((tier) => {
             const isCurrent = tier === currentPlan;
             const isFoundation = tier === "FOUNDATION";
@@ -801,7 +781,7 @@ export function SettingsClient() {
             return (
               <div
                 key={tier}
-                className={`relative p-4 rounded-2xl border transition-shadow flex flex-col ${
+                className={`relative p-3 rounded-xl border transition-shadow flex flex-col ${
                   isCurrent
                     ? "border-success/40 bg-success/5 shadow-sm"
                     : isDeveloper
@@ -810,45 +790,45 @@ export function SettingsClient() {
                 }`}
               >
                 {isDeveloper && !isCurrent && (
-                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
-                    <span className="px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-clay text-warm rounded-full flex items-center gap-1">
-                      <Crown size={10} /> Most popular
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+                    <span className="px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wider bg-clay text-warm rounded-full flex items-center gap-1">
+                      <Crown size={9} /> Popular
                     </span>
                   </div>
                 )}
 
-                <p className="text-[13px] font-semibold text-earth mb-1">{tierName}</p>
-                <p className="text-[18px] font-bold text-earth mb-3">
+                <p className="text-[11px] font-semibold text-earth mb-0.5">{tierName}</p>
+                <p className="text-[16px] font-bold text-earth mb-2">
                   {price}
-                  {priceLabel && <span className="text-[11px] font-normal text-muted">{priceLabel}</span>}
+                  {priceLabel && <span className="text-[10px] font-normal text-muted">{priceLabel}</span>}
                 </p>
 
                 {config && billingInterval === "annual" && (
-                  <p className="text-[10px] text-success font-medium mb-2">
-                    Save {formatPrice(getAnnualSavings(tier as Exclude<PlanTier, "FOUNDATION">))} per year
+                  <p className="text-[9px] text-success font-medium mb-1.5">
+                    Save {formatPrice(getAnnualSavings(tier as Exclude<PlanTier, "FOUNDATION">))}/yr
                   </p>
                 )}
 
-                <ul className="space-y-1.5 mb-4 flex-1">
+                <ul className="space-y-1 mb-3 flex-1">
                   {features.map((f, i) => (
-                    <li key={i} className="flex items-start gap-1.5 text-[10px] text-muted">
-                      <Check size={10} className="text-success mt-0.5 shrink-0" />
+                    <li key={i} className="flex items-start gap-1 text-[9px] text-muted">
+                      <Check size={9} className="text-success mt-0.5 shrink-0" />
                       <span>{f}</span>
                     </li>
                   ))}
                 </ul>
 
                 {isAdmin ? (
-                  <span className="inline-block w-full text-center px-3 py-1.5 text-[10px] font-medium text-success bg-success/10 rounded-full">
+                  <span className="inline-block w-full text-center px-2 py-1 text-[9px] font-medium text-success bg-success/10 rounded-full">
                     Admin access
                   </span>
                 ) : isCurrent ? (
                   <div className="text-center">
-                    <span className="inline-block w-full px-3 py-1.5 text-[10px] font-medium text-success bg-success/10 rounded-full">
+                    <span className="inline-block w-full px-2 py-1 text-[9px] font-medium text-success bg-success/10 rounded-full">
                       Current plan
                     </span>
                     {profile?.billingInterval && !isFoundation && (
-                      <p className="text-[9px] text-muted mt-1">
+                      <p className="text-[8px] text-muted mt-0.5">
                         Billed {profile.billingInterval === "annual" ? "annually" : "monthly"}
                       </p>
                     )}
@@ -857,19 +837,19 @@ export function SettingsClient() {
                   <button
                     onClick={() => handleDowngradeClick(tier)}
                     disabled={managingPortal}
-                    className="w-full px-3 py-1.5 text-[11px] font-medium rounded-full transition-colors disabled:opacity-40 border border-border text-muted hover:text-earth hover:bg-surface-alt"
+                    className="w-full px-2 py-1 text-[10px] font-medium rounded-full transition-colors disabled:opacity-40 border border-border text-muted hover:text-earth hover:bg-surface-alt"
                   >
                     {managingPortal ? "Opening..." : "Downgrade"}
                   </button>
                 ) : isFoundation ? (
-                  <span className="inline-block w-full text-center px-3 py-1.5 text-[10px] text-muted">
+                  <span className="inline-block w-full text-center px-2 py-1 text-[9px] text-muted">
                     Free tier
                   </span>
                 ) : isLowerTier && hasActiveSubscription ? (
                   <button
                     onClick={() => handleDowngradeClick(tier)}
                     disabled={managingPortal}
-                    className="w-full px-3 py-1.5 text-[11px] font-medium rounded-full transition-colors disabled:opacity-40 border border-border text-muted hover:text-earth hover:bg-surface-alt"
+                    className="w-full px-2 py-1 text-[10px] font-medium rounded-full transition-colors disabled:opacity-40 border border-border text-muted hover:text-earth hover:bg-surface-alt"
                   >
                     {managingPortal ? "Opening..." : "Downgrade"}
                   </button>
@@ -877,7 +857,7 @@ export function SettingsClient() {
                   <button
                     onClick={() => handleUpgrade(tier)}
                     disabled={upgradingTier === tier}
-                    className={`w-full px-3 py-1.5 text-[11px] font-medium rounded-full transition-colors disabled:opacity-40 ${
+                    className={`w-full px-2 py-1 text-[10px] font-medium rounded-full transition-colors disabled:opacity-40 ${
                       isDeveloper
                         ? "bg-clay text-warm hover:bg-clay/90"
                         : "bg-earth text-warm hover:bg-earth-light"
@@ -893,18 +873,13 @@ export function SettingsClient() {
 
         {/* Manage subscription for active subscribers */}
         {hasActiveSubscription && !isAdmin && (
-          <div className="mt-4 p-4 rounded-2xl border border-border bg-surface">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-[13px] font-medium text-earth">Subscription Management</p>
-                <p className="text-[11px] text-muted mt-0.5">
-                  Change your plan, update payment method, view invoices, or cancel your subscription.
-                </p>
-              </div>
+          <div className="mt-3 p-2.5 rounded-xl border border-border bg-surface">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[11px] font-medium text-earth">Manage billing, invoices, or cancel</p>
               <button
                 onClick={handleManageSubscription}
                 disabled={managingPortal}
-                className="shrink-0 px-4 py-2 text-[12px] font-medium border border-border text-earth rounded-xl hover:bg-surface-alt transition-colors disabled:opacity-40"
+                className="shrink-0 px-3 py-1.5 text-[10px] font-medium border border-border text-earth rounded-lg hover:bg-surface-alt transition-colors disabled:opacity-40"
               >
                 {managingPortal ? "Opening..." : "Manage Subscription"}
               </button>
@@ -914,88 +889,52 @@ export function SettingsClient() {
 
         {/* Downgrade confirmation dialog */}
         {downgradeTarget && (
-          <div className="mt-4 p-5 rounded-2xl border-2 border-warning/30 bg-warning/5 animate-fade-in">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-9 h-9 rounded-full bg-warning/10 flex items-center justify-center shrink-0 mt-0.5">
-                <AlertTriangle size={18} className="text-warning" />
-              </div>
-              <div>
-                <p className="text-[14px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
-                  Downgrade to {downgradeTarget.charAt(0) + downgradeTarget.slice(1).toLowerCase()}
-                </p>
-                <p className="text-[11px] text-muted mt-0.5">
-                  Here is what happens when you change your plan:
-                </p>
-              </div>
+          <div className="mt-3 p-3 rounded-xl border border-warning/30 bg-warning/5 animate-fade-in">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle size={14} className="text-warning shrink-0" />
+              <p className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
+                Downgrade to {downgradeTarget.charAt(0) + downgradeTarget.slice(1).toLowerCase()}
+              </p>
             </div>
 
             {downgradeLoading ? (
-              <p className="text-[11px] text-muted pl-12">Loading your billing details...</p>
+              <p className="text-[10px] text-muted">Loading billing details...</p>
             ) : (
-              <div className="space-y-3 pl-12">
-                {/* Current plan info */}
-                <div className="flex items-start gap-2">
-                  <div className="w-5 h-5 rounded-full bg-success/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Check size={11} className="text-success" />
-                  </div>
-                  <p className="text-[12px] text-earth leading-relaxed">
-                    <span className="font-medium">Your current {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()} plan stays active</span>
-                    {subscriptionEndDate
-                      ? <> until <span className="font-data font-semibold">{subscriptionEndDate}</span>. You keep full access to all features until then.</>
-                      : <> until the end of your current billing period. You keep full access to all features until then.</>
-                    }
-                  </p>
-                </div>
-
-                {/* New plan info */}
-                <div className="flex items-start gap-2">
-                  <div className="w-5 h-5 rounded-full bg-info/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <CreditCard size={11} className="text-info" />
-                  </div>
-                  <p className="text-[12px] text-earth leading-relaxed">
-                    {downgradeTarget === "FOUNDATION" ? (
-                      <>
-                        <span className="font-medium">After that, you move to Foundation (free).</span> No further charges. You can upgrade again any time.
-                      </>
-                    ) : (
-                      <>
-                        <span className="font-medium">After that, your new {downgradeTarget.charAt(0) + downgradeTarget.slice(1).toLowerCase()} plan begins</span> at{" "}
-                        <span className="font-data font-semibold">
-                          {formatPrice(PLAN_CONFIG[downgradeTarget as Exclude<PlanTier, "FOUNDATION">]?.monthlyPrice ?? 0)}/mo
-                        </span>{" "}
-                        (or{" "}
-                        <span className="font-data font-semibold">
-                          {formatPrice(PLAN_CONFIG[downgradeTarget as Exclude<PlanTier, "FOUNDATION">]?.annualPrice ?? 0)}/yr
-                        </span>{" "}
-                        if billed annually).
-                      </>
-                    )}
-                  </p>
-                </div>
-
-                {/* No data loss */}
-                <div className="flex items-start gap-2">
-                  <div className="w-5 h-5 rounded-full bg-success/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Check size={11} className="text-success" />
-                  </div>
-                  <p className="text-[12px] text-earth leading-relaxed">
-                    <span className="font-medium">Your projects and data are never deleted.</span> If you exceed the new plan limits, extra projects become read-only until you upgrade again.
-                  </p>
-                </div>
+              <div className="space-y-1.5 text-[10px] text-earth mb-2.5">
+                <p>
+                  Current {currentPlan.charAt(0) + currentPlan.slice(1).toLowerCase()} plan stays active
+                  {subscriptionEndDate
+                    ? <> until <span className="font-data font-semibold">{subscriptionEndDate}</span>.</>
+                    : <> until the end of your billing period.</>
+                  }
+                </p>
+                <p>
+                  {downgradeTarget === "FOUNDATION" ? (
+                    <>After that, you move to Foundation (free). No further charges.</>
+                  ) : (
+                    <>
+                      New {downgradeTarget.charAt(0) + downgradeTarget.slice(1).toLowerCase()} plan begins at{" "}
+                      <span className="font-data font-semibold">
+                        {formatPrice(PLAN_CONFIG[downgradeTarget as Exclude<PlanTier, "FOUNDATION">]?.monthlyPrice ?? 0)}/mo
+                      </span>.
+                    </>
+                  )}
+                </p>
+                <p className="text-muted">Your projects and data are never deleted.</p>
               </div>
             )}
 
-            <div className="flex items-center gap-3 mt-5 pl-12">
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleDowngradeConfirm}
                 disabled={managingPortal || downgradeLoading}
-                className="px-4 py-2 text-[12px] font-medium border border-border text-earth rounded-xl hover:bg-surface-alt transition-colors disabled:opacity-40"
+                className="px-3 py-1.5 text-[10px] font-medium border border-border text-earth rounded-lg hover:bg-surface-alt transition-colors disabled:opacity-40"
               >
                 {managingPortal ? "Opening..." : "Continue to billing portal"}
               </button>
               <button
                 onClick={() => setDowngradeTarget(null)}
-                className="px-4 py-2 text-[12px] text-muted hover:text-earth transition-colors"
+                className="px-3 py-1.5 text-[10px] text-muted hover:text-earth transition-colors"
               >
                 Cancel
               </button>
@@ -1010,43 +949,37 @@ export function SettingsClient() {
       {currentPlan === "ENTERPRISE" && (
         <>
           <SectionLabel>Organization Branding</SectionLabel>
-          <Card padding="md" className="mb-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
-                <Image size={20} className="text-clay" />
+          <Card padding="sm" className="mb-4">
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-8 h-8 rounded-full bg-warm flex items-center justify-center">
+                <Image size={16} className="text-clay" />
               </div>
-              <div>
-                <p className="text-[13px] font-medium text-earth">Organization Logo</p>
-                <p className="text-[11px] text-muted">Your logo will appear on all exported reports and presentations</p>
-              </div>
+              <p className="text-[13px] font-medium text-earth">Organization Logo</p>
             </div>
 
             {profile?.orgLogo ? (
-              <div className="flex items-center gap-4 p-3 border border-border rounded-xl bg-surface-alt">
+              <div className="flex items-center gap-3 p-2 border border-border rounded-lg bg-surface-alt">
                 <img
                   src={profile.orgLogo}
                   alt="Organization logo"
-                  className="max-h-12 max-w-[160px] object-contain"
+                  className="max-h-10 max-w-[120px] object-contain"
                 />
-                <div className="flex-1">
-                  <p className="text-[11px] text-success font-medium">Logo uploaded</p>
-                  <p className="text-[10px] text-muted">Appears on all exports</p>
-                </div>
+                <p className="flex-1 text-[10px] text-success font-medium">Uploaded</p>
                 <button
                   onClick={async () => {
                     if (!user) return;
                     await update(ref(db, `users/${user.uid}/profile`), { orgLogo: null });
                     showToast("Logo removed.", "success");
                   }}
-                  className="px-3 py-1.5 text-[11px] border border-border text-muted rounded-lg hover:text-danger hover:border-danger transition-colors"
+                  className="px-2.5 py-1 text-[10px] border border-border text-muted rounded-lg hover:text-danger hover:border-danger transition-colors"
                 >
                   Remove
                 </button>
               </div>
             ) : (
-              <label className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-clay/40 hover:bg-warm/30 transition-colors">
-                <Upload size={24} className="text-muted" />
-                <span className="text-[12px] text-muted">Click to upload logo (PNG or SVG, max 500KB)</span>
+              <label className="flex flex-col items-center gap-1.5 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-clay/40 hover:bg-warm/30 transition-colors">
+                <Upload size={20} className="text-muted" />
+                <span className="text-[10px] text-muted">Upload logo (PNG or SVG, max 500KB)</span>
                 <input
                   type="file"
                   accept="image/png,image/svg+xml"
@@ -1079,15 +1012,12 @@ export function SettingsClient() {
       {!isAdmin && (
         <>
           <SectionLabel>Trial Code</SectionLabel>
-          <Card padding="md" className="mb-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
-                <Gift size={20} className="text-clay" />
+          <Card padding="sm" className="mb-4">
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <div className="w-8 h-8 rounded-full bg-warm flex items-center justify-center">
+                <Gift size={16} className="text-clay" />
               </div>
-              <div>
-                <p className="text-[13px] font-medium text-earth">Have a trial code?</p>
-                <p className="text-[11px] text-muted">Enter a code to unlock a temporary plan upgrade</p>
-              </div>
+              <p className="text-[13px] font-medium text-earth">Redeem a trial code</p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -1096,12 +1026,12 @@ export function SettingsClient() {
                 value={redeemCode}
                 onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
                 placeholder="e.g. KEY-48H-BUI-XXXX"
-                className="flex-1 px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-clay font-mono tracking-wider input-focus"
+                className="flex-1 px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-clay font-mono tracking-wider input-focus"
               />
               <button
                 onClick={handleRedeemTrialCode}
                 disabled={redeeming || !redeemCode.trim()}
-                className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 shrink-0"
+                className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 shrink-0"
               >
                 {redeeming ? "Redeeming..." : "Redeem"}
               </button>
@@ -1116,36 +1046,38 @@ export function SettingsClient() {
       {isAdmin && (
         <>
           <SectionLabel>Market Data Cache</SectionLabel>
-          <Card padding="md" className="mb-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
-                <Database size={20} className="text-clay" />
+          <Card padding="sm" className="mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-warm flex items-center justify-center">
+                  <Database size={16} className="text-clay" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-medium text-earth">Location Data Cache</p>
+                  <p className="text-[9px] text-muted">Census, HUD, BLS, FRED -- cached 7-30 days</p>
+                </div>
               </div>
-              <div>
-                <p className="text-[13px] font-medium text-earth">Location Data Cache</p>
-                <p className="text-[11px] text-muted">Census, HUD, BLS, and FRED data cached for 7-30 days</p>
-              </div>
-            </div>
-            <button
-              onClick={async () => {
-                try {
-                  const { getAuthHeaders } = await import("@/lib/api-client");
-                  const headers = await getAuthHeaders();
-                  const res = await fetch("/api/location-data/clear-cache/", { method: "POST", headers });
-                  const data = await res.json();
-                  if (data.success) {
-                    showToast("Location cache cleared. Next lookups will fetch fresh data.", "success");
-                  } else {
-                    showToast(data.error || "Failed to clear cache.", "error");
+              <button
+                onClick={async () => {
+                  try {
+                    const { getAuthHeaders } = await import("@/lib/api-client");
+                    const headers = await getAuthHeaders();
+                    const res = await fetch("/api/location-data/clear-cache/", { method: "POST", headers });
+                    const data = await res.json();
+                    if (data.success) {
+                      showToast("Location cache cleared.", "success");
+                    } else {
+                      showToast(data.error || "Failed to clear cache.", "error");
+                    }
+                  } catch {
+                    showToast("Failed to clear cache.", "error");
                   }
-                } catch {
-                  showToast("Failed to clear cache.", "error");
-                }
-              }}
-              className="px-4 py-2 text-[12px] font-medium border border-warning text-warning rounded-xl hover:bg-warning/5 transition-colors"
-            >
-              Clear all cached location data
-            </button>
+                }}
+                className="px-3 py-1.5 text-[10px] font-medium border border-warning text-warning rounded-lg hover:bg-warning/5 transition-colors shrink-0"
+              >
+                Clear cache
+              </button>
+            </div>
           </Card>
         </>
       )}
@@ -1158,41 +1090,37 @@ export function SettingsClient() {
           <SectionLabel>
             <span className="flex items-center gap-2">
               Trial Codes
-              <span className="px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-clay/10 text-clay rounded-full">
+              <span className="px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wider bg-clay/10 text-clay rounded-full">
                 Admin
               </span>
             </span>
           </SectionLabel>
-          <Card padding="md" className="mb-5">
-            {/* Generate Trial Code */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
-                <Gift size={20} className="text-clay" />
+          <Card padding="sm" className="mb-4">
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-8 h-8 rounded-full bg-warm flex items-center justify-center">
+                <Gift size={16} className="text-clay" />
               </div>
-              <div>
-                <p className="text-[13px] font-medium text-earth">Generate Trial Code</p>
-                <p className="text-[11px] text-muted">Create codes to give users temporary plan access</p>
-              </div>
+              <p className="text-[13px] font-medium text-earth">Generate Trial Code</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
               <div>
-                <label className="block text-[11px] text-muted font-medium mb-1">Tier</label>
+                <label className="block text-[9px] text-muted font-medium uppercase tracking-wide mb-0.5">Tier</label>
                 <select
                   value={trialTier}
                   onChange={(e) => setTrialTier(e.target.value as "BUILDER" | "DEVELOPER")}
-                  className="w-full px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay"
+                  className="w-full px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay"
                 >
                   <option value="BUILDER">Builder</option>
                   <option value="DEVELOPER">Developer</option>
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] text-muted font-medium mb-1">Duration</label>
+                <label className="block text-[9px] text-muted font-medium uppercase tracking-wide mb-0.5">Duration</label>
                 <select
                   value={trialDuration}
                   onChange={(e) => setTrialDuration(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay"
+                  className="w-full px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay"
                 >
                   {DURATION_OPTIONS.map((d) => (
                     <option key={d.value} value={d.value}>{d.label}</option>
@@ -1200,11 +1128,11 @@ export function SettingsClient() {
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] text-muted font-medium mb-1">Max uses</label>
+                <label className="block text-[9px] text-muted font-medium uppercase tracking-wide mb-0.5">Max uses</label>
                 <select
                   value={trialMaxUses}
                   onChange={(e) => setTrialMaxUses(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay"
+                  className="w-full px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-clay"
                 >
                   {MAX_USES_OPTIONS.map((m) => (
                     <option key={m.value} value={m.value}>{m.label}</option>
@@ -1216,39 +1144,39 @@ export function SettingsClient() {
             <button
               onClick={handleGenerateTrialCode}
               disabled={generatingCode}
-              className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 mb-3"
+              className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 mb-2"
             >
               {generatingCode ? "Generating..." : "Generate Code"}
             </button>
 
             {generatedCode && (
-              <div className="flex items-center gap-2 p-3 rounded-[var(--radius)] bg-success/5 border border-success/20 mb-4">
-                <span className="text-[13px] font-mono font-semibold text-earth tracking-wider">{generatedCode}</span>
+              <div className="flex items-center gap-2 p-2 rounded-[var(--radius)] bg-success/5 border border-success/20 mb-3">
+                <span className="text-[12px] font-mono font-semibold text-earth tracking-wider">{generatedCode}</span>
                 <button
                   onClick={() => copyToClipboard(generatedCode)}
-                  className="p-1.5 rounded-[var(--radius)] hover:bg-surface-alt transition-colors text-muted hover:text-earth"
+                  className="p-1 rounded-[var(--radius)] hover:bg-surface-alt transition-colors text-muted hover:text-earth"
                   title="Copy code"
                 >
-                  <Copy size={14} />
+                  <Copy size={12} />
                 </button>
               </div>
             )}
 
             {/* Active Codes Table */}
             {trialCodes.length > 0 && (
-              <div className="border-t border-border pt-4 mt-2">
-                <p className="text-[12px] font-semibold text-earth mb-3">Active Codes</p>
+              <div className="border-t border-border pt-3 mt-1">
+                <p className="text-[11px] font-semibold text-earth mb-2">Active Codes</p>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-[11px]">
+                  <table className="w-full text-[10px]">
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="text-left py-2 pr-3 text-muted font-medium">Code</th>
-                        <th className="text-left py-2 pr-3 text-muted font-medium">Tier</th>
-                        <th className="text-left py-2 pr-3 text-muted font-medium">Duration</th>
-                        <th className="text-left py-2 pr-3 text-muted font-medium">Uses</th>
-                        <th className="text-left py-2 pr-3 text-muted font-medium">Expires</th>
-                        <th className="text-left py-2 pr-3 text-muted font-medium">Status</th>
-                        <th className="text-right py-2 text-muted font-medium"></th>
+                        <th className="text-left py-1.5 pr-2 text-[9px] text-muted font-medium uppercase tracking-wide">Code</th>
+                        <th className="text-left py-1.5 pr-2 text-[9px] text-muted font-medium uppercase tracking-wide">Tier</th>
+                        <th className="text-left py-1.5 pr-2 text-[9px] text-muted font-medium uppercase tracking-wide">Dur.</th>
+                        <th className="text-left py-1.5 pr-2 text-[9px] text-muted font-medium uppercase tracking-wide">Uses</th>
+                        <th className="text-left py-1.5 pr-2 text-[9px] text-muted font-medium uppercase tracking-wide">Expires</th>
+                        <th className="text-left py-1.5 pr-2 text-[9px] text-muted font-medium uppercase tracking-wide">Status</th>
+                        <th className="text-right py-1.5 text-muted font-medium"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1256,13 +1184,13 @@ export function SettingsClient() {
                         const status = getTrialCodeStatus(tc);
                         return (
                           <tr key={tc.code} className="border-b border-border/50">
-                            <td className="py-2 pr-3 font-mono tracking-wider text-earth">{tc.code}</td>
-                            <td className="py-2 pr-3 text-muted">{tc.tier.charAt(0) + tc.tier.slice(1).toLowerCase()}</td>
-                            <td className="py-2 pr-3 text-muted">{tc.durationHours}h</td>
-                            <td className="py-2 pr-3 text-muted">{tc.usedCount}/{tc.maxUses === 0 ? "Unlimited" : tc.maxUses}</td>
-                            <td className="py-2 pr-3 text-muted">{new Date(tc.expiresAt).toLocaleDateString()}</td>
-                            <td className="py-2 pr-3">
-                              <span className={`inline-block px-2 py-0.5 text-[9px] font-semibold uppercase rounded-full ${
+                            <td className="py-1.5 pr-2 font-mono tracking-wider text-earth">{tc.code}</td>
+                            <td className="py-1.5 pr-2 text-muted">{tc.tier.charAt(0) + tc.tier.slice(1).toLowerCase()}</td>
+                            <td className="py-1.5 pr-2 text-muted">{tc.durationHours}h</td>
+                            <td className="py-1.5 pr-2 text-muted">{tc.usedCount}/{tc.maxUses === 0 ? "Unl." : tc.maxUses}</td>
+                            <td className="py-1.5 pr-2 text-muted">{new Date(tc.expiresAt).toLocaleDateString()}</td>
+                            <td className="py-1.5 pr-2">
+                              <span className={`inline-block px-1.5 py-0.5 text-[8px] font-semibold uppercase rounded-full ${
                                 status === "active"
                                   ? "bg-success/10 text-success"
                                   : status === "expired"
@@ -1272,7 +1200,7 @@ export function SettingsClient() {
                                 {status}
                               </span>
                             </td>
-                            <td className="py-2 text-right">
+                            <td className="py-1.5 text-right">
                               {status === "active" && (
                                 <button
                                   onClick={() => handleRevokeTrialCode(tc.code)}
@@ -1280,7 +1208,7 @@ export function SettingsClient() {
                                   className="p-1 rounded-[var(--radius)] hover:bg-danger/5 text-muted hover:text-danger transition-colors disabled:opacity-40"
                                   title="Revoke code"
                                 >
-                                  <Trash2 size={13} />
+                                  <Trash2 size={12} />
                                 </button>
                               )}
                             </td>
@@ -1305,54 +1233,50 @@ export function SettingsClient() {
       {settingsTab === "notifications" && (
       <>
       <SectionLabel>Notifications</SectionLabel>
-      <Card padding="md" className="mb-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
-            <Bell size={20} className="text-clay" />
+      <Card padding="sm" className="mb-4">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-8 h-8 rounded-full bg-warm flex items-center justify-center">
+            <Bell size={16} className="text-clay" />
           </div>
-          <div>
-            <p className="text-[13px] font-medium text-earth">Notification Preferences</p>
-            <p className="text-[11px] text-muted">Control what notifications you receive</p>
-          </div>
+          <p className="text-[13px] font-medium text-earth">Notification Preferences</p>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           {[
-            { id: "budget_alerts", label: "Budget alerts", desc: "When spending exceeds thresholds", defaultOn: true },
+            { id: "budget_alerts", label: "Budget alerts", desc: "Spending exceeds thresholds", defaultOn: true },
             { id: "milestone_reminders", label: "Milestone reminders", desc: "Upcoming milestones and inspections", defaultOn: true },
-            { id: "daily_summary", label: "Daily activity summary", desc: "End-of-day recap of project activity", defaultOn: false },
-            { id: "punch_list", label: "Punch list updates", desc: "When punch list items are added or resolved", defaultOn: true },
-            { id: "weekly_digest", label: "Weekly project digest", desc: "Weekly email summary of all projects", defaultOn: false, requiresPlan: "BUILDER" as const },
+            { id: "daily_summary", label: "Daily activity summary", desc: "End-of-day project recap", defaultOn: false },
+            { id: "punch_list", label: "Punch list updates", desc: "Items added or resolved", defaultOn: true },
+            { id: "weekly_digest", label: "Weekly project digest", desc: "Weekly email summary", defaultOn: false, requiresPlan: "BUILDER" as const },
           ].map((pref) => {
             const locked = pref.requiresPlan && ["FOUNDATION"].includes(currentPlan);
             return (
-              <div key={pref.id} className="flex items-center justify-between py-1.5">
+              <div key={pref.id} className="flex items-center justify-between py-1">
                 <div>
-                  <p className="text-[12px] text-earth font-medium">{pref.label}</p>
-                  <p className="text-[10px] text-muted">{pref.desc}</p>
+                  <p className="text-[11px] text-earth font-medium">{pref.label}</p>
+                  <p className="text-[9px] text-muted">{pref.desc}</p>
                 </div>
                 {locked ? (
-                  <span className="text-[9px] text-muted bg-surface-alt px-2 py-1 rounded-full">
+                  <span className="text-[8px] text-muted bg-surface-alt px-1.5 py-0.5 rounded-full">
                     Builder+
                   </span>
                 ) : (
                   <button
                     onClick={async () => {
                       if (!user) return;
-                      const path = `users/${user.uid}/profile/notifications/${pref.id}`;
                       const current = (profile as any)?.notifications?.[pref.id] ?? pref.defaultOn;
                       await update(ref(db, `users/${user.uid}/profile`), {
                         [`notifications/${pref.id}`]: !current,
                       });
                     }}
-                    className={`relative w-9 h-5 rounded-full transition-colors ${
+                    className={`relative w-8 h-[18px] rounded-full transition-colors ${
                       ((profile as any)?.notifications?.[pref.id] ?? pref.defaultOn)
                         ? "bg-success" : "bg-border"
                     }`}
                   >
-                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                    <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform ${
                       ((profile as any)?.notifications?.[pref.id] ?? pref.defaultOn)
-                        ? "translate-x-4" : "translate-x-0.5"
+                        ? "translate-x-[14px]" : "translate-x-0.5"
                     }`} />
                   </button>
                 )}
@@ -1371,27 +1295,23 @@ export function SettingsClient() {
       {settingsTab === "data" && (
       <>
       <SectionLabel>Data</SectionLabel>
-      <Card padding="md" className="mb-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-warm flex items-center justify-center">
-            <Database size={20} className="text-clay" />
+      <Card padding="sm" className="mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-warm flex items-center justify-center">
+              <Database size={16} className="text-clay" />
+            </div>
+            <div>
+              <p className="text-[13px] font-medium text-earth">Export Data</p>
+              <p className="text-[9px] text-muted">Profile and preferences as JSON</p>
+            </div>
           </div>
-          <div>
-            <p className="text-[13px] font-medium text-earth">Your data</p>
-            <p className="text-[11px] text-muted">Export or delete your account data</p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
           <button
             onClick={handleExportAll}
-            className="px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors"
+            className="px-3 py-1.5 text-[10px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors shrink-0"
           >
-            Export profile data
+            Export
           </button>
-          <p className="text-[10px] text-muted mt-1">
-            Exports your profile and preferences. For full project data, use the Export button on each project's overview page.
-          </p>
         </div>
       </Card>
 
@@ -1399,52 +1319,50 @@ export function SettingsClient() {
       {/* Data Management Section                                            */}
       {/* ================================================================= */}
       <SectionLabel>Data Management</SectionLabel>
-      <Card padding="md" className="mb-5">
-        <div className="mb-6">
+      <Card padding="sm" className="mb-4">
+        <div className="mb-4">
           {/* Reset All Data */}
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
-              <Database size={20} className="text-warning" />
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="w-8 h-8 rounded-full bg-warning/10 flex items-center justify-center">
+              <Database size={16} className="text-warning" />
             </div>
             <div>
               <p className="text-[13px] font-medium text-earth">Reset All Data</p>
-              <p className="text-[11px] text-muted">
-                Delete all your projects and data but keep your account, preferences, and login. This is useful if you want to start fresh.
-              </p>
+              <p className="text-[9px] text-muted">Delete all projects but keep your account and preferences</p>
             </div>
           </div>
 
           {!showResetConfirm ? (
             <button
               onClick={() => setShowResetConfirm(true)}
-              className="px-4 py-2 text-[12px] border border-warning text-warning rounded-[var(--radius)] hover:bg-warning/5 transition-colors"
+              className="px-3 py-1.5 text-[10px] border border-warning text-warning rounded-[var(--radius)] hover:bg-warning/5 transition-colors"
             >
               Reset all data
             </button>
           ) : (
-            <div className="p-3 border border-warning rounded-[var(--radius)] bg-warning/5">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle size={16} className="text-warning" />
-                <p className="text-[12px] font-medium text-warning">Confirm data reset</p>
+            <div className="p-2.5 border border-warning rounded-[var(--radius)] bg-warning/5">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <AlertTriangle size={13} className="text-warning" />
+                <p className="text-[11px] font-medium text-warning">Confirm data reset</p>
               </div>
-              <p className="text-[11px] text-muted mb-2">
-                This will permanently delete ALL your projects and data. Your account and preferences will be preserved. Type RESET to confirm.
+              <p className="text-[10px] text-muted mb-2">
+                This permanently deletes ALL projects and data. Type RESET to confirm.
               </p>
               {resetError && (
-                <p className="text-[11px] text-danger mb-2">{resetError}</p>
+                <p className="text-[10px] text-danger mb-1.5">{resetError}</p>
               )}
               <input
                 type="text"
                 value={resetConfirmText}
                 onChange={(e) => setResetConfirmText(e.target.value)}
                 placeholder="Type RESET to confirm"
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-warning w-full mb-2"
+                className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-warning w-full mb-2"
               />
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleResetAllData}
                   disabled={resetConfirmText !== "RESET" || resetting}
-                  className="px-4 py-2 text-[12px] bg-warning text-white rounded-[var(--radius)] hover:bg-warning/90 transition-colors disabled:opacity-40"
+                  className="px-3 py-1.5 text-[10px] bg-warning text-white rounded-[var(--radius)] hover:bg-warning/90 transition-colors disabled:opacity-40"
                 >
                   {resetting ? "Resetting..." : "Reset all data"}
                 </button>
@@ -1454,7 +1372,7 @@ export function SettingsClient() {
                     setResetConfirmText("");
                     setResetError("");
                   }}
-                  className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                  className="px-3 py-1.5 text-[10px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
                 >
                   Cancel
                 </button>
@@ -1463,58 +1381,56 @@ export function SettingsClient() {
           )}
         </div>
 
-        <div className="border-t border-border pt-5">
+        <div className="border-t border-border pt-3">
           {/* Delete Account Permanently */}
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-danger/10 flex items-center justify-center">
-              <AlertTriangle size={20} className="text-danger" />
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="w-8 h-8 rounded-full bg-danger/10 flex items-center justify-center">
+              <AlertTriangle size={16} className="text-danger" />
             </div>
             <div>
-              <p className="text-[13px] font-medium text-danger">Delete Account Permanently</p>
-              <p className="text-[11px] text-muted">
-                Permanently delete your entire account, all projects, all data, and your login credentials. You will not be able to recover any information after this action.
-              </p>
+              <p className="text-[13px] font-medium text-danger">Delete Account</p>
+              <p className="text-[9px] text-muted">Permanently remove account, all projects, and login credentials</p>
             </div>
           </div>
 
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="px-4 py-2 text-[12px] border border-danger text-danger rounded-[var(--radius)] hover:bg-danger/5 transition-colors"
+              className="px-3 py-1.5 text-[10px] border border-danger text-danger rounded-[var(--radius)] hover:bg-danger/5 transition-colors"
             >
               {t("settings.deleteAccount")}
             </button>
           ) : (
-            <div className="p-3 border border-danger rounded-[var(--radius)] bg-danger/5">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle size={16} className="text-danger" />
-                <p className="text-[12px] font-medium text-danger">Confirm account deletion</p>
+            <div className="p-2.5 border border-danger rounded-[var(--radius)] bg-danger/5">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <AlertTriangle size={13} className="text-danger" />
+                <p className="text-[11px] font-medium text-danger">Confirm account deletion</p>
               </div>
-              <p className="text-[11px] text-muted mb-3">
-                This will permanently remove your account and all associated data. Enter your password and type DELETE to confirm.
+              <p className="text-[10px] text-muted mb-2">
+                Enter your password and type DELETE to confirm.
               </p>
               {deleteError && (
-                <p className="text-[11px] text-danger mb-2">{deleteError}</p>
+                <p className="text-[10px] text-danger mb-1.5">{deleteError}</p>
               )}
               <input
                 type="password"
                 value={deletePassword}
                 onChange={(e) => setDeletePassword(e.target.value)}
                 placeholder="Enter your password"
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-danger w-full mb-2"
+                className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-danger w-full mb-1.5"
               />
               <input
                 type="text"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="Type DELETE to confirm"
-                className="px-3 py-2 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-danger w-full mb-2"
+                className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-danger w-full mb-2"
               />
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleDeleteAccount}
                   disabled={deleteConfirmText !== "DELETE" || !deletePassword || deleting}
-                  className="px-4 py-2 text-[12px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors disabled:opacity-40"
+                  className="px-3 py-1.5 text-[10px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors disabled:opacity-40"
                 >
                   {deleting ? "Deleting..." : "Delete my account"}
                 </button>
@@ -1524,7 +1440,7 @@ export function SettingsClient() {
                     setDeleteConfirmText("");
                     setDeletePassword("");
                   }}
-                  className="px-4 py-2 text-[12px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
+                  className="px-3 py-1.5 text-[10px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
                 >
                   Cancel
                 </button>
