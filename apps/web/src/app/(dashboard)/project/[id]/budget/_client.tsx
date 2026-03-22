@@ -309,496 +309,346 @@ export function BudgetClient() {
     }
   }
 
+
+  // Sort state
+  const [sortBy, setSortBy] = useState<"category" | "estimated" | "actual" | "variance" | "progress">("category");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  function toggleSort(col: typeof sortBy) {
+    if (sortBy === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortBy(col); setSortDir("asc"); }
+  }
+
+  const sortedItems = [...items].sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    switch (sortBy) {
+      case "category": return dir * a.category.localeCompare(b.category);
+      case "estimated": return dir * (a.estimated - b.estimated);
+      case "actual": return dir * (a.actual - b.actual);
+      case "variance": return dir * ((a.actual - a.estimated) - (b.actual - b.estimated));
+      case "progress": {
+        const pa = a.estimated > 0 ? a.actual / a.estimated : 0;
+        const pb = b.estimated > 0 ? b.actual / b.estimated : 0;
+        return dir * (pa - pb);
+      }
+      default: return 0;
+    }
+  });
+
+  // AI insights (computed once)
+  const budgetInsights = items.length > 0 ? generateBudgetInsights(project, items, marketData.currency.symbol).sort((a, b) => b.priority - a.priority).slice(0, 3) : [];
+
+  // Donut chart colors (reuse for table dots)
+  const DONUT_COLORS = ["#2D6A4F", "#8B4513", "#1B4965", "#BC6C25", "#6B4226", "#9B2226", "#D4A574", "#3A3A3A", "#6A6A6A", "#2C1810", "#4A7C59", "#A0522D", "#264653", "#E9C46A", "#2A9D8F"];
+
   return (
     <>
-      <PageHeader
-        title={t("project.budget")}
-        projectName={project.name}
-        projectId={projectId}
-        action={{ label: "Add item", onClick: openAddForm, icon: <Plus size={14} /> }}
-      />
-
       {/* ================================================================= */}
-      {/* TOP SECTION: Visual summary                                       */}
+      {/*  TOP: Donut + KPIs                                                */}
       {/* ================================================================= */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-        {/* Budget donut chart */}
-        <BudgetDonutChart
-          items={items.map((b) => ({
-            category: b.category,
-            amount: b.estimated,
-          }))}
-          total={project.totalBudget}
-          currency={marketData.currency}
-        />
+      <div className="flex items-start gap-5 mb-5">
+        {/* Donut — compact */}
+        <div className="w-[180px] shrink-0">
+          <BudgetDonutChart
+            items={items.map((b) => ({ category: b.category, amount: b.estimated }))}
+            total={project.totalBudget}
+            currency={marketData.currency}
+          />
+        </div>
 
-        {/* Stat cards */}
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <StatCard value={fmtCompact(project.totalBudget)} label="Total budget" />
-            <StatCard value={fmtCompact(project.totalSpent)} label="Spent to date" />
-            <StatCard value={fmtCompact(remaining)} label="Remaining" />
-            <div>
-              <StatCard
-                value={variance}
-                label="Variance"
-                valueClassName={!hasSpending ? "text-muted" : varianceNum > 0 ? "text-danger" : varianceNum < -5 ? "text-info" : ""}
-              />
-              <div className="mt-1 px-1">
-                <LearnTooltip
-                  term="Variance"
-                  explanation="The difference between what you planned to spend and what you actually spent. Negative variance means under budget. Positive means over budget."
-                  whyItMatters="Tracking variance early lets you catch overspending before it becomes a crisis. A variance over 10% on any category is a warning sign."
-                >
-                  <span className="text-[9px] text-muted">What is this?</span>
-                </LearnTooltip>
+        {/* KPIs + insights */}
+        <div className="flex-1 min-w-0 pt-1">
+          {/* KPI row */}
+          <div className="grid grid-cols-4 gap-3 mb-3">
+            {[
+              { label: "Budget", value: fmtCompact(project.totalBudget) },
+              { label: "Spent", value: fmtCompact(project.totalSpent) },
+              { label: "Remaining", value: fmtCompact(remaining), warn: remaining < 0 },
+              { label: "Utilization", value: `${budgetUtilization}%`, warn: budgetUtilization > 90 },
+            ].map((kpi) => (
+              <div key={kpi.label}>
+                <p className="text-[9px] text-muted uppercase tracking-wider">{kpi.label}</p>
+                <p className={`text-[16px] font-data font-semibold leading-tight ${kpi.warn ? "text-danger" : "text-earth"}`}>{kpi.value}</p>
               </div>
-            </div>
-          </div>
-
-          {/* Budget utilization bar */}
-          <Card padding="md">
-            <div className="flex justify-between text-[10px] text-muted mb-1.5">
-              <span>Budget utilization</span>
-              <span className="font-data">{budgetUtilization}%</span>
-            </div>
-            <ProgressBar value={budgetUtilization} color={utilizationColor} height={6} />
-            <div className="flex justify-between text-[9px] mt-1.5">
-              <span className="text-muted">
-                {budgetUtilization <= 80 ? "Healthy" : budgetUtilization <= 95 ? "Watch" : "Critical"}
-              </span>
-              <span className="text-muted font-data">{fmtCompact(project.totalSpent)} / {fmtCompact(project.totalBudget)}</span>
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* ================================================================= */}
-      {/* Location context banner                                           */}
-      {/* ================================================================= */}
-      {locationData && (
-        <div className="p-2.5 rounded-[var(--radius)] bg-surface-alt border border-border text-[11px] text-earth mb-4">
-          <span className="font-medium">Benchmarks adjusted for {locationData.city}{locationData.state ? `, ${locationData.state}` : ""}.</span>{" "}
-          Cost index: <span className="font-data">{locationData.costIndex.toFixed(2)}x</span> ({getCostComparisonText(locationData.costIndex)}).
-          All market ranges below reflect local pricing.
-        </div>
-      )}
-
-      {/* ================================================================= */}
-      {/* AI Budget Insights                                                */}
-      {/* ================================================================= */}
-      {items.length > 0 && (() => {
-        const budgetInsights = generateBudgetInsights(project, items, marketData.currency.symbol);
-        const topInsights = budgetInsights.sort((a, b) => b.priority - a.priority).slice(0, 3);
-        if (topInsights.length === 0) return null;
-        return (
-          <div className="mb-4 space-y-2">
-            <SectionLabel>AI Insights</SectionLabel>
-            {topInsights.map((insight, i) => (
-              <AIInsight key={i} type={insight.type} title={insight.title} content={insight.content} action={insight.action} />
             ))}
           </div>
-        );
-      })()}
 
-      {/* ================================================================= */}
-      {/* MIDDLE SECTION: Category cards                                    */}
-      {/* ================================================================= */}
-
-      {/* Market benchmarks prompt (when no items) */}
-      {items.length === 0 && benchmarks.length > 0 && (
-        <Card padding="md" className="mb-4 text-center">
-          <p className="text-[12px] text-earth font-medium mb-1">Let us build your budget</p>
-          <p className="text-[11px] text-muted mb-3 max-w-md mx-auto leading-relaxed">
-            We will start with typical construction costs for {project.city || (market === "USA" ? "your area" : "your region")} and you can adjust from there. Every category shows what other builders in your area are paying.
-          </p>
-          <button
-            onClick={handleLoadBenchmarks}
-            disabled={loadingBenchmarks}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-[12px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40 btn-hover"
-          >
-            <Download size={14} />
-            {loadingBenchmarks ? "Loading..." : `Start with typical costs for ${project.city || (market === "USA" ? "US" : "Togo")}`}
-          </button>
-          <div className="mt-2">
-            <button
-              onClick={openAddForm}
-              className="text-[11px] text-info hover:underline cursor-pointer"
-            >
-              Or add items manually
-            </button>
+          {/* Utilization bar */}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex-1 h-[3px] bg-sand/30 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${budgetUtilization > 90 ? "bg-danger" : budgetUtilization > 70 ? "bg-warning" : "bg-success"}`}
+                style={{ width: `${Math.min(budgetUtilization, 100)}%` }}
+              />
+            </div>
           </div>
-        </Card>
-      )}
 
-      {/* Controls bar */}
-      <div className="flex items-center justify-between mb-3">
-        <SectionLabel>Budget Categories</SectionLabel>
-        <div className="flex items-center gap-3">
-          {items.length > 0 && benchmarks.length > 0 && (
-            <button
-              onClick={() => setShowBenchmarks((p) => !p)}
-              className="text-[10px] text-info hover:underline cursor-pointer"
-            >
-              {showBenchmarks ? "Hide ranges" : "Show typical ranges"}
-            </button>
+          {/* AI insights — inline, compact */}
+          {budgetInsights.length > 0 && (
+            <div className="space-y-1">
+              {budgetInsights.map((insight, i) => (
+                <p key={i} className="text-[10px] text-muted leading-snug flex items-start gap-1.5">
+                  <span className={`w-1 h-1 rounded-full mt-1.5 shrink-0 ${insight.type === "risk" ? "bg-warning" : "bg-info"}`} />
+                  {insight.content}
+                </p>
+              ))}
+            </div>
           )}
-          {items.length > 0 && (
-            <button
-              onClick={handleLoadBenchmarks}
-              disabled={loadingBenchmarks}
-              className="text-[10px] text-info hover:underline cursor-pointer disabled:opacity-40"
-            >
-              {loadingBenchmarks ? "Loading..." : "Load benchmarks"}
-            </button>
-          )}
-          <button
-            className="flex items-center gap-1 text-[11px] text-info hover:underline cursor-pointer"
-            onClick={openAddForm}
-          >
-            <Plus size={12} /> Add item
-          </button>
         </div>
       </div>
 
-      {/* Add item form */}
+      {/* Location context — single line */}
+      {locationData && (
+        <p className="text-[10px] text-muted mb-3">
+          Costs adjusted for {locationData.city}{locationData.state ? `, ${locationData.state}` : ""} (index: {locationData.costIndex.toFixed(2)}x, {getCostComparisonText(locationData.costIndex)})
+        </p>
+      )}
+
+      {/* ================================================================= */}
+      {/*  EMPTY STATE                                                      */}
+      {/* ================================================================= */}
+      {items.length === 0 && !showForm && (
+        <div className="text-center py-12 mb-20">
+          <p className="text-[13px] text-earth font-medium mb-1">Build your budget</p>
+          <p className="text-[11px] text-muted mb-4 max-w-sm mx-auto">
+            Start with typical costs for {project.city || "your area"} and adjust from there.
+          </p>
+          <button onClick={handleLoadBenchmarks} disabled={loadingBenchmarks}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-[12px] bg-earth text-warm rounded-lg hover:bg-earth/90 transition-colors disabled:opacity-40">
+            <Download size={14} />
+            {loadingBenchmarks ? "Loading..." : "Load typical costs"}
+          </button>
+          <p className="mt-2">
+            <button onClick={openAddForm} className="text-[10px] text-clay hover:underline">Or add manually</button>
+          </p>
+        </div>
+      )}
+
+      {/* ================================================================= */}
+      {/*  ADD FORM                                                         */}
+      {/* ================================================================= */}
       {showForm && (
-        <div ref={addFormRef}>
-        <Card padding="md" className="mb-3">
-          <div className="space-y-4">
+        <div ref={addFormRef} className="mb-4 p-3 rounded-lg border border-border bg-surface">
+          <div className="grid grid-cols-[1fr_120px_120px_auto] gap-2 items-end">
             <div>
-              <label className="block text-[12px] font-medium text-earth mb-1.5">Category *</label>
-              <input
-                type="text"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Foundation, Framing"
-                className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
-              />
+              <label className="block text-[10px] text-muted mb-1">Category</label>
+              <input type="text" value={category} onChange={(e) => setCategory(e.target.value)}
+                placeholder="e.g. Foundation" className="w-full px-2.5 py-1.5 text-[12px] border border-border rounded bg-white text-earth placeholder:text-muted/40 focus:outline-none focus:border-clay/40" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[12px] font-medium text-earth mb-1.5">Estimated ({marketData.currency.code})</label>
-                <input
-                  type="number"
-                  value={estimated}
-                  onChange={(e) => setEstimated(e.target.value)}
-                  placeholder="0"
-                  className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full font-data"
-                />
-              </div>
-              <div>
-                <label className="block text-[12px] font-medium text-earth mb-1.5">Actual ({marketData.currency.code})</label>
-                <input
-                  type="number"
-                  value={actual}
-                  onChange={(e) => setActual(e.target.value)}
-                  placeholder="0"
-                  className="px-3 py-3 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full font-data"
-                />
-              </div>
+            <div>
+              <label className="block text-[10px] text-muted mb-1">Estimated ({marketData.currency.code})</label>
+              <input type="number" value={estimated} onChange={(e) => setEstimated(e.target.value)}
+                placeholder="0" className="w-full px-2.5 py-1.5 text-[12px] border border-border rounded bg-white text-earth font-data focus:outline-none focus:border-clay/40" />
             </div>
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                onClick={handleSave}
-                disabled={saving || !category.trim() || !estimated.trim()}
-                className="btn-primary"
-              >
-                {saving ? "Saving..." : "Save"}
+            <div>
+              <label className="block text-[10px] text-muted mb-1">Actual ({marketData.currency.code})</label>
+              <input type="number" value={actual} onChange={(e) => setActual(e.target.value)}
+                placeholder="0" className="w-full px-2.5 py-1.5 text-[12px] border border-border rounded bg-white text-earth font-data focus:outline-none focus:border-clay/40" />
+            </div>
+            <div className="flex gap-1.5">
+              <button onClick={handleSave} disabled={saving || !category.trim() || !estimated.trim()}
+                className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded hover:bg-earth/90 disabled:opacity-40 transition-colors">
+                {saving ? "..." : "Add"}
               </button>
-              <button
-                onClick={() => setShowForm(false)}
-                className="btn-secondary"
-              >
+              <button onClick={() => setShowForm(false)} className="px-2 py-1.5 text-[11px] text-muted hover:text-earth transition-colors">
                 Cancel
               </button>
             </div>
           </div>
-        </Card>
         </div>
       )}
 
-      {/* Category cards grid */}
-      {items.length === 0 && !showForm ? (
-        <div className="mb-24">
-          <EmptyState
-            icon={<DollarSign size={28} />}
-            title="Let us build your budget"
-            description={`We will start with typical construction costs for ${project.city || (market === "USA" ? "your area" : "your region")} and you can adjust from there. Every category shows what other builders in your area are paying.`}
-            action={{ label: `Start with typical costs for ${project.city || (market === "USA" ? "US" : "Togo")}`, onClick: handleLoadBenchmarks }}
-          />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-24 animate-stagger">
-          {items.map((item) => {
-            const benchmark = findBenchmark(item.category);
-            const statusInfo = getStatusInfo(item);
-            const IconComponent = getCategoryIcon(item.category);
-            const isExpanded = expandedItem === item.id;
-            const itemProgress = item.estimated > 0
-              ? Math.min(Math.round((item.actual / item.estimated) * 100), 150)
-              : 0;
-            const progressColor =
-              item.actual > item.estimated ? "var(--color-danger)" :
-              item.actual > item.estimated * 0.8 ? "var(--color-warning)" :
-              "var(--color-success)";
+      {/* ================================================================= */}
+      {/*  BUDGET TABLE                                                     */}
+      {/* ================================================================= */}
+      {items.length > 0 && (
+        <div className="mb-20">
+          {/* Controls */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-data text-muted/50">{items.length} categories</span>
+              {benchmarks.length > 0 && (
+                <button onClick={() => setShowBenchmarks(p => !p)} className="text-[9px] text-clay/60 hover:text-clay transition-colors">
+                  {showBenchmarks ? "Hide ranges" : "Show ranges"}
+                </button>
+              )}
+            </div>
+            <button onClick={openAddForm} className="flex items-center gap-1 text-[10px] text-clay hover:text-earth transition-colors">
+              <Plus size={10} /> Add
+            </button>
+          </div>
 
-            return (
-              <Card
-                key={item.id}
-                padding="sm"
-                className="cursor-pointer hover:shadow-sm transition-shadow card-hover"
-              >
-                <div
-                  onClick={() => setExpandedItem(isExpanded ? null : item.id ?? null)}
-                >
-                  {/* Header row */}
-                  <div className="flex items-center gap-2.5 mb-2">
-                    <div className="w-8 h-8 rounded-[var(--radius)] bg-warm flex items-center justify-center shrink-0">
-                      <IconComponent size={16} className="text-clay" />
+          {/* Table */}
+          <div className="rounded-lg border border-border/40 overflow-hidden">
+            {/* Header */}
+            <div className="grid grid-cols-[minmax(0,1fr)_100px_100px_90px_120px_28px] gap-0 bg-warm/30 border-b border-border/30 text-[9px] text-muted uppercase tracking-wider">
+              {[
+                { key: "category" as const, label: "Category" },
+                { key: "estimated" as const, label: "Estimated" },
+                { key: "actual" as const, label: "Actual" },
+                { key: "variance" as const, label: "Variance" },
+                { key: "progress" as const, label: "Progress" },
+              ].map((col) => (
+                <button key={col.key} onClick={() => toggleSort(col.key)}
+                  className={`px-3 py-2 text-left hover:text-earth transition-colors flex items-center gap-0.5 ${sortBy === col.key ? "text-earth font-semibold" : ""}`}>
+                  {col.label}
+                  {sortBy === col.key && <span className="text-[7px]">{sortDir === "asc" ? "\u25B2" : "\u25BC"}</span>}
+                </button>
+              ))}
+              <div />
+            </div>
+
+            {/* Rows */}
+            {sortedItems.map((item, idx) => {
+              const isExpanded2 = expandedItem === item.id;
+              const itemProgress = item.estimated > 0 ? Math.round((item.actual / item.estimated) * 100) : 0;
+              const varianceAmt = item.actual - item.estimated;
+              const isOver = item.actual > item.estimated;
+              const colorDot = DONUT_COLORS[idx % DONUT_COLORS.length];
+
+              return (
+                <div key={item.id} className={`border-b border-border/15 last:border-b-0 ${isOver && item.actual > 0 ? "bg-danger/[0.02]" : ""}`}>
+                  {/* Main row */}
+                  <button
+                    onClick={() => setExpandedItem(isExpanded2 ? null : item.id ?? null)}
+                    className="w-full grid grid-cols-[minmax(0,1fr)_100px_100px_90px_120px_28px] gap-0 items-center hover:bg-warm/8 transition-colors"
+                  >
+                    {/* Category */}
+                    <div className="flex items-center gap-2 px-3 py-2.5">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colorDot }} />
+                      <span className="text-[12px] text-earth truncate">{item.category}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[12px] font-medium text-earth">{item.category}</span>
-                        <Badge variant={statusInfo.variant}>{t(statusInfo.labelKey) || statusInfo.fallback}</Badge>
+                    {/* Estimated */}
+                    <span className="text-[11px] font-data text-earth px-3 text-right">{fmtCompact(item.estimated)}</span>
+                    {/* Actual */}
+                    <span className="text-[11px] font-data text-earth px-3 text-right">{fmtCompact(item.actual)}</span>
+                    {/* Variance */}
+                    <span className={`text-[11px] font-data px-3 text-right ${item.actual === 0 ? "text-muted/30" : isOver ? "text-danger" : "text-success"}`}>
+                      {item.actual === 0 ? "--" : `${isOver ? "+" : ""}${fmtCompact(varianceAmt)}`}
+                    </span>
+                    {/* Progress */}
+                    <div className="flex items-center gap-1.5 px-3">
+                      <div className="flex-1 h-[3px] bg-sand/30 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${isOver ? "bg-danger" : itemProgress > 80 ? "bg-warning" : "bg-success"}`}
+                          style={{ width: `${Math.min(itemProgress, 100)}%` }} />
                       </div>
+                      <span className="text-[9px] font-data text-muted/50 w-7 text-right">{itemProgress}%</span>
                     </div>
-                  </div>
+                    {/* Chevron */}
+                    <div className="flex justify-center">
+                      <ChevronDown size={12} className={`text-muted/30 transition-transform ${isExpanded2 ? "rotate-180" : ""}`} />
+                    </div>
+                  </button>
 
-                  {/* Estimated vs Actual */}
-                  <div className="flex items-center justify-between text-[11px] font-data mb-1.5">
-                    <span className="text-muted">Est: {fmt(item.estimated)}</span>
-                    <span className="text-earth">Actual: {fmt(item.actual)}</span>
-                  </div>
-
-                  {/* Mini progress bar */}
-                  <ProgressBar
-                    value={Math.min(itemProgress, 100)}
-                    color={progressColor}
-                    height={3}
-                  />
-                  <div className="flex justify-between text-[9px] mt-1">
-                    <span className="text-muted font-data">{Math.min(itemProgress, 100)}%</span>
-                    {item.actual > 0 && (
-                      <span className={item.actual > item.estimated ? "text-danger font-data" : "text-success font-data"}>
-                        {item.actual > item.estimated ? "+" : ""}{fmt(item.actual - item.estimated)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Benchmark range indicator */}
-                  {benchmark && !isExpanded && (() => {
-                    const adjLow = adjustForLocation(benchmark.lowRange);
-                    const adjHigh = adjustForLocation(benchmark.highRange);
-                    const unitLabel = benchmark.unit === "sqft" ? "/sqft" : benchmark.unit === "sqm" ? "/sqm" : benchmark.unit === "linear_ft" ? "/ft" : benchmark.unit === "linear_m" ? "/m" : "";
-                    return (
-                      <div className="mt-2 flex items-center gap-2 text-[9px] text-muted flex-wrap">
-                        <span>{locationData ? `Range for ${locationData.city}:` : "Market range:"}</span>
-                        <span className="font-data">{fmtCompact(adjLow)} - {fmtCompact(adjHigh)}{unitLabel && <span className="text-muted/60"> {unitLabel}</span>}</span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Expand chevron */}
-                  <div className="flex justify-center mt-1">
-                    {isExpanded ? (
-                      <ChevronUp size={14} className="text-muted" />
-                    ) : (
-                      <ChevronDown size={14} className="text-muted" />
-                    )}
-                  </div>
-                </div>
-
-                {/* Expanded details */}
-                {isExpanded && (
-                  <div className="mt-2 pt-2 border-t border-border">
-                    {/* Cost range bar */}
-                    {showBenchmarks && benchmark && (
-                      <div className="mb-3">
-                        <CostRangeBar
-                          low={adjustForLocation(benchmark.lowRange)}
-                          mid={adjustForLocation(benchmark.midRange)}
-                          high={adjustForLocation(benchmark.highRange)}
-                          actual={item.estimated > 0 ? item.estimated : undefined}
-                          currency={marketData.currency}
-                        />
-                        <p className="text-[9px] text-muted mt-0.5">{benchmark.notes}</p>
-                      </div>
-                    )}
-
-                    {/* Edit mode */}
-                    {editingItemId === item.id ? (
-                      <div className="space-y-2 mb-3">
+                  {/* Expanded detail */}
+                  {isExpanded2 && (
+                    <div className="px-3 pb-3 pt-1 bg-warm/5">
+                      <div className="grid grid-cols-3 gap-4 text-[10px] mb-2">
                         <div>
-                          <label className="block text-[10px] text-muted font-medium mb-0.5">Estimated ({marketData.currency.code})</label>
-                          <input
-                            type="number"
-                            value={editEstimated}
-                            onChange={(e) => setEditEstimated(e.target.value)}
-                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full font-data"
-                          />
+                          <span className="text-muted block">Estimated</span>
+                          <span className="font-data text-earth">{fmt(item.estimated)}</span>
                         </div>
                         <div>
-                          <label className="block text-[10px] text-muted font-medium mb-0.5">Actual ({marketData.currency.code})</label>
-                          <input
-                            type="number"
-                            value={editActual}
-                            onChange={(e) => setEditActual(e.target.value)}
-                            className="px-2 py-1.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full font-data"
-                          />
+                          <span className="text-muted block">Actual</span>
+                          <span className="font-data text-earth">{fmt(item.actual)}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEditSave(item)}
-                            disabled={editSaving}
-                            className="px-3 py-1.5 text-[11px] bg-earth text-warm rounded-[var(--radius)] hover:bg-earth-light transition-colors disabled:opacity-40"
-                          >
-                            {editSaving ? "Saving..." : "Save"}
-                          </button>
-                          <button
-                            onClick={() => setEditingItemId(null)}
-                            className="px-3 py-1.5 text-[11px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
-                          >
-                            Cancel
-                          </button>
+                        <div>
+                          <span className="text-muted block">Variance</span>
+                          <span className={`font-data ${isOver ? "text-danger" : "text-success"}`}>
+                            {isOver ? "+" : ""}{fmt(varianceAmt)}
+                          </span>
                         </div>
                       </div>
-                    ) : (
-                      <>
-                        {/* Detailed breakdown */}
-                        <div className="space-y-1.5 text-[11px]">
-                          <div className="flex justify-between">
-                            <span className="text-muted">Estimated</span>
-                            <span className="font-data text-earth">{fmt(item.estimated)}</span>
+
+                      {/* Benchmark range */}
+                      {showBenchmarks && (() => {
+                        const bm = findBenchmark(item.category);
+                        if (!bm) return null;
+                        return (
+                          <div className="mb-2">
+                            <CostRangeBar
+                              low={adjustForLocation(bm.lowRange)}
+                              mid={adjustForLocation(bm.midRange)}
+                              high={adjustForLocation(bm.highRange)}
+                              actual={item.estimated > 0 ? item.estimated : undefined}
+                              currency={marketData.currency}
+                            />
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted">Actual spent</span>
-                            <span className="font-data text-earth">{fmt(item.actual)}</span>
+                        );
+                      })()}
+
+                      {/* Edit mode */}
+                      {editingItemId === item.id ? (
+                        <div className="flex items-end gap-2 mt-2">
+                          <div className="flex-1">
+                            <label className="block text-[9px] text-muted mb-0.5">Estimated</label>
+                            <input type="number" value={editEstimated} onChange={(e) => setEditEstimated(e.target.value)}
+                              className="w-full px-2 py-1 text-[11px] border border-border rounded bg-white font-data focus:outline-none focus:border-clay/40" />
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted">Variance</span>
-                            <span className={`font-data ${item.actual > item.estimated ? "text-danger" : "text-success"}`}>
-                              {item.actual > item.estimated ? "+" : ""}{fmt(item.actual - item.estimated)}
+                          <div className="flex-1">
+                            <label className="block text-[9px] text-muted mb-0.5">Actual</label>
+                            <input type="number" value={editActual} onChange={(e) => setEditActual(e.target.value)}
+                              className="w-full px-2 py-1 text-[11px] border border-border rounded bg-white font-data focus:outline-none focus:border-clay/40" />
+                          </div>
+                          <button onClick={() => handleEditSave(item)} disabled={editSaving}
+                            className="px-2.5 py-1 text-[10px] bg-earth text-warm rounded hover:bg-earth/90 disabled:opacity-40">{editSaving ? "..." : "Save"}</button>
+                          <button onClick={() => setEditingItemId(null)}
+                            className="px-2 py-1 text-[10px] text-muted hover:text-earth">Cancel</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 mt-2">
+                          <button onClick={(e) => { e.stopPropagation(); startEditItem(item); }}
+                            className="flex items-center gap-1 text-[10px] text-clay hover:text-earth transition-colors">
+                            <Pencil size={10} /> Edit
+                          </button>
+                          {deleteConfirmId === item.id ? (
+                            <span className="flex items-center gap-1.5 text-[10px]">
+                              <span className="text-danger">Delete?</span>
+                              <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id!); }}
+                                className="text-danger hover:underline">Yes</button>
+                              <button onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}
+                                className="text-muted hover:text-earth">No</button>
                             </span>
-                          </div>
-                          {benchmark && (
-                            <>
-                              <div className="border-t border-border pt-1.5 mt-1.5">
-                                {locationData && (
-                                  <div className="text-[10px] text-muted mb-1.5">
-                                    Adjusted for {locationData.city} (cost index: {locationData.costIndex.toFixed(2)}x, {getCostComparisonText(locationData.costIndex)})
-                                  </div>
-                                )}
-                                <div className="flex justify-between">
-                                  <span className="text-muted">{locationData ? `${locationData.city} low` : "Market low"}</span>
-                                  <span className="font-data text-muted">{fmt(adjustForLocation(benchmark.lowRange))}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted">{locationData ? `${locationData.city} mid` : "Market mid"}</span>
-                                  <span className="font-data text-muted">{fmt(adjustForLocation(benchmark.midRange))}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted">{locationData ? `${locationData.city} high` : "Market high"}</span>
-                                  <span className="font-data text-muted">{fmt(adjustForLocation(benchmark.highRange))}</span>
-                                </div>
-                              </div>
-                            </>
+                          ) : (
+                            <button onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(item.id!); }}
+                              className="flex items-center gap-1 text-[10px] text-danger/50 hover:text-danger transition-colors">
+                              <Trash2 size={10} /> Delete
+                            </button>
                           )}
                         </div>
-                      </>
-                    )}
-
-                    {/* Edit / Delete buttons */}
-                    {editingItemId !== item.id && (
-                      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); startEditItem(item); }}
-                          className="flex items-center gap-1 px-3 py-1.5 text-[11px] border border-border rounded-[var(--radius)] text-earth hover:bg-surface-alt transition-colors"
-                        >
-                          <Pencil size={12} /> Edit
-                        </button>
-                        {deleteConfirmId === item.id ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] text-danger">Are you sure? This cannot be undone.</span>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id!); }}
-                              className="px-2 py-1 text-[10px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors"
-                            >
-                              Delete
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}
-                              className="px-2 py-1 text-[10px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(item.id!); }}
-                            className="flex items-center gap-1 px-3 py-1.5 text-[11px] border border-danger/30 rounded-[var(--radius)] text-danger hover:bg-danger/5 transition-colors"
-                          >
-                            <Trash2 size={12} /> Delete
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Card>
-            );
-          })}
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
       {/* ================================================================= */}
-      {/* Education callout                                                 */}
+      {/*  STICKY FOOTER                                                    */}
       {/* ================================================================= */}
-      <div className="mb-24 p-4 rounded-[var(--radius)] bg-emerald-50 border border-emerald-200 text-[12px] text-emerald-800 leading-relaxed">
-        <p className="font-semibold mb-1">Understanding your budget</p>
-        <p>
-          Every financial calculation should be auditable. The estimated column shows your planned cost,
-          the actual column shows what you have spent. Toggle &quot;Show typical ranges&quot; to see how your
-          estimates compare to market benchmarks{locationData ? ` for ${locationData.city}${locationData.state ? `, ${locationData.state}` : ""}` : ` for ${market === "USA" ? "US" : "Togolese"}`} residential construction.
-          Each category card shows a progress bar comparing actual spend against estimates. Click a card
-          to see detailed variance and market benchmark comparisons.
-        </p>
-      </div>
-
-      {/* ================================================================= */}
-      {/* FLOATING STICKY BAR                                               */}
-      {/* ================================================================= */}
-      <div className="fixed bottom-0 right-0 z-30 bg-[#2C1810]/95 backdrop-blur-sm border-t border-[#3D2215] pr-16" style={{ left: "var(--sidebar-width, 0px)" }}>
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-3 sm:gap-6">
-            <div>
-              <p className="text-[8px] sm:text-[9px] text-warm/60 uppercase tracking-wider">Budget</p>
-              <p className="font-data text-xs sm:text-sm text-warm font-medium">{fmtCompact(project.totalBudget)}</p>
-            </div>
-            <div>
-              <p className="text-[8px] sm:text-[9px] text-warm/60 uppercase tracking-wider">Spent</p>
-              <p className="font-data text-xs sm:text-sm text-warm font-medium">{fmtCompact(project.totalSpent)}</p>
-            </div>
-            <div>
-              <p className="text-[8px] sm:text-[9px] text-warm/60 uppercase tracking-wider">Left</p>
-              <p className={`font-data text-xs sm:text-sm font-medium ${remaining >= 0 ? "text-warm" : "text-danger"}`}>
-                {fmtCompact(remaining)}
-              </p>
-            </div>
+      <div className="fixed bottom-0 right-0 z-30 bg-earth/95 backdrop-blur-sm border-t border-earth-light/20 pr-16" style={{ left: "var(--sidebar-width, 0px)" }}>
+        <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            {[
+              { label: "Budget", value: fmtCompact(project.totalBudget) },
+              { label: "Spent", value: fmtCompact(project.totalSpent) },
+              { label: "Left", value: fmtCompact(remaining), danger: remaining < 0 },
+            ].map((m) => (
+              <div key={m.label}>
+                <p className="text-[8px] text-warm/50 uppercase tracking-wider">{m.label}</p>
+                <p className={`font-data text-sm font-medium ${m.danger ? "text-danger" : "text-warm"}`}>{m.value}</p>
+              </div>
+            ))}
           </div>
           <div>
-            <LearnTooltip
-              term="Contingency"
-              explanation="A reserve fund for unexpected costs. Construction projects almost always encounter surprises. Industry standard is 10-15% of total budget. First-time builders should lean toward 15-20%."
-              whyItMatters="Without contingency, a single surprise (bad soil, material price spike, design change) can stall your entire project. This fund keeps you building."
-            >
-              <p className="text-[8px] sm:text-[9px] text-warm/60 uppercase tracking-wider">Contingency left</p>
-            </LearnTooltip>
-            <p className="font-data text-xs sm:text-sm text-warm font-medium">
+            <p className="text-[8px] text-warm/50 uppercase tracking-wider">Contingency</p>
+            <p className="font-data text-sm text-warm font-medium">
               {(() => {
-                const contingencyItem = items.find(i => i.category.toLowerCase().includes("contingency"));
-                if (!contingencyItem) return "--";
-                return fmtCompact(contingencyItem.estimated - contingencyItem.actual);
+                const c = items.find(i => i.category.toLowerCase().includes("contingency"));
+                return c ? fmtCompact(c.estimated - c.actual) : "--";
               })()}
             </p>
           </div>
