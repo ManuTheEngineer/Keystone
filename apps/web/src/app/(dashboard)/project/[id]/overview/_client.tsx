@@ -653,56 +653,59 @@ export function OverviewClient() {
 
           {/* Milestone groups */}
           {milestoneGroups.length > 0 ? (
-            <div className="mb-4 space-y-4">
-              {milestoneGroups.map(({ msIdx, milestone, tasks: groupTasks }) => {
-                const allDone = groupTasks.length > 0 && groupTasks.every((t) => t.done);
-                const doneCount = groupTasks.filter((t) => t.done).length;
+            <div className="mb-4">
+              {(() => {
+                const withTasks = milestoneGroups.filter(g => g.tasks.length > 0);
+                const emptyMs = milestoneGroups.filter(g => g.tasks.length === 0);
 
                 return (
-                  <div key={msIdx} className={`transition-opacity ${allDone ? "opacity-40" : ""}`}>
-                    {/* Milestone label */}
-                    <div className="flex items-center gap-2 mb-[2px]">
-                      <div className={`w-1 h-3 rounded-full ${allDone ? "bg-success" : doneCount > 0 ? "bg-clay/40" : "bg-sand/60"}`} />
-                      <span className="text-[11px] font-medium text-earth/50">{milestone.name}</span>
-                    </div>
-
-                    {/* Tasks */}
-                    {groupTasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((task) => {
-                      const isOpen = completingTaskId === task.id;
-                      const isDone = task.done;
-                      const isPending = task.status === "pending-review";
+                  <>
+                    {withTasks.map(({ msIdx, milestone, tasks: groupTasks }) => {
+                      const allDone = groupTasks.every((t) => t.done);
+                      const doneCount = groupTasks.filter((t) => t.done).length;
 
                       return (
-                        <div key={task.id} id={`task-${task.id}`}>
-                          <button
-                            onClick={() => {
-                              if (isDone) return;
-                              if (isPending) { document.getElementById("pending-review")?.scrollIntoView({ behavior: "smooth" }); return; }
-                              setCompletingTaskId(isOpen ? null : task.id!);
-                              setCompletionNote("");
-                            }}
-                            className={`w-full flex items-center gap-2.5 pl-4 pr-1 py-[6px] text-left group rounded-md transition-colors ${isOpen ? "bg-warm/20" : "hover:bg-warm/10"}`}
-                            disabled={isDone}
-                          >
-                            {isDone ? (
-                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0">
-                                <circle cx="7" cy="7" r="6" fill="var(--success)" opacity="0.15" />
-                                <path d="M4.5 7L6.5 9L9.5 5" stroke="var(--success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            ) : isPending ? (
-                              <div className="w-[14px] h-[14px] rounded-full border-[1.5px] border-warning/50 shrink-0" />
-                            ) : (
-                              <div className="w-[14px] h-[14px] rounded-full border-[1.5px] border-sand shrink-0 group-hover:border-clay/40 transition-colors" />
-                            )}
-                            <span className={`text-[12.5px] flex-1 min-w-0 truncate leading-snug ${isDone ? "text-muted/40 line-through decoration-muted/20" : "text-earth/90"}`}>{task.label}</span>
-                            {isDone && task.completedAt && (
-                              <span className="text-[9px] font-data text-muted/25 shrink-0 tabular-nums">
-                                {new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                              </span>
-                            )}
-                            {isPending && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-warning/8 text-warning/70 font-medium shrink-0">Review</span>}
-                            {!isDone && !isPending && <ChevronDown size={11} className={`text-muted/15 shrink-0 transition-all opacity-0 group-hover:opacity-100 ${isOpen ? "rotate-180" : ""}`} />}
-                          </button>
+                        <div key={msIdx} className="mb-3">
+                          {/* Milestone label */}
+                          <div className="flex items-center gap-1.5 mb-0.5 px-1">
+                            <div className={`w-1.5 h-1.5 rounded-full ${allDone ? "bg-success" : doneCount > 0 ? "bg-clay" : "bg-sand"}`} />
+                            <span className={`text-[10px] font-medium tracking-wide ${allDone ? "text-success/60" : "text-earth/40"}`}>
+                              {milestone.name}
+                            </span>
+                          </div>
+
+                          {/* Tasks */}
+                          {groupTasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((task) => {
+                            const isOpen = completingTaskId === task.id;
+                            const isDone = task.done;
+                            const isPending = task.status === "pending-review";
+
+                            return (
+                              <div key={task.id} id={`task-${task.id}`}>
+                                <button
+                                  onClick={() => {
+                                    if (isDone) return;
+                                    if (isPending) { document.getElementById("pending-review")?.scrollIntoView({ behavior: "smooth" }); return; }
+                                    setCompletingTaskId(isOpen ? null : task.id!);
+                                    setCompletionNote("");
+                                  }}
+                                  className={`w-full flex items-center gap-2.5 px-1 py-[5px] text-left group rounded transition-colors ${isOpen ? "bg-warm/20" : "hover:bg-warm/8"}`}
+                                  disabled={isDone}
+                                >
+                                  <div className={`w-[14px] h-[14px] rounded-[3px] border-[1.5px] shrink-0 flex items-center justify-center transition-colors ${
+                                    isDone ? "bg-success/20 border-success/40" : isPending ? "border-warning/40" : "border-sand group-hover:border-clay/40"
+                                  }`}>
+                                    {isDone && <Check size={9} className="text-success" />}
+                                  </div>
+                                  <span className={`text-[12px] flex-1 min-w-0 truncate ${isDone ? "text-muted line-through" : "text-earth"}`}>{task.label}</span>
+                                  {isDone && task.completedAt && (
+                                    <span className="text-[9px] font-data text-muted/40 shrink-0">
+                                      {new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                    </span>
+                                  )}
+                                  {isPending && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-warning/8 text-warning font-medium shrink-0">Review</span>}
+                                  {!isDone && !isPending && <ChevronDown size={10} className={`text-muted/20 shrink-0 transition-all opacity-0 group-hover:opacity-100 ${isOpen ? "rotate-180" : ""}`} />}
+                                </button>
 
                             {/* Completion form — inline */}
                             {isOpen && !isDone && !isPending && (
@@ -755,9 +758,24 @@ export function OverviewClient() {
                           </div>
                         );
                       })}
-                  </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Empty milestones — compact list */}
+                    {emptyMs.length > 0 && (
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 mt-1 border-t border-border/15 px-1">
+                        {emptyMs.map(({ msIdx, milestone }) => (
+                          <span key={msIdx} className="text-[10px] text-muted/40 flex items-center gap-1">
+                            <div className="w-1 h-1 rounded-full bg-sand/50" />
+                            {milestone.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 );
-              })}
+              })()}
             </div>
           ) : (
             <div className="text-[11px] text-muted py-4 text-center">No tasks for this phase yet.</div>
