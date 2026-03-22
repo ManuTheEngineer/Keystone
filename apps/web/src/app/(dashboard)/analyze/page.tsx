@@ -14,7 +14,7 @@ import {
   type SavedAnalysis,
 } from "@/lib/services/analysis-service";
 import { exportAnalysisPDF } from "@/lib/services/export-service";
-import { createProject, generateBudgetFromSpecs, seedInitialTasks, type Market as ProjMarket, type BuildPurpose, type PropertyType as ProjPropType } from "@/lib/services/project-service";
+import { createProject, generateBudgetFromSpecs, seedInitialTasks, type Market as ProjMarket, type BuildPurpose, type PropertyType as ProjPropType, type WizardCostBreakdown } from "@/lib/services/project-service";
 import {
   calculateAnalysis,
   getCostBreakdown,
@@ -544,7 +544,13 @@ export default function AnalyzePage() {
 
       // Budget + tasks in parallel
       await Promise.allSettled([
-        generateBudgetFromSpecs(user.uid, projectId, totalBudget, market, input.features),
+        generateBudgetFromSpecs(user.uid, projectId, totalBudget, market, input.features, {
+          land: results.landCost,
+          construction: results.constructionCost,
+          softCosts: results.softCosts,
+          financingCosts: results.financingCosts,
+          contingency: results.contingency,
+        }),
         seedInitialTasks(user.uid, projectId, {
           market, purpose, propertyType: propType, city: input.city.trim(),
           financingType: input.financingType, totalBudget,
@@ -980,7 +986,7 @@ export default function AnalyzePage() {
                     <div className="flex gap-3">
                       {results!.dtiRatio !== null && (
                         <div className={`flex-1 px-3 py-2 rounded-lg ${results!.dtiRatio > 43 ? "bg-danger/5 border border-danger/20" : "bg-warm/20"}`}>
-                          <p className="text-[9px] text-muted uppercase">DTI Ratio</p>
+                          <p className="text-[9px] text-muted uppercase"><LearnTooltip term="DTI" explanation="Debt-to-Income ratio — the percentage of your monthly income that goes to debt payments.">DTI</LearnTooltip> Ratio</p>
                           <p className={`text-[14px] font-bold font-data ${results!.dtiRatio > 43 ? "text-danger" : "text-earth"}`}>{results!.dtiRatio}%</p>
                         </div>
                       )}

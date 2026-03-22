@@ -472,9 +472,19 @@ export async function seedInitialTasks(
   });
 }
 
+/** Wizard cost breakdown passed from the project creation flow. */
+export interface WizardCostBreakdown {
+  land?: number;
+  construction?: number;
+  softCosts?: number;
+  financingCosts?: number;
+  contingency?: number;
+}
+
 /**
  * Auto-generate budget line items for a new project based on its specs.
- * Uses the total budget and market to create proportional category breakdowns.
+ * When a wizard cost breakdown is provided, uses those exact figures to set
+ * category estimates. Otherwise falls back to generic percentage splits.
  */
 export async function generateBudgetFromSpecs(
   userId: string,
@@ -482,39 +492,36 @@ export async function generateBudgetFromSpecs(
   totalBudget: number,
   market: Market,
   features?: string[],
+  costBreakdown?: WizardCostBreakdown,
 ): Promise<void> {
   const isUSA = market === "USA";
 
-  // Standard budget category percentages
-  const categories: { category: string; pct: number }[] = isUSA ? [
+  // Construction sub-category percentages (relative to construction cost)
+  const constructionCategories: { category: string; pct: number }[] = isUSA ? [
     { category: "Site Preparation", pct: 5 },
-    { category: "Foundation", pct: 10 },
-    { category: "Framing / Structure", pct: 15 },
-    { category: "Roofing", pct: 6 },
-    { category: "Exterior (Siding, Windows, Doors)", pct: 8 },
+    { category: "Foundation", pct: 11 },
+    { category: "Framing / Structure", pct: 17 },
+    { category: "Roofing", pct: 7 },
+    { category: "Exterior (Siding, Windows, Doors)", pct: 9 },
+    { category: "Plumbing", pct: 9 },
+    { category: "Electrical", pct: 8 },
+    { category: "HVAC", pct: 6 },
+    { category: "Insulation / Drywall", pct: 7 },
+    { category: "Interior Finishes (Flooring, Paint, Trim)", pct: 12 },
+    { category: "Kitchen / Cabinets", pct: 9 },
+  ] : [
+    { category: "Site Preparation / Clearing", pct: 5 },
+    { category: "Foundation (Semelle + Soubassement)", pct: 14 },
+    { category: "Walls (Block / Poteau-Poutre)", pct: 21 },
+    { category: "Roofing (Charpente + Tole)", pct: 10 },
     { category: "Plumbing", pct: 8 },
     { category: "Electrical", pct: 7 },
-    { category: "HVAC", pct: 5 },
-    { category: "Insulation / Drywall", pct: 6 },
-    { category: "Interior Finishes (Flooring, Paint, Trim)", pct: 10 },
-    { category: "Kitchen / Cabinets", pct: 6 },
-    { category: "Permits / Design / Architecture", pct: 7 },
-    { category: "Contingency", pct: 7 },
-  ] : [
-    { category: "Site Preparation / Clearing", pct: 4 },
-    { category: "Foundation (Semelle + Soubassement)", pct: 12 },
-    { category: "Walls (Block / Poteau-Poutre)", pct: 18 },
-    { category: "Roofing (Charpente + Tole)", pct: 8 },
-    { category: "Plumbing", pct: 7 },
-    { category: "Electrical", pct: 6 },
-    { category: "Plastering / Enduit", pct: 5 },
-    { category: "Flooring / Carrelage", pct: 6 },
-    { category: "Doors / Windows (Menuiserie)", pct: 7 },
-    { category: "Painting", pct: 4 },
-    { category: "Kitchen / Bathroom Fixtures", pct: 5 },
-    { category: "Perimeter Wall / Cloture", pct: 6 },
-    { category: "Permits / Design", pct: 5 },
-    { category: "Contingency", pct: 7 },
+    { category: "Plastering / Enduit", pct: 6 },
+    { category: "Flooring / Carrelage", pct: 7 },
+    { category: "Doors / Windows (Menuiserie)", pct: 8 },
+    { category: "Painting", pct: 5 },
+    { category: "Kitchen / Bathroom Fixtures", pct: 6 },
+    { category: "Perimeter Wall / Cloture", pct: 3 },
   ];
 
   // Add feature-specific line items
@@ -540,26 +547,122 @@ export async function generateBudgetFromSpecs(
     }
   }
 
-  // Calculate total from features to subtract from base budget
   const featureTotal = featureItems.reduce((s, f) => s + f.amount, 0);
-  const baseBudget = Math.max(0, totalBudget - featureTotal);
 
   const budgetRef = ref(db, `users/${userId}/projects/${projectId}/budgetItems`);
-
-  // Write all items in a single update for efficiency
   const items: Record<string, Omit<BudgetItemData, "id">> = {};
 
-  for (const cat of categories) {
-    const key = push(budgetRef).key!;
-    items[key] = {
-      projectId,
-      category: cat.category,
-      estimated: Math.round(baseBudget * cat.pct / 100),
-      actual: 0,
-      status: "not-started",
-    };
+  // --- When wizard cost breakdown is available, use exact figures ---
+  if (costBreakdown && (costBreakdown.construction || costBreakdown.land)) {
+    const constructionBase = costBreakdown.construction ?? 0;
+
+    // Land acquisition (if > 0)
+    if (costBreakdown.land && costBreakdown.land > 0) {
+      const key = push(budgetRef).key!;
+      items[key] = {
+        projectId,
+        category: "Land Acquisition",
+        estimated: Math.round(costBreakdown.land),
+        actual: 0,
+        status: "not-started",
+      };
+    }
+
+    // Construction sub-categories scaled from the wizard's construction figure
+    const constructionForSubs = Math.max(0, constructionBase - featureTotal);
+    for (const cat of constructionCategories) {
+      const key = push(budgetRef).key!;
+      items[key] = {
+        projectId,
+        category: cat.category,
+        estimated: Math.round(constructionForSubs * cat.pct / 100),
+        actual: 0,
+        status: "not-started",
+      };
+    }
+
+    // Soft costs (permits, design, architecture)
+    if (costBreakdown.softCosts && costBreakdown.softCosts > 0) {
+      const key = push(budgetRef).key!;
+      items[key] = {
+        projectId,
+        category: isUSA ? "Permits / Design / Architecture" : "Permits / Design",
+        estimated: Math.round(costBreakdown.softCosts),
+        actual: 0,
+        status: "not-started",
+      };
+    }
+
+    // Financing costs (only if applicable)
+    if (costBreakdown.financingCosts && costBreakdown.financingCosts > 0) {
+      const key = push(budgetRef).key!;
+      items[key] = {
+        projectId,
+        category: "Financing Costs",
+        estimated: Math.round(costBreakdown.financingCosts),
+        actual: 0,
+        status: "not-started",
+      };
+    }
+
+    // Contingency
+    if (costBreakdown.contingency && costBreakdown.contingency > 0) {
+      const key = push(budgetRef).key!;
+      items[key] = {
+        projectId,
+        category: "Contingency",
+        estimated: Math.round(costBreakdown.contingency),
+        actual: 0,
+        status: "not-started",
+      };
+    }
+  } else {
+    // --- Fallback: generic percentage splits from totalBudget ---
+    const fallbackCategories: { category: string; pct: number }[] = isUSA ? [
+      { category: "Site Preparation", pct: 5 },
+      { category: "Foundation", pct: 10 },
+      { category: "Framing / Structure", pct: 15 },
+      { category: "Roofing", pct: 6 },
+      { category: "Exterior (Siding, Windows, Doors)", pct: 8 },
+      { category: "Plumbing", pct: 8 },
+      { category: "Electrical", pct: 7 },
+      { category: "HVAC", pct: 5 },
+      { category: "Insulation / Drywall", pct: 6 },
+      { category: "Interior Finishes (Flooring, Paint, Trim)", pct: 10 },
+      { category: "Kitchen / Cabinets", pct: 6 },
+      { category: "Permits / Design / Architecture", pct: 7 },
+      { category: "Contingency", pct: 7 },
+    ] : [
+      { category: "Site Preparation / Clearing", pct: 4 },
+      { category: "Foundation (Semelle + Soubassement)", pct: 12 },
+      { category: "Walls (Block / Poteau-Poutre)", pct: 18 },
+      { category: "Roofing (Charpente + Tole)", pct: 8 },
+      { category: "Plumbing", pct: 7 },
+      { category: "Electrical", pct: 6 },
+      { category: "Plastering / Enduit", pct: 5 },
+      { category: "Flooring / Carrelage", pct: 6 },
+      { category: "Doors / Windows (Menuiserie)", pct: 7 },
+      { category: "Painting", pct: 4 },
+      { category: "Kitchen / Bathroom Fixtures", pct: 5 },
+      { category: "Perimeter Wall / Cloture", pct: 6 },
+      { category: "Permits / Design", pct: 5 },
+      { category: "Contingency", pct: 7 },
+    ];
+
+    const baseBudget = Math.max(0, totalBudget - featureTotal);
+    for (const cat of fallbackCategories) {
+      const key = push(budgetRef).key!;
+      items[key] = {
+        projectId,
+        category: cat.category,
+        estimated: Math.round(baseBudget * cat.pct / 100),
+        actual: 0,
+        status: "not-started",
+      };
+    }
   }
 
+  // Feature add-ons (always appended)
   for (const feat of featureItems) {
     const key = push(budgetRef).key!;
     items[key] = {
