@@ -2,7 +2,7 @@
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import type { CurrencyConfig } from "@keystone/market-data";
-import { formatCurrency } from "@keystone/market-data";
+import { formatCurrency, formatCurrencyCompact } from "@keystone/market-data";
 import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 
 const CATEGORY_COLORS = [
@@ -99,7 +99,7 @@ export function BudgetDonutChart({ items, total, currency, hideLegend, compact }
               className="fill-earth"
               style={{ fontSize: compact ? "11px" : isMobile ? "11px" : "14px", fontFamily: "var(--font-data, monospace)", fontWeight: 600 }}
             >
-              {formatCurrency(total, currency)}
+              {formatCurrencyCompact(total, currency)}
             </text>
             <text
               x="50%"

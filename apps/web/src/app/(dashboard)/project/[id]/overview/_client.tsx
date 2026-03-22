@@ -837,15 +837,16 @@ export function OverviewClient() {
                                         if (!user || !task.id) return;
                                         setCompletionLoading(true);
                                         try {
-                                          await updateTask(user.uid, projectId, task.id, {
+                                          const taskUpdate: Record<string, unknown> = {
                                             done: true, status: "done",
                                             completedAt: new Date().toISOString(),
                                             completedBy: user.uid,
                                             completionNote: completionNote.trim(),
-                                            completionPhotos: completionPhotos.length > 0
-                                              ? completionPhotos.map((p) => ({ url: p.url, timestamp: new Date().toISOString() }))
-                                              : undefined,
-                                          });
+                                          };
+                                          if (completionPhotos.length > 0) {
+                                            taskUpdate.completionPhotos = completionPhotos.map((p) => ({ url: p.url, timestamp: new Date().toISOString() }));
+                                          }
+                                          await updateTask(user.uid, projectId, task.id, taskUpdate);
                                           await approveTask(user.uid, projectId, task.id, completionNote.trim());
                                           const nextTask = currentPhaseTasks
                                             .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -854,7 +855,7 @@ export function OverviewClient() {
                                           setCompletionNote("");
                                           setCompletionPhotos([]);
                                           showToast("Task completed", "success");
-                                        } catch { showToast("Failed", "error"); }
+                                        } catch (err) { console.error("Task completion error:", err); showToast("Failed to complete task", "error"); }
                                         finally { setCompletionLoading(false); }
                                       }}
                                       className="px-3 py-1 text-[10px] font-medium rounded bg-success text-white hover:bg-success/90 disabled:opacity-40 transition-colors"
