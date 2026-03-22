@@ -636,72 +636,73 @@ export function OverviewClient() {
 
         {/* ─── LEFT PANEL: Milestone Workflow ─── */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[13px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
-              {getPhaseName(phase, project?.market)}
-            </h3>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-data text-muted bg-warm/40 px-2 py-0.5 rounded">
+          {/* Phase label + progress */}
+          <div className="flex items-baseline justify-between mb-4">
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-[15px] font-semibold text-earth tracking-[-0.01em]" style={{ fontFamily: "var(--font-heading)" }}>
+                {getPhaseName(phase, project?.market)}
+              </h3>
+              <span className="text-[11px] font-data text-muted/50">
                 {currentPhaseDone.length}/{currentPhaseTasks.filter((t) => t.status !== "pending-review").length}
               </span>
-              <div className="w-16 h-1 bg-warm rounded-full overflow-hidden">
-                <div className="h-full bg-success rounded-full" style={{ width: `${currentPhaseProgress}%` }} />
-              </div>
+            </div>
+            <div className="w-20 h-[3px] bg-sand/40 rounded-full overflow-hidden">
+              <div className="h-full bg-earth/60 rounded-full transition-all duration-700" style={{ width: `${currentPhaseProgress}%` }} />
             </div>
           </div>
 
           {/* Milestone groups */}
           {milestoneGroups.length > 0 ? (
-            <div className="mb-4">
+            <div className="mb-4 space-y-4">
               {milestoneGroups.map(({ msIdx, milestone, tasks: groupTasks }) => {
                 const allDone = groupTasks.length > 0 && groupTasks.every((t) => t.done);
                 const doneCount = groupTasks.filter((t) => t.done).length;
 
                 return (
-                  <div key={msIdx} className={allDone ? "opacity-50" : ""}>
-                    {/* Milestone header — compact label row */}
-                    <div className="flex items-center justify-between pt-3 pb-1 first:pt-0">
-                      <span className="text-[10px] font-medium text-clay/70 tracking-wide">
-                        {milestone.name}
-                      </span>
-                      <span className="text-[9px] font-data text-muted/40">{doneCount}/{groupTasks.length}</span>
+                  <div key={msIdx} className={`transition-opacity ${allDone ? "opacity-40" : ""}`}>
+                    {/* Milestone label */}
+                    <div className="flex items-center gap-2 mb-[2px]">
+                      <div className={`w-1 h-3 rounded-full ${allDone ? "bg-success" : doneCount > 0 ? "bg-clay/40" : "bg-sand/60"}`} />
+                      <span className="text-[11px] font-medium text-earth/50">{milestone.name}</span>
                     </div>
 
-                    {/* Task rows */}
-                    <div>
-                      {groupTasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((task) => {
-                        const isOpen = completingTaskId === task.id;
-                        const isDone = task.done;
-                        const isPending = task.status === "pending-review";
+                    {/* Tasks */}
+                    {groupTasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((task) => {
+                      const isOpen = completingTaskId === task.id;
+                      const isDone = task.done;
+                      const isPending = task.status === "pending-review";
 
-                        return (
-                          <div key={task.id} id={`task-${task.id}`} className={`transition-colors ${isOpen ? "bg-warm/10 rounded" : ""}`}>
-                            <button
-                              onClick={() => {
-                                if (isDone) return;
-                                if (isPending) { document.getElementById("pending-review")?.scrollIntoView({ behavior: "smooth" }); return; }
-                                setCompletingTaskId(isOpen ? null : task.id!);
-                                setCompletionNote("");
-                              }}
-                              className="w-full flex items-center gap-2.5 py-[7px] text-left group"
-                              disabled={isDone}
-                            >
-                              <div className={`w-[15px] h-[15px] rounded-[4px] border-[1.5px] shrink-0 flex items-center justify-center transition-colors ${
-                                isDone ? "bg-success border-success" : isPending ? "border-warning/60" : "border-sand group-hover:border-clay/50"
-                              }`}>
-                                {isDone && (
-                                  <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                                )}
-                              </div>
-                              <span className={`text-[12px] flex-1 min-w-0 truncate ${isDone ? "text-muted/50 line-through" : "text-earth"}`}>{task.label}</span>
-                              {isDone && task.completedAt && (
-                                <span className="text-[9px] font-data text-muted/30 shrink-0">
-                                  {new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                </span>
-                              )}
-                              {isPending && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning font-medium shrink-0">Review</span>}
-                              {!isDone && !isPending && <ChevronDown size={10} className={`text-muted/20 shrink-0 transition-transform opacity-0 group-hover:opacity-100 ${isOpen ? "rotate-180" : ""}`} />}
-                            </button>
+                      return (
+                        <div key={task.id} id={`task-${task.id}`}>
+                          <button
+                            onClick={() => {
+                              if (isDone) return;
+                              if (isPending) { document.getElementById("pending-review")?.scrollIntoView({ behavior: "smooth" }); return; }
+                              setCompletingTaskId(isOpen ? null : task.id!);
+                              setCompletionNote("");
+                            }}
+                            className={`w-full flex items-center gap-2.5 pl-4 pr-1 py-[6px] text-left group rounded-md transition-colors ${isOpen ? "bg-warm/20" : "hover:bg-warm/10"}`}
+                            disabled={isDone}
+                          >
+                            {isDone ? (
+                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0">
+                                <circle cx="7" cy="7" r="6" fill="var(--success)" opacity="0.15" />
+                                <path d="M4.5 7L6.5 9L9.5 5" stroke="var(--success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            ) : isPending ? (
+                              <div className="w-[14px] h-[14px] rounded-full border-[1.5px] border-warning/50 shrink-0" />
+                            ) : (
+                              <div className="w-[14px] h-[14px] rounded-full border-[1.5px] border-sand shrink-0 group-hover:border-clay/40 transition-colors" />
+                            )}
+                            <span className={`text-[12.5px] flex-1 min-w-0 truncate leading-snug ${isDone ? "text-muted/40 line-through decoration-muted/20" : "text-earth/90"}`}>{task.label}</span>
+                            {isDone && task.completedAt && (
+                              <span className="text-[9px] font-data text-muted/25 shrink-0 tabular-nums">
+                                {new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                              </span>
+                            )}
+                            {isPending && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-warning/8 text-warning/70 font-medium shrink-0">Review</span>}
+                            {!isDone && !isPending && <ChevronDown size={11} className={`text-muted/15 shrink-0 transition-all opacity-0 group-hover:opacity-100 ${isOpen ? "rotate-180" : ""}`} />}
+                          </button>
 
                             {/* Completion form — inline */}
                             {isOpen && !isDone && !isPending && (
@@ -754,7 +755,6 @@ export function OverviewClient() {
                           </div>
                         );
                       })}
-                    </div>
                   </div>
                 );
               })}
