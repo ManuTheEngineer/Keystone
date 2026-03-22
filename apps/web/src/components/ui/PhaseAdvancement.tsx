@@ -152,19 +152,54 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
         {canAdvance ? "Ready to move on" : `Before you start ${nextPhaseName?.toLowerCase() ?? "the next phase"}`}
       </p>
 
-      {/* Milestone checklist — always visible */}
+      {/* Milestone checklist — interactive */}
       <div className="space-y-0.5 mb-3">
         {milestones.map((ms, i) => {
           const done = milestoneCompleted[i];
+          // Check if this milestone has tasks assigned — if so, it auto-completes
+          const hasIdx = nonPendingTasks.some((t) => t.milestoneIndex != null);
+          let hasTasks: boolean;
+          if (hasIdx) {
+            hasTasks = nonPendingTasks.some((t) => t.milestoneIndex === i);
+          } else {
+            const sorted = [...nonPendingTasks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            const perMs = Math.max(1, Math.ceil(sorted.length / milestones.length));
+            hasTasks = sorted.slice(i * perMs, (i + 1) * perMs).length > 0;
+          }
+          const isManual = !hasTasks;
+
           return (
-            <div key={i} className="flex items-center gap-2 py-[3px]">
+            <button
+              key={i}
+              onClick={() => {
+                if (!isManual || !project.id) return;
+                // Toggle manual milestone
+                toggleMilestoneProgress(userId, project.id, currentPhaseKey, i, !done, milestones.length).catch(() => {});
+                setFirebaseProgress((prev) => {
+                  const next = [...prev];
+                  while (next.length <= i) next.push(false);
+                  next[i] = !done;
+                  return next;
+                });
+              }}
+              disabled={!isManual && !done}
+              className={`w-full flex items-center gap-2.5 py-[5px] px-1 rounded text-left transition-colors ${
+                isManual && !done ? "hover:bg-warm/10 cursor-pointer" : ""
+              }`}
+            >
               <div className={`w-3.5 h-3.5 rounded-[4px] border-[1.5px] shrink-0 flex items-center justify-center transition-colors ${
-                done ? "bg-success/15 border-success/50" : "border-sand"
+                done ? "bg-success/15 border-success/50" : isManual ? "border-clay/30 hover:border-clay/60" : "border-sand/60"
               }`}>
                 {done && <Check size={9} className="text-success" />}
               </div>
-              <span className={`text-[11px] ${done ? "text-muted" : "text-earth"}`}>{ms.name}</span>
-            </div>
+              <span className={`text-[11px] flex-1 ${done ? "text-muted" : "text-earth"}`}>{ms.name}</span>
+              {isManual && !done && (
+                <span className="text-[8px] text-muted/30 opacity-0 group-hover:opacity-100">click to complete</span>
+              )}
+              {!isManual && !done && (
+                <span className="text-[8px] text-muted/25">from tasks</span>
+              )}
+            </button>
           );
         })}
       </div>
