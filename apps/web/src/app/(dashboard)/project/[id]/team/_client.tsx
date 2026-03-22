@@ -23,11 +23,11 @@ import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Badge } from "@/components/ui/Badge";
 import {
-  Plus, Phone, Mail, MessageCircle, Wrench, AlertCircle, Users,
-  Pencil, Trash2, Link2, CheckCircle2, Clock, XCircle, X,
+  Plus, Phone, Mail, MessageCircle, AlertCircle, Users,
+  Pencil, Trash2, Link2, CheckCircle2, X,
   BarChart3, ChevronUp, ChevronDown,
 } from "lucide-react";
-import { generateContractorLink, getProjectContractorLinks, revokeContractorLink, type ContractorLink } from "@/lib/services/contractor-service";
+import { generateContractorLink, getProjectContractorLinks, type ContractorLink } from "@/lib/services/contractor-service";
 import { StarRating } from "@/components/ui/StarRating";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AIInsight } from "@/components/ui/AIInsight";
@@ -349,76 +349,71 @@ function TradeRequirementList({
   }
 
   return (
-    <div className="space-y-1.5 animate-stagger">
-      {trades.map((trade) => {
-        const matchedContact = contacts.find(
-          (c) =>
-            c.role?.toLowerCase() === trade.name.toLowerCase() ||
-            c.role?.toLowerCase() === trade.localName?.toLowerCase()
-        );
-        const hasContact = !!matchedContact;
+    <Card padding="sm" className="overflow-x-auto">
+      <table className="w-full">
+        <thead className="border-b border-border bg-surface-alt">
+          <tr>
+            <th className="text-left text-[9px] font-medium text-muted py-1.5 px-2 pl-3">Trade</th>
+            <th className="text-left text-[9px] font-medium text-muted py-1.5 px-2">Rate range</th>
+            <th className="text-left text-[9px] font-medium text-muted py-1.5 px-2">License</th>
+            <th className="text-right text-[9px] font-medium text-muted py-1.5 px-2 pr-3">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {trades.map((trade) => {
+            const matchedContact = contacts.find(
+              (c) =>
+                c.role?.toLowerCase() === trade.name.toLowerCase() ||
+                c.role?.toLowerCase() === trade.localName?.toLowerCase()
+            );
+            const hasContact = !!matchedContact;
 
-        return (
-          <div
-            key={trade.id}
-            className={`flex items-center gap-3 p-3 border rounded-[var(--radius)] transition-all ${
-              hasContact
-                ? "border-emerald-200 bg-emerald-50"
-                : "border-warning bg-warning-bg"
-            }`}
-          >
-            <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                hasContact
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-warning-bg text-warning"
-              }`}
-            >
-              <Wrench size={14} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] font-medium text-earth">
-                {trade.name}
-                {trade.localName && (
-                  <span className="text-muted font-normal ml-1">({trade.localName})</span>
-                )}
-              </div>
-              <div className="text-[10px] text-muted mt-0.5 line-clamp-1">
-                {trade.description}
-              </div>
-              {trade.licensingRequired && (
-                <div className="flex items-center gap-1 mt-0.5">
-                  <AlertCircle size={9} className="text-warning shrink-0" />
-                  <span className="text-[9px] text-warning">
-                    License required{trade.licensingNotes ? `: ${trade.licensingNotes}` : ""}
-                  </span>
-                </div>
-              )}
-              {trade.typicalRateRange && (
-                <div className="text-[9px] text-muted mt-0.5 font-data">
-                  Typical rate: {formatCurrency(trade.typicalRateRange.low, marketData.currency)} - {formatCurrency(trade.typicalRateRange.high, marketData.currency)}/{trade.typicalRateRange.unit}
-                  <span className="font-sans ml-1">(typical for {market === "USA" ? "US" : market.charAt(0) + market.slice(1).toLowerCase()} market)</span>
-                </div>
-              )}
-            </div>
-            <div className="text-right shrink-0">
-              {hasContact ? (
-                <span className="text-[10px] text-emerald-700 font-medium flex items-center gap-1">
-                  <CheckCircle2 size={10} /> {matchedContact.name}
-                </span>
-              ) : (
-                <button
-                  onClick={() => onAddContact(trade.name)}
-                  className="text-[10px] text-warning font-medium hover:underline flex items-center gap-1"
-                >
-                  <Plus size={10} /> Add
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+            return (
+              <tr key={trade.id} className="border-b border-border last:border-b-0 hover:bg-surface-alt transition-colors">
+                <td className="py-1.5 px-2 pl-3">
+                  <div className="text-[11px] font-medium text-earth">
+                    {trade.name}
+                    {trade.localName && (
+                      <span className="text-muted font-normal ml-1 text-[9px]">({trade.localName})</span>
+                    )}
+                  </div>
+                  <div className="text-[9px] text-muted line-clamp-1">{trade.description}</div>
+                </td>
+                <td className="py-1.5 px-2 text-[10px] font-data text-muted whitespace-nowrap">
+                  {trade.typicalRateRange
+                    ? `${formatCurrency(trade.typicalRateRange.low, marketData.currency)} - ${formatCurrency(trade.typicalRateRange.high, marketData.currency)}/${trade.typicalRateRange.unit}`
+                    : "--"
+                  }
+                </td>
+                <td className="py-1.5 px-2">
+                  {trade.licensingRequired ? (
+                    <span className="flex items-center gap-1 text-[9px] text-warning whitespace-nowrap">
+                      <AlertCircle size={9} className="shrink-0" /> Required
+                    </span>
+                  ) : (
+                    <span className="text-[9px] text-muted">--</span>
+                  )}
+                </td>
+                <td className="py-1.5 px-2 pr-3 text-right">
+                  {hasContact ? (
+                    <span className="text-[10px] text-success font-medium inline-flex items-center gap-1">
+                      <CheckCircle2 size={9} /> {matchedContact.name}
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => onAddContact(trade.name)}
+                      className="text-[10px] text-warning font-medium hover:underline inline-flex items-center gap-1"
+                    >
+                      <Plus size={9} /> Add
+                    </button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Card>
   );
 }
 
@@ -487,44 +482,46 @@ function ContactCard({
         )}
       </div>
 
-      <div className="p-4">
+      <div className="px-3 py-2.5">
         {/* Initials + name + role */}
-        <div className="flex items-start gap-3 mb-3 pr-16">
+        <div className="flex items-center gap-2 mb-2 pr-14">
           <div
-            className="w-11 h-11 rounded-full flex items-center justify-center text-[13px] font-semibold shrink-0"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
             style={{ background: color.bg, color: color.text }}
           >
             {contact.initials}
           </div>
           <div className="min-w-0">
-            <div className="text-[14px] font-semibold text-earth truncate">{contact.name}</div>
-            <div className="text-[11px] text-muted">{contact.role || "No role assigned"}</div>
-            {hasPortal && (
-              <Badge variant="emerald" className="mt-1">Portal active</Badge>
-            )}
+            <div className="text-[12px] font-semibold text-earth truncate">{contact.name}</div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-muted">{contact.role || "No role assigned"}</span>
+              {hasPortal && (
+                <Badge variant="emerald" className="text-[8px] px-1 py-0">Portal</Badge>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Contact icons row */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-1.5 mb-2">
           {contact.phone && (
             <a
               href={`tel:${contact.phone}`}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] text-muted hover:text-earth bg-surface-alt rounded-[var(--radius)] transition-colors"
+              className="flex items-center gap-1 px-1.5 py-1 text-[10px] text-muted hover:text-earth bg-surface-alt rounded-[var(--radius)] transition-colors"
               title={contact.phone}
             >
-              <Phone size={12} />
-              <span className="hidden sm:inline truncate max-w-[100px]">{contact.phone}</span>
+              <Phone size={10} />
+              <span className="hidden sm:inline truncate max-w-[80px]">{contact.phone}</span>
             </a>
           )}
           {contact.email && (
             <a
               href={`mailto:${contact.email}`}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] text-muted hover:text-earth bg-surface-alt rounded-[var(--radius)] transition-colors"
+              className="flex items-center gap-1 px-1.5 py-1 text-[10px] text-muted hover:text-earth bg-surface-alt rounded-[var(--radius)] transition-colors"
               title={contact.email}
             >
-              <Mail size={12} />
-              <span className="hidden sm:inline truncate max-w-[100px]">{contact.email}</span>
+              <Mail size={10} />
+              <span className="hidden sm:inline truncate max-w-[80px]">{contact.email}</span>
             </a>
           )}
           {contact.whatsapp && (
@@ -532,26 +529,23 @@ function ContactCard({
               href={`https://wa.me/${contact.whatsapp.replace(/[^0-9+]/g, "")}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] text-emerald-700 hover:text-emerald-900 bg-emerald-50 rounded-[var(--radius)] transition-colors"
+              className="flex items-center gap-1 px-1.5 py-1 text-[10px] text-clay hover:text-earth bg-warm/40 rounded-[var(--radius)] transition-colors"
               title={contact.whatsapp}
             >
-              <MessageCircle size={12} />
-              <span className="hidden sm:inline truncate max-w-[100px]">{contact.whatsapp}</span>
+              <MessageCircle size={10} />
+              <span className="hidden sm:inline truncate max-w-[80px]">{contact.whatsapp}</span>
             </a>
           )}
-        </div>
-
-        {/* Star rating */}
-        <div className="mb-3">
-          <StarRating value={contact.rating} readonly size={14} />
+          <div className="ml-auto">
+            <StarRating value={contact.rating} readonly size={11} />
+          </div>
         </div>
 
         {/* Task stats + completion bar */}
         {perf && perf.total > 0 && (
-          <div className="mb-3">
-            <div className="flex items-center gap-2 text-[11px] text-muted mb-1.5">
+          <div className="mb-2">
+            <div className="flex items-center gap-2 text-[10px] text-muted mb-1">
               <span className="font-data">{perf.total} tasks</span>
-              <span className="text-[9px]">--</span>
               <span className="text-success font-data">{perf.completed} done</span>
               {pending > 0 && (
                 <span className="text-warning font-data">{pending} pending</span>
@@ -561,7 +555,7 @@ function ContactCard({
               <ProgressBar
                 value={completionRate}
                 color="var(--color-success)"
-                height={4}
+                height={3}
               />
             )}
           </div>
@@ -570,9 +564,9 @@ function ContactCard({
         {/* Share access button */}
         <button
           onClick={onShareAccess}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-medium border border-emerald-300 rounded-[var(--radius)] text-emerald-700 hover:bg-emerald-50 transition-colors"
+          className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] font-medium border border-sand rounded-[var(--radius)] text-clay hover:bg-warm/30 transition-colors"
         >
-          <Link2 size={12} /> Share access
+          <Link2 size={10} /> Share access
         </button>
       </div>
     </Card>
@@ -603,16 +597,7 @@ function PerformanceTab({
   }
 
   // Summary stats
-  const totalContacts = contacts.length;
-  const avgRating = totalContacts > 0
-    ? Math.round((contacts.reduce((s, c) => s + c.rating, 0) / totalContacts) * 10) / 10
-    : 0;
   const totalTasksDone = Array.from(contactPerformance.values()).reduce((s, p) => s + p.completed, 0);
-  const allAvgDays = (() => {
-    const perfs = Array.from(contactPerformance.values()).filter((p) => p.avgCompletionDays !== null);
-    if (perfs.length === 0) return null;
-    return Math.round((perfs.reduce((s, p) => s + p.avgCompletionDays!, 0) / perfs.length) * 10) / 10;
-  })();
 
   // Build sortable rows
   const rows = useMemo(() => {
@@ -656,30 +641,10 @@ function PerformanceTab({
     );
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <Card padding="md" className="text-center">
-          <div className="text-[20px] font-data font-semibold text-earth">{totalContacts}</div>
-          <div className="text-[10px] text-muted mt-0.5">Total contacts</div>
-        </Card>
-        <Card padding="md" className="text-center">
-          <div className="text-[20px] font-data font-semibold text-earth">{avgRating}</div>
-          <div className="text-[10px] text-muted mt-0.5">Avg rating</div>
-        </Card>
-        <Card padding="md" className="text-center">
-          <div className="text-[20px] font-data font-semibold text-earth">{totalTasksDone}</div>
-          <div className="text-[10px] text-muted mt-0.5">Tasks completed</div>
-        </Card>
-        <Card padding="md" className="text-center">
-          <div className="text-[20px] font-data font-semibold text-earth">
-            {allAvgDays !== null ? `${allAvgDays}d` : "--"}
-          </div>
-          <div className="text-[10px] text-muted mt-0.5">Avg completion</div>
-        </Card>
-      </div>
+  const hasAnyTaskData = totalTasksDone > 0 || Array.from(contactPerformance.values()).some((p) => p.total > 0);
 
+  return (
+    <div className="space-y-3">
       {/* Per-contractor table */}
       {contacts.length === 0 ? (
         <EmptyState
@@ -687,6 +652,13 @@ function PerformanceTab({
           title="No performance data"
           description="Add team members and assign tasks to see performance analytics here."
         />
+      ) : !hasAnyTaskData ? (
+        <Card padding="md">
+          <div className="flex items-center gap-2 text-[11px] text-muted">
+            <BarChart3 size={14} className="text-sand shrink-0" />
+            <span>Performance data populates as tasks are assigned to contractors</span>
+          </div>
+        </Card>
       ) : (
         <Card padding="sm" className="overflow-x-auto">
           <table className="w-full min-w-[600px]">
@@ -705,16 +677,16 @@ function PerformanceTab({
             <tbody>
               {rows.map(({ contact, perf }) => (
                 <tr key={contact.id} className="border-b border-border last:border-b-0 hover:bg-surface-alt transition-colors">
-                  <td className="py-2.5 px-2 pl-3 text-[12px] text-earth font-medium">{contact.name}</td>
-                  <td className="py-2.5 px-2 text-[11px] text-muted">{contact.role || "--"}</td>
-                  <td className="py-2.5 px-2 text-[12px] font-data text-earth">{perf.total}</td>
-                  <td className="py-2.5 px-2 text-[12px] font-data text-success">{perf.completed}</td>
-                  <td className="py-2.5 px-2 text-[12px] font-data text-warning">{perf.pendingReview}</td>
-                  <td className="py-2.5 px-2 text-[12px] font-data text-danger">{perf.rejected}</td>
-                  <td className="py-2.5 px-2 text-[12px] font-data text-muted">
+                  <td className="py-2 px-2 pl-3 text-[11px] text-earth font-medium">{contact.name}</td>
+                  <td className="py-2 px-2 text-[10px] text-muted">{contact.role || "--"}</td>
+                  <td className="py-2 px-2 text-[11px] font-data text-earth">{perf.total}</td>
+                  <td className="py-2 px-2 text-[11px] font-data text-success">{perf.completed}</td>
+                  <td className="py-2 px-2 text-[11px] font-data text-warning">{perf.pendingReview}</td>
+                  <td className="py-2 px-2 text-[11px] font-data text-danger">{perf.rejected}</td>
+                  <td className="py-2 px-2 text-[11px] font-data text-muted">
                     {perf.avgCompletionDays !== null ? `${perf.avgCompletionDays}` : "--"}
                   </td>
-                  <td className="py-2.5 px-2 pr-3">
+                  <td className="py-2 px-2 pr-3">
                     <StarRating value={contact.rating} readonly size={11} />
                   </td>
                 </tr>
@@ -1050,27 +1022,15 @@ export function TeamClient() {
             </div>
           )}
 
-          {/* Tips card */}
-          {contacts.length > 0 && (
-            <div className="mt-5 p-4 rounded-[var(--radius)] bg-emerald-50 border border-emerald-200 text-[12px] text-emerald-800 leading-relaxed">
-              <p className="font-semibold mb-1">Managing your construction team</p>
-              <p>
-                Keep all contractor contact information in one place. Ratings help you track performance
-                over time. Before hiring, always verify licenses, insurance, and references. For West
-                African markets, WhatsApp is often the primary communication channel -- add those
-                numbers here too.
-              </p>
-            </div>
-          )}
         </>
       )}
 
       {/* Tab 2: Trades Needed */}
       {activeTab === "trades" && (
-        <div className="space-y-4">
-          <SectionLabel>
-            Trades needed this phase ({PHASE_NAMES[currentPhaseKey]})
-          </SectionLabel>
+        <div className="space-y-2">
+          <div className="text-[10px] text-muted mb-1">
+            {PHASE_NAMES[currentPhaseKey]} phase
+          </div>
           <TradeRequirementList
             trades={currentPhaseTrades}
             phaseName={PHASE_NAMES[currentPhaseKey]}
@@ -1078,30 +1038,6 @@ export function TeamClient() {
             market={market}
             onAddContact={(tradeName) => openAddModal(tradeName)}
           />
-
-          {/* Contractor hiring tips */}
-          {currentPhaseTrades.length > 0 && (
-            <Card padding="md" className="bg-warm/30 border-sand/30">
-              <p className="text-[12px] font-semibold text-earth mb-2">How to find good contractors</p>
-              {market === "USA" ? (
-                <ol className="text-[11px] text-muted leading-relaxed space-y-1 list-decimal list-inside">
-                  <li>Ask neighbors who are building or recently built</li>
-                  <li>Check with your local builders association</li>
-                  <li>Visit active construction sites and ask who they recommend</li>
-                  <li>Get at least 3 bids for every trade</li>
-                  <li>Always verify licenses, insurance, and references before hiring</li>
-                </ol>
-              ) : (
-                <ol className="text-[11px] text-muted leading-relaxed space-y-1 list-decimal list-inside">
-                  <li>Ask your chef de quartier for recommendations</li>
-                  <li>Visit active construction sites in your neighborhood</li>
-                  <li>Get referrals from friends and family</li>
-                  <li>Check the contractor{"'"}s recent work in person</li>
-                  <li>Agree on daily rates in writing before work begins</li>
-                </ol>
-              )}
-            </Card>
-          )}
         </div>
       )}
 
