@@ -417,13 +417,17 @@ export default function AnalyzePage() {
     setInput((p) => {
       const n = { ...p, [k]: v };
       if (k === "market" && v !== p.market) {
+        const prevMarket = p.market as string;
+        const nextMarket = v as string;
         n.features = []; n.financingType = ""; n.titreFoncierStatus = "";
         // Convert custom size between sqft and sqm when switching markets
-        if (n.customSize > 0) {
-          const wasUSA = p.market === "USA";
-          const nowUSA = v === "USA";
-          if (wasUSA && !nowUSA) n.customSize = Math.round(n.customSize * 0.0929); // sqft → sqm
-          else if (!wasUSA && nowUSA && p.market) n.customSize = Math.round(n.customSize * 10.764); // sqm → sqft
+        if (p.customSize > 0) {
+          const wasUSA = prevMarket === "USA";
+          const nowUSA = nextMarket === "USA";
+          const wasSqft = wasUSA || !prevMarket; // empty market defaults to sqft
+          const nowSqft = nowUSA;
+          if (wasSqft && !nowSqft) n.customSize = Math.round(p.customSize * 0.0929); // sqft → sqm
+          else if (!wasSqft && nowSqft) n.customSize = Math.round(p.customSize * 10.764); // sqm → sqft
         }
       }
       return n;
@@ -442,7 +446,16 @@ export default function AnalyzePage() {
     if (input.financingType === "construction_loan" || input.financingType === "fha_203k") {
       try { const r = calculateAnalysis({ ...input, loanRate: input.loanRate + 2 } as any); s.push({ label: "Rate +2%", cost: r.totalCost, score: r.dealScore, delta: r.totalCost - base }); } catch {}
     }
-    try { const r = calculateAnalysis({ ...input, timelineMonths: input.timelineMonths + 6 } as any); s.push({ label: "+6 months", cost: r.totalCost, score: r.dealScore, delta: r.totalCost - base }); } catch {}
+    // +6 month delay: inflation (0.5%/mo) + carrying costs (insurance, taxes, loan interest)
+    {
+      const monthlyInflation = 0.005;
+      const inflationCost = Math.round(base * monthlyInflation * 6);
+      const monthlyCarrying = results.monthlyCost > 0 ? results.monthlyCost : Math.round(base * 0.003); // ~0.3%/mo if no loan
+      const carryingExtra = monthlyCarrying * 6;
+      const delayCost = inflationCost + carryingExtra;
+      const delayScore = Math.max(0, results.dealScore - Math.round(delayCost / base * 40));
+      s.push({ label: "+6 months", cost: base + delayCost, score: delayScore, delta: delayCost });
+    }
     return s;
   }, [results, input]);
 
@@ -789,12 +802,16 @@ export default function AnalyzePage() {
                       <NumField label="Land price" value={input.landPrice} onChange={(v) => set("landPrice", Math.max(0, v))} prefix={currency.symbol} min={0} />
                     </div>
                   )}
-                  {input.landOption === "estimate" && results && (
-                    <div className="mt-2 px-3 py-2 bg-warm/20 rounded-lg">
-                      <p className="text-[10px] text-muted">
-                        Estimated: <span className="font-data font-semibold text-earth">{fmt(results.landCost, currency)}</span>
-                        <span className="text-muted/60"> (25% of construction cost{input.city ? `, based on ${input.city} area` : ""})</span>
-                      </p>
+                  {input.landOption === "estimate" && (
+                    <div className="mt-2 px-3 py-2.5 bg-success/5 border border-success/20 rounded-lg">
+                      {results ? (
+                        <p className="text-[11px] text-earth">
+                          Estimated: <span className="font-data font-bold text-success">{fmtC(results.landCost, currency)}</span>
+                          {input.city ? <span className="text-muted"> based on {input.city} median</span> : <span className="text-muted"> based on regional average</span>}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-muted">Select a goal and market above to see the land estimate for your area.</p>
+                      )}
                     </div>
                   )}
                   {isWA && (
@@ -1149,7 +1166,7 @@ export default function AnalyzePage() {
                 <div className="relative max-w-xs mx-auto">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[18px] text-muted font-data">{currency.symbol}</span>
                   <input type="text" inputMode="numeric"
-                    value={reverseBudget ? reverseBudget.toLocaleString() : ""}
+                    value={reverseBudget ? reverseBudget.toLocaleString("en-US") : ""}
                     onChange={(e) => { const raw = e.target.value.replace(/[^0-9]/g, ""); setReverseBudget(Number(raw) || 0); }}
                     placeholder="0"
                     className="w-full pl-10 pr-4 py-4 bg-warm/10 border border-border/40 rounded-xl text-[28px] font-bold font-data text-earth text-center focus:outline-none focus:ring-2 focus:ring-clay/20 focus:border-clay/40" />
@@ -1285,7 +1302,7 @@ export default function AnalyzePage() {
                 </div>
                 <div className="bg-warm/20 rounded-lg py-2">
                   <p className="text-[9px] text-muted uppercase">Size</p>
-                  <p className="text-[14px] font-bold font-data text-earth">{buildSize.toLocaleString()} <span className="text-[10px] font-normal text-muted">{sizeUnit}</span></p>
+                  <p className="text-[14px] font-bold font-data text-earth">{buildSize.toLocaleString()}<span className="text-[10px] font-normal text-muted ml-0.5">{sizeUnit}</span></p>
                 </div>
               </div>
             )}
