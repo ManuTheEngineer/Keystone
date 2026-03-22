@@ -43,6 +43,7 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle2,
+  Circle,
   ListChecks,
   DollarSign,
   Calendar,
@@ -544,6 +545,91 @@ function getMentorTip(project: ProjectData | null): string {
 function marketDotColor(market: string): string {
   if (market === "USA") return "bg-[var(--color-accent-usa)]";
   return "bg-[var(--color-accent-wa)]";
+}
+
+/* ------------------------------------------------------------------ */
+/*  Getting Started checklist                                         */
+/* ------------------------------------------------------------------ */
+
+function GettingStartedChecklist({ projects }: { projects: ProjectData[] }) {
+  const realProjects = projects.filter((p: any) => !p.isDemo);
+  const demoProject = projects.find((p: any) => p.isDemo);
+  const firstProject = realProjects[0] ?? demoProject;
+
+  // Hide once user has 2+ real projects
+  if (realProjects.length >= 2) return null;
+
+  const hasAnyProject = projects.length > 0;
+  const hasRealProject = realProjects.length > 0;
+  const hasPastDefine = projects.some((p) => (p.currentPhase ?? 0) > 0);
+  const hasBudgetData = projects.some((p) => (p.totalBudget ?? 0) > 0 || (p.totalSpent ?? 0) > 0);
+
+  const items = [
+    { done: true, label: "Create your account", href: undefined as string | undefined },
+    {
+      done: hasAnyProject && !!demoProject,
+      label: "Explore the demo project",
+      href: demoProject ? `/project/${demoProject.id}/overview` : "/dashboard",
+    },
+    {
+      done: hasRealProject,
+      label: "Create your first project",
+      href: "/new-project",
+    },
+    {
+      done: hasPastDefine,
+      label: "Complete Phase 0: Define",
+      href: firstProject ? `/project/${firstProject.id}/overview` : "/dashboard",
+    },
+    {
+      done: hasBudgetData,
+      label: "Review your budget",
+      href: firstProject ? `/project/${firstProject.id}/financials` : "/dashboard",
+    },
+  ];
+
+  const allDone = items.every((i) => i.done);
+  if (allDone) return null;
+
+  return (
+    <div className="mb-6">
+      <SectionLabel>Getting Started</SectionLabel>
+      <div className="mt-2 space-y-1">
+        {items.map((item) => {
+          const content = (
+            <div
+              className={`flex items-center gap-2.5 py-1.5 px-2 rounded-md text-[13px] transition-colors ${
+                item.done
+                  ? "text-muted"
+                  : item.href
+                    ? "text-earth hover:bg-warm/50 cursor-pointer"
+                    : "text-earth"
+              }`}
+            >
+              {item.done ? (
+                <CheckCircle2 size={15} className="text-success shrink-0" />
+              ) : (
+                <Circle size={15} className="text-sand shrink-0" />
+              )}
+              <span className={item.done ? "line-through" : ""}>{item.label}</span>
+              {!item.done && item.href && (
+                <ArrowRight size={13} className="text-clay ml-auto shrink-0" />
+              )}
+            </div>
+          );
+
+          if (!item.done && item.href) {
+            return (
+              <Link key={item.label} href={item.href}>
+                {content}
+              </Link>
+            );
+          }
+          return <div key={item.label}>{content}</div>;
+        })}
+      </div>
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -1077,6 +1163,9 @@ export default function DashboardPage() {
             </h1>
             <p className="text-[13px] text-muted mt-1">{getFormattedDate()}</p>
           </div>
+
+          {/* Getting Started Checklist */}
+          <GettingStartedChecklist projects={projects} />
 
           {/* Active Projects */}
           <div className="mb-6">

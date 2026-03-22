@@ -717,7 +717,77 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Section 7: About */}
+      {/* Section 7: Social Proof */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 bg-warm/30">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-[11px] font-semibold uppercase tracking-[3px] text-clay mb-3">
+              Built for builders like you
+            </p>
+            <h2
+              className="text-[28px] sm:text-[36px] text-earth leading-tight"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
+              Every builder has a different story
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Card 1 */}
+            <div className="bg-surface rounded-xl border border-border p-6">
+              <p
+                className="text-[15px] text-clay font-semibold mb-3"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                First-time homebuilder
+              </p>
+              <p className="text-[14px] text-slate leading-relaxed italic mb-4">
+                &ldquo;I have never built anything before. Keystone walks me through every
+                decision so I know exactly what to expect.&rdquo;
+              </p>
+              <p className="text-[12px] text-muted">
+                &mdash; For owner-builders in the USA
+              </p>
+            </div>
+
+            {/* Card 2 */}
+            <div className="bg-surface rounded-xl border border-border p-6">
+              <p
+                className="text-[15px] text-clay font-semibold mb-3"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                Diaspora investor
+              </p>
+              <p className="text-[14px] text-slate leading-relaxed italic mb-4">
+                &ldquo;I am building in Togo from the US. The remote monitoring and photo
+                verification give me confidence my money is being spent right.&rdquo;
+              </p>
+              <p className="text-[12px] text-muted">
+                &mdash; For the diaspora community
+              </p>
+            </div>
+
+            {/* Card 3 */}
+            <div className="bg-surface rounded-xl border border-border p-6">
+              <p
+                className="text-[15px] text-clay font-semibold mb-3"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                Small developer
+              </p>
+              <p className="text-[14px] text-slate leading-relaxed italic mb-4">
+                &ldquo;Managing 3 projects across 2 countries. The dual-market cost data
+                and financial modeling save me hours every week.&rdquo;
+              </p>
+              <p className="text-[12px] text-muted">
+                &mdash; For small-scale developers
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 8: About */}
       <section id="about" className="py-16 sm:py-24 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">

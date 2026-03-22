@@ -1,7 +1,7 @@
 // TODO: Many hardcoded strings need t() wrapping
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTopbar } from "../../../layout";
@@ -49,6 +49,7 @@ import {
   type StepDecision,
   type ChangeOrder,
 } from "@/lib/services/project-service";
+import { uploadProjectPhoto } from "@/lib/services/photo-upload-service";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import { useTranslation } from "@/lib/hooks/use-translation";
@@ -117,6 +118,8 @@ import {
   ClipboardCheck,
   CheckCircle2,
   ChevronRight,
+  Paperclip,
+  Loader2,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
 import { PresentationModal } from "@/components/ui/PresentationModal";
@@ -267,6 +270,9 @@ export function OverviewClient() {
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [completionNote, setCompletionNote] = useState("");
   const [completionLoading, setCompletionLoading] = useState(false);
+  const [completionPhotos, setCompletionPhotos] = useState<{ url: string; caption?: string }[]>([]);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [showDeleteProject, setShowDeleteProject] = useState(false);
   const [deleteProjectName, setDeleteProjectName] = useState("");
   const [deletingProject, setDeletingProject] = useState(false);
@@ -281,6 +287,29 @@ export function OverviewClient() {
   const [ratingStars, setRatingStars] = useState(5);
   const [ratingComment, setRatingComment] = useState("");
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
+
+  // Photo attachment handler for task completion
+  const handleCompletionPhotoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user || !project) return;
+    setPhotoUploading(true);
+    try {
+      const photo = await uploadProjectPhoto(
+        user.uid,
+        projectId,
+        file,
+        String(project.currentPhase ?? "BUILD"),
+        `Task completion photo`
+      );
+      setCompletionPhotos((prev) => [...prev, { url: photo.fileUrl }]);
+    } catch {
+      showToast("Photo upload failed", "error");
+    } finally {
+      setPhotoUploading(false);
+      // Reset file input so the same file can be selected again
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  }, [user, project, projectId, showToast]);
 
   // Change order state
   const [changeOrders, setChangeOrders] = useState<ChangeOrder[]>([]);
@@ -730,6 +759,7 @@ export function OverviewClient() {
                                     if (isPending) { document.getElementById("pending-review")?.scrollIntoView({ behavior: "smooth" }); return; }
                                     setCompletingTaskId(isOpen ? null : task.id!);
                                     setCompletionNote("");
+                                    setCompletionPhotos([]);
                                   }}
                                   className={`w-full flex items-center gap-2.5 px-1 py-[5px] text-left group rounded transition-colors ${isOpen ? "bg-warm/20" : "hover:bg-warm/8"}`}
                                   disabled={isDone}
@@ -759,14 +789,48 @@ export function OverviewClient() {
                                   className="w-full px-2.5 py-1.5 text-[11px] bg-white border border-border/40 rounded text-earth placeholder:text-muted/40 focus:outline-none focus:border-clay/30 resize-none"
                                   rows={2}
                                 />
+
+                                {/* Photo thumbnails */}
+                                {completionPhotos.length > 0 && (
+                                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                                    {completionPhotos.map((p, i) => (
+                                      <div key={i} className="relative group/thumb">
+                                        <img src={p.url} alt={`Completion photo ${i + 1}`} className="w-10 h-10 rounded object-cover border border-border/30" />
+                                        <button
+                                          type="button"
+                                          onClick={() => setCompletionPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+                                          className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-danger text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity"
+                                        >
+                                          <X size={8} />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
                                 <div className="flex items-center justify-between mt-1.5">
                                   <div className="flex items-center gap-1">
                                     <Link href={`/project/${projectId}/documents`} className="text-[9px] text-clay hover:underline">Attach doc</Link>
                                     <span className="text-muted/30">|</span>
-                                    <Link href={`/project/${projectId}/photos`} className="text-[9px] text-clay hover:underline">Add photo</Link>
+                                    <input
+                                      ref={photoInputRef}
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={handleCompletionPhotoUpload}
+                                    />
+                                    <button
+                                      type="button"
+                                      disabled={photoUploading}
+                                      onClick={() => photoInputRef.current?.click()}
+                                      className="inline-flex items-center gap-0.5 text-[9px] text-clay hover:underline disabled:opacity-50"
+                                    >
+                                      {photoUploading ? <Loader2 size={8} className="animate-spin" /> : <Paperclip size={8} />}
+                                      {photoUploading ? "Uploading..." : "Attach photo"}
+                                    </button>
                                   </div>
                                   <div className="flex items-center gap-1.5">
-                                    <button onClick={() => { setCompletingTaskId(null); setCompletionNote(""); }} className="text-[9px] text-muted hover:text-earth">Cancel</button>
+                                    <button onClick={() => { setCompletingTaskId(null); setCompletionNote(""); setCompletionPhotos([]); }} className="text-[9px] text-muted hover:text-earth">Cancel</button>
                                     <button
                                       disabled={completionLoading || !completionNote.trim()}
                                       onClick={async () => {
@@ -778,6 +842,9 @@ export function OverviewClient() {
                                             completedAt: new Date().toISOString(),
                                             completedBy: user.uid,
                                             completionNote: completionNote.trim(),
+                                            completionPhotos: completionPhotos.length > 0
+                                              ? completionPhotos.map((p) => ({ url: p.url, timestamp: new Date().toISOString() }))
+                                              : undefined,
                                           });
                                           await approveTask(user.uid, projectId, task.id, completionNote.trim());
                                           const nextTask = currentPhaseTasks
@@ -785,6 +852,7 @@ export function OverviewClient() {
                                             .find((t) => !t.done && t.status !== "pending-review" && t.id !== task.id);
                                           setCompletingTaskId(nextTask?.id ?? null);
                                           setCompletionNote("");
+                                          setCompletionPhotos([]);
                                           showToast("Task completed", "success");
                                         } catch { showToast("Failed", "error"); }
                                         finally { setCompletionLoading(false); }

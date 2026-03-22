@@ -1286,6 +1286,44 @@ export async function toggleMilestoneProgress(
   const current: boolean[] = snap.exists() ? snap.val() : new Array(totalMilestones).fill(false);
   current[index] = completed;
   await set(progressRef, current);
+
+  // Reverse sync: when a milestone is toggled from the Schedule page,
+  // update the corresponding Overview tasks to match.
+  try {
+    const { PHASE_ORDER } = await import("@keystone/market-data");
+    const phaseIndex = PHASE_ORDER.indexOf(phase as any);
+    if (phaseIndex === -1) return;
+
+    const tasksSnap = await get(ref(db, `users/${userId}/projects/${projectId}/tasks`));
+    if (!tasksSnap.exists()) return;
+
+    const now = new Date().toISOString();
+    const updates: Record<string, unknown> = {};
+
+    tasksSnap.forEach((child) => {
+      const t = child.val();
+      // Match tasks that belong to this phase + milestone index
+      if (t.phase === phaseIndex && t.milestoneIndex === index) {
+        if (completed && !t.done && t.status !== "cancelled") {
+          // Milestone checked on Schedule -> mark task done
+          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/done`] = true;
+          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/status`] = "done";
+          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/completedAt`] = now;
+        } else if (!completed && t.done && t.status !== "cancelled") {
+          // Milestone unchecked on Schedule -> reopen task
+          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/done`] = false;
+          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/status`] = "in-progress";
+          updates[`users/${userId}/projects/${projectId}/tasks/${child.key}/completedAt`] = null;
+        }
+      }
+    });
+
+    if (Object.keys(updates).length > 0) {
+      await update(ref(db), updates);
+    }
+  } catch {
+    // Non-blocking: reverse sync is best-effort
+  }
 }
 
 // --- Milestone Dates ---
@@ -1382,11 +1420,58 @@ export async function deletePunchListItem(userId: string, projectId: string, ite
 // --- Advance Project Phase ---
 
 export async function advanceProjectPhase(userId: string, projectId: string, newPhase: number, phaseName: string): Promise<void> {
+  const now = new Date().toISOString();
   await update(ref(db, `users/${userId}/projects/${projectId}`), {
     currentPhase: newPhase,
     completedPhases: newPhase,
     phaseName: phaseName,
-    updatedAt: new Date().toISOString(),
+    updatedAt: now,
+  });
+
+  // Record phase history entry for the completed phase (the one before newPhase)
+  try {
+    const { PHASE_ORDER, PHASE_NAMES } = await import("@keystone/market-data");
+    const completedPhaseIndex = newPhase - 1;
+    const completedPhaseKey = PHASE_ORDER[completedPhaseIndex];
+    if (completedPhaseKey) {
+      const historyRef = ref(db, `users/${userId}/projects/${projectId}/phaseHistory`);
+      const snap = await get(historyRef);
+      const history: { phase: string; phaseName: string; phaseIndex: number; completedAt: string }[] =
+        snap.exists() ? snap.val() : [];
+      // Avoid duplicate entries for the same phase
+      if (!history.some((h) => h.phase === completedPhaseKey)) {
+        history.push({
+          phase: completedPhaseKey,
+          phaseName: PHASE_NAMES[completedPhaseKey] ?? completedPhaseKey,
+          phaseIndex: completedPhaseIndex,
+          completedAt: now,
+        });
+        await set(historyRef, history);
+      }
+    }
+  } catch {
+    // Non-blocking: phase history is best-effort
+  }
+}
+
+// --- Phase History ---
+
+export interface PhaseHistoryEntry {
+  phase: string;
+  phaseName: string;
+  phaseIndex: number;
+  completedAt: string;
+}
+
+export function subscribeToPhaseHistory(
+  userId: string,
+  projectId: string,
+  callback: (history: PhaseHistoryEntry[]) => void
+): Unsubscribe {
+  return onValue(ref(db, `users/${userId}/projects/${projectId}/phaseHistory`), (snapshot) => {
+    callback(snapshot.exists() ? snapshot.val() : []);
+  }, (error) => {
+    console.error("Subscription error (phase history):", error);
   });
 }
 

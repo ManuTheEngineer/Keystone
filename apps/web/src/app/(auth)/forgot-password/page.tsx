@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { resetPassword } from "@/lib/services/auth-service";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
-import { AlertTriangle, CheckCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle, ArrowLeft } from "lucide-react";
 import { t, type Locale } from "@/lib/i18n";
 
 const quotes = [
@@ -29,11 +29,16 @@ export default function ForgotPasswordPage() {
     : "en";
 
   const [email, setEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [fadeIn, setFadeIn] = useState(true);
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailValid = emailRegex.test(email.trim());
+  const showEmailError = emailTouched && email.trim().length > 0 && !emailValid;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -49,6 +54,13 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setEmailTouched(true);
+
+    if (!emailValid) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -58,6 +70,9 @@ export default function ForgotPasswordPage() {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("network-request-failed")) {
         setError("Network error. Check your connection and try again.");
+      } else if (msg.includes("user-not-found")) {
+        // For security, show the same success screen even if user is not found
+        setSent(true);
       } else {
         setError("Something went wrong. Please try again.");
       }
@@ -83,6 +98,13 @@ export default function ForgotPasswordPage() {
         {/* Centered form */}
         <div className="flex-1 flex items-center justify-center px-8">
           <div className="w-full max-w-[380px]">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1 text-[13px] text-muted hover:text-earth transition-colors mb-6"
+            >
+              <ArrowLeft size={14} />
+              {t("auth.backToSignIn", browserLocale)}
+            </Link>
             <div className="mb-8">
               <h1
                 className="text-[28px] text-earth leading-tight"
@@ -100,7 +122,20 @@ export default function ForgotPasswordPage() {
                   <CheckCircle size={18} />
                   {t("auth.checkInbox", browserLocale)}
                 </div>
-                <p className="text-center text-[13px] text-muted mt-7">
+                <p className="text-[12px] text-muted mt-3 text-center">
+                  Sent to <span className="font-medium text-earth">{email}</span>
+                </p>
+                <p className="text-center text-[12px] text-muted mt-4">
+                  Didn&apos;t receive it?{" "}
+                  <button
+                    type="button"
+                    onClick={() => { setSent(false); setError(""); }}
+                    className="text-clay hover:text-clay-light font-medium transition-colors hover:underline"
+                  >
+                    Try again
+                  </button>
+                </p>
+                <p className="text-center text-[13px] text-muted mt-5">
                   <Link href="/login" className="text-clay hover:text-clay-light font-medium transition-colors">
                     {t("auth.backToSignIn", browserLocale)}
                   </Link>
@@ -124,15 +159,23 @@ export default function ForgotPasswordPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      onBlur={() => setEmailTouched(true)}
                       required
-                      className="w-full px-4 py-3.5 text-[14px] border border-border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors"
+                      className={`w-full px-4 py-3.5 text-[14px] border rounded-xl bg-surface text-earth placeholder:text-muted/40 focus:outline-none focus:ring-2 transition-colors ${
+                        showEmailError
+                          ? "border-danger focus:border-danger focus:ring-danger/20"
+                          : "border-border focus:border-emerald-500 focus:ring-emerald-500/20"
+                      }`}
                       placeholder="you@example.com"
                     />
+                    {showEmailError && (
+                      <p className="text-[11px] text-danger mt-1">Please enter a valid email address.</p>
+                    )}
                   </div>
 
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !emailValid}
                     className="w-full py-3.5 text-[15px] font-medium rounded-xl btn-earth active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:active:scale-100"
                   >
                     {loading ? t("auth.sending", browserLocale) : t("auth.sendResetLink", browserLocale)}
