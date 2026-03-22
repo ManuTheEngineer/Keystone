@@ -60,7 +60,7 @@ import type { Market as MarketType, CurrencyConfig, LocationData } from "@keysto
 type BuildGoal = "sell" | "rent" | "occupy" | "";
 type SizeCategory = "compact" | "standard" | "large" | "estate" | "custom";
 type LandOption = "known" | "estimate" | "";
-type FinancingType = "construction_loan" | "cash" | "fha_203k" | "diaspora" | "tontine" | "phased_cash" | "";
+type FinancingType = "construction_loan" | "cash" | "fha_203k" | "diaspora" | "tontine" | "phased_cash" | "family_pooling" | "";
 
 interface WizardState {
   goal: BuildGoal;
@@ -160,7 +160,7 @@ const WA_FEATURES = [
   { id: "security-post", label: "Security post", Icon: ShieldCheck },
 ];
 
-const MARKET_MAP: Record<string, Market> = { USA: "USA", TOGO: "TOGO", GHANA: "GHANA", BENIN: "BENIN" };
+const MARKET_MAP: Record<string, Market> = { USA: "USA", TOGO: "TOGO", GHANA: "GHANA", BENIN: "BENIN", IVORY_COAST: "TOGO", SENEGAL: "TOGO" };
 const PURPOSE_MAP: Record<string, BuildPurpose> = { occupy: "OCCUPY", rent: "RENT", sell: "SELL" };
 
 // ---------------------------------------------------------------------------
@@ -242,7 +242,7 @@ function getSoftCosts(constructionCost: number): number {
 }
 
 function getFinancingCosts(state: WizardState, landCost: number, constructionCost: number): number {
-  if (state.financingType === "cash" || state.financingType === "phased_cash") return 0;
+  if (state.financingType === "cash" || state.financingType === "phased_cash" || state.financingType === "family_pooling") return 0;
   const totalBasis = landCost + constructionCost;
   const loanPortion = totalBasis * (1 - state.downPaymentPct / 100);
   return Math.round(loanPortion * (state.loanRate / 100) * (state.timelineMonths / 12));
@@ -370,7 +370,7 @@ function calculateDealScore(state: WizardState, locData?: LocationData | null): 
   }
 
   // 5. Financing (15 points)
-  if (state.financingType === "cash" || state.financingType === "phased_cash") {
+  if (state.financingType === "cash" || state.financingType === "phased_cash" || state.financingType === "family_pooling") {
     factors.push({ label: "Cash financing", points: 15, maxPoints: 15, positive: true, explanation: "No interest costs. Full control." });
   } else if (state.downPaymentPct >= 20) {
     factors.push({ label: "Down payment 20%+", points: 12, maxPoints: 15, positive: true, explanation: "Good equity cushion and better loan terms." });
@@ -950,6 +950,8 @@ export default function NewProjectPage() {
       { id: "TOGO" as MarketType, title: "Togo", desc: "Reinforced concrete block, CFA zone, titre foncier system", snap: "Self-funded in phases. Titre foncier process can take months." },
       { id: "GHANA" as MarketType, title: "Ghana", desc: "Concrete block, cedi currency, Lands Commission registration", snap: "More formalized permit process. Land registration through Lands Commission." },
       { id: "BENIN" as MarketType, title: "Benin", desc: "Concrete block, CFA zone, ANDF land registry", snap: "CFA currency zone shared with Togo. ANDF provides formal land ownership." },
+      { id: "IVORY_COAST" as MarketType, title: "Ivory Coast", desc: "Concrete block, CFA zone, ACD land system", snap: "Largest CFA economy. Similar construction methods to Togo. Formal permit system." },
+      { id: "SENEGAL" as MarketType, title: "Senegal", desc: "Concrete block, CFA zone, DGID land registry", snap: "CFA zone. Active diaspora construction market. Formal land registration system." },
     ];
 
     return (
@@ -1496,6 +1498,7 @@ export default function NewProjectPage() {
           { id: "diaspora", title: "Diaspora funding", desc: "Sending money from abroad to fund construction. Requires trusted local oversight.", available: true },
           { id: "tontine", title: "Tontine / savings group", desc: "Community rotating savings fund. Members take turns receiving the pot.", available: true },
           { id: "cash", title: "Full cash upfront", desc: "Pay the entire cost before construction begins.", available: true },
+          { id: "family_pooling", title: "Family pooling", desc: "Multiple family members contribute to fund the build. Common for diaspora families building together.", available: true },
         ];
 
     return (
@@ -1582,7 +1585,7 @@ export default function NewProjectPage() {
       { label: "Land", value: costs.land, pct: costs.total > 0 ? (costs.land / costs.total) * 100 : 0, color: "#8B4513", detail: landDetail },
       { label: "Construction", value: costs.construction, pct: costs.total > 0 ? (costs.construction / costs.total) * 100 : 0, color: "#2C1810", detail: `Based on ${getBuildingSize(state).toLocaleString()} ${sizeUnit} at market mid-range cost per ${sizeUnit}.${locationLabel}` },
       { label: "Soft costs (permits, design, fees)", value: costs.soft, pct: costs.total > 0 ? (costs.soft / costs.total) * 100 : 0, color: "#D4A574", detail: `Estimated at 15% of construction cost. Includes architectural design, permits, engineering, and inspections.${locationData ? ` Typical permit cost in ${locationData.city}: ${formatCurrency(locationData.permitCostEstimate, currency)}.` : ""}` },
-      { label: "Financing costs", value: costs.financing, pct: costs.total > 0 ? (costs.financing / costs.total) * 100 : 0, color: "#1B4965", detail: state.financingType === "cash" || state.financingType === "phased_cash" ? "No financing costs with cash payment." : `Based on ${state.downPaymentPct}% down at ${state.loanRate}% over ${state.timelineMonths} months.` },
+      { label: "Financing costs", value: costs.financing, pct: costs.total > 0 ? (costs.financing / costs.total) * 100 : 0, color: "#1B4965", detail: state.financingType === "cash" || state.financingType === "phased_cash" || state.financingType === "family_pooling" ? "No financing costs with cash payment." : `Based on ${state.downPaymentPct}% down at ${state.loanRate}% over ${state.timelineMonths} months.` },
       { label: "Contingency (15%)", value: costs.contingency, pct: costs.total > 0 ? (costs.contingency / costs.total) * 100 : 0, color: "#BC6C25", detail: "A 15% contingency protects against cost overruns. This is the industry standard safety buffer." },
     ];
 

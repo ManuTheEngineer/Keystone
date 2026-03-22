@@ -212,12 +212,14 @@ export default function RegisterPage() {
                 <label className="block text-[13px] font-medium text-earth mb-1.5">
                   Where are you building?
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: "USA", label: "USA", flag: "US" },
                     { id: "TOGO", label: "Togo", flag: "TG" },
                     { id: "GHANA", label: "Ghana", flag: "GH" },
                     { id: "BENIN", label: "Benin", flag: "BJ" },
+                    { id: "IVORY_COAST", label: "Ivory Coast", flag: "CI" },
+                    { id: "SENEGAL", label: "Senegal", flag: "SN" },
                   ].map((m) => (
                     <button
                       key={m.id}

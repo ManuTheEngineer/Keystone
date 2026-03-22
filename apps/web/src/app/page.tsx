@@ -201,6 +201,18 @@ export default function LandingPage() {
                   <Calculator size={16} className="ml-2" />
                 </Link>
               </div>
+
+              {/* Above-the-fold social proof */}
+              <div className="flex items-center gap-3 mt-6 text-[13px] text-muted/70">
+                <div className="flex -space-x-2">
+                  {["#8B4513", "#2D6A4F", "#1B4965", "#BC6C25"].map((c, i) => (
+                    <div key={i} className="w-7 h-7 rounded-full border-2 border-cream flex items-center justify-center text-[9px] font-semibold text-white" style={{ backgroundColor: c }}>
+                      {["E", "A", "K", "M"][i]}
+                    </div>
+                  ))}
+                </div>
+                <span>Built by an engineer who has done it. Trusted by early builders across 4 countries.</span>
+              </div>
             </div>
 
             {/* Right illustration - animated house build */}

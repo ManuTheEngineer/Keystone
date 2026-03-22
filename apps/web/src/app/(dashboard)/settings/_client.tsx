@@ -118,6 +118,7 @@ export function SettingsClient() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletePassword, setDeletePassword] = useState("");
+  const [showPasswordForDelete, setShowPasswordForDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
@@ -261,23 +262,26 @@ export function SettingsClient() {
   }
 
   async function handleDeleteAccount() {
-    if (!user || !user.email || deleteConfirmText !== "DELETE" || !deletePassword) return;
+    if (!user || !user.email || deleteConfirmText !== "DELETE") return;
     setDeleting(true);
     setDeleteError("");
     try {
-      // Reauthenticate first so Firebase doesn't require a fresh login
-      const credential = EmailAuthProvider.credential(user.email, deletePassword);
-      await reauthenticateWithCredential(user, credential);
+      // Try reauth if password provided (Firebase requires recent auth for deletion)
+      if (deletePassword) {
+        const credential = EmailAuthProvider.credential(user.email, deletePassword);
+        await reauthenticateWithCredential(user, credential);
+      }
 
       const uid = user.uid;
-      // Delete data first (can be re-created if auth deletion fails)
       await remove(ref(db, `users/${uid}`));
-      // Then delete auth account (point of no return)
       await deleteUser(user);
       router.push("/");
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code;
-      if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+      if (code === "auth/requires-recent-login") {
+        setDeleteError("For security, please enter your password to confirm deletion.");
+        setShowPasswordForDelete(true);
+      } else if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
         setDeleteError("Incorrect password. Please try again.");
       } else {
         setDeleteError("Account deletion failed. Please try again.");
@@ -1418,29 +1422,31 @@ export function SettingsClient() {
                 <p className="text-[11px] font-medium text-danger">Confirm account deletion</p>
               </div>
               <p className="text-[10px] text-muted mb-2">
-                Enter your password and type DELETE to confirm.
+                Type DELETE to confirm.
               </p>
               {deleteError && (
                 <p className="text-[10px] text-danger mb-1.5">{deleteError}</p>
               )}
               <input
-                type="password"
-                value={deletePassword}
-                onChange={(e) => setDeletePassword(e.target.value)}
-                placeholder="Enter your password"
-                className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-danger w-full mb-1.5"
-              />
-              <input
                 type="text"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="Type DELETE to confirm"
-                className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-danger w-full mb-2"
+                className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-danger w-full mb-1.5"
               />
+              {showPasswordForDelete && (
+                <input
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="px-2.5 py-1.5 text-[11px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-danger w-full mb-1.5"
+                />
+              )}
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleDeleteAccount}
-                  disabled={deleteConfirmText !== "DELETE" || !deletePassword || deleting}
+                  disabled={deleteConfirmText !== "DELETE" || (showPasswordForDelete && !deletePassword) || deleting}
                   className="px-3 py-1.5 text-[10px] bg-danger text-white rounded-[var(--radius)] hover:bg-danger/90 transition-colors disabled:opacity-40"
                 >
                   {deleting ? "Deleting..." : "Delete my account"}
@@ -1450,6 +1456,8 @@ export function SettingsClient() {
                     setShowDeleteConfirm(false);
                     setDeleteConfirmText("");
                     setDeletePassword("");
+                    setShowPasswordForDelete(false);
+                    setDeleteError("");
                   }}
                   className="px-3 py-1.5 text-[10px] border border-border rounded-[var(--radius)] text-muted hover:bg-surface-alt transition-colors"
                 >
