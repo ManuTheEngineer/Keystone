@@ -52,19 +52,22 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
   const milestones = phaseDef.milestones;
   const phaseTasks = tasks.filter((t) => t.phase === currentPhaseIndex || t.phase == null);
 
-  // Derive milestone completion from task status
+  // Derive milestone completion from task status (primary) + Firebase (fallback)
+  const nonPendingTasks = phaseTasks.filter((t) => t.status !== "pending-review");
   const milestoneCompleted = milestones.map((_, i) => {
-    if (firebaseProgress[i]) return true;
-    const hasIdx = phaseTasks.some((t) => t.milestoneIndex != null);
+    // First check task-based completion (source of truth)
+    const hasIdx = nonPendingTasks.some((t) => t.milestoneIndex != null);
     let milestoneTasks: TaskData[];
     if (hasIdx) {
-      milestoneTasks = phaseTasks.filter((t) => t.milestoneIndex === i);
+      milestoneTasks = nonPendingTasks.filter((t) => t.milestoneIndex === i);
     } else {
-      const sorted = [...phaseTasks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const sorted = [...nonPendingTasks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       const perMs = Math.max(1, Math.ceil(sorted.length / milestones.length));
       milestoneTasks = sorted.slice(i * perMs, (i + 1) * perMs);
     }
-    return milestoneTasks.length > 0 && milestoneTasks.every((t) => t.done || t.status === "cancelled");
+    const tasksDone = milestoneTasks.length > 0 && milestoneTasks.every((t) => t.done || t.status === "cancelled");
+    // Use task status OR Firebase progress (whichever says complete)
+    return tasksDone || firebaseProgress[i] === true;
   });
 
   const checkedCount = milestoneCompleted.filter(Boolean).length;
