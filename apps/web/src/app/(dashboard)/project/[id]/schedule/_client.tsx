@@ -106,14 +106,9 @@ function MilestoneListCard({
                 i < phaseDef.milestones.length - 1 ? "border-b border-border" : ""
               } ${isActive ? "bg-emerald-50/50 rounded" : ""} ${justCompleted ? "bg-success/20 rounded" : ""}`}
             >
-              <button
-                onClick={() => {
-                  if (!isCompletedPhase) {
-                    onToggleMilestone(phaseKey, i, !isComplete, phaseDef.milestones.length);
-                  }
-                }}
-                className={`shrink-0 ${isCompletedPhase ? "cursor-default" : "cursor-pointer hover:scale-110 transition-transform"}`}
-                disabled={isCompletedPhase}
+              <div
+                className="shrink-0 cursor-default"
+                title={isComplete ? "Completed via task completion" : "Complete tasks on the Overview page to check this milestone"}
               >
                 {isComplete ? (
                   <Check size={13} className="text-success" />
@@ -125,7 +120,7 @@ function MilestoneListCard({
                 ) : (
                   <Circle size={13} className="text-muted/30" />
                 )}
-              </button>
+              </div>
 
               <span className={`flex-1 ${isComplete ? "text-muted line-through" : "text-foreground"}`}>
                 {m.name}
@@ -285,22 +280,16 @@ function PhaseCard({
                   mi < phaseDef.milestones.length - 1 ? "border-b border-border/50" : ""
                 }`}
               >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!isCompleted) {
-                      onToggleMilestone(mi, !milestoneComplete);
-                    }
-                  }}
-                  className={`shrink-0 mt-0.5 ${isCompleted ? "cursor-default" : "cursor-pointer hover:scale-110 transition-transform"}`}
-                  disabled={isCompleted}
+                <div
+                  className="shrink-0 mt-0.5 cursor-default"
+                  title={milestoneComplete ? "Completed via task completion" : "Complete tasks on the Overview page"}
                 >
                   {milestoneComplete ? (
                     <Check size={10} className="text-success" />
                   ) : (
                     <Circle size={10} className="text-muted/40" />
                   )}
-                </button>
+                </div>
                 <span className={`flex-1 ${milestoneComplete ? "text-muted line-through" : "text-foreground"}`}>
                   {m.name}
                 </span>
