@@ -755,14 +755,12 @@ export function OverviewClient() {
                               <div key={task.id} id={`task-${task.id}`}>
                                 <button
                                   onClick={() => {
-                                    if (isDone) return;
                                     if (isPending) { document.getElementById("pending-review")?.scrollIntoView({ behavior: "smooth" }); return; }
                                     setCompletingTaskId(isOpen ? null : task.id!);
                                     setCompletionNote("");
                                     setCompletionPhotos([]);
                                   }}
                                   className={`w-full flex items-center gap-2.5 px-1 py-[5px] text-left group rounded transition-colors ${isOpen ? "bg-warm/20" : "hover:bg-warm/8"}`}
-                                  disabled={isDone}
                                 >
                                   <div className={`w-[14px] h-[14px] rounded-[3px] border-[1.5px] shrink-0 flex items-center justify-center transition-colors ${
                                     isDone ? "bg-success/20 border-success/40" : isPending ? "border-warning/40" : "border-sand group-hover:border-clay/40"
@@ -778,6 +776,33 @@ export function OverviewClient() {
                                   {isPending && <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-warning/8 text-warning font-medium shrink-0">Review</span>}
                                   {!isDone && !isPending && <ChevronDown size={10} className={`text-muted/20 shrink-0 transition-all opacity-0 group-hover:opacity-100 ${isOpen ? "rotate-180" : ""}`} />}
                                 </button>
+
+                            {/* Reopen option for done tasks */}
+                            {isOpen && isDone && (
+                              <div className="px-3 pb-2 pt-1 flex items-center justify-between">
+                                <div className="text-[10px] text-muted">
+                                  {task.completionNote && <p className="mb-1">Note: {task.completionNote}</p>}
+                                  <p>Completed {task.completedAt ? new Date(task.completedAt).toLocaleDateString() : ""}</p>
+                                </div>
+                                <button
+                                  onClick={async () => {
+                                    if (!user || !task.id) return;
+                                    try {
+                                      await updateTask(user.uid, projectId, task.id, {
+                                        done: false, status: "in-progress",
+                                        completedAt: null, completedBy: null,
+                                        completionNote: null,
+                                      } as any);
+                                      setCompletingTaskId(null);
+                                      showToast("Task reopened", "success");
+                                    } catch { showToast("Failed to reopen", "error"); }
+                                  }}
+                                  className="px-2.5 py-1 text-[10px] font-medium rounded border border-warning/30 text-warning hover:bg-warning/5 transition-colors shrink-0"
+                                >
+                                  Reopen
+                                </button>
+                              </div>
+                            )}
 
                             {/* Completion form — inline */}
                             {isOpen && !isDone && !isPending && (
