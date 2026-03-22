@@ -280,7 +280,7 @@ export function DailyLogClient() {
         ? Math.round(logs.reduce((s, l) => s + l.crew, 0) / total)
         : 0;
 
-    let daysSinceLast = 0;
+    let daysSinceLast = -1; // -1 means no entries
     if (total > 0) {
       // logs[0] is the most recent (sorted desc from subscription)
       const lastDate = parseEntryDate(logs[0].date);
@@ -452,7 +452,7 @@ export function DailyLogClient() {
           { label: "Avg crew", value: stats.avgCrew },
           {
             label: "Since last entry",
-            value: stats.daysSinceLast === 0 ? "Today" : `${stats.daysSinceLast}d`,
+            value: stats.daysSinceLast < 0 ? "N/A" : stats.daysSinceLast === 0 ? "Today" : `${stats.daysSinceLast}d`,
           },
         ].map((s) => (
           <div

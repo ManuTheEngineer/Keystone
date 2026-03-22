@@ -121,6 +121,7 @@ import {
   ChevronRight,
   Paperclip,
   Loader2,
+  CheckCircle,
 } from "lucide-react";
 import { ExportModal } from "@/components/ui/ExportModal";
 import { PresentationModal } from "@/components/ui/PresentationModal";
@@ -382,7 +383,12 @@ export function OverviewClient() {
   // AI insights — must be before early return to preserve hook order
   const topInsights = useMemo(() => {
     if (!project) return [];
-    try { return generateOverviewInsights(project, budgetItems, tasks, dailyLogs, contacts).slice(0, 3); } catch { return []; }
+    try {
+      // Use computed progress (from tasks) not stale project.progress (from Firebase)
+      const realProgress = tasks.length > 0 ? Math.round((tasks.filter(t => t.done).length / tasks.length) * 100) : 0;
+      const projectWithRealProgress = { ...project, progress: realProgress };
+      return generateOverviewInsights(projectWithRealProgress, budgetItems, tasks, dailyLogs, contacts).slice(0, 3);
+    } catch { return []; }
   }, [project, budgetItems, tasks, dailyLogs, contacts]);
 
   // Milestone groups — must be before early return to preserve hook order
@@ -624,22 +630,33 @@ export function OverviewClient() {
         </div>
       </div>
 
-      {/* KPI row */}
+      {/* KPI row — clickable deep links */}
       <div className="flex items-stretch gap-px mb-4 bg-border/30 rounded-lg overflow-hidden">
         {[
-          { label: "Progress", value: `${computedProgress}%`, sub: `${completedTasks.length}/${tasks.length} tasks` },
-          { label: "Budget", value: fmtCompact(project.totalBudget), sub: `${budgetUtilization}% spent` },
-          { label: "Spent", value: fmtCompact(project.totalSpent), sub: fmtCompact(project.totalBudget - project.totalSpent) + " left" },
-          { label: "Timeline", value: `Wk ${project.currentWeek}`, sub: `of ${project.totalWeeks}` },
-          { label: "Team", value: String(contacts.length), sub: "contacts" },
-          { label: "Open", value: String(openPunch + activeTasks.length), sub: "items" },
-        ].map((kpi) => (
-          <div key={kpi.label} className="flex-1 bg-surface px-3 py-2 text-center min-w-0">
-            <p className="text-[15px] font-bold font-data text-earth leading-tight truncate">{kpi.value}</p>
-            <p className="text-[8px] text-muted uppercase tracking-wider leading-tight">{kpi.label}</p>
-            <p className="text-[9px] font-data text-muted/60 leading-tight truncate">{kpi.sub}</p>
-          </div>
-        ))}
+          { label: "Progress", value: `${computedProgress}%`, sub: `${completedTasks.length}/${tasks.length} tasks`, href: undefined as string | undefined },
+          { label: "Budget", value: fmtCompact(project.totalBudget), sub: `${budgetUtilization}% spent`, href: `/project/${projectId}/budget` },
+          { label: "Spent", value: fmtCompact(project.totalSpent), sub: fmtCompact(project.totalBudget - project.totalSpent) + " left", href: `/project/${projectId}/budget` },
+          { label: "Timeline", value: `Wk ${project.currentWeek}`, sub: `of ${project.totalWeeks}`, href: `/project/${projectId}/schedule` },
+          { label: "Team", value: String(contacts.length), sub: "contacts", href: `/project/${projectId}/team` },
+          { label: "Open", value: String(openPunch + activeTasks.length), sub: "items", href: `/project/${projectId}/punch-list` },
+        ].map((kpi) => {
+          const inner = (
+            <>
+              <p className="text-[15px] font-bold font-data text-earth leading-tight truncate">{kpi.value}</p>
+              <p className="text-[8px] text-muted uppercase tracking-wider leading-tight">{kpi.label}</p>
+              <p className="text-[9px] font-data text-muted/60 leading-tight truncate">{kpi.sub}</p>
+            </>
+          );
+          return kpi.href ? (
+            <Link key={kpi.label} href={kpi.href} className="flex-1 bg-surface px-3 py-2 text-center min-w-0 hover:bg-warm/30 transition-colors">
+              {inner}
+            </Link>
+          ) : (
+            <div key={kpi.label} className="flex-1 bg-surface px-3 py-2 text-center min-w-0">
+              {inner}
+            </div>
+          );
+        })}
       </div>
 
       {/* Progress bar — full width, thin */}
@@ -690,8 +707,14 @@ export function OverviewClient() {
               <button
                 key={task.id}
                 onClick={() => {
-                  setCompletingTaskId(null);
-                  // Show inline review for this task
+                  setCompletingTaskId(task.id!);
+                  setCompletionNote("");
+                  setCompletionPhotos([]);
+                  setCompletionCost("");
+                  setTimeout(() => {
+                    const el = document.getElementById(`task-${task.id}`);
+                    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }, 100);
                 }}
                 className="text-[10px] px-2 py-0.5 rounded bg-warning/10 text-warning hover:bg-warning/20 transition-colors truncate max-w-[120px]"
               >
@@ -1092,8 +1115,12 @@ export function OverviewClient() {
             {[
               { label: "Budget", href: `/project/${projectId}/budget`, icon: <DollarSign size={12} /> },
               { label: "Schedule", href: `/project/${projectId}/schedule`, icon: <CalendarCheck size={12} /> },
+              { label: "Team", href: `/project/${projectId}/team`, icon: <Users size={12} /> },
+              { label: "Financials", href: `/project/${projectId}/financials`, icon: <TrendingUp size={12} /> },
               { label: "Documents", href: `/project/${projectId}/documents`, icon: <FileText size={12} /> },
+              { label: "Photos", href: `/project/${projectId}/photos`, icon: <Camera size={12} /> },
               { label: "Daily Log", href: `/project/${projectId}/daily-log`, icon: <ClipboardList size={12} /> },
+              { label: "Inspections", href: `/project/${projectId}/inspections`, icon: <CheckCircle size={12} /> },
             ].map((link) => (
               <Link key={link.label} href={link.href}
                 className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-border/30 text-[10px] text-muted hover:text-earth hover:bg-warm/20 transition-colors">
