@@ -1294,6 +1294,35 @@ export function SettingsClient() {
         </div>
       </Card>
 
+      {/* Display preferences */}
+      <SectionLabel>Display</SectionLabel>
+      <Card padding="sm" className="mb-4">
+        <div className="flex items-center justify-between py-1">
+          <div>
+            <p className="text-[11px] text-earth font-medium">Keystone Mentor</p>
+            <p className="text-[9px] text-muted">Floating tips button in the bottom-right corner</p>
+          </div>
+          <button
+            onClick={() => {
+              const current = localStorage.getItem("keystone-mentor-disabled") === "true";
+              localStorage.setItem("keystone-mentor-disabled", current ? "false" : "true");
+              showToast(current ? "Mentor enabled" : "Mentor hidden — refresh to apply", "success");
+            }}
+            className={`relative inline-flex h-[18px] w-8 items-center rounded-full transition-colors ${
+              typeof window !== "undefined" && localStorage.getItem("keystone-mentor-disabled") === "true"
+                ? "bg-sand/50"
+                : "bg-success"
+            }`}
+          >
+            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+              typeof window !== "undefined" && localStorage.getItem("keystone-mentor-disabled") === "true"
+                ? "translate-x-0.5"
+                : "translate-x-[14px]"
+            }`} />
+          </button>
+        </div>
+      </Card>
+
       </>
       )}
 
