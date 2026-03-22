@@ -321,16 +321,6 @@ export function FinancialsClient() {
   // Render
   // ---------------------------------------------------------------------------
 
-  const financialTabs = [
-    { key: "overview", label: "Overview" },
-    ...(isUSA ? [{ key: "loan", label: "Loan Calc" }] : []),
-    ...(isRent ? [{ key: "rental", label: "Rental Yield" }] : []),
-    ...(isUSA ? [{ key: "draw", label: "Draw Schedule" }] : []),
-    ...(isWA ? [{ key: "phased", label: "Phased Funding" }] : []),
-    ...(isWA ? [{ key: "currency", label: "Currency" }] : []),
-  ];
-
-
   return (
     <>
       <PageHeader
