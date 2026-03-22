@@ -107,7 +107,12 @@ function MentorToggle({ showToast }: { showToast: (msg: string, type: "success" 
         onClick={() => {
           const next = !disabled;
           setDisabled(next);
-          localStorage.setItem("keystone-mentor-disabled", String(next));
+          if (next) {
+            localStorage.setItem("keystone-mentor-disabled", "true");
+          } else {
+            localStorage.removeItem("keystone-mentor-disabled");
+          }
+          window.dispatchEvent(new Event("keystone-mentor-toggle"));
           showToast(next ? "Mentor hidden" : "Mentor enabled", "success");
         }}
         className={`relative inline-flex h-[18px] w-8 items-center rounded-full transition-colors ${disabled ? "bg-sand/50" : "bg-success"}`}

@@ -707,6 +707,17 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
     setMounted(true);
     setDismissedIds(getActiveDismissedIds());
     setMentorDisabled(localStorage.getItem("keystone-mentor-disabled") === "true");
+
+    // Listen for changes from Settings page (same tab via custom event, cross-tab via storage event)
+    const checkDisabled = () => setMentorDisabled(localStorage.getItem("keystone-mentor-disabled") === "true");
+    window.addEventListener("storage", checkDisabled);
+    window.addEventListener("keystone-mentor-toggle", checkDisabled);
+    window.addEventListener("focus", checkDisabled);
+    return () => {
+      window.removeEventListener("storage", checkDisabled);
+      window.removeEventListener("keystone-mentor-toggle", checkDisabled);
+      window.removeEventListener("focus", checkDisabled);
+    };
   }, []);
 
   const handleCollapse = useCallback((value: boolean) => {
