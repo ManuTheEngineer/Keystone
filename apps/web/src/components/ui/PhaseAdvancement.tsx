@@ -199,84 +199,10 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
     );
   }
 
-  return (
-    <div className="mt-5">
-      {/* Section label */}
-      <p className="text-[10px] font-medium text-earth/40 tracking-wide mb-2">
-        {canAdvance ? "Ready to move on" : `Before you start ${nextPhaseName?.toLowerCase() ?? "the next phase"}`}
-      </p>
-
-      {/* Milestone checklist — interactive */}
-      <div className="space-y-0.5 mb-3">
-        {milestones.map((ms, i) => {
-          const done = milestoneCompleted[i];
-          // Check if this milestone has tasks assigned — if so, it auto-completes
-          const hasIdx = nonPendingTasks.some((t) => t.milestoneIndex != null);
-          let hasTasks: boolean;
-          if (hasIdx) {
-            hasTasks = nonPendingTasks.some((t) => t.milestoneIndex === i);
-          } else {
-            const sorted = [...nonPendingTasks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-            const perMs = Math.max(1, Math.ceil(sorted.length / milestones.length));
-            hasTasks = sorted.slice(i * perMs, (i + 1) * perMs).length > 0;
-          }
-          const isManual = !hasTasks;
-
-          return (
-            <button
-              key={i}
-              onClick={() => {
-                if (!isManual || !project.id) return;
-                // Toggle manual milestone
-                toggleMilestoneProgress(userId, project.id, currentPhaseKey, i, !done, milestones.length).catch(() => {});
-                setFirebaseProgress((prev) => {
-                  const next = [...prev];
-                  while (next.length <= i) next.push(false);
-                  next[i] = !done;
-                  return next;
-                });
-              }}
-              disabled={!isManual && !done}
-              className={`w-full flex items-center gap-2.5 py-[5px] px-1 rounded text-left transition-colors ${
-                isManual && !done ? "hover:bg-warm/10 cursor-pointer" : ""
-              }`}
-            >
-              <div className={`w-3.5 h-3.5 rounded-[4px] border-[1.5px] shrink-0 flex items-center justify-center transition-colors ${
-                done ? "bg-success/15 border-success/50" : isManual ? "border-clay/30 hover:border-clay/60" : "border-sand/60"
-              }`}>
-                {done && <Check size={9} className="text-success" />}
-              </div>
-              <span className={`text-[11px] flex-1 ${done ? "text-muted" : "text-earth"}`}>{ms.name}</span>
-              {isManual && !done && (
-                <span className="text-[8px] text-muted/30 opacity-0 group-hover:opacity-100">click to complete</span>
-              )}
-              {!isManual && !done && (
-                <span className="text-[8px] text-muted/25">from tasks</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Progress + context */}
-      {!canAdvance && (
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex-1 h-[3px] bg-sand/30 rounded-full overflow-hidden">
-            <div className="h-full bg-success/70 rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
-          </div>
-          <span className="text-[10px] font-data text-muted/50 shrink-0">{progressPct}%</span>
-        </div>
-      )}
-
-      {/* Why this matters — educational context for novices */}
-      {!canAdvance && context && (
-        <p className="text-[10px] text-muted/60 leading-relaxed mb-3">
-          {context.why}
-        </p>
-      )}
-
-      {/* Advance button */}
-      {canAdvance && (
+  // When all done: just show the advance button — no duplicate milestone list
+  if (canAdvance) {
+    return (
+      <div className="mt-5">
         <button
           onClick={handleAdvance}
           disabled={advancing}
@@ -289,12 +215,73 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
             </>
           )}
         </button>
+        {context && (
+          <p className="text-[10px] text-muted/50 mt-2 leading-relaxed text-center">
+            {context.what}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Not ready yet: show progress bar + incomplete milestones only
+  const incompleteMilestones = milestones.map((ms, i) => ({ ms, i, done: milestoneCompleted[i] })).filter((m) => !m.done);
+
+  return (
+    <div className="mt-5">
+      {/* Progress bar */}
+      <div className="flex items-center gap-3 mb-2">
+        <div className="flex-1 h-[3px] bg-sand/30 rounded-full overflow-hidden">
+          <div className="h-full bg-success/70 rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
+        </div>
+        <span className="text-[10px] font-data text-muted/50 shrink-0">{progressPct}%</span>
+      </div>
+
+      {/* Only show incomplete milestones */}
+      {incompleteMilestones.length > 0 && (
+        <div className="mb-2">
+          <p className="text-[9px] text-muted/40 mb-1">{incompleteMilestones.length} milestone{incompleteMilestones.length !== 1 ? "s" : ""} remaining</p>
+          {incompleteMilestones.map(({ ms, i }) => {
+            const hasIdx = nonPendingTasks.some((t) => t.milestoneIndex != null);
+            let hasTasks: boolean;
+            if (hasIdx) {
+              hasTasks = nonPendingTasks.some((t) => t.milestoneIndex === i);
+            } else {
+              const sorted = [...nonPendingTasks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+              const perMs = Math.max(1, Math.ceil(sorted.length / milestones.length));
+              hasTasks = sorted.slice(i * perMs, (i + 1) * perMs).length > 0;
+            }
+            const isManual = !hasTasks;
+
+            return (
+              <button
+                key={i}
+                onClick={() => {
+                  if (!isManual || !project.id) return;
+                  toggleMilestoneProgress(userId, project.id, currentPhaseKey, i, true, milestones.length).catch(() => {});
+                  setFirebaseProgress((prev) => {
+                    const next = [...prev];
+                    while (next.length <= i) next.push(false);
+                    next[i] = true;
+                    return next;
+                  });
+                }}
+                disabled={!isManual}
+                className={`w-full flex items-center gap-2 py-1 px-1 rounded text-left text-[10px] ${isManual ? "hover:bg-warm/10 cursor-pointer text-earth" : "text-muted/50"}`}
+              >
+                <div className="w-2.5 h-2.5 rounded-sm border border-sand/60 shrink-0" />
+                <span>{ms.name}</span>
+                {!isManual && <span className="text-[8px] text-muted/25 ml-auto">from tasks</span>}
+              </button>
+            );
+          })}
+        </div>
       )}
 
-      {/* What comes next — shown when ready */}
-      {canAdvance && context && (
-        <p className="text-[10px] text-muted/50 mt-2 leading-relaxed">
-          {context.what}
+      {/* Educational context */}
+      {context && (
+        <p className="text-[10px] text-muted/50 leading-relaxed">
+          {context.why}
         </p>
       )}
     </div>
