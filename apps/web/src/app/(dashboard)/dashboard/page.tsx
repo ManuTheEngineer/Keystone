@@ -846,10 +846,9 @@ export default function DashboardPage() {
   const stats = useMemo(() => {
     const activeProjects = projects.filter((p) => p.status === "ACTIVE");
     const totalInvested = projects.reduce((sum, p) => sum + (p.totalSpent || 0), 0);
-    const totalBudget = projects.reduce((sum, p) => sum + (p.totalBudget || 0), 0);
     const markets = new Set(projects.map((p) => p.market));
     const singleCurrency = markets.size <= 1;
-    return { activeCount: activeProjects.length, totalInvested, totalBudget, singleCurrency };
+    return { activeCount: activeProjects.length, totalInvested, singleCurrency };
   }, [projects]);
 
   const handlePriorityChange = useCallback(async (projectId: string, priority: number | null) => {
@@ -1139,8 +1138,8 @@ export default function DashboardPage() {
                           <div className="w-20 h-1.5 bg-warm rounded-full overflow-hidden shrink-0">
                             <div
                               className={`h-full rounded-full ${
-                                p.totalSpent / p.totalBudget > 0.95 ? "bg-danger"
-                                : p.totalSpent / p.totalBudget > 0.80 ? "bg-warning"
+                                p.totalSpent / p.totalBudget > 0.90 ? "bg-danger"
+                                : p.totalSpent / p.totalBudget > 0.70 ? "bg-warning"
                                 : "bg-success"
                               }`}
                               style={{ width: `${Math.min(100, (p.totalSpent / p.totalBudget) * 100)}%` }}
