@@ -1379,7 +1379,7 @@ export default function DashboardPage() {
                     className="text-[16px] text-earth"
                     style={{ fontFamily: "var(--font-heading)" }}
                   >
-                    My Portfolio
+                    My Vault
                   </h2>
                   <p className="text-[12px] text-muted">
                     <span className="font-data font-semibold">{projects.length}</span>

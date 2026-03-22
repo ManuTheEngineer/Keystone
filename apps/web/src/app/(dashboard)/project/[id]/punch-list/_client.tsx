@@ -158,6 +158,7 @@ export function PunchListClient() {
         title={t("project.punchList")}
         projectName={project?.name}
         projectId={projectId}
+        subtitle="Items to fix or complete before final handoff"
         action={{ label: "Add item", onClick: () => setShowForm(true), icon: <Plus size={14} /> }}
       />
 

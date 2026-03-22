@@ -448,7 +448,7 @@ export function FinancialsClient() {
           {/* Draw schedule */}
           {drawResult && (
             <div className="p-3 bg-surface border border-border/40 rounded-lg">
-              <p className="text-[11px] font-medium text-earth mb-2">Draw schedule</p>
+              <p className="text-[11px] font-medium text-earth mb-2"><LearnTooltip term="Draw schedule" explanation="A draw schedule is a payment plan that releases construction loan funds in stages as milestones are completed, rather than all at once.">Draw schedule</LearnTooltip></p>
               <div className="space-y-1 mb-2">
                 {drawResult.draws.map((d, i) => (
                   <div key={i} className="flex items-center justify-between text-[10px]">
