@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { Lightbulb, X, ChevronDown, ChevronUp, ArrowRight, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import type { ProjectData } from "@/lib/services/project-service";
+import { useAiQuota } from "@/lib/hooks/use-ai-quota";
+import { useAuth } from "@/components/auth/AuthProvider";
+import type { PlanTier } from "@/lib/stripe-config";
 
 // --- Types ---
 
@@ -695,6 +698,8 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
   const [showWhy, setShowWhy] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [tipIndex, setTipIndex] = useState(0);
+  const { profile } = useAuth();
+  const aiQuota = useAiQuota((profile?.plan as PlanTier) ?? "FOUNDATION");
 
   useEffect(() => {
     setMounted(true);
@@ -757,10 +762,25 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
           onClick={() => {
             handleCollapse(false);
           }}
-          className="w-11 h-11 rounded-full bg-earth text-warm shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center"
+          className="w-11 h-11 rounded-full bg-earth text-warm shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center relative"
           title="Keystone Mentor"
         >
           <Lightbulb size={18} />
+          {/* AI query counter badge -- shown only for limited tiers */}
+          {!aiQuota.unlimited && (
+            <span
+              className={`absolute -top-1.5 -right-1.5 min-w-[36px] h-[18px] px-1 rounded-full text-[9px] font-data font-semibold flex items-center justify-center leading-none ${
+                aiQuota.used >= aiQuota.limit
+                  ? "bg-danger text-white"
+                  : aiQuota.used >= aiQuota.limit * 0.8
+                    ? "bg-warning text-white"
+                    : "bg-surface border border-border text-muted"
+              }`}
+              title={`${aiQuota.used} of ${aiQuota.limit} AI queries used today`}
+            >
+              {aiQuota.used}/{aiQuota.limit}
+            </span>
+          )}
         </button>
       </div>
     );

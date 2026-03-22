@@ -24,6 +24,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { useTranslation } from "@/lib/hooks/use-translation";
 import { Send, Loader2, AlertTriangle, Zap, Trash2, RotateCcw } from "lucide-react";
 import { VoiceNote } from "@/components/ui/VoiceNote";
+import { incrementAiQueryCount } from "@/lib/hooks/use-ai-quota";
 
 /* ------------------------------------------------------------------ */
 /*  Mode definitions                                                   */
@@ -274,6 +275,8 @@ export function AIAssistantClient() {
     try {
       const result = await sendAIMessage(messages.concat(userMsg), projectContext, mode);
       if (result.usage) setAiUsage(result.usage);
+      // Track query in localStorage for quota badge
+      incrementAiQueryCount();
       const assistantMsg = { role: "assistant" as const, content: result.message, mode };
       const finalAll = [...newAll, assistantMsg];
       setAllMessages(finalAll);

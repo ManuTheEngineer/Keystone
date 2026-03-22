@@ -1827,8 +1827,35 @@ export default function NewProjectPage() {
   // Render
   // ---------------------------------------------------------------------------
 
+  // Pre-check: show limit banner at top of wizard when user is at/over plan limit
+  const planTier: PlanTier = (profile?.plan as PlanTier) ?? "FOUNDATION";
+  const planProjectLimit = getPlanLimits(planTier).projects;
+  const atProjectLimit = profile?.role !== "admin" && isFinite(planProjectLimit) && projectCount >= planProjectLimit;
+
   return (
     <div className="max-w-xl mx-auto py-8 animate-fade-in">
+      {/* Plan limit guard banner */}
+      {atProjectLimit && (
+        <div className="flex items-start gap-3 p-4 mb-6 rounded-2xl bg-warning/10 border border-warning/30">
+          <AlertTriangle size={18} className="text-warning shrink-0 mt-0.5" />
+          <div>
+            <p className="text-[13px] font-medium text-earth mb-1">
+              You have reached your plan limit.
+            </p>
+            <p className="text-[12px] text-muted leading-relaxed mb-2">
+              Your {planTier === "FOUNDATION" ? "Starter" : planTier.charAt(0) + planTier.slice(1).toLowerCase()} plan allows {planProjectLimit} project{planProjectLimit === 1 ? "" : "s"}.
+              Upgrade to create more projects.
+            </p>
+            <Link
+              href="/settings"
+              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-clay hover:text-earth transition-colors"
+            >
+              Upgrade plan <ArrowRight size={12} />
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Step indicator dots */}
       <div className="flex items-center justify-center gap-1 mb-6">
         {STEP_LABELS.map((label, i) => {

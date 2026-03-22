@@ -54,7 +54,10 @@ import {
   Trash2,
   ChevronRight,
   Calculator,
+  Lock,
 } from "lucide-react";
+import { getPlanLimits } from "@/lib/stripe-config";
+import type { PlanTier } from "@/lib/stripe-config";
 
 /* ------------------------------------------------------------------ */
 /*  Circular progress ring                                            */
@@ -874,6 +877,12 @@ export default function DashboardPage() {
   const firstName = getFirstName(userName);
   const hasProjects = projects.length > 0;
 
+  // Plan limits for project count indicator
+  const userPlan: PlanTier = (profile?.plan as PlanTier) ?? "FOUNDATION";
+  const planLimits = getPlanLimits(userPlan);
+  const realProjectCount = projects.filter((p: any) => !p.isDemo).length;
+  const projectLimitReached = isFinite(planLimits.projects) && realProjectCount >= planLimits.projects;
+
   // Get primary currency from first project or default to USD
   const primaryCurrency = projects.length > 0
     ? getMarketData((projects[0]?.market as Market) ?? "USA").currency
@@ -1286,6 +1295,11 @@ export default function DashboardPage() {
                   <p className="text-[12px] text-muted">
                     <span className="font-data font-semibold">{projects.length}</span>
                     {" "}project{projects.length !== 1 ? "s" : ""}
+                    {isFinite(planLimits.projects) && (
+                      <span className={`font-data text-[11px] ml-1 ${projectLimitReached ? "text-warning font-medium" : "text-muted/60"}`}>
+                        ({realProjectCount}/{planLimits.projects})
+                      </span>
+                    )}
                     {stats.totalInvested > 0 && stats.singleCurrency && (
                       <>
                         {" / "}
@@ -1326,15 +1340,19 @@ export default function DashboardPage() {
             <SectionLabel>Quick Actions</SectionLabel>
             <div className="space-y-2 animate-stagger">
               <Link
-                href="/new-project"
+                href={projectLimitReached ? "/settings" : "/new-project"}
                 className="flex items-center gap-3 bg-surface border border-border/60 rounded-2xl px-4 py-3 card-hover"
               >
                 <div className="w-9 h-9 rounded-full bg-warm flex items-center justify-center shrink-0">
-                  <Plus size={18} className="text-clay" />
+                  {projectLimitReached ? <Lock size={18} className="text-muted" /> : <Plus size={18} className="text-clay" />}
                 </div>
                 <div className="min-w-0">
                   <div className="text-[13px] font-semibold text-earth">New Project</div>
-                  <div className="text-[11px] text-muted">Start a new build from scratch</div>
+                  {projectLimitReached ? (
+                    <div className="text-[11px] text-warning">Upgrade to add more projects</div>
+                  ) : (
+                    <div className="text-[11px] text-muted">Start a new build from scratch</div>
+                  )}
                 </div>
               </Link>
 
