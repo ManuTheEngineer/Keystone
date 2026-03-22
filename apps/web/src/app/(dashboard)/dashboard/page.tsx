@@ -564,6 +564,9 @@ function GettingStartedChecklist({ projects }: { projects: ProjectData[] }) {
   const hasPastDefine = projects.some((p) => (p.currentPhase ?? 0) > 0);
   const hasBudgetData = projects.some((p) => (p.totalBudget ?? 0) > 0 || (p.totalSpent ?? 0) > 0);
 
+  const hasTeamMember = projects.some((p) => (p.contactCount ?? 0) > 0);
+  const hasCompletedPhase = projects.some((p) => (p.completedPhases ?? 0) > 0);
+
   const items = [
     { done: true, label: "Create your account", href: undefined as string | undefined },
     {
@@ -577,14 +580,19 @@ function GettingStartedChecklist({ projects }: { projects: ProjectData[] }) {
       href: "/new-project",
     },
     {
+      done: hasBudgetData,
+      label: "Review your budget",
+      href: firstProject ? `/project/${firstProject.id}/budget` : "/dashboard",
+    },
+    {
       done: hasPastDefine,
-      label: "Complete Phase 0: Define",
+      label: "Complete your first phase",
       href: firstProject ? `/project/${firstProject.id}/overview` : "/dashboard",
     },
     {
-      done: hasBudgetData,
-      label: "Review your budget",
-      href: firstProject ? `/project/${firstProject.id}/financials` : "/dashboard",
+      done: hasTeamMember,
+      label: "Add a team member",
+      href: firstProject ? `/project/${firstProject.id}/team` : "/dashboard",
     },
   ];
 
