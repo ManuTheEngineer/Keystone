@@ -1794,47 +1794,11 @@ export default function NewProjectPage() {
 
   return (
     <div className="max-w-xl mx-auto py-8 animate-fade-in">
-      {/* Step indicator */}
-      <div className="flex gap-1 justify-center mb-4 flex-wrap" role="navigation" aria-label="Wizard steps">
-        {STEP_LABELS.map((label, i) => {
-          const isCompleted = i < step || (i <= maxStepReached && i !== step);
-          const isCurrent = i === step;
-          const isReachable = i <= maxStepReached;
-          return (
-            <div key={i} className="flex items-center gap-1">
-              <button
-                onClick={() => { if (isReachable && !isCurrent) setStep(i); }}
-                disabled={!isReachable}
-                aria-label={`Step ${i + 1}: ${label}${isCompleted && !isCurrent ? " (completed)" : isCurrent ? " (current)" : ""}`}
-                aria-current={isCurrent ? "step" : undefined}
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-data font-medium transition-all focus:outline-none focus:ring-2 focus:ring-clay/30 ${
-                  isCurrent
-                    ? "bg-earth text-warm"
-                    : isCompleted
-                    ? "bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600"
-                    : "bg-surface-alt text-muted cursor-default"
-                }`}
-                title={label}
-              >
-                {isCompleted && !isCurrent ? (
-                  <svg width="10" height="8" viewBox="0 0 12 10" fill="none"><path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                ) : (
-                  i + 1
-                )}
-              </button>
-              {i < STEP_LABELS.length - 1 && (
-                <div className={`w-4 h-[2px] ${i < maxStepReached || (i < step) ? "bg-emerald-500" : "bg-border"}`} />
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Progress bar */}
-      <div className="max-w-xs mx-auto mb-4">
-        <div className="w-full h-1 bg-warm rounded-full overflow-hidden">
+      {/* Minimal progress — thin bar only, no step counter */}
+      <div className="max-w-xs mx-auto mb-6">
+        <div className="w-full h-0.5 bg-warm rounded-full overflow-hidden">
           <div
-            className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
             style={{ width: `${((step + 1) / STEP_COUNT) * 100}%` }}
           />
         </div>
