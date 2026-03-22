@@ -393,7 +393,7 @@ export function OverviewClient() {
     const market = project.market as Market;
     const pDef = getPhaseDefinition(market, currentPhaseKey);
     const ms = pDef?.milestones ?? [];
-    const phaseTasks = tasks.filter((t) => t.phase === phase || t.phase == null).filter((t) => t.status !== "pending-review");
+    const phaseTasks = tasks.filter((t) => t.phase === phase || t.phase == null);
     const hasIdx = phaseTasks.some((t) => t.milestoneIndex != null);
     const sorted = [...phaseTasks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     const groups: { msIdx: number; milestone: typeof ms[0]; tasks: typeof phaseTasks }[] = [];
@@ -716,7 +716,7 @@ export function OverviewClient() {
                 {getPhaseName(phase, project?.market)}
               </h3>
               <span className="text-[11px] font-data text-muted/50">
-                {currentPhaseDone.length}/{currentPhaseTasks.filter((t) => t.status !== "pending-review").length}
+                {currentPhaseDone.length}/{currentPhaseTasks.length}
               </span>
             </div>
             <div className="w-20 h-[3px] bg-sand/40 rounded-full overflow-hidden">
