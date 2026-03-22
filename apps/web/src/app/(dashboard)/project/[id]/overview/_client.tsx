@@ -780,10 +780,14 @@ export function OverviewClient() {
                               <div key={task.id} id={`task-${task.id}`}>
                                 <button
                                   onClick={() => {
-                                    if (isPending) { document.getElementById("pending-review")?.scrollIntoView({ behavior: "smooth" }); return; }
                                     setCompletingTaskId(isOpen ? null : task.id!);
-                                    setCompletionNote("");
-                                    setCompletionPhotos([]);
+                                    // Pre-fill with existing evidence for review tasks
+                                    if (isPending && task.completionNote) {
+                                      setCompletionNote(task.completionNote);
+                                    } else if (!isOpen) {
+                                      setCompletionNote("");
+                                    }
+                                    if (!isOpen) { setCompletionPhotos([]); setCompletionCost(""); }
                                   }}
                                   className={`w-full flex items-center gap-2.5 px-1 py-[5px] text-left group rounded transition-colors ${isOpen ? "bg-warm/20" : "hover:bg-warm/8"}`}
                                 >
@@ -890,7 +894,7 @@ export function OverviewClient() {
                             })()}
 
                             {/* Completion form — inline */}
-                            {isOpen && !isDone && !isPending && (
+                            {isOpen && !isDone && (
                               <div className="px-3 pb-2 pt-1">
                                 <textarea
                                   value={completionNote}

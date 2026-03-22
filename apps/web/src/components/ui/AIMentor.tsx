@@ -706,6 +706,11 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
     setDismissedIds(getActiveDismissedIds());
   }, []);
 
+  // Check if mentor is disabled in settings
+  if (typeof window !== "undefined" && localStorage.getItem("keystone-mentor-disabled") === "true") {
+    return null;
+  }
+
   const handleCollapse = useCallback((value: boolean) => {
     setCollapsed(value);
     setCollapsedState(value);
