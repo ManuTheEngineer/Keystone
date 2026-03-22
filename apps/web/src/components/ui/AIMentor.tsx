@@ -775,6 +775,12 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
         <button
           onClick={() => {
             handleCollapse(false);
+            // If all tips were dismissed, reset so they come back
+            if (!currentTip && tips.length === 0) {
+              setDismissedIds([]);
+              setTipIndex(0);
+              try { localStorage.removeItem(DISMISSED_KEY); } catch {}
+            }
           }}
           className="w-11 h-11 rounded-full bg-earth text-warm shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center justify-center relative"
           title="Keystone Mentor"
