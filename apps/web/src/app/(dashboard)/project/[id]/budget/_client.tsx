@@ -342,62 +342,41 @@ export function BudgetClient() {
   return (
     <>
       {/* ================================================================= */}
-      {/*  TOP: Donut + KPIs                                                */}
+      {/*  TOP: KPI strip + utilization                                     */}
       {/* ================================================================= */}
-      <div className="flex items-start gap-4 mb-4">
-        {/* Donut — compact, no legend (table rows are the legend) */}
-        {items.length > 0 && (
-          <div className="w-[140px] shrink-0">
-            <BudgetDonutChart
-              items={items.map((b) => ({ category: b.category, amount: b.estimated }))}
-              total={project.totalBudget}
-              currency={marketData.currency}
-              hideLegend
-              compact
-            />
+      <div className="flex items-stretch gap-px mb-3 bg-border/20 rounded-lg overflow-hidden">
+        {[
+          { label: "Budget", value: fmtCompact(project.totalBudget) },
+          { label: "Spent", value: fmtCompact(project.totalSpent) },
+          { label: "Remaining", value: fmtCompact(remaining), warn: remaining < 0 },
+          { label: "Utilization", value: `${budgetUtilization}%`, warn: budgetUtilization > 90 },
+        ].map((kpi) => (
+          <div key={kpi.label} className="flex-1 bg-surface px-3 py-2 text-center">
+            <p className={`text-[15px] font-data font-bold leading-tight ${kpi.warn ? "text-danger" : "text-earth"}`}>{kpi.value}</p>
+            <p className="text-[8px] text-muted uppercase tracking-wider">{kpi.label}</p>
           </div>
-        )}
-
-        {/* KPIs + insights */}
-        <div className="flex-1 min-w-0">
-          {/* KPI row */}
-          <div className="grid grid-cols-4 gap-3 mb-3">
-            {[
-              { label: "Budget", value: fmtCompact(project.totalBudget) },
-              { label: "Spent", value: fmtCompact(project.totalSpent) },
-              { label: "Remaining", value: fmtCompact(remaining), warn: remaining < 0 },
-              { label: "Utilization", value: `${budgetUtilization}%`, warn: budgetUtilization > 90 },
-            ].map((kpi) => (
-              <div key={kpi.label}>
-                <p className="text-[9px] text-muted uppercase tracking-wider">{kpi.label}</p>
-                <p className={`text-[16px] font-data font-semibold leading-tight ${kpi.warn ? "text-danger" : "text-earth"}`}>{kpi.value}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Utilization bar */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex-1 h-[3px] bg-sand/30 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${budgetUtilization > 90 ? "bg-danger" : budgetUtilization > 70 ? "bg-warning" : "bg-success"}`}
-                style={{ width: `${Math.min(budgetUtilization, 100)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* AI insights — inline, compact */}
-          {budgetInsights.length > 0 && (
-            <div className="space-y-1">
-              {budgetInsights.map((insight, i) => (
-                <p key={i} className="text-[10px] text-muted leading-snug flex items-start gap-1.5">
-                  <span className={`w-1 h-1 rounded-full mt-1.5 shrink-0 ${insight.type === "risk" ? "bg-warning" : "bg-info"}`} />
-                  {insight.content}
-                </p>
-              ))}
-            </div>
-          )}
-        </div>
+        ))}
       </div>
+
+      {/* Utilization bar */}
+      <div className="h-1 bg-sand/20 rounded-full overflow-hidden mb-3">
+        <div
+          className={`h-full rounded-full transition-all ${budgetUtilization > 90 ? "bg-danger" : budgetUtilization > 70 ? "bg-warning" : "bg-success"}`}
+          style={{ width: `${Math.min(budgetUtilization, 100)}%` }}
+        />
+      </div>
+
+      {/* AI insights — single compact line */}
+      {budgetInsights.length > 0 && (
+        <div className="space-y-0.5 mb-3">
+          {budgetInsights.map((insight, i) => (
+            <p key={i} className="text-[10px] text-muted leading-snug flex items-start gap-1.5">
+              <span className={`w-1 h-1 rounded-full mt-1.5 shrink-0 ${insight.type === "risk" ? "bg-warning" : "bg-info"}`} />
+              {insight.content}
+            </p>
+          ))}
+        </div>
+      )}
 
       {/* Location context — single line */}
       {locationData && (
