@@ -153,7 +153,8 @@ export function FinancialsClient() {
       .then((data) => {
         if (data?.rate) {
           setLiveRate(data.rate);
-          setLoanRate(String(data.rate));
+          // Only set loan rate if user hasn't entered one from wizard
+          if (!project?.loanRate) setLoanRate(String(data.rate));
         }
       })
       .catch(() => {});

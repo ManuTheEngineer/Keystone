@@ -708,7 +708,12 @@ export async function updateBudgetItem(
 
 export async function addContact(userId: string, data: Omit<ContactData, "id">): Promise<string> {
   const contactRef = push(ref(db, `users/${userId}/projects/${data.projectId}/contacts`));
-  await set(contactRef, data);
+  // Firebase rejects undefined values — coalesce optional fields to empty string
+  const clean: Record<string, unknown> = { ...data };
+  for (const key of Object.keys(clean)) {
+    if (clean[key] === undefined) clean[key] = "";
+  }
+  await set(contactRef, clean);
   return contactRef.key!;
 }
 
@@ -1200,7 +1205,12 @@ export async function deleteBudgetItem(userId: string, projectId: string, itemId
 // --- Update Contact ---
 
 export async function updateContact(userId: string, projectId: string, contactId: string, data: Partial<ContactData>): Promise<void> {
-  await update(ref(db, `users/${userId}/projects/${projectId}/contacts/${contactId}`), data);
+  // Firebase rejects undefined values — coalesce to empty string
+  const clean: Record<string, unknown> = { ...data };
+  for (const key of Object.keys(clean)) {
+    if (clean[key] === undefined) clean[key] = "";
+  }
+  await update(ref(db, `users/${userId}/projects/${projectId}/contacts/${contactId}`), clean);
 }
 
 // --- Delete Contact ---

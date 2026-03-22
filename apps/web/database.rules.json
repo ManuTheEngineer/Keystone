@@ -9,8 +9,7 @@
           "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
           "email": { ".validate": "newData.isString() && newData.val().length > 0" },
           "plan": {
-            ".validate": "newData.isString() && (newData.val() === 'FOUNDATION' || newData.val() === 'BUILDER' || newData.val() === 'DEVELOPER' || newData.val() === 'ENTERPRISE')",
-            ".write": "data.val() === newData.val() || !data.exists()"
+            ".validate": "newData.isString() && (newData.val() === 'FOUNDATION' || newData.val() === 'BUILDER' || newData.val() === 'DEVELOPER' || newData.val() === 'ENTERPRISE')"
           },
           "currency": { ".validate": "newData.isString()" },
           "timezone": { ".validate": "newData.isString()" },
@@ -31,19 +30,15 @@
             ".validate": "newData.isString()"
           },
           "subscriptionStatus": {
-            ".write": false,
             ".validate": "newData.isString()"
           },
           "billingInterval": {
-            ".write": false,
             ".validate": "newData.isString()"
           },
           "trialExpiresAt": {
-            ".write": false,
             ".validate": "newData.isString()"
           },
           "trialCodeUsed": {
-            ".write": false,
             ".validate": "newData.isString()"
           }
         },
@@ -52,7 +47,7 @@
           "$projectId": {
             ".validate": "newData.hasChildren(['name', 'market', 'status'])",
             "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200" },
-            "market": { ".validate": "newData.isString() && (newData.val() === 'USA' || newData.val() === 'TOGO' || newData.val() === 'GHANA' || newData.val() === 'BENIN')" },
+            "market": { ".validate": "newData.isString() && (newData.val() === 'USA' || newData.val() === 'TOGO' || newData.val() === 'GHANA' || newData.val() === 'BENIN' || newData.val() === 'IVORY_COAST' || newData.val() === 'SENEGAL')" },
             "status": { ".validate": "newData.isString() && (newData.val() === 'ACTIVE' || newData.val() === 'PAUSED' || newData.val() === 'COMPLETED' || newData.val() === 'CANCELLED')" },
             "totalBudget": { ".validate": "newData.isNumber() && newData.val() >= 0" },
             "totalSpent": { ".validate": "newData.isNumber() && newData.val() >= 0" },
@@ -184,6 +179,8 @@
       ".read": "auth != null && root.child('users').child(auth.uid).child('profile').child('role').val() === 'admin'",
       ".write": "auth != null && root.child('users').child(auth.uid).child('profile').child('role').val() === 'admin'",
       "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null",
         ".validate": "newData.hasChildren(['code', 'tier', 'durationHours', 'createdBy'])"
       }
     }
