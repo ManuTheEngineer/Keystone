@@ -701,15 +701,13 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
   const { profile } = useAuth();
   const aiQuota = useAiQuota((profile?.plan as PlanTier) ?? "FOUNDATION");
 
+  const [mentorDisabled, setMentorDisabled] = useState(false);
+
   useEffect(() => {
     setMounted(true);
     setDismissedIds(getActiveDismissedIds());
+    setMentorDisabled(localStorage.getItem("keystone-mentor-disabled") === "true");
   }, []);
-
-  // Check if mentor is disabled in settings
-  if (typeof window !== "undefined" && localStorage.getItem("keystone-mentor-disabled") === "true") {
-    return null;
-  }
 
   const handleCollapse = useCallback((value: boolean) => {
     setCollapsed(value);
@@ -734,7 +732,7 @@ export function AIMentor({ page, project, budgetItems, contacts }: AIMentorProps
     setShowWhy(false);
   }, [tipIndex]);
 
-  if (!mounted) return null;
+  if (!mounted || mentorDisabled) return null;
 
   function handleDismiss() {
     if (!currentTip) return;
