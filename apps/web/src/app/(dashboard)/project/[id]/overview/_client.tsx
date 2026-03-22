@@ -335,6 +335,41 @@ export function OverviewClient() {
     }
   }, [project, setTopbar, t]);
 
+  // AI insights — must be before early return to preserve hook order
+  const topInsights = useMemo(() => {
+    if (!project) return [];
+    try { return generateOverviewInsights(project, budgetItems, tasks, dailyLogs, contacts).slice(0, 3); } catch { return []; }
+  }, [project, budgetItems, tasks, dailyLogs, contacts]);
+
+  // Milestone groups — must be before early return to preserve hook order
+  const milestoneGroups = useMemo(() => {
+    if (!project) return [];
+    const phase = project.currentPhase;
+    const currentPhaseKey = PHASE_ORDER[phase] ?? "DEFINE";
+    const market = project.market as Market;
+    const pDef = getPhaseDefinition(market, currentPhaseKey);
+    const ms = pDef?.milestones ?? [];
+    const phaseTasks = tasks.filter((t) => t.phase === phase || t.phase == null).filter((t) => t.status !== "pending-review");
+    const hasIdx = phaseTasks.some((t) => t.milestoneIndex != null);
+    const sorted = [...phaseTasks].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const groups: { msIdx: number; milestone: typeof ms[0]; tasks: typeof phaseTasks }[] = [];
+    if (ms.length > 0) {
+      if (hasIdx) {
+        for (let mi = 0; mi < ms.length; mi++) {
+          const msTasks = sorted.filter((t) => t.milestoneIndex === mi);
+          const ungrouped = mi === ms.length - 1 ? sorted.filter((t) => t.milestoneIndex == null) : [];
+          groups.push({ msIdx: mi, milestone: ms[mi], tasks: [...msTasks, ...ungrouped] });
+        }
+      } else {
+        const perMs = Math.max(1, Math.ceil(sorted.length / ms.length));
+        for (let mi = 0; mi < ms.length; mi++) {
+          groups.push({ msIdx: mi, milestone: ms[mi], tasks: sorted.slice(mi * perMs, (mi + 1) * perMs) });
+        }
+      }
+    }
+    return groups;
+  }, [project, tasks]);
+
   if (!project) {
     return (
       <div className="flex flex-col items-center justify-center py-24">
@@ -521,37 +556,8 @@ export function OverviewClient() {
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6);
 
-  // AI insights
-  const topInsights = useMemo(() => {
-    try { return generateOverviewInsights(project, budgetItems, tasks, dailyLogs, contacts).slice(0, 3); } catch { return []; }
-  }, [project, budgetItems, tasks, dailyLogs, contacts]);
-
   // Milestones for current phase
   const milestones = phaseDef?.milestones ?? [];
-
-  // Build milestone groups from tasks
-  const milestoneGroups = useMemo(() => {
-    const nonPending = currentPhaseTasks.filter((t) => t.status !== "pending-review");
-    const hasIdx = nonPending.some((t) => t.milestoneIndex != null);
-    const sorted = [...nonPending].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    const groups: { msIdx: number; milestone: typeof milestones[0]; tasks: typeof nonPending }[] = [];
-
-    if (milestones.length > 0) {
-      if (hasIdx) {
-        for (let mi = 0; mi < milestones.length; mi++) {
-          const msTasks = sorted.filter((t) => t.milestoneIndex === mi);
-          const ungrouped = mi === milestones.length - 1 ? sorted.filter((t) => t.milestoneIndex == null) : [];
-          groups.push({ msIdx: mi, milestone: milestones[mi], tasks: [...msTasks, ...ungrouped] });
-        }
-      } else {
-        const perMs = Math.max(1, Math.ceil(sorted.length / milestones.length));
-        for (let mi = 0; mi < milestones.length; mi++) {
-          groups.push({ msIdx: mi, milestone: milestones[mi], tasks: sorted.slice(mi * perMs, (mi + 1) * perMs) });
-        }
-      }
-    }
-    return groups;
-  }, [currentPhaseTasks, milestones]);
 
   return (
     <>
