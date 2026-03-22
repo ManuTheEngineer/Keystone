@@ -80,6 +80,16 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
   const [firebaseProgress, setFirebaseProgress] = useState<boolean[]>([]);
   const [advancing, setAdvancing] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationPhase, setCelebrationPhase] = useState<string | null>(null);
+
+  // Reset celebration when phase changes (user navigated or phase advanced)
+  useEffect(() => {
+    if (celebrationPhase && celebrationPhase !== currentPhaseKey) {
+      // Phase changed — the celebration was for the previous phase, dismiss it
+      setShowCelebration(false);
+      setCelebrationPhase(null);
+    }
+  }, [currentPhaseKey, celebrationPhase]);
 
   useEffect(() => {
     if (!project.id) return;
@@ -140,6 +150,7 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
       const newPhase = currentPhaseIndex + 1;
       const phaseName = `Phase ${newPhase}: ${PHASE_NAMES[nextPhaseKey]}`;
       await advanceProjectPhase(userId, project.id!, newPhase, phaseName);
+      setCelebrationPhase(currentPhaseKey); // remember which phase was completed
       setShowCelebration(true);
       onAdvance();
     } finally {
@@ -147,19 +158,21 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
     }
   }
 
-  // Celebration modal after advancing
-  if (showCelebration && nextPhaseKey) {
-    const steps = NEXT_STEPS[nextPhaseKey] ?? [];
+  // Celebration modal after advancing — shows completed phase info
+  if (showCelebration && celebrationPhase) {
+    const completedPhaseName = (PHASE_NAMES as Record<string, string>)[celebrationPhase] ?? celebrationPhase;
+    const currentPhaseName = (PHASE_NAMES as Record<string, string>)[currentPhaseKey] ?? currentPhaseKey;
+    const steps = NEXT_STEPS[currentPhaseKey] ?? [];
     return (
       <div className="mt-5 p-5 rounded-xl bg-success/5 border border-success/20 text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Sparkles size={18} className="text-success" />
           <span className="text-[15px] font-semibold text-earth" style={{ fontFamily: "var(--font-heading)" }}>
-            Phase complete
+            {completedPhaseName} complete
           </span>
         </div>
         <p className="text-[12px] text-muted mb-4">
-          {PHASE_NAMES[currentPhaseKey]} is done. You are now in <strong className="text-earth">{nextPhaseName}</strong>.
+          You are now in <strong className="text-earth">{currentPhaseName}</strong>. Here is what to focus on:
         </p>
         {steps.length > 0 && (
           <div className="text-left mb-4 space-y-1.5">
