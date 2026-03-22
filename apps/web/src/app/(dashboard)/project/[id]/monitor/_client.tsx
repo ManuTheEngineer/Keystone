@@ -60,7 +60,220 @@ import {
   Image,
   TrendingUp,
   ClipboardList,
+  Video,
+  Settings,
+  Trash2,
+  ExternalLink,
 } from "lucide-react";
+import { ref, get, set, update } from "firebase/database";
+import { db } from "@/lib/firebase";
+
+// ---------------------------------------------------------------------------
+// Live Camera Feed
+// ---------------------------------------------------------------------------
+
+interface CameraConfig {
+  id: string;
+  name: string;
+  url: string;
+  type: "iframe" | "hls" | "image";
+  addedAt: string;
+}
+
+function LiveCameraFeed({ projectId, userId }: { projectId: string; userId: string }) {
+  const [cameras, setCameras] = useState<CameraConfig[]>([]);
+  const [showSetup, setShowSetup] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newUrl, setNewUrl] = useState("");
+  const [newType, setNewType] = useState<"iframe" | "hls" | "image">("iframe");
+  const [activeCamera, setActiveCamera] = useState(0);
+  const { showToast } = useToast();
+
+  // Load cameras from Firebase
+  useEffect(() => {
+    if (!userId || !projectId) return;
+    get(ref(db, `users/${userId}/projects/${projectId}/cameras`)).then((snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        const list = Object.entries(data).map(([id, v]: [string, any]) => ({ id, ...v }));
+        setCameras(list);
+      }
+    }).catch(() => {});
+  }, [userId, projectId]);
+
+  async function addCamera() {
+    if (!newName.trim() || !newUrl.trim() || !userId) return;
+    const id = `cam_${Date.now()}`;
+    const cam: CameraConfig = { id, name: newName.trim(), url: newUrl.trim(), type: newType, addedAt: new Date().toISOString() };
+    try {
+      await set(ref(db, `users/${userId}/projects/${projectId}/cameras/${id}`), cam);
+      setCameras((prev) => [...prev, cam]);
+      setNewName("");
+      setNewUrl("");
+      setShowSetup(false);
+      showToast("Camera added", "success");
+    } catch { showToast("Failed to add camera", "error"); }
+  }
+
+  async function removeCamera(camId: string) {
+    try {
+      await set(ref(db, `users/${userId}/projects/${projectId}/cameras/${camId}`), null);
+      setCameras((prev) => prev.filter((c) => c.id !== camId));
+      if (activeCamera >= cameras.length - 1) setActiveCamera(0);
+      showToast("Camera removed", "success");
+    } catch { showToast("Failed to remove", "error"); }
+  }
+
+  const cam = cameras[activeCamera];
+
+  return (
+    <div className="mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Video size={14} className="text-clay" />
+          <span className="text-[11px] font-medium text-earth">Live site cameras</span>
+          {cameras.length > 0 && (
+            <span className="text-[9px] font-data text-muted">{cameras.length} camera{cameras.length !== 1 ? "s" : ""}</span>
+          )}
+        </div>
+        <button onClick={() => setShowSetup(!showSetup)} className="text-[10px] text-clay hover:text-earth transition-colors flex items-center gap-1">
+          <Settings size={11} />
+          {cameras.length === 0 ? "Set up camera" : "Manage"}
+        </button>
+      </div>
+
+      {/* Setup panel */}
+      {showSetup && (
+        <div className="p-3 bg-surface border border-border/40 rounded-lg mb-3">
+          <p className="text-[10px] font-medium text-earth mb-2">Add a camera</p>
+          <p className="text-[9px] text-muted mb-3">
+            Connect an IP camera, webcam service, or any live stream URL from your construction site.
+            Works with Wyze, Ring, Reolink, Nest, or any camera that provides a web URL.
+          </p>
+
+          <div className="grid grid-cols-[1fr_2fr] gap-2 mb-2">
+            <div>
+              <label className="block text-[8px] text-muted mb-0.5">Camera name</label>
+              <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Front of site"
+                className="w-full px-2 py-1.5 text-[10px] border border-border rounded bg-white text-earth focus:outline-none focus:border-clay/40" />
+            </div>
+            <div>
+              <label className="block text-[8px] text-muted mb-0.5">Stream or embed URL</label>
+              <input value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="https://camera-service.com/live/your-feed"
+                className="w-full px-2 py-1.5 text-[10px] border border-border rounded bg-white text-earth focus:outline-none focus:border-clay/40 font-data" />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 mb-3">
+            <label className="text-[8px] text-muted">Feed type:</label>
+            {([
+              { value: "iframe" as const, label: "Web page / embed" },
+              { value: "image" as const, label: "Snapshot URL (auto-refresh)" },
+              { value: "hls" as const, label: "HLS stream (.m3u8)" },
+            ]).map((opt) => (
+              <label key={opt.value} className="flex items-center gap-1 text-[9px] text-earth cursor-pointer">
+                <input type="radio" name="camType" value={opt.value} checked={newType === opt.value} onChange={() => setNewType(opt.value)}
+                  className="w-3 h-3 accent-clay" />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button onClick={addCamera} disabled={!newName.trim() || !newUrl.trim()}
+              className="px-3 py-1.5 text-[10px] bg-earth text-warm rounded hover:bg-earth/90 disabled:opacity-40 transition-colors">
+              Add camera
+            </button>
+            <button onClick={() => setShowSetup(false)} className="text-[10px] text-muted hover:text-earth">Cancel</button>
+          </div>
+
+          {/* Existing cameras list */}
+          {cameras.length > 0 && (
+            <div className="mt-3 pt-2 border-t border-border/30">
+              <p className="text-[8px] text-muted uppercase tracking-wider mb-1">Your cameras</p>
+              {cameras.map((c) => (
+                <div key={c.id} className="flex items-center justify-between py-1 text-[10px]">
+                  <span className="text-earth">{c.name}</span>
+                  <button onClick={() => removeCamera(c.id)} className="text-muted hover:text-danger"><Trash2 size={11} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Live feed display */}
+      {cameras.length > 0 && cam && (
+        <div className="bg-[#1a1714] rounded-lg overflow-hidden">
+          {/* Camera selector tabs */}
+          {cameras.length > 1 && (
+            <div className="flex items-center gap-1 px-2 pt-2">
+              {cameras.map((c, i) => (
+                <button key={c.id} onClick={() => setActiveCamera(i)}
+                  className={`px-2 py-0.5 text-[9px] rounded transition-colors ${i === activeCamera ? "bg-white/15 text-white" : "text-white/40 hover:text-white/70"}`}>
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Feed */}
+          <div className="aspect-video relative">
+            {cam.type === "iframe" && (
+              <iframe src={cam.url} className="w-full h-full border-0" allow="autoplay; fullscreen" sandbox="allow-scripts allow-same-origin" />
+            )}
+            {cam.type === "image" && (
+              <AutoRefreshImage src={cam.url} interval={10000} />
+            )}
+            {cam.type === "hls" && (
+              <div className="flex items-center justify-center h-full text-white/50 text-[11px]">
+                <p>HLS stream: <a href={cam.url} target="_blank" rel="noopener noreferrer" className="underline text-clay">{cam.url}</a></p>
+              </div>
+            )}
+          </div>
+
+          {/* Feed footer */}
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+              <span className="text-[9px] text-white/50">{cam.name}</span>
+            </div>
+            <a href={cam.url} target="_blank" rel="noopener noreferrer" className="text-[9px] text-white/30 hover:text-white/60 flex items-center gap-1">
+              <ExternalLink size={9} /> Open in new tab
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state — friendly setup guide */}
+      {cameras.length === 0 && !showSetup && (
+        <div className="p-4 bg-surface border border-dashed border-sand/50 rounded-lg text-center">
+          <Video size={20} className="mx-auto text-sand mb-2" />
+          <p className="text-[11px] text-earth mb-1">Monitor your site in real time</p>
+          <p className="text-[9px] text-muted mb-3 max-w-xs mx-auto">
+            Connect a camera from your construction site to watch progress live.
+            Works with any IP camera, Ring, Wyze, Reolink, or webcam service.
+          </p>
+          <button onClick={() => setShowSetup(true)}
+            className="px-3 py-1.5 text-[10px] bg-earth text-warm rounded hover:bg-earth/90 transition-colors">
+            Connect a camera
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AutoRefreshImage({ src, interval }: { src: string; interval: number }) {
+  const [key, setKey] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setKey((k) => k + 1), interval);
+    return () => clearInterval(timer);
+  }, [interval]);
+  return (
+    <img key={key} src={`${src}${src.includes("?") ? "&" : "?"}t=${key}`} alt="Live camera" className="w-full h-full object-contain bg-black" />
+  );
+}
 
 // --- Photo Feed Section ---
 
@@ -770,6 +983,9 @@ export function MonitorClient() {
           </div>
         </div>
       </Card>
+
+      {/* Live Camera Feed */}
+      <LiveCameraFeed projectId={projectId} userId={user?.uid ?? ""} />
 
       {/* Main content: Photo feed + Milestone tracker */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
