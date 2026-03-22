@@ -652,34 +652,34 @@ export function OverviewClient() {
 
           {/* Milestone groups */}
           {milestoneGroups.length > 0 ? (
-            <div className="space-y-1 mb-4">
+            <div className="space-y-3 mb-4">
               {milestoneGroups.map(({ msIdx, milestone, tasks: groupTasks }) => {
                 const allDone = groupTasks.length > 0 && groupTasks.every((t) => t.done);
                 const doneCount = groupTasks.filter((t) => t.done).length;
 
                 return (
-                  <div key={msIdx}>
-                    {/* Milestone header */}
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-t bg-surface-alt/50 border-b border-border/30 ${allDone ? "opacity-50" : ""}`}>
-                      <div className={`w-2.5 h-2.5 rounded-sm shrink-0 ${allDone ? "bg-success" : "bg-border"}`} />
-                      <span className={`text-[10px] font-semibold uppercase tracking-[0.06em] flex-1 ${allDone ? "text-muted" : "text-earth"}`}>
+                  <div key={msIdx} className={allDone ? "opacity-60" : ""}>
+                    {/* Milestone header — serif font, left accent */}
+                    <div className="flex items-center gap-2.5 mb-1">
+                      <div className={`w-2 h-2 rounded-full shrink-0 border-2 ${allDone ? "bg-success border-success" : "border-clay/40 bg-transparent"}`} />
+                      <span className={`text-[12px] flex-1 ${allDone ? "text-muted" : "text-earth"}`} style={{ fontFamily: "var(--font-heading)" }}>
                         {milestone.name}
                       </span>
-                      <span className="text-[9px] font-data text-muted">{doneCount}/{groupTasks.length}</span>
+                      <span className="text-[9px] font-data text-muted/50">{doneCount}/{groupTasks.length}</span>
                       {milestone.requiresInspection && (
                         <span className="text-[7px] text-warning font-medium px-1 py-0.5 rounded bg-warning/8 border border-warning/15">INSP</span>
                       )}
                     </div>
 
-                    {/* Task rows */}
-                    <div className="border-x border-b border-border/30 rounded-b divide-y divide-border/15 mb-1">
+                    {/* Task rows — indented, clean */}
+                    <div className="ml-[18px] border-l border-border/25 pl-3">
                       {groupTasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((task) => {
                         const isOpen = completingTaskId === task.id;
                         const isDone = task.done;
                         const isPending = task.status === "pending-review";
 
                         return (
-                          <div key={task.id} id={`task-${task.id}`} className={`transition-colors ${isOpen ? "bg-warm/15" : "hover:bg-warm/8"}`}>
+                          <div key={task.id} id={`task-${task.id}`} className={`transition-colors rounded ${isOpen ? "bg-warm/15" : "hover:bg-warm/8"}`}>
                             <button
                               onClick={() => {
                                 if (isDone) return;
@@ -687,11 +687,17 @@ export function OverviewClient() {
                                 setCompletingTaskId(isOpen ? null : task.id!);
                                 setCompletionNote("");
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-1.5 text-left"
+                              className="w-full flex items-center gap-2 px-2 py-1.5 text-left"
                               disabled={isDone}
                             >
-                              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isDone ? "bg-success" : isPending ? "bg-warning" : "bg-border"}`} />
-                              <span className={`text-[11px] flex-1 min-w-0 truncate ${isDone ? "text-muted line-through" : "text-earth"}`}>{task.label}</span>
+                              <div className={`w-3.5 h-3.5 rounded border shrink-0 flex items-center justify-center ${
+                                isDone ? "bg-success border-success" : isPending ? "border-warning bg-warning/5" : "border-border hover:border-clay/40"
+                              }`}>
+                                {isDone && (
+                                  <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                )}
+                              </div>
+                              <span className={`text-[11px] flex-1 min-w-0 truncate ${isDone ? "text-muted line-through" : "text-slate"}`}>{task.label}</span>
                               {isDone && task.completedAt && (
                                 <span className="text-[8px] font-data text-muted/40 shrink-0">
                                   {new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
