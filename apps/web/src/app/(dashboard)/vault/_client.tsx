@@ -300,10 +300,6 @@ export function VaultClient() {
     return unsub;
   }, [user]);
 
-  useEffect(() => {
-    setTopbar("Portfolio", `${projects.length} project${projects.length !== 1 ? "s" : ""}`, "info");
-  }, [setTopbar, projects.length]);
-
   // Filter and sort
   const filteredProjects = useMemo(() => {
     let result = [...projects];
@@ -371,6 +367,12 @@ export function VaultClient() {
   }, [filteredProjects]);
 
   const isFiltered = statusFilter !== "all" || marketFilter !== "all" || searchQuery.trim() !== "";
+
+  useEffect(() => {
+    const count = filteredProjects.length;
+    const suffix = isFiltered ? ` of ${projects.length}` : "";
+    setTopbar("Portfolio", `${count}${suffix} project${count !== 1 ? "s" : ""}`, "info");
+  }, [setTopbar, filteredProjects.length, projects.length, isFiltered]);
 
   const handleSetPriority = useCallback(async (projectId: string, priority: number | null) => {
     if (!user) return;
