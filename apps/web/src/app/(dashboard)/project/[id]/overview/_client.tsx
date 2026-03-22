@@ -777,32 +777,92 @@ export function OverviewClient() {
                                   {!isDone && !isPending && <ChevronDown size={10} className={`text-muted/20 shrink-0 transition-all opacity-0 group-hover:opacity-100 ${isOpen ? "rotate-180" : ""}`} />}
                                 </button>
 
-                            {/* Reopen option for done tasks */}
-                            {isOpen && isDone && (
-                              <div className="px-3 pb-2 pt-1 flex items-center justify-between">
-                                <div className="text-[10px] text-muted">
-                                  {task.completionNote && <p className="mb-1">Note: {task.completionNote}</p>}
-                                  <p>Completed {task.completedAt ? new Date(task.completedAt).toLocaleDateString() : ""}</p>
+                            {/* Reopen/edit panel for done tasks */}
+                            {isOpen && isDone && (() => {
+                              // Pre-load previous evidence into edit state on first open
+                              if (completionNote === "" && task.completionNote) {
+                                setTimeout(() => setCompletionNote(task.completionNote || ""), 0);
+                              }
+                              if (completionPhotos.length === 0 && task.completionPhotos?.length) {
+                                setTimeout(() => setCompletionPhotos(task.completionPhotos!.map((p: any) => ({ url: p.url || p }))), 0);
+                              }
+                              return (
+                                <div className="px-3 pb-2 pt-1">
+                                  <p className="text-[9px] text-muted mb-1.5">
+                                    Completed {task.completedAt ? new Date(task.completedAt).toLocaleDateString() : ""}
+                                    {" "} — edit evidence below or reopen to redo
+                                  </p>
+                                  <textarea
+                                    value={completionNote}
+                                    onChange={(e) => setCompletionNote(e.target.value)}
+                                    className="w-full px-2.5 py-1.5 text-[11px] bg-white border border-border/40 rounded text-earth placeholder:text-muted/40 focus:outline-none focus:border-clay/30 resize-none"
+                                    rows={2}
+                                  />
+                                  {/* Show existing photos with remove buttons */}
+                                  {completionPhotos.length > 0 && (
+                                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                      {completionPhotos.map((p, pi) => (
+                                        <div key={pi} className="relative w-10 h-10 rounded overflow-hidden border border-border/30">
+                                          <img src={p.url} alt="" className="w-full h-full object-cover" />
+                                          <button
+                                            onClick={() => setCompletionPhotos((prev) => prev.filter((_, j) => j !== pi))}
+                                            className="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full flex items-center justify-center"
+                                          >
+                                            <X size={8} className="text-white" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div className="flex items-center justify-between mt-2">
+                                    <button onClick={() => { setCompletingTaskId(null); setCompletionNote(""); setCompletionPhotos([]); }}
+                                      className="text-[9px] text-muted hover:text-earth">Close</button>
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        onClick={async () => {
+                                          if (!user || !task.id) return;
+                                          try {
+                                            // Update evidence without reopening
+                                            const taskUpdate: Record<string, unknown> = {
+                                              completionNote: completionNote.trim(),
+                                            };
+                                            if (completionPhotos.length > 0) {
+                                              taskUpdate.completionPhotos = completionPhotos.map((p) => ({ url: p.url, timestamp: new Date().toISOString() }));
+                                            } else {
+                                              taskUpdate.completionPhotos = null;
+                                            }
+                                            await updateTask(user.uid, projectId, task.id, taskUpdate);
+                                            setCompletingTaskId(null);
+                                            setCompletionNote("");
+                                            setCompletionPhotos([]);
+                                            showToast("Evidence updated", "success");
+                                          } catch { showToast("Failed to update", "error"); }
+                                        }}
+                                        className="px-2.5 py-1 text-[10px] font-medium rounded bg-earth text-warm hover:bg-earth/90 transition-colors"
+                                      >
+                                        Save changes
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          if (!user || !task.id) return;
+                                          try {
+                                            await updateTask(user.uid, projectId, task.id, {
+                                              done: false, status: "in-progress",
+                                              completedAt: null, completedBy: null,
+                                            } as any);
+                                            // Keep the note and photos so user can edit
+                                            showToast("Task reopened — edit and re-complete when ready", "success");
+                                          } catch { showToast("Failed to reopen", "error"); }
+                                        }}
+                                        className="px-2.5 py-1 text-[10px] font-medium rounded border border-warning/30 text-warning hover:bg-warning/5 transition-colors"
+                                      >
+                                        Reopen task
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
-                                <button
-                                  onClick={async () => {
-                                    if (!user || !task.id) return;
-                                    try {
-                                      await updateTask(user.uid, projectId, task.id, {
-                                        done: false, status: "in-progress",
-                                        completedAt: null, completedBy: null,
-                                        completionNote: null,
-                                      } as any);
-                                      setCompletingTaskId(null);
-                                      showToast("Task reopened", "success");
-                                    } catch { showToast("Failed to reopen", "error"); }
-                                  }}
-                                  className="px-2.5 py-1 text-[10px] font-medium rounded border border-warning/30 text-warning hover:bg-warning/5 transition-colors shrink-0"
-                                >
-                                  Reopen
-                                </button>
-                              </div>
-                            )}
+                              );
+                            })()}
 
                             {/* Completion form — inline */}
                             {isOpen && !isDone && !isPending && (
