@@ -128,6 +128,8 @@ export function BudgetClient() {
   const [editActual, setEditActual] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"category" | "estimated" | "actual" | "variance" | "progress">("category");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const addFormRef = useRef<HTMLDivElement>(null);
 
   function openAddForm() {
@@ -309,10 +311,6 @@ export function BudgetClient() {
     }
   }
 
-
-  // Sort state
-  const [sortBy, setSortBy] = useState<"category" | "estimated" | "actual" | "variance" | "progress">("category");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   function toggleSort(col: typeof sortBy) {
     if (sortBy === col) setSortDir(d => d === "asc" ? "desc" : "asc");
