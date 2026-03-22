@@ -113,6 +113,8 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
     );
   }
 
+  const [expanded, setExpanded] = useState(false);
+
   return (
     <div className="mt-4 mb-5">
       {canAdvance ? (
@@ -126,34 +128,57 @@ export function PhaseAdvancement({ project, userId, tasks, onAdvance }: PhaseAdv
           ) : (
             <>
               <ShieldCheck size={16} />
-              All milestones complete — Advance to {nextPhaseName}
+              Advance to {nextPhaseName}
               <ChevronRight size={14} />
             </>
           )}
         </button>
       ) : (
-        <Card padding="sm" className="border-l-[3px] border-l-warning/50">
-          <div className="flex items-center justify-between">
+        <div className="rounded-xl border border-border/40 overflow-hidden">
+          {/* Gate header — clickable to expand */}
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-warm/5 transition-colors"
+          >
             <div className="flex items-center gap-2">
-              <ShieldCheck size={14} className="text-muted" />
-              <span className="text-[12px] text-muted">Phase Gate</span>
+              <ShieldCheck size={14} className="text-clay/50" />
+              <span className="text-[12px] font-medium text-earth">Advance to {nextPhaseName}</span>
             </div>
-            <div className="flex items-center gap-3 text-[11px]">
-              {!allMilestonesChecked && (
-                <span className="flex items-center gap-1 text-warning">
-                  <AlertTriangle size={10} />
-                  {milestones.length - checkedCount} milestone{milestones.length - checkedCount !== 1 ? "s" : ""}
-                </span>
-              )}
-              {!allTasksDone && (
-                <span className="flex items-center gap-1 text-warning">
-                  <AlertTriangle size={10} />
-                  {incompleteTasks.length} task{incompleteTasks.length !== 1 ? "s" : ""}
-                </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-data text-muted">
+                {checkedCount}/{milestones.length}
+              </span>
+              <div className="w-12 h-1 bg-sand/30 rounded-full overflow-hidden">
+                <div className="h-full bg-success rounded-full transition-all" style={{ width: `${milestones.length > 0 ? (checkedCount / milestones.length) * 100 : 0}%` }} />
+              </div>
+              <ChevronRight size={12} className={`text-muted/40 transition-transform ${expanded ? "rotate-90" : ""}`} />
+            </div>
+          </button>
+
+          {/* Expanded — milestone checklist */}
+          {expanded && (
+            <div className="border-t border-border/20 px-4 py-2">
+              {milestones.map((ms, i) => {
+                const done = milestoneCompleted[i];
+                return (
+                  <div key={i} className="flex items-center gap-2 py-1.5">
+                    <div className={`w-3 h-3 rounded-[3px] border-[1.5px] shrink-0 flex items-center justify-center ${
+                      done ? "bg-success/20 border-success/40" : "border-sand"
+                    }`}>
+                      {done && <Check size={8} className="text-success" />}
+                    </div>
+                    <span className={`text-[11px] flex-1 ${done ? "text-muted line-through" : "text-earth"}`}>{ms.name}</span>
+                  </div>
+                );
+              })}
+              {incompleteTasks.length > 0 && (
+                <p className="text-[10px] text-muted/50 pt-1 mt-1 border-t border-border/10">
+                  {incompleteTasks.length} task{incompleteTasks.length !== 1 ? "s" : ""} remaining
+                </p>
               )}
             </div>
-          </div>
-        </Card>
+          )}
+        </div>
       )}
     </div>
   );
