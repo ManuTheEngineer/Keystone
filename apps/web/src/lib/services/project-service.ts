@@ -353,37 +353,47 @@ export async function seedInitialTasks(
 
   // ── Phase 0: Define ──
   // Milestone 0: "Goals and purpose defined"
+  // Define phase tasks — AI co-pilot pre-fills evidence from wizard data
+  const purposeLabels: Record<string, string> = { OCCUPY: "Build to occupy (personal residence)", RENT: "Build to rent (investment property)", SELL: "Build to sell (spec home)" };
+  const purposeAdvice: Record<string, string> = { OCCUPY: "Focus on features that matter to your family long-term. Resale value is secondary.", RENT: "Prioritize durability, low maintenance, and features renters value (parking, storage, laundry).", SELL: "Focus on market appeal, popular finishes, and features that maximize sale price." };
+
   allTasks.push(reviewTask("Define building goal", 1, 0,
-    `Goal set to: ${projectData.purpose}. Review and confirm this matches your intent.`,
+    `Goal: ${purposeLabels[projectData.purpose] ?? projectData.purpose}.\n\nKeystone recommendation: ${purposeAdvice[projectData.purpose] ?? "Review your goal and confirm it matches your intent."}\n\nApprove if correct, or modify if your plans have changed.`,
     ms(0, 0).name, 0));
   allTasks.push(reviewTask("Select target market", 2, 0,
-    `Market: ${projectData.market}. ${isUSA ? "Wood-frame construction, institutional lending." : "Reinforced concrete, cash/phased funding."}`,
+    `Market: ${projectData.market}.\n\nConstruction method: ${isUSA ? "Wood-frame (platform framing) — standard for US residential construction. Uses dimensional lumber, engineered trusses, and adheres to IRC building codes." : "Reinforced concrete block (poteau-poutre) — standard for West African residential construction. Uses concrete masonry blocks, steel rebar, and local building practices."}\n\nCurrency: ${isUSA ? "USD" : "CFA Franc (XOF)"}. All costs and budgets are denominated in this currency.`,
     ms(0, 0).name, 0));
-  // Milestone 1: "Preliminary budget range set"
+
   if (projectData.totalBudget > 0) {
+    const budgetFormatted = projectData.totalBudget.toLocaleString();
     allTasks.push(reviewTask("Review initial budget", 3, 0,
-      `Estimated total: ${projectData.totalBudget.toLocaleString()} ${isUSA ? "USD" : "CFA"}. Budget line items auto-generated. Review each category in the Budget tab.`,
+      `Estimated total budget: ${budgetFormatted} ${isUSA ? "USD" : "CFA"}.\n\nThis budget was calculated from your property specs and includes construction costs, land, soft costs (permits, design, fees), ${projectData.financingType === "cash" || projectData.financingType === "phased_cash" ? "and" : "financing costs, and"} contingency reserve.\n\n${isUSA ? `At current rates in ${projectData.city || "your area"}, this budget is ${projectData.totalBudget > 500000 ? "above" : "within"} the typical range for a ${projectData.propertyType}.` : `For ${projectData.city || "your area"}, this budget covers a ${projectData.propertyType} built in phases as funds become available.`}\n\nReview each category in the Budget tab. Adjust individual line items if you have specific quotes.`,
       ms(0, 1).name, 1));
   } else {
     allTasks.push(task("Set initial budget", 3, 0, ms(0, 1).name, 1));
   }
+
   if (projectData.financingType) {
+    const finLabels: Record<string, string> = { construction_loan: "Construction loan (converts to mortgage at completion)", cash: "Full cash payment upfront", fha_203k: "FHA 203(k) renovation loan", phased_cash: "Phased cash — build as funds become available", diaspora: "Diaspora funding — sending money from abroad", tontine: "Tontine / community savings group", family_pooling: "Family pooling — multiple contributors" };
     allTasks.push(reviewTask("Confirm financing strategy", 4, 0,
-      `Financing: ${projectData.financingType}. Verify this is the right approach for your situation.`,
+      `Financing approach: ${finLabels[projectData.financingType] ?? projectData.financingType}.\n\n${isUSA ? `For a construction loan: you'll need a 20-25% down payment, good credit (680+), and proof of income. The loan converts to a standard mortgage when construction is complete. Check the Financials page for loan qualification details.` : `For ${projectData.financingType === "phased_cash" ? "phased funding" : "this approach"}: construction proceeds in stages as funds are available. Each phase must be fully funded before starting. Use the Financials page to track phase-by-phase funding progress.`}`,
       ms(0, 1).name, 1));
   } else {
     allTasks.push(task("Determine financing strategy", 4, 0, ms(0, 1).name, 1));
   }
-  // Milestone 2: "Market and location research complete"
+
   if (projectData.city) {
     allTasks.push(reviewTask("Set build location", 5, 0,
-      `Location: ${projectData.city}. Verify this is the correct city/region for cost estimates.`,
+      `Location: ${projectData.city}.\n\nKeystone has loaded location-specific data for this area including cost indices, labor rates, permit costs, and climate considerations. All budget estimates are adjusted for this location.\n\nIf you change locations, your budget will be recalculated automatically.`,
       ms(0, 2).name, 2));
   } else {
     allTasks.push(task("Set build location", 5, 0, ms(0, 2).name, 2));
   }
+
+  const sizeLabel = isUSA ? `${projectData.bedrooms || 0} bed / ${projectData.bathrooms || 0} bath` : `${projectData.bedrooms || 0} chambres / ${projectData.bathrooms || 0} salles de bain`;
+  const featureList = projectData.features?.length ? `\n\nSelected features: ${projectData.features.join(", ")}. Each feature has been included in your budget estimate.` : "";
   allTasks.push(reviewTask("Choose property type and size", 6, 0,
-    `Type: ${projectData.propertyType}${projectData.bedrooms ? `, ${projectData.bedrooms} bed / ${projectData.bathrooms} bath` : ""}. Confirm these specifications.`,
+    `Property: ${projectData.propertyType}, ${sizeLabel}.\n\nThese specifications drive your entire budget calculation — construction costs, material quantities, and labor estimates are all sized to this property.${featureList}\n\nModify if your requirements have changed.`,
     ms(0, 2).name, 2));
 
   // ── Phase 1: Finance ──
