@@ -1,9 +1,17 @@
 <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="48" height="48" rx="10" fill="#2C1810"/>
+  <style>
+    rect.bg { fill: #2C1810; }
+    path.icon { fill: #D4A574; }
+    @media (prefers-color-scheme: dark) {
+      rect.bg { fill: #F5E6D3; }
+      path.icon { fill: #2C1810; }
+    }
+  </style>
+  <rect class="bg" width="48" height="48" rx="10"/>
   <path
+    class="icon"
     fill-rule="evenodd"
     clip-rule="evenodd"
     d="M10 6 L38 6 L33 42 L15 42 Z M20 42 L20 30 A4 4 0 0 1 28 30 L28 42 Z"
-    fill="#D4A574"
   />
 </svg>
