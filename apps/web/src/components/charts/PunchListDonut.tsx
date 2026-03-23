@@ -79,8 +79,7 @@ export function PunchListDonut({ open, inProgress, resolved }: PunchListDonutPro
               y="47%"
               textAnchor="middle"
               dominantBaseline="central"
-              className="fill-earth"
-              style={{ fontSize: "20px", fontFamily: "var(--font-data, monospace)", fontWeight: 600 }}
+              style={{ fontSize: "20px", fontFamily: "var(--font-data, monospace)", fontWeight: 600, fill: "var(--color-earth)" }}
             >
               {total}
             </text>
@@ -89,8 +88,7 @@ export function PunchListDonut({ open, inProgress, resolved }: PunchListDonutPro
               y="57%"
               textAnchor="middle"
               dominantBaseline="central"
-              className="fill-muted"
-              style={{ fontSize: "10px" }}
+              style={{ fontSize: "10px", fill: "var(--color-muted)" }}
             >
               Items
             </text>

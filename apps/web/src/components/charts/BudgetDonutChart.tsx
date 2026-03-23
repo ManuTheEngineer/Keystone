@@ -96,8 +96,7 @@ export function BudgetDonutChart({ items, total, currency, hideLegend, compact }
               y="45%"
               textAnchor="middle"
               dominantBaseline="central"
-              className="fill-earth"
-              style={{ fontSize: compact ? "11px" : isMobile ? "11px" : "14px", fontFamily: "var(--font-data, monospace)", fontWeight: 600 }}
+              style={{ fontSize: compact ? "11px" : isMobile ? "11px" : "14px", fontFamily: "var(--font-data, monospace)", fontWeight: 600, fill: "var(--color-earth)" }}
             >
               {formatCurrencyCompact(total, currency)}
             </text>
@@ -106,8 +105,7 @@ export function BudgetDonutChart({ items, total, currency, hideLegend, compact }
               y="53%"
               textAnchor="middle"
               dominantBaseline="central"
-              className="fill-muted"
-              style={{ fontSize: compact ? "8px" : isMobile ? "8px" : "10px" }}
+              style={{ fontSize: compact ? "8px" : isMobile ? "8px" : "10px", fill: "var(--color-muted)" }}
             >
               Total Budget
             </text>

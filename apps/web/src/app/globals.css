@@ -482,6 +482,9 @@ html.dark .bg-warning { background-color: var(--color-warning) !important; }
 html.dark .bg-white { background-color: var(--color-surface) !important; }
 
 /* ── Text colors ── */
+html.dark .fill-earth { fill: var(--color-earth) !important; }
+html.dark .fill-muted { fill: var(--color-muted) !important; }
+html.dark .fill-foreground { fill: var(--color-foreground) !important; }
 html.dark .text-earth { color: var(--color-earth) !important; }
 html.dark .text-foreground { color: var(--color-foreground) !important; }
 html.dark .text-muted { color: var(--color-muted) !important; }
