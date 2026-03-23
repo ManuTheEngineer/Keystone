@@ -92,9 +92,11 @@ export function applyTheme(isDark: boolean) {
     });
     document.body.style.backgroundColor = "#2C1810";
     document.body.style.color = "#E8DDD0";
-    // Update window title bar color
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", "#FDF8F0");
+    // Update window title bar color — replace all theme-color meta tags
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+      m.setAttribute("content", "#FDF8F0");
+      m.removeAttribute("media");
+    });
   } else {
     root.classList.remove("dark");
     root.classList.add("light");
@@ -103,8 +105,10 @@ export function applyTheme(isDark: boolean) {
     });
     document.body.style.backgroundColor = "";
     document.body.style.color = "";
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", "#2C1810");
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+      m.setAttribute("content", "#2C1810");
+      m.removeAttribute("media");
+    });
   }
 }
 
