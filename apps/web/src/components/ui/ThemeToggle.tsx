@@ -20,31 +20,31 @@ type ThemeMode = "light" | "dark";
 //   Dark text → light creams
 //
 const DARK_VARS: Record<string, string> = {
-  // Backgrounds: light cream/white → dark browns from brand palette
-  "--color-background": "#2C1810",    // was cream #FDF8F0 → earth
-  "--color-surface": "#3D2215",       // was white #FFFFFF → earth-light
-  "--color-surface-alt": "#3D2215",   // was beige #F5F0E8 → earth-light
-  "--color-surface-dim": "#2C1810",   // was #EDE6DA → earth
+  // Backgrounds: warm dark browns with card contrast
+  "--color-background": "#2C1810",    // page bg: deep earth brown
+  "--color-surface": "#3A261B",       // cards: slightly lighter for contrast
+  "--color-surface-alt": "#44301F",   // card hover/alt: one step lighter
+  "--color-surface-dim": "#2C1810",   // same as bg
 
-  // Text: dark → light
-  "--color-foreground": "#F5E6D3",    // was slate #3A3A3A → warm
-  "--color-muted": "#D4A574",         // was gray #6A6A6A → sand
-  "--color-slate-text": "#F5E6D3",    // was slate → warm
+  // Text: warm cream/beige tones (not stark white)
+  "--color-foreground": "#F5E6D3",    // body text: warm cream
+  "--color-muted": "#C4956A",         // secondary text: warm golden brown
+  "--color-slate-text": "#F5E6D3",    // slate → warm cream
 
-  // Brand: swap earth ↔ cream
-  "--color-earth": "#FDF8F0",         // was #2C1810 → cream (headings on dark bg)
-  "--color-earth-light": "#F5E6D3",   // was #3D2215 → warm
-  "--color-clay": "#D4A574",          // was #8B4513 → sand (warmer accent on dark)
-  "--color-clay-light": "#E0BC92",    // was #A0522D → sand-light
-  "--color-sand": "#8B4513",          // was #D4A574 → clay (muted on dark)
-  "--color-sand-light": "#A0522D",    // was #E0BC92 → clay-light
-  "--color-warm": "#3D2215",          // was #F5E6D3 → earth-light (subtle bg)
-  "--color-cream": "#2C1810",         // was #FDF8F0 → earth
+  // Brand headings & accents
+  "--color-earth": "#F5E6D3",         // headings: warm cream
+  "--color-earth-light": "#FDF8F0",   // heading bright
+  "--color-clay": "#D4A574",          // accent: sand golden
+  "--color-clay-light": "#E0BC92",    // accent lighter
+  "--color-sand": "#A0522D",          // subtle accent: sienna
+  "--color-sand-light": "#8B4513",    // subtle darker
+  "--color-warm": "#3A261B",          // subtle bg: same as surface
+  "--color-cream": "#2C1810",         // same as background
 
   // Primary
-  "--color-primary": "#FDF8F0",       // was #2C1810 → cream
+  "--color-primary": "#F5E6D3",       // warm cream
   "--color-primary-foreground": "#2C1810",
-  "--color-secondary": "#D4A574",     // was #8B4513 → sand
+  "--color-secondary": "#D4A574",     // sand golden
   "--color-secondary-foreground": "#2C1810",
   "--color-accent": "#10B981",
   "--color-accent-foreground": "#FFFFFF",
