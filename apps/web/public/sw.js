@@ -1,7 +1,7 @@
-const CACHE_NAME = "keystone-v5";
-const DATA_CACHE = "keystone-data-v2";
+const CACHE_NAME = "keystone-v6";
+const DATA_CACHE = "keystone-data-v3";
 const OFFLINE_QUEUE = "keystone-offline-queue";
-const OFFLINE_PAGE = "/offline/";
+const OFFLINE_PAGE = "/offline";
 
 const PRECACHE_URLS = [
   "/",
@@ -133,7 +133,20 @@ self.addEventListener("fetch", (event) => {
   // Skip other external origins
   if (!url.startsWith(self.location.origin)) return;
 
-  // ── Same-origin: network-first with cache fallback ────────────────
+  // ── Navigation requests: network-only (never serve stale HTML) ────
+  // Stale cached HTML referencing old JS bundles breaks React hydration.
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request).catch(() =>
+        caches.match(OFFLINE_PAGE).then(
+          (offlinePage) => offlinePage || caches.match("/")
+        )
+      )
+    );
+    return;
+  }
+
+  // ── Static assets: network-first with cache fallback ──────────────
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -148,12 +161,6 @@ self.addEventListener("fetch", (event) => {
       .catch(() =>
         caches.match(request).then((cached) => {
           if (cached) return cached;
-          // Navigation requests get the offline page
-          if (request.mode === "navigate") {
-            return caches.match(OFFLINE_PAGE).then(
-              (offlinePage) => offlinePage || caches.match("/")
-            );
-          }
           return new Response("", { status: 408, statusText: "Offline" });
         })
       )

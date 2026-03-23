@@ -4,7 +4,6 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  trailingSlash: true,
   transpilePackages: ["@keystone/core", "@keystone/market-data"],
   images: {
     remotePatterns: [
