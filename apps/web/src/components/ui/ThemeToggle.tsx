@@ -107,7 +107,7 @@ export function applyTheme(isDark: boolean) {
     document.body.style.color = "#E8DDD0";
     // Update window title bar color — replace all theme-color meta tags
     document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
-      m.setAttribute("content", "#FDF8F0");
+      m.setAttribute("content", "#F5E6D3");
       m.removeAttribute("media");
     });
   } else {

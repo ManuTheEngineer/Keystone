@@ -460,9 +460,9 @@ html.dark {
   --sidebar-text-bright: #F5E6D3;
 }
 html.dark {
-  --sidebar-bg: #FDF8F0;
-  --sidebar-bg-hover: #F5E6D3;
-  --sidebar-text: #8B4513;
+  --sidebar-bg: #F5E6D3;
+  --sidebar-bg-hover: #EDD9C4;
+  --sidebar-text: #6B4226;
   --sidebar-text-bright: #2C1810;
 }
 
