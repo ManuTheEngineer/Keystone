@@ -55,7 +55,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `try{var s=localStorage.getItem('keystone-theme');var d=window.matchMedia('(prefers-color-scheme:dark)').matches;if(s==='dark'||(s!=='light'&&s!=='system'&&d)||(s==='system'&&d)){var r=document.documentElement;r.classList.add('dark');r.style.setProperty('--color-background','#1A1412');r.style.setProperty('--color-foreground','#E8DDD0');r.style.setProperty('--color-surface','#231E1A');r.style.setProperty('--color-surface-alt','#2C2520');r.style.setProperty('--color-border','#3D342C');r.style.setProperty('--color-muted','#9A8E82');r.style.setProperty('--color-earth','#E8DDD0');r.style.setProperty('--color-warm','#2C2520');document.body.style.backgroundColor='#2C1810';document.body.style.color='#E8DDD0';}}catch(e){}` }} />
+        {/* Blocking theme init — runs before React to prevent flash. Only reads from localStorage (safe, no user input). */}
+        <script dangerouslySetInnerHTML={{ __html: `try{var s=localStorage.getItem('keystone-theme');if(s==='dark'){document.documentElement.classList.add('dark');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content','#F5E6D3');}}catch(e){}` }} />
         <link
           href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap"
           rel="stylesheet"
