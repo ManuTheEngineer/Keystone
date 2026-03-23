@@ -105,11 +105,21 @@ export function applyTheme(isDark: boolean) {
     });
     document.body.style.backgroundColor = "#1A0F0A";
     document.body.style.color = "#E8DDD0";
-    // Update window title bar color — replace all theme-color meta tags
-    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
-      m.setAttribute("content", "#F5E6D3");
-      m.removeAttribute("media");
-    });
+    // Update window title bar color
+    const setThemeColor = (color: string) => {
+      const metas = document.querySelectorAll('meta[name="theme-color"]');
+      if (metas.length > 0) {
+        metas.forEach((m) => { m.setAttribute("content", color); m.removeAttribute("media"); });
+      } else {
+        const meta = document.createElement("meta");
+        meta.name = "theme-color";
+        meta.content = color;
+        document.head.appendChild(meta);
+      }
+    };
+    setThemeColor("#F5E6D3");
+    // Some browsers need a re-trigger
+    setTimeout(() => setThemeColor("#F5E6D3"), 100);
   } else {
     root.classList.remove("dark");
     root.classList.add("light");
@@ -118,10 +128,19 @@ export function applyTheme(isDark: boolean) {
     });
     document.body.style.backgroundColor = "";
     document.body.style.color = "";
-    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
-      m.setAttribute("content", "#2C1810");
-      m.removeAttribute("media");
-    });
+    const setThemeColorLight = (color: string) => {
+      const metas = document.querySelectorAll('meta[name="theme-color"]');
+      if (metas.length > 0) {
+        metas.forEach((m) => { m.setAttribute("content", color); m.removeAttribute("media"); });
+      } else {
+        const meta = document.createElement("meta");
+        meta.name = "theme-color";
+        meta.content = color;
+        document.head.appendChild(meta);
+      }
+    };
+    setThemeColorLight("#2C1810");
+    setTimeout(() => setThemeColorLight("#2C1810"), 100);
   }
 }
 
