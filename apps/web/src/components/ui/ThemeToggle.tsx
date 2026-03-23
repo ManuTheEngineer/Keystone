@@ -5,64 +5,77 @@ import { Sun, Moon } from "lucide-react";
 
 type ThemeMode = "light" | "dark";
 
-// Dark mode: ALL CSS variables that need to change.
+// Dark mode: swap using ONLY colors from the light mode brand palette.
+//
+// LIGHT MODE PALETTE (for reference):
+//   background: #FDF8F0 (cream)     earth: #2C1810 (deep brown)
+//   surface:    #FFFFFF (white)      earth-light: #3D2215
+//   surface-alt: #F5F0E8 (beige)    clay: #8B4513
+//   warm:       #F5E6D3 (warm)      sand: #D4A574
+//   cream:      #FDF8F0             muted: #6A6A6A
+//   foreground: #3A3A3A (slate)     border: #E0D5C8
+//
+// DARK MODE = exact inversion:
+//   Light backgrounds → dark browns
+//   Dark text → light creams
+//
 const DARK_VARS: Record<string, string> = {
-  // Core backgrounds
-  "--color-background": "#2C1810",
-  "--color-foreground": "#E8DDD0",
-  "--color-surface": "#3D2215",
-  "--color-surface-alt": "#4A2E1C",
-  "--color-surface-dim": "#2C1810",
+  // Backgrounds: light cream/white → dark browns from brand palette
+  "--color-background": "#2C1810",    // was cream #FDF8F0 → earth
+  "--color-surface": "#3D2215",       // was white #FFFFFF → earth-light
+  "--color-surface-alt": "#3D2215",   // was beige #F5F0E8 → earth-light
+  "--color-surface-dim": "#2C1810",   // was #EDE6DA → earth
 
-  // Primary (inverted for dark)
-  "--color-primary": "#E8DDD0",
-  "--color-primary-foreground": "#1A1412",
-  "--color-secondary": "#C4956A",
-  "--color-secondary-foreground": "#1A1412",
+  // Text: dark → light
+  "--color-foreground": "#F5E6D3",    // was slate #3A3A3A → warm
+  "--color-muted": "#D4A574",         // was gray #6A6A6A → sand
+  "--color-slate-text": "#F5E6D3",    // was slate → warm
+
+  // Brand: swap earth ↔ cream
+  "--color-earth": "#FDF8F0",         // was #2C1810 → cream (headings on dark bg)
+  "--color-earth-light": "#F5E6D3",   // was #3D2215 → warm
+  "--color-clay": "#D4A574",          // was #8B4513 → sand (warmer accent on dark)
+  "--color-clay-light": "#E0BC92",    // was #A0522D → sand-light
+  "--color-sand": "#8B4513",          // was #D4A574 → clay (muted on dark)
+  "--color-sand-light": "#A0522D",    // was #E0BC92 → clay-light
+  "--color-warm": "#3D2215",          // was #F5E6D3 → earth-light (subtle bg)
+  "--color-cream": "#2C1810",         // was #FDF8F0 → earth
+
+  // Primary
+  "--color-primary": "#FDF8F0",       // was #2C1810 → cream
+  "--color-primary-foreground": "#2C1810",
+  "--color-secondary": "#D4A574",     // was #8B4513 → sand
+  "--color-secondary-foreground": "#2C1810",
   "--color-accent": "#10B981",
   "--color-accent-foreground": "#FFFFFF",
-  "--color-accent-light": "rgba(5, 150, 105, 0.15)",
+  "--color-accent-light": "rgba(16, 185, 129, 0.15)",
 
-  // Borders (lighter for dark bg)
-  "--color-border": "#3D342C",
-  "--color-border-dark": "#4A4038",
+  // Borders: light sand → dark brown tones
+  "--color-border": "#5C4033",        // was #E0D5C8 → darker brown
+  "--color-border-dark": "#6B4226",   // was #C8BBAD → accent-wa brown
 
-  // Text
-  "--color-muted": "#9A8E82",
-  "--color-slate-text": "#E8DDD0",
-
-  // Brand colors for CONTENT area (not sidebar — sidebar uses --sidebar-* vars)
-  "--color-earth": "#E8DDD0",       // Content headings: cream on dark bg
-  "--color-earth-light": "#F5E6D3",
-  "--color-clay": "#C4956A",        // Accent: warm gold
-  "--color-clay-light": "#D4A574",
-  "--color-sand": "#8B7B6B",        // Muted text
-  "--color-sand-light": "#7A6B5B",
-  "--color-warm": "#2C2520",        // Content card alt bg
-  "--color-cream": "#2C1810",       // Same as background
-
-  // Status colors: BRIGHTER for dark mode readability
+  // Status: brighter for dark backgrounds
   "--color-success": "#4ADE80",
-  "--color-success-bg": "rgba(74, 222, 128, 0.15)",
+  "--color-success-bg": "rgba(74, 222, 128, 0.12)",
   "--color-warning": "#FBBF24",
-  "--color-warning-bg": "rgba(251, 191, 36, 0.15)",
+  "--color-warning-bg": "rgba(251, 191, 36, 0.12)",
   "--color-danger": "#FB7185",
-  "--color-danger-bg": "rgba(251, 113, 133, 0.15)",
+  "--color-danger-bg": "rgba(251, 113, 133, 0.12)",
   "--color-info": "#60A5FA",
-  "--color-info-bg": "rgba(96, 165, 250, 0.15)",
+  "--color-info-bg": "rgba(96, 165, 250, 0.12)",
 
-  // Market accents (translucent for dark)
+  // Market accents
   "--color-accent-usa": "#60A5FA",
-  "--color-accent-usa-light": "rgba(96, 165, 250, 0.2)",
-  "--color-accent-wa": "#C4956A",
-  "--color-accent-wa-light": "rgba(196, 149, 106, 0.2)",
+  "--color-accent-usa-light": "rgba(96, 165, 250, 0.15)",
+  "--color-accent-wa": "#D4A574",
+  "--color-accent-wa-light": "rgba(212, 165, 116, 0.15)",
 
-  // Emerald scale (translucent for dark)
-  "--color-emerald-50": "rgba(16, 185, 129, 0.08)",
-  "--color-emerald-100": "rgba(16, 185, 129, 0.12)",
-  "--color-emerald-200": "rgba(16, 185, 129, 0.18)",
-  "--color-emerald-300": "rgba(110, 231, 183, 0.25)",
-  "--color-emerald-400": "rgba(52, 211, 153, 0.35)",
+  // Emerald (translucent for dark)
+  "--color-emerald-50": "rgba(16, 185, 129, 0.06)",
+  "--color-emerald-100": "rgba(16, 185, 129, 0.10)",
+  "--color-emerald-200": "rgba(16, 185, 129, 0.15)",
+  "--color-emerald-300": "rgba(110, 231, 183, 0.20)",
+  "--color-emerald-400": "rgba(52, 211, 153, 0.30)",
   "--color-emerald-500": "#10B981",
   "--color-emerald-600": "#34D399",
   "--color-emerald-700": "#6EE7B7",
@@ -70,10 +83,10 @@ const DARK_VARS: Record<string, string> = {
   "--color-emerald-900": "#D1FAE5",
   "--color-emerald-950": "#ECFDF5",
 
-  // Shadows (deeper for dark)
-  "--shadow-sm": "0 1px 3px rgba(0, 0, 0, 0.4)",
-  "--shadow-md": "0 4px 16px rgba(0, 0, 0, 0.5)",
-  "--shadow-lg": "0 12px 40px rgba(0, 0, 0, 0.6)",
+  // Shadows
+  "--shadow-sm": "0 1px 3px rgba(0, 0, 0, 0.3)",
+  "--shadow-md": "0 4px 16px rgba(0, 0, 0, 0.4)",
+  "--shadow-lg": "0 12px 40px rgba(0, 0, 0, 0.5)",
 };
 
 export { DARK_VARS };
