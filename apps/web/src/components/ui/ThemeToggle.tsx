@@ -8,11 +8,11 @@ type ThemeMode = "light" | "dark";
 // Dark mode: ALL CSS variables that need to change.
 const DARK_VARS: Record<string, string> = {
   // Core backgrounds
-  "--color-background": "#1A1412",
+  "--color-background": "#2C1810",
   "--color-foreground": "#E8DDD0",
-  "--color-surface": "#231E1A",
-  "--color-surface-alt": "#2C2520",
-  "--color-surface-dim": "#1E1916",
+  "--color-surface": "#3D2215",
+  "--color-surface-alt": "#4A2E1C",
+  "--color-surface-dim": "#2C1810",
 
   // Primary (inverted for dark)
   "--color-primary": "#E8DDD0",
@@ -39,7 +39,7 @@ const DARK_VARS: Record<string, string> = {
   "--color-sand": "#8B7B6B",        // Muted text
   "--color-sand-light": "#7A6B5B",
   "--color-warm": "#2C2520",        // Content card alt bg
-  "--color-cream": "#1A1412",       // Same as background
+  "--color-cream": "#2C1810",       // Same as background
 
   // Status colors: BRIGHTER for dark mode readability
   "--color-success": "#4ADE80",
@@ -90,7 +90,7 @@ export function applyTheme(isDark: boolean) {
     Object.entries(DARK_VARS).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
-    document.body.style.backgroundColor = "#1A1412";
+    document.body.style.backgroundColor = "#2C1810";
     document.body.style.color = "#E8DDD0";
     // Update window title bar color
     const meta = document.querySelector('meta[name="theme-color"]');
