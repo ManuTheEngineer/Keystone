@@ -92,6 +92,9 @@ export function applyTheme(isDark: boolean) {
     });
     document.body.style.backgroundColor = "#1A1412";
     document.body.style.color = "#E8DDD0";
+    // Update window title bar color
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", "#FDF8F0");
   } else {
     root.classList.remove("dark");
     root.classList.add("light");
@@ -100,6 +103,8 @@ export function applyTheme(isDark: boolean) {
     });
     document.body.style.backgroundColor = "";
     document.body.style.color = "";
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", "#2C1810");
   }
 }
 
