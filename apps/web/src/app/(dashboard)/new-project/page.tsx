@@ -212,6 +212,32 @@ function getMarketCostRange(market: MarketType): { low: number; mid: number; hig
   };
 }
 
+function getFeatureMultiplier(features: string[]): number {
+  const FEATURE_COST_PCT: Record<string, number> = {
+    "garage-single": 0.05,
+    "garage-double": 0.08,
+    "porch-patio": 0.02,
+    "pool": 0.12,
+    "basement": 0.15,
+    "solar": 0.04,
+    "ev-charger": 0.01,
+    "smart-home": 0.03,
+    "security-post": 0.02,
+    "outdoor-kitchen": 0.04,
+    "fence": 0.02,
+    "generator-house": 0.03,
+    "water-tank": 0.03,
+    "septic": 0.05,
+    "sprinkler": 0.02,
+    "guest-house": 0.10,
+  };
+  const totalPct = features.reduce(
+    (sum, f) => sum + (FEATURE_COST_PCT[f] ?? 0.02),
+    0,
+  );
+  return 1 + totalPct;
+}
+
 function getConstructionCost(state: WizardState, locationData?: LocationData | null): number {
   if (!state.market) return 0;
   const size = getBuildingSize(state);
@@ -219,7 +245,8 @@ function getConstructionCost(state: WizardState, locationData?: LocationData | n
   const costs = getMarketCostRange(state.market as MarketType);
   const baseCost = costs.mid * size;
   const costIndex = locationData?.costIndex ?? 1.0;
-  return Math.round(baseCost * costIndex);
+  const featureMultiplier = getFeatureMultiplier(state.features);
+  return Math.round(baseCost * costIndex * featureMultiplier);
 }
 
 function getLandCost(state: WizardState, locationData?: LocationData | null): number {

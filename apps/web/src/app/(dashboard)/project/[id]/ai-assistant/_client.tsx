@@ -286,7 +286,7 @@ export function AIAssistantClient() {
 
       if (errMsg === "AI_NOT_CONFIGURED") {
         const assistantMsg = {
-          role: "assistant" as const, mode,
+          role: "assistant" as const, mode, isError: true,
           content: "The AI assistant is not yet configured. To enable it, add your CLAUDE_API_KEY as an environment variable in your Vercel project settings and redeploy.\n\nIn the meantime, you can find construction guidance in the Learn section.",
         };
         const finalAll = [...newAll, assistantMsg];
@@ -303,9 +303,10 @@ export function AIAssistantClient() {
         setError("You must be signed in to use the AI assistant.");
         setAllMessages(allMessages); // revert
       } else {
+        const detail = errMsg || "Unknown error";
         const assistantMsg = {
-          role: "assistant" as const, mode,
-          content: "Unable to reach the AI service. Please check your connection and try again.",
+          role: "assistant" as const, mode, isError: true,
+          content: `Unable to reach the AI service: ${detail}\n\nPlease check your connection and try again. If this persists, verify the API configuration in your project settings.`,
         };
         const finalAll = [...newAll, assistantMsg];
         setAllMessages(finalAll);
@@ -337,7 +338,7 @@ export function AIAssistantClient() {
       {/* Mode selector */}
       <div className="flex gap-1.5 pb-3 mb-1 overflow-x-auto">
         {MODES.map((m) => {
-          const count = allMessages.filter((msg: any) => msg.mode === m.key).length;
+          const count = allMessages.filter((msg: any) => msg.mode === m.key && !msg.isError).length;
           return (
             <button
               key={m.key}

@@ -1528,7 +1528,7 @@ export async function seedDemoProject(userId: string): Promise<string> {
     currentPhase: 6,
     completedPhases: 5,
     phaseName: "Phase 6: Build",
-    progress: 62,
+    progress: 45,
     status: "ACTIVE",
     totalBudget: 385000,
     totalSpent: 239000,

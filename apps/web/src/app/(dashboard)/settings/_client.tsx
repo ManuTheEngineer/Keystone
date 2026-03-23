@@ -13,7 +13,7 @@ import {
   deleteUser,
   EmailAuthProvider,
 } from "firebase/auth";
-import { ref, update, remove } from "firebase/database";
+import { ref, update, remove, get } from "firebase/database";
 import { db } from "@/lib/firebase";
 import { useTopbar } from "../layout";
 import {
@@ -31,11 +31,13 @@ import {
   Upload,
   Image,
   Bell,
+  RefreshCw,
 } from "lucide-react";
 import { PLAN_CONFIG, formatPrice, getAnnualSavings, type PlanTier, type BillingInterval } from "@/lib/stripe-config";
 import { getAuthHeaders } from "@/lib/api-client";
 import { useToast } from "@/components/ui/Toast";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import { deleteProject, seedDemoProject } from "@/lib/services/project-service";
 import {
   generateTrialCode,
   redeemTrialCode,
@@ -184,6 +186,7 @@ export function SettingsClient() {
   const [resetConfirmText, setResetConfirmText] = useState("");
   const [resetting, setResetting] = useState(false);
   const [resetError, setResetError] = useState("");
+  const [resettingDemo, setResettingDemo] = useState(false);
 
   const searchParams = useSearchParams();
 
@@ -334,6 +337,30 @@ export function SettingsClient() {
       setResetError("Failed to reset data. Please try again.");
     } finally {
       setResetting(false);
+    }
+  }
+
+  async function handleResetDemoData() {
+    if (!user) return;
+    setResettingDemo(true);
+    try {
+      // Find the demo project
+      const projectsSnap = await get(ref(db, `users/${user.uid}/projects`));
+      if (projectsSnap.exists()) {
+        const projects = projectsSnap.val() as Record<string, { isDemo?: boolean }>;
+        for (const [projectId, project] of Object.entries(projects)) {
+          if (project.isDemo) {
+            await deleteProject(user.uid, projectId);
+          }
+        }
+      }
+      // Recreate a fresh demo project
+      await seedDemoProject(user.uid);
+      showToast("Demo project reset successfully.", "success");
+    } catch {
+      showToast("Failed to reset demo project. Please try again.", "error");
+    } finally {
+      setResettingDemo(false);
     }
   }
 
@@ -1370,6 +1397,26 @@ export function SettingsClient() {
       {/* ================================================================= */}
       <SectionLabel>Data Management</SectionLabel>
       <Card padding="sm" className="mb-4">
+        <div className="mb-4 pb-4 border-b border-border">
+          {/* Reset Demo Project */}
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="w-8 h-8 rounded-full bg-clay/10 flex items-center justify-center">
+              <RefreshCw size={16} className="text-clay" />
+            </div>
+            <div>
+              <p className="text-[13px] font-medium text-earth">Reset Demo Project</p>
+              <p className="text-[9px] text-muted">Delete and recreate the demo project with fresh sample data</p>
+            </div>
+          </div>
+          <button
+            onClick={handleResetDemoData}
+            disabled={resettingDemo}
+            className="px-3 py-1.5 text-[10px] border border-clay text-clay rounded-[var(--radius)] hover:bg-clay/5 transition-colors disabled:opacity-40"
+          >
+            {resettingDemo ? "Resetting demo..." : "Reset demo project"}
+          </button>
+        </div>
+
         <div className="mb-4">
           {/* Reset All Data */}
           <div className="flex items-center gap-2.5 mb-2">

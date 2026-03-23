@@ -33,9 +33,18 @@ export async function sendAIMessage(
     throw new Error("AI_NOT_CONFIGURED");
   }
 
+  if (res.status === 429) {
+    const data = await res.json().catch(() => ({}));
+    const meta = data.meta;
+    if (meta?.limit) {
+      throw new Error(`RATE_LIMITED:${meta.limit - (meta.remaining ?? 0)}:${meta.limit}`);
+    }
+    throw new Error(data.error ?? "Daily AI query limit reached.");
+  }
+
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.error ?? "AI service error");
+    throw new Error(data.error ?? `AI service error (${res.status})`);
   }
 
   return res.json();

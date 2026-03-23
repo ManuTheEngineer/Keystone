@@ -34,7 +34,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (!CLAUDE_API_KEY) {
-    return apiError("AI service not configured", { status: 503 });
+    return apiError(
+      "AI service not configured. The CLAUDE_API_KEY environment variable is missing. Add it in your Vercel project settings (Settings > Environment Variables) and redeploy.",
+      { status: 503 }
+    );
   }
 
   try {
@@ -62,7 +65,13 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return apiError("AI service error", { status: response.status, details: errorData });
+      const detail =
+        response.status === 401
+          ? "Invalid API key. Check your CLAUDE_API_KEY in Vercel environment variables."
+          : response.status === 429
+          ? "Anthropic rate limit exceeded. Please wait a moment and try again."
+          : `Anthropic API returned status ${response.status}.`;
+      return apiError(detail, { status: response.status, details: errorData });
     }
 
     const data = await response.json();
