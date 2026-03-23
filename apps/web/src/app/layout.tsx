@@ -55,8 +55,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Blocking theme init — runs before React to prevent flash. Only reads from localStorage (safe, no user input). */}
-        <script dangerouslySetInnerHTML={{ __html: `try{var s=localStorage.getItem('keystone-theme');if(s==='dark'){document.documentElement.classList.add('dark');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content','#F5E6D3');}}catch(e){}` }} />
+        {/* Blocking theme init + persistent theme-color observer. Only reads localStorage (safe, no user input). */}
+        <script dangerouslySetInnerHTML={{ __html: `try{var s=localStorage.getItem('keystone-theme');var tc=s==='dark'?'#F5E6D3':'#2C1810';if(s==='dark'){document.documentElement.classList.add('dark');}var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',tc);window.__ksThemeColor=tc;new MutationObserver(function(){var el=document.querySelector('meta[name="theme-color"]');if(el&&el.getAttribute('content')!==window.__ksThemeColor){el.setAttribute('content',window.__ksThemeColor);el.removeAttribute('media');}}).observe(document.head,{childList:true,subtree:true,attributes:true});}catch(e){}` }} />
         <link
           href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap"
           rel="stylesheet"

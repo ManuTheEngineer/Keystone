@@ -133,6 +133,7 @@ export function applyTheme(isDark: boolean) {
     document.body.style.backgroundColor = "#1A0F0A";
     document.body.style.color = "#E8DDD0";
     enforceThemeColor("#F5E6D3");
+    (window as any).__ksThemeColor = "#F5E6D3";
   } else {
     root.classList.remove("dark");
     root.classList.add("light");
@@ -142,6 +143,7 @@ export function applyTheme(isDark: boolean) {
     document.body.style.backgroundColor = "";
     document.body.style.color = "";
     enforceThemeColor("#2C1810");
+    (window as any).__ksThemeColor = "#2C1810";
   }
 }
 
