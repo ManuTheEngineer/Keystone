@@ -452,6 +452,20 @@ html.dark {
   /* Dark mode variables are set via JavaScript in ThemeToggle.tsx (DARK_VARS) */
 }
 
+/* ── Sidebar CSS variables — flip between light/dark ── */
+:root {
+  --sidebar-bg: #2C1810;
+  --sidebar-bg-hover: #3D2215;
+  --sidebar-text: #D4A574;
+  --sidebar-text-bright: #F5E6D3;
+}
+html.dark {
+  --sidebar-bg: #FDF8F0;
+  --sidebar-bg-hover: #F5E6D3;
+  --sidebar-text: #5C4033;
+  --sidebar-text-bright: #2C1810;
+}
+
 /* ── Background colors ── */
 html.dark .bg-background { background-color: var(--color-background) !important; }
 html.dark .bg-surface { background-color: var(--color-surface) !important; }

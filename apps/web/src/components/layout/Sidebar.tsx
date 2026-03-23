@@ -31,17 +31,16 @@ import {
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 /*
- * Sidebar color tokens — always dark regardless of theme.
- * Uses CSS variables so dark mode can invert the sidebar palette.
- * Light mode: dark sidebar (earth bg, sand text)
- * Dark mode: light sidebar (cream bg, earth text) — inverted via DARK_VARS
+ * Sidebar color tokens — uses hardcoded hex for reliability.
+ * Dark mode inversion is handled by wrapping the entire sidebar
+ * in a container with CSS variables that flip in dark mode.
  */
 const C = {
-  bg: "bg-earth",
-  bgLight: "bg-earth-light",
-  text: "text-sand",
-  textBright: "text-warm",
-  border: "border-sand",
+  bg: "bg-[var(--sidebar-bg)]",
+  bgLight: "bg-[var(--sidebar-bg-hover)]",
+  text: "text-[var(--sidebar-text)]",
+  textBright: "text-[var(--sidebar-text-bright)]",
+  border: "border-[var(--sidebar-text)]",
 } as const;
 
 interface NavItem {
@@ -189,8 +188,8 @@ export function Sidebar({
             ${collapsed ? "px-0 justify-center" : "pl-4 pr-3"}
             ${
               isActive
-                ? "border-l-emerald-500 rounded-r-lg bg-emerald-500/8 text-warm opacity-100"
-                : "border-l-transparent text-sand opacity-50 hover:opacity-80 hover:bg-[#D4A574]/5 hover:border-l-[#D4A574]/30 hover:border-l-[2px]"
+                ? "border-l-emerald-500 rounded-r-lg bg-emerald-500/8 text-[var(--sidebar-text-bright)] opacity-100"
+                : "border-l-transparent text-[var(--sidebar-text)] opacity-50 hover:opacity-80 hover:bg-[var(--sidebar-text)]/5 hover:border-l-[#D4A574]/30 hover:border-l-[2px]"
             }
           `}
           title={collapsed ? translatedLabel : undefined}
@@ -206,7 +205,7 @@ export function Sidebar({
         </button>
         {/* Tooltip for collapsed mode */}
         {collapsed && (
-          <div className={`absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 rounded-md ${C.bgLight} text-warm text-[11px] whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-md`}>
+          <div className={`absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1 rounded-md ${C.bgLight} text-[var(--sidebar-text-bright)] text-[11px] whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-md`}>
             {translatedLabel}
           </div>
         )}
@@ -219,14 +218,14 @@ export function Sidebar({
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-earth/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
         className={`
-          fixed top-0 left-0 bottom-0 ${sidebarWidth} ${C.bg} text-sand z-40
+          fixed top-0 left-0 bottom-0 ${sidebarWidth} ${C.bg} text-[var(--sidebar-text)] z-40
           flex flex-col overflow-hidden
           transition-all duration-300 ease-out
           lg:translate-x-0
@@ -237,19 +236,19 @@ export function Sidebar({
         <div className={`px-5 pt-5 pb-4 border-b border-[#D4A574]/10 flex items-center ${collapsed ? "justify-center" : "justify-between"}`}>
           {collapsed ? (
             <Link href="/dashboard" className="flex items-center justify-center">
-              <KeystoneIcon size={22} className="text-sand" />
+              <KeystoneIcon size={22} className="text-[var(--sidebar-text)]" />
             </Link>
           ) : (
             <>
               <Link href="/dashboard" className="flex items-center gap-2.5">
-                <KeystoneIcon size={22} className="text-sand" />
-                <span className="text-[15px] font-semibold text-warm tracking-tight">
+                <KeystoneIcon size={22} className="text-[var(--sidebar-text)]" />
+                <span className="text-[15px] font-semibold text-[var(--sidebar-text-bright)] tracking-tight">
                   Keystone
                 </span>
               </Link>
               <button
                 onClick={onClose}
-                className="lg:hidden p-1 rounded text-sand/50 hover:text-sand/80 transition-colors"
+                className="lg:hidden p-1 rounded text-[var(--sidebar-text)]/50 hover:text-[var(--sidebar-text)]/80 transition-colors"
               >
                 <X size={18} />
               </button>
@@ -260,7 +259,7 @@ export function Sidebar({
         {/* Main navigation — fixed at top */}
         <nav className="py-3 shrink-0">
           {!collapsed && (
-            <p className="pl-4 pr-3 mb-1.5 text-[9px] uppercase tracking-[2px] text-sand/30 font-medium">
+            <p className="pl-4 pr-3 mb-1.5 text-[9px] uppercase tracking-[2px] text-[var(--sidebar-text)]/30 font-medium">
               {t("nav.group.main", locale ?? "en")}
             </p>
           )}
@@ -276,7 +275,7 @@ export function Sidebar({
         {projectName && (
           <nav className="py-3 flex-1 min-h-0 overflow-y-auto overflow-x-hidden sidebar-scroll">
             {!collapsed && (
-              <p className="pl-4 pr-3 mb-1.5 text-[9px] uppercase tracking-[2px] text-sand/30 font-medium truncate" title={projectName}>
+              <p className="pl-4 pr-3 mb-1.5 text-[9px] uppercase tracking-[2px] text-[var(--sidebar-text)]/30 font-medium truncate" title={projectName}>
                 {projectName}
               </p>
             )}
@@ -293,7 +292,7 @@ export function Sidebar({
                         try { localStorage.setItem("keystone-collapsed-groups", JSON.stringify([...next])); } catch {}
                         return next;
                       })}
-                      className="w-full pl-4 pr-3 mt-3 mb-1 flex items-center justify-between text-[9px] uppercase tracking-[2px] text-sand/30 font-medium hover:text-sand/50 transition-colors"
+                      className="w-full pl-4 pr-3 mt-3 mb-1 flex items-center justify-between text-[9px] uppercase tracking-[2px] text-[var(--sidebar-text)]/30 font-medium hover:text-[var(--sidebar-text)]/50 transition-colors"
                     >
                       {group.i18nKey ? t(group.i18nKey, locale ?? "en") : group.label}
                       <ChevronDown
@@ -317,7 +316,7 @@ export function Sidebar({
 
         {/* Language indicator */}
         {showLangBadge && (
-          <div className={`px-5 py-2 flex items-center gap-2 text-sand/40 ${collapsed ? "justify-center" : ""}`}>
+          <div className={`px-5 py-2 flex items-center gap-2 text-[var(--sidebar-text)]/40 ${collapsed ? "justify-center" : ""}`}>
             <Globe size={12} />
             {!collapsed && (
               <span className="text-[10px] uppercase tracking-[1.5px] font-medium">
@@ -331,7 +330,7 @@ export function Sidebar({
         <div className="hidden lg:flex px-3 py-2 justify-center">
           <button
             onClick={() => handleCollapse(!collapsed)}
-            className="p-1.5 rounded text-sand/30 hover:text-sand/60 hover:bg-[#D4A574]/5 transition-all duration-150"
+            className="p-1.5 rounded text-[var(--sidebar-text)]/30 hover:text-[var(--sidebar-text)]/60 hover:bg-[var(--sidebar-text)]/5 transition-all duration-150"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronLeft
@@ -353,8 +352,8 @@ export function Sidebar({
               w-full flex items-center gap-2.5 pl-4 pr-3 py-2 text-[13px]
               border-l-[3px] rounded-r-lg transition-all duration-150
               ${activeSection === "settings"
-                ? "opacity-100 bg-emerald-500/8 border-l-emerald-500 text-warm"
-                : "opacity-50 border-l-transparent text-sand hover:opacity-80 hover:bg-[#D4A574]/5 hover:border-l-[2px] hover:border-l-[#D4A574]/30"
+                ? "opacity-100 bg-emerald-500/8 border-l-emerald-500 text-[var(--sidebar-text-bright)]"
+                : "opacity-50 border-l-transparent text-[var(--sidebar-text)] hover:opacity-80 hover:bg-[var(--sidebar-text)]/5 hover:border-l-[2px] hover:border-l-[#D4A574]/30"
               }
               ${collapsed ? "justify-center px-0" : ""}
             `}
@@ -366,20 +365,20 @@ export function Sidebar({
 
           {/* User profile */}
           <div className={`px-3 py-3 flex items-center ${collapsed ? "justify-center" : "gap-2.5 px-5"}`}>
-            <div className="w-8 h-8 rounded-full bg-[#D4A574]/15 flex items-center justify-center text-[11px] font-semibold text-sand flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-[var(--sidebar-text)]/15 flex items-center justify-center text-[11px] font-semibold text-[var(--sidebar-text)] flex-shrink-0">
               {initials}
             </div>
             {!collapsed && (
               <>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] text-warm truncate">{userName}</p>
-                  <p className="text-[10px] text-sand/35">{planLabel}</p>
+                  <p className="text-[12px] text-[var(--sidebar-text-bright)] truncate">{userName}</p>
+                  <p className="text-[10px] text-[var(--sidebar-text)]/35">{planLabel}</p>
                 </div>
                 <ThemeToggle />
                 {onSignOut && (
                   <button
                     onClick={onSignOut}
-                    className="p-1.5 rounded text-sand/40 hover:text-sand/80 transition-colors"
+                    className="p-1.5 rounded text-[var(--sidebar-text)]/40 hover:text-[var(--sidebar-text)]/80 transition-colors"
                     title="Sign out"
                   >
                     <LogOut size={14} />

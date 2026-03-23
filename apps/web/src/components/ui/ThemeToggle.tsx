@@ -31,15 +31,15 @@ const DARK_VARS: Record<string, string> = {
   "--color-muted": "#9A8E82",
   "--color-slate-text": "#E8DDD0",
 
-  // Brand colors (inverted — sidebar becomes light, content stays dark)
-  "--color-earth": "#FDF8F0",       // Sidebar bg: cream (was dark brown)
-  "--color-earth-light": "#F5E6D3", // Sidebar hover: warm cream
-  "--color-clay": "#8B4513",        // Accent: stays brown (readable on both)
-  "--color-clay-light": "#A0522D",
-  "--color-sand": "#2C1810",        // Sidebar text: dark brown (was sand)
-  "--color-sand-light": "#3D2215",
-  "--color-warm": "#3D2215",        // Sidebar text-warm (dark brown on cream)
-  "--color-cream": "#1A1412",       // Content bg (dark)
+  // Brand colors for CONTENT area (not sidebar — sidebar uses --sidebar-* vars)
+  "--color-earth": "#E8DDD0",       // Content headings: cream on dark bg
+  "--color-earth-light": "#F5E6D3",
+  "--color-clay": "#C4956A",        // Accent: warm gold
+  "--color-clay-light": "#D4A574",
+  "--color-sand": "#8B7B6B",        // Muted text
+  "--color-sand-light": "#7A6B5B",
+  "--color-warm": "#2C2520",        // Content card alt bg
+  "--color-cream": "#1A1412",       // Same as background
 
   // Status colors: BRIGHTER for dark mode readability
   "--color-success": "#4ADE80",
