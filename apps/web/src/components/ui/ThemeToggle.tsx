@@ -129,7 +129,7 @@ export function applyTheme(isDark: boolean) {
     Object.entries(DARK_VARS).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
-    document.body.style.backgroundColor = "#1A0F0A";
+    document.body.style.backgroundColor = "#2C1810";
     document.body.style.color = "#E8DDD0";
     enforceThemeColor("#F5E6D3");
     (window as any).__ksThemeColor = "#F5E6D3";
