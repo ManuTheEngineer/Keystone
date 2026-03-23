@@ -20,11 +20,11 @@ type ThemeMode = "light" | "dark";
 //   Dark text → light creams
 //
 const DARK_VARS: Record<string, string> = {
-  // Backgrounds: warm dark browns with card contrast
-  "--color-background": "#2C1810",    // page bg: deep earth brown
-  "--color-surface": "#3A261B",       // cards: slightly lighter for contrast
-  "--color-surface-alt": "#44301F",   // card hover/alt: one step lighter
-  "--color-surface-dim": "#2C1810",   // same as bg
+  // Backgrounds: deeper dark with card contrast
+  "--color-background": "#1A0F0A",    // page bg: deeper than earth
+  "--color-surface": "#2C1810",       // cards: earth brown (visible against bg)
+  "--color-surface-alt": "#3A261B",   // card hover/alt
+  "--color-surface-dim": "#1A0F0A",   // same as bg
 
   // Text: warm cream/beige tones (not stark white)
   "--color-foreground": "#F5E6D3",    // body text: warm cream
@@ -38,8 +38,8 @@ const DARK_VARS: Record<string, string> = {
   "--color-clay-light": "#E0BC92",    // accent lighter
   "--color-sand": "#A0522D",          // subtle accent: sienna
   "--color-sand-light": "#8B4513",    // subtle darker
-  "--color-warm": "#3A261B",          // subtle bg: same as surface
-  "--color-cream": "#2C1810",         // same as background
+  "--color-warm": "#2C1810",          // subtle bg: same as surface
+  "--color-cream": "#1A0F0A",         // same as background
 
   // Primary
   "--color-primary": "#F5E6D3",       // warm cream
@@ -103,7 +103,7 @@ export function applyTheme(isDark: boolean) {
     Object.entries(DARK_VARS).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
-    document.body.style.backgroundColor = "#2C1810";
+    document.body.style.backgroundColor = "#1A0F0A";
     document.body.style.color = "#E8DDD0";
     // Update window title bar color — replace all theme-color meta tags
     document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
