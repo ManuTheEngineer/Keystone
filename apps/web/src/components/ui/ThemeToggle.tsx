@@ -101,14 +101,13 @@ let themeColorObserver: MutationObserver | null = null;
 
 function enforceThemeColor(color: string) {
   themeColorTarget = color;
-  const metas = document.querySelectorAll('meta[name="theme-color"]');
-  metas.forEach((m) => { m.setAttribute("content", color); m.removeAttribute("media"); });
-  if (metas.length === 0) {
-    const meta = document.createElement("meta");
-    meta.name = "theme-color";
-    meta.content = color;
-    document.head.appendChild(meta);
-  }
+  // Remove all existing theme-color tags and create a fresh one
+  // This forces mobile browsers to re-read the value
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.remove());
+  const meta = document.createElement("meta");
+  meta.name = "theme-color";
+  meta.content = color;
+  document.head.appendChild(meta);
   // Watch for Next.js re-rendering the head and resetting the tag
   if (!themeColorObserver) {
     themeColorObserver = new MutationObserver(() => {
