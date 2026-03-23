@@ -1,47 +1,40 @@
-// TODO: Add Zod schema validation for request body
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
-import { PLAN_CONFIG, type PlanTier } from "@/lib/stripe-config";
+import { PLAN_CONFIG } from "@/lib/stripe-config";
 import { verifyAuth, isAuthError } from "@/lib/api-auth";
+import { checkoutSchema, parseBody } from "@/lib/validators/api-schemas";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import type Stripe from "stripe";
 
 export async function POST(request: NextRequest) {
   try {
     const authResult = await verifyAuth(request);
     if (isAuthError(authResult)) return authResult;
 
-    const body = await request.json();
-    const { email, planTier, billingInterval, isAdmin, stripeCustomerId } = body as {
-      email: string;
-      planTier: Exclude<PlanTier, "FOUNDATION">;
-      billingInterval: "monthly" | "annual";
-      isAdmin?: boolean;
-      stripeCustomerId?: string;
-    };
+    const raw = await request.json();
+    const parsed = parseBody(checkoutSchema, raw);
+    if (!parsed.success) return parsed.response;
 
-    // Use the authenticated UID, not a client-supplied userId
+    const { email, planTier, billingInterval, isAdmin, stripeCustomerId } = parsed.data;
     const userId = authResult.uid;
 
-    if (!email || !planTier || !billingInterval) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
-
     if (isAdmin) {
-      return NextResponse.json({ error: "Admin accounts do not require billing" }, { status: 400 });
+      return apiError("Admin accounts do not require billing", { status: 400 });
     }
 
     const config = PLAN_CONFIG[planTier];
     if (!config) {
-      return NextResponse.json({ error: "Invalid plan tier" }, { status: 400 });
+      return apiError("Invalid plan tier", { status: 400 });
     }
 
     const priceId = billingInterval === "annual" ? config.annualPriceId : config.monthlyPriceId;
 
     if (!priceId) {
-      return NextResponse.json({ error: "Stripe price not configured. Please contact support." }, { status: 500 });
+      return apiError("Stripe price not configured. Please contact support.", { status: 500 });
     }
 
-    const sessionParams: Record<string, unknown> = {
-      mode: "subscription" as const,
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      mode: "subscription",
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${request.nextUrl.origin}/settings?upgrade=success&session_id={CHECKOUT_SESSION_ID}`,
@@ -56,11 +49,11 @@ export async function POST(request: NextRequest) {
       sessionParams.customer_email = email;
     }
 
-    const session = await getStripeServer().checkout.sessions.create(sessionParams as any);
+    const session = await getStripeServer().checkout.sessions.create(sessionParams);
 
-    return NextResponse.json({ url: session.url });
-  } catch (error: any) {
-    console.error("Stripe checkout error:", error);
-    return NextResponse.json({ error: error.message || "Failed to create checkout session" }, { status: 500 });
+    return apiSuccess({ url: session.url });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to create checkout session";
+    return apiError(message, { status: 500 });
   }
 }

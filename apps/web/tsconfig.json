@@ -23,7 +23,9 @@
       "@keystone/core": ["../../packages/core/src"],
       "@keystone/core/*": ["../../packages/core/src/*"],
       "@keystone/market-data": ["../../packages/market-data/src"],
-      "@keystone/market-data/*": ["../../packages/market-data/src/*"]
+      "@keystone/market-data/*": ["../../packages/market-data/src/*"],
+      "@keystone/ai": ["../../packages/ai/src"],
+      "@keystone/ai/*": ["../../packages/ai/src/*"]
     }
   },
   "include": [

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
+import NextImage from "next/image";
 import { useTopbar } from "../../../layout";
 import {
   subscribeToDocuments,
@@ -299,7 +300,7 @@ function DocViewerModal({ doc, onClose }: { doc: DocumentData; onClose: () => vo
           {isPdf && url ? (
             <iframe src={url} sandbox="allow-scripts allow-same-origin" className="w-full h-full min-h-[500px] rounded border border-border" />
           ) : isImage && url ? (
-            <img src={url} alt={doc.name} className="max-w-full max-h-[70vh] mx-auto rounded" />
+            <NextImage src={url} alt={doc.name} width={800} height={600} className="max-w-full max-h-[70vh] mx-auto rounded" unoptimized />
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <FileText size={32} className="text-sand mb-2" />

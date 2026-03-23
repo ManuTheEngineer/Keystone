@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { subscribeToProject, type ProjectData } from "@/lib/services/project-service";
+import { useProjectStore } from "@/lib/stores/project-store";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
 
 export default function ProjectLayout({ children }: { children: ReactNode }) {
@@ -13,6 +14,9 @@ export default function ProjectLayout({ children }: { children: ReactNode }) {
   const projectId = params.id as string;
   const [verified, setVerified] = useState(false);
   const [checking, setChecking] = useState(true);
+
+  const subscribe = useProjectStore((s) => s.subscribe);
+  const unsubscribe = useProjectStore((s) => s.unsubscribe);
 
   useEffect(() => {
     if (!user) return;
@@ -28,6 +32,13 @@ export default function ProjectLayout({ children }: { children: ReactNode }) {
 
     return unsub;
   }, [user, projectId, router]);
+
+  // Initialize the Zustand project store once verified
+  useEffect(() => {
+    if (!user || !verified) return;
+    subscribe(user.uid, projectId);
+    return () => unsubscribe();
+  }, [user, verified, projectId, subscribe, unsubscribe]);
 
   if (checking || !verified) {
     return (

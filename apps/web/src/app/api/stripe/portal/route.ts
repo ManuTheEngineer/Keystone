@@ -1,27 +1,28 @@
-// TODO: Add Zod schema validation for request body
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
 import { verifyAuth, isAuthError } from "@/lib/api-auth";
+import { portalSchema, parseBody } from "@/lib/validators/api-schemas";
+import { apiSuccess, apiError } from "@/lib/api-response";
 
 export async function POST(request: NextRequest) {
   try {
     const authResult = await verifyAuth(request);
     if (isAuthError(authResult)) return authResult;
 
-    const { stripeCustomerId } = await request.json();
+    const raw = await request.json();
+    const parsed = parseBody(portalSchema, raw);
+    if (!parsed.success) return parsed.response;
 
-    if (!stripeCustomerId) {
-      return NextResponse.json({ error: "No active subscription found" }, { status: 400 });
-    }
+    const { stripeCustomerId } = parsed.data;
 
     const session = await getStripeServer().billingPortal.sessions.create({
       customer: stripeCustomerId,
       return_url: `${request.nextUrl.origin}/settings`,
     });
 
-    return NextResponse.json({ url: session.url });
-  } catch (error: any) {
-    console.error("Portal session error:", error);
-    return NextResponse.json({ error: error.message || "Failed to create portal session" }, { status: 500 });
+    return apiSuccess({ url: session.url });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to create portal session";
+    return apiError(message, { status: 500 });
   }
 }

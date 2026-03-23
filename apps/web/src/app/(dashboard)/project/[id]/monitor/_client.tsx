@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import NextImage from "next/image";
 import { useTopbar } from "../../../layout";
 import {
   subscribeToProject,
@@ -271,7 +272,7 @@ function AutoRefreshImage({ src, interval }: { src: string; interval: number }) 
     return () => clearInterval(timer);
   }, [interval]);
   return (
-    <img key={key} src={`${src}${src.includes("?") ? "&" : "?"}t=${key}`} alt="Live camera" className="w-full h-full object-contain bg-black" />
+    <NextImage key={key} src={`${src}${src.includes("?") ? "&" : "?"}t=${key}`} alt="Live camera" width={640} height={480} className="w-full h-full object-contain bg-black" unoptimized />
   );
 }
 

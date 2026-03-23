@@ -794,7 +794,6 @@ export default function NewProjectPage() {
       clearDraft();
       router.push(`/project/${projectId}/overview?welcome=1`);
     } catch (err: any) {
-      console.error("Failed to create project:", err);
       setPlanError(err?.message || "Failed to create project. Please try again.");
     } finally {
       setCreating(false);

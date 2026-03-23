@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { useTopbar } from "../../../layout";
 import {
@@ -833,7 +834,7 @@ export function OverviewClient() {
                                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                                       {completionPhotos.map((p, pi) => (
                                         <div key={pi} className="relative w-10 h-10 rounded overflow-hidden border border-border/30">
-                                          <img src={p.url} alt="" className="w-full h-full object-cover" />
+                                          <Image src={p.url} alt="" width={40} height={40} className="w-full h-full object-cover" unoptimized />
                                           <button
                                             onClick={() => setCompletionPhotos((prev) => prev.filter((_, j) => j !== pi))}
                                             className="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full flex items-center justify-center"
@@ -910,7 +911,7 @@ export function OverviewClient() {
                                   <div className="flex gap-1.5 mt-1.5 flex-wrap">
                                     {completionPhotos.map((p, i) => (
                                       <div key={i} className="relative group/thumb">
-                                        <img src={p.url} alt={`Completion photo ${i + 1}`} className="w-10 h-10 rounded object-cover border border-border/30" />
+                                        <Image src={p.url} alt={`Completion photo ${i + 1}`} width={40} height={40} className="w-10 h-10 rounded object-cover border border-border/30" unoptimized />
                                         <button
                                           type="button"
                                           onClick={() => setCompletionPhotos((prev) => prev.filter((_, idx) => idx !== i))}
@@ -996,7 +997,7 @@ export function OverviewClient() {
                                           setCompletionPhotos([]);
                                           setCompletionCost("");
                                           showToast(costAmount > 0 ? `Task completed — ${marketData.currency.symbol}${costAmount.toLocaleString()} logged` : "Task completed", "success");
-                                        } catch (err) { console.error("Task completion error:", err); showToast("Failed to complete task", "error"); }
+                                        } catch { showToast("Failed to complete task", "error"); }
                                         finally { setCompletionLoading(false); }
                                       }}
                                       className="px-3 py-1 text-[10px] font-medium rounded bg-success text-white hover:bg-success/90 disabled:opacity-40 transition-colors"

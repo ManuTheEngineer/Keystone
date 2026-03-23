@@ -2,7 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeInit } from "@/components/ui/ThemeInit";
 import { ToastProvider } from "@/components/ui/Toast";
+import { QueryProvider } from "@/lib/query-client";
+import { logEnvValidation } from "@/lib/env";
 import "./globals.css";
+
+// Validate environment variables on server startup
+logEnvValidation();
 
 export const metadata: Metadata = {
   title: "Keystone",
@@ -63,12 +68,14 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <AuthProvider>
-          <ToastProvider>
-            <ThemeInit />
-            {children}
-          </ToastProvider>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <ThemeInit />
+              {children}
+            </ToastProvider>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

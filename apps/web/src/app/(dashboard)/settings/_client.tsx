@@ -314,8 +314,7 @@ export function SettingsClient() {
         // Best effort
       }
       router.push("/");
-    } catch (err) {
-      console.error("Delete account error:", err);
+    } catch {
       setDeleteError("Account deletion failed. Please try again.");
       setDeleting(false);
     }
@@ -500,8 +499,7 @@ export function SettingsClient() {
       } else {
         showToast(result.error ?? "Invalid code. Please check and try again.", "error");
       }
-    } catch (err) {
-      console.error("Trial code redemption error:", err);
+    } catch {
       showToast("Failed to redeem code. Check your connection and try again.", "error");
     } finally {
       setRedeeming(false);

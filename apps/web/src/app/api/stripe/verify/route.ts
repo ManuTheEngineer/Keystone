@@ -1,24 +1,25 @@
-// TODO: Add Zod schema validation for request body
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
 import { verifyAuth, isAuthError } from "@/lib/api-auth";
 import { updateProfile } from "@/lib/firebase-rest";
+import { verifySchema, parseBody } from "@/lib/validators/api-schemas";
+import { apiSuccess, apiError } from "@/lib/api-response";
 
 export async function POST(request: NextRequest) {
   try {
     const authResult = await verifyAuth(request);
     if (isAuthError(authResult)) return authResult;
 
-    const { sessionId } = await request.json();
+    const raw = await request.json();
+    const parsed = parseBody(verifySchema, raw);
+    if (!parsed.success) return parsed.response;
 
-    if (!sessionId) {
-      return NextResponse.json({ error: "Missing sessionId" }, { status: 400 });
-    }
+    const { sessionId } = parsed.data;
 
-    const session = await getStripeServer().checkout.sessions.retrieve(sessionId) as any;
+    const session = await getStripeServer().checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status !== "paid" && session.status !== "complete") {
-      return NextResponse.json({ error: "Payment not completed" }, { status: 400 });
+      return apiError("Payment not completed", { status: 400 });
     }
 
     const userId = session.metadata?.userId;
@@ -26,28 +27,26 @@ export async function POST(request: NextRequest) {
     const billingInterval = session.metadata?.billingInterval;
 
     if (!userId || !planTier) {
-      return NextResponse.json({ error: "Missing metadata" }, { status: 400 });
+      return apiError("Missing metadata", { status: 400 });
     }
 
-    // Verify the authenticated user matches the session's userId
     if (authResult.uid !== userId) {
-      return NextResponse.json({ error: "Session does not belong to you" }, { status: 403 });
+      return apiError("Session does not belong to you", { status: 403 });
     }
 
-    // Update Firebase profile directly
     await updateProfile(userId, {
       plan: planTier,
-      stripeCustomerId: session.customer as string,
-      stripeSubscriptionId: session.subscription as string,
+      stripeCustomerId: typeof session.customer === "string" ? session.customer : session.customer?.toString() ?? null,
+      stripeSubscriptionId: typeof session.subscription === "string" ? session.subscription : session.subscription?.toString() ?? null,
       subscriptionStatus: "active",
       billingInterval: billingInterval || "monthly",
       trialExpiresAt: null,
       trialCodeUsed: null,
     });
 
-    return NextResponse.json({ success: true, plan: planTier });
-  } catch (error: any) {
-    console.error("Verify session error:", error);
-    return NextResponse.json({ error: error.message || "Verification failed" }, { status: 500 });
+    return apiSuccess({ plan: planTier });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Verification failed";
+    return apiError(message, { status: 500 });
   }
 }

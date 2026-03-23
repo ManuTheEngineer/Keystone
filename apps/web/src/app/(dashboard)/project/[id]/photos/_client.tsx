@@ -263,8 +263,7 @@ export function PhotosClient() {
         await uploadProjectPhoto(user.uid, projectId, file, phase, caption || undefined);
       }
       showToast(`${selectedFiles.length} photo${selectedFiles.length !== 1 ? "s" : ""} uploaded`, "success");
-    } catch (err) {
-      console.error("Upload failed:", err);
+    } catch {
       showToast("Failed to upload photos", "error");
     } finally {
       setUploading(false);

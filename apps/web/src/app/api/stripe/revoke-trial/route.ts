@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { verifyAuth, isAuthError } from "@/lib/api-auth";
 import { dbGet, dbPatch } from "@/lib/firebase-rest";
+import { revokeTrialSchema, parseBody } from "@/lib/validators/api-schemas";
+import { apiSuccess, apiError } from "@/lib/api-response";
 
 // Firebase stores JS arrays as objects with numeric keys.
 // Normalize to a proper string array regardless of shape.
@@ -20,24 +22,21 @@ export async function POST(request: NextRequest) {
     const authResult = await verifyAuth(request);
     if (isAuthError(authResult)) return authResult;
 
-    const { code } = await request.json();
+    const raw = await request.json();
+    const parsed = parseBody(revokeTrialSchema, raw);
+    if (!parsed.success) return parsed.response;
 
-    if (!code) {
-      return NextResponse.json({ error: "Missing code" }, { status: 400 });
-    }
+    const { code } = parsed.data;
 
-    // Get the trial code data
     const codeData = await dbGet(`trialCodes/${code}`);
     if (!codeData) {
-      return NextResponse.json({ error: "Code not found" }, { status: 404 });
+      return apiError("Code not found", { status: 404 });
     }
 
     const usedBy = normalizeUsedBy(codeData.usedBy);
     let revokedCount = 0;
     const errors: string[] = [];
 
-    // Revert each user who used this code back to Foundation
-    // (only if they're still on a trial, not if they've since paid)
     for (const uid of usedBy) {
       try {
         const profile = await dbGet(`users/${uid}/profile`);
@@ -54,31 +53,28 @@ export async function POST(request: NextRequest) {
           });
           revokedCount++;
         }
-      } catch (err: any) {
-        console.error(`Failed to revert user ${uid}:`, err.message);
+      } catch {
         errors.push(uid);
       }
     }
 
-    // Mark the code as revoked
     await dbPatch(`trialCodes/${code}`, {
       revokedAt: new Date().toISOString(),
     });
 
     if (errors.length > 0) {
-      return NextResponse.json(
+      return apiSuccess(
+        { revokedUsers: revokedCount },
         {
-          success: true,
-          revokedUsers: revokedCount,
-          warning: `Failed to revert ${errors.length} user(s): ${errors.join(", ")}`,
-        },
-        { status: 207 }
+          status: 207,
+          meta: { warning: `Failed to revert ${errors.length} user(s): ${errors.join(", ")}` },
+        }
       );
     }
 
-    return NextResponse.json({ success: true, revokedUsers: revokedCount });
-  } catch (error: any) {
-    console.error("Revoke trial error:", error);
-    return NextResponse.json({ error: error.message || "Revocation failed" }, { status: 500 });
+    return apiSuccess({ revokedUsers: revokedCount });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Revocation failed";
+    return apiError(message, { status: 500 });
   }
 }

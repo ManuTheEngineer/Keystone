@@ -1,54 +1,48 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { verifyAuth, isAuthError } from "@/lib/api-auth";
+import { aiChatSchema, parseBody } from "@/lib/validators/api-schemas";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { checkUserRateLimit } from "@/lib/rate-limit";
+import { dbGet } from "@/lib/firebase-rest";
 
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 
-// Simple in-memory rate limiter
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 20; // requests per window
-const RATE_WINDOW = 3600000; // 1 hour in ms
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  // Cleanup old entries periodically to prevent memory leak
-  if (rateLimitMap.size > 1000) {
-    for (const [key, entry] of rateLimitMap) {
-      if (now > entry.resetAt) rateLimitMap.delete(key);
-    }
-  }
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW });
-    return true;
-  }
-  if (entry.count >= RATE_LIMIT) return false;
-  entry.count++;
-  return true;
-}
-
 export async function POST(req: NextRequest) {
-  // Verify Firebase ID token via shared auth helper
   const authResult = await verifyAuth(req);
   if (isAuthError(authResult)) return authResult;
 
-  // Rate limit by IP
-  const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
-  if (!checkRateLimit(ip)) {
-    const entry = rateLimitMap.get(ip);
-    return NextResponse.json({ error: `RATE_LIMITED:${entry?.count ?? RATE_LIMIT}:${RATE_LIMIT}` }, { status: 429 });
+  // Plan-based rate limiting via Firebase
+  const userId = authResult.uid;
+  let userPlan = "FOUNDATION";
+  try {
+    const profile = await dbGet(`users/${userId}/profile`);
+    if (profile?.plan) userPlan = profile.plan;
+  } catch {
+    // If profile read fails, default to Foundation limits
+  }
+
+  const rateResult = await checkUserRateLimit(userId, userPlan);
+  if (!rateResult.allowed) {
+    return apiError("Daily AI query limit reached. Upgrade your plan for more.", {
+      status: 429,
+      meta: {
+        limit: rateResult.limit,
+        remaining: rateResult.remaining,
+        resetAt: rateResult.resetAt,
+      },
+    });
   }
 
   if (!CLAUDE_API_KEY) {
-    return NextResponse.json({ error: "AI service not configured" }, { status: 503 });
+    return apiError("AI service not configured", { status: 503 });
   }
 
   try {
-    const { messages, projectContext, mode = "general" } = await req.json();
+    const raw = await req.json();
+    const parsed = parseBody(aiChatSchema, raw);
+    if (!parsed.success) return parsed.response;
 
-    if (!messages || !Array.isArray(messages)) {
-      return NextResponse.json({ error: "messages array required" }, { status: 400 });
-    }
-
+    const { messages, projectContext, mode } = parsed.data;
     const systemPrompt = buildSystemPrompt(projectContext, mode);
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -62,30 +56,24 @@ export async function POST(req: NextRequest) {
         model: "claude-sonnet-4-20250514",
         max_tokens: 2048,
         system: systemPrompt,
-        messages: messages.map((m: { role: string; content: string }) => ({
-          role: m.role,
-          content: m.content,
-        })),
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return NextResponse.json(
-        { error: "AI service error", details: errorData },
-        { status: response.status }
-      );
+      return apiError("AI service error", { status: response.status, details: errorData });
     }
 
     const data = await response.json();
     const textContent = data.content?.find((c: { type: string }) => c.type === "text");
 
-    return NextResponse.json({
+    return apiSuccess({
       message: textContent?.text ?? "No response generated.",
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: "AI service error", details: message }, { status: 500 });
+    return apiError("AI service error", { status: 500, details: message });
   }
 }
 

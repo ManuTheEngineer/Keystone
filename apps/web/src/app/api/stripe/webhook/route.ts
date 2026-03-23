@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
 import { updateProfile } from "@/lib/firebase-rest";
+import { isDuplicateEvent, markEventProcessed } from "./idempotency";
 import type Stripe from "stripe";
 
 export const runtime = "nodejs";
@@ -30,9 +31,14 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
   try {
     event = getStripeServer().webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err: any) {
-    console.error("Webhook signature verification failed:", err.message);
-    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: "Invalid signature", details: message }, { status: 400 });
+  }
+
+  // Idempotency: skip if this event was already processed
+  if (await isDuplicateEvent(event.id)) {
+    return NextResponse.json({ data: { received: true, duplicate: true } });
   }
 
   try {
@@ -42,25 +48,26 @@ export async function POST(request: NextRequest) {
         const userId = session.metadata?.userId;
         const billingInterval = session.metadata?.billingInterval;
 
-        // Determine the plan tier from the actual Price ID (not metadata)
         let planTier: string | null = null;
         if (session.subscription) {
           try {
-            const sub = await getStripeServer().subscriptions.retrieve(session.subscription as string) as any;
+            const subId = typeof session.subscription === "string"
+              ? session.subscription
+              : session.subscription.id;
+            const sub = await getStripeServer().subscriptions.retrieve(subId);
             const priceId = sub.items?.data?.[0]?.price?.id;
             if (priceId) planTier = tierFromPriceId(priceId);
           } catch {
             // Fall through to metadata
           }
         }
-        // Fallback to metadata only if price lookup fails
         if (!planTier) planTier = session.metadata?.planTier ?? null;
 
         if (userId && planTier) {
           await updateProfile(userId, {
             plan: planTier,
-            stripeCustomerId: session.customer as string,
-            stripeSubscriptionId: session.subscription as string,
+            stripeCustomerId: typeof session.customer === "string" ? session.customer : null,
+            stripeSubscriptionId: typeof session.subscription === "string" ? session.subscription : null,
             subscriptionStatus: "active",
             billingInterval: billingInterval || "monthly",
             trialExpiresAt: null,
@@ -71,13 +78,14 @@ export async function POST(request: NextRequest) {
       }
 
       case "invoice.paid": {
-        const invoice = event.data.object as Stripe.Invoice;
-        const subId = (invoice as any).subscription as string;
+        const invoice = event.data.object as unknown as Record<string, unknown>;
+        const rawSub = invoice.subscription;
+        const subId = typeof rawSub === "string" ? rawSub : null;
         if (subId) {
-          const sub = await getStripeServer().subscriptions.retrieve(subId);
-          const userId = sub.metadata?.userId;
-          if (userId) {
-            await updateProfile(userId, { subscriptionStatus: "active" });
+          const sub = await getStripeServer().subscriptions.retrieve(subId) as unknown as Record<string, unknown>;
+          const meta = sub.metadata as Record<string, string> | undefined;
+          if (meta?.userId) {
+            await updateProfile(meta.userId, { subscriptionStatus: "active" });
           }
         }
         break;
@@ -88,9 +96,13 @@ export async function POST(request: NextRequest) {
         const userId = sub.metadata?.userId;
         const planTier = sub.metadata?.planTier;
         if (userId) {
+          const statusMap: Record<string, string> = {
+            active: "active",
+            past_due: "past_due",
+          };
           await updateProfile(userId, {
             plan: planTier || undefined,
-            subscriptionStatus: sub.status === "active" ? "active" : sub.status === "past_due" ? "past_due" : "canceled",
+            subscriptionStatus: statusMap[sub.status] ?? "canceled",
           });
         }
         break;
@@ -111,22 +123,26 @@ export async function POST(request: NextRequest) {
       }
 
       case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice;
-        const subId = (invoice as any).subscription as string;
-        if (subId) {
-          const sub = await getStripeServer().subscriptions.retrieve(subId);
-          const userId = sub.metadata?.userId;
-          if (userId) {
-            await updateProfile(userId, { subscriptionStatus: "past_due" });
+        const failedInvoice = event.data.object as unknown as Record<string, unknown>;
+        const failedRawSub = failedInvoice.subscription;
+        const failedSubId = typeof failedRawSub === "string" ? failedRawSub : null;
+        if (failedSubId) {
+          const sub = await getStripeServer().subscriptions.retrieve(failedSubId) as unknown as Record<string, unknown>;
+          const meta = sub.metadata as Record<string, string> | undefined;
+          if (meta?.userId) {
+            await updateProfile(meta.userId, { subscriptionStatus: "past_due" });
           }
         }
         break;
       }
     }
 
-    return NextResponse.json({ received: true });
-  } catch (error: any) {
-    console.error("Webhook handler error:", error);
-    return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
+    // Mark event as processed for idempotency
+    await markEventProcessed(event.id);
+
+    return NextResponse.json({ data: { received: true } });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Webhook handler failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

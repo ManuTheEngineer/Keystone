@@ -28,8 +28,6 @@ export async function dbPatch(path: string, data: Record<string, unknown>) {
     body: JSON.stringify(data),
   });
   if (!res.ok) {
-    const errorText = await res.text();
-    console.error("Firebase write failed:", res.status, errorText);
     throw new Error(`Firebase write to ${path} failed: ${res.status}`);
   }
 }

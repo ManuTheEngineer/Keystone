@@ -1,10 +1,15 @@
-const CACHE_NAME = "keystone-v4";
+const CACHE_NAME = "keystone-v5";
 const DATA_CACHE = "keystone-data-v2";
 const OFFLINE_QUEUE = "keystone-offline-queue";
+const OFFLINE_PAGE = "/offline/";
+
 const PRECACHE_URLS = [
   "/",
   "/manifest.json",
+  OFFLINE_PAGE,
 ];
+
+// ── Install: precache critical assets ───────────────────────────────
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -12,6 +17,8 @@ self.addEventListener("install", (event) => {
   );
   self.skipWaiting();
 });
+
+// ── Activate: clean old caches ──────────────────────────────────────
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -26,7 +33,16 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Background sync: retry queued offline writes when connectivity returns
+// ── Message: handle skip-waiting from update prompt ─────────────────
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
+// ── Background Sync: retry queued offline writes ────────────────────
+
 self.addEventListener("sync", (event) => {
   if (event.tag === "keystone-offline-sync") {
     event.waitUntil(
@@ -37,15 +53,16 @@ self.addEventListener("sync", (event) => {
             const response = await cache.match(request);
             if (response) {
               const body = await response.text();
+              const method = response.headers.get("X-Original-Method") || "PATCH";
               await fetch(request.url, {
-                method: request.method || "PATCH",
+                method,
                 headers: { "Content-Type": "application/json" },
                 body,
               });
               await cache.delete(request);
             }
           } catch {
-            // Will retry on next sync
+            // Will retry on next sync event
           }
         }
       })
@@ -53,22 +70,27 @@ self.addEventListener("sync", (event) => {
   }
 });
 
+// ── Fetch: network-first with offline fallbacks ─────────────────────
+
 self.addEventListener("fetch", (event) => {
-  // Queue Firebase writes when offline (PATCH/PUT/POST to firebaseio.com)
-  if (
-    event.request.method !== "GET" &&
-    event.request.url.includes("firebaseio.com")
-  ) {
+  const { request } = event;
+
+  // ── Queue Firebase writes when offline ────────────────────────────
+  if (request.method !== "GET" && request.url.includes("firebaseio.com")) {
     event.respondWith(
-      fetch(event.request.clone()).catch(async () => {
-        // Offline — queue the write for later sync
+      fetch(request.clone()).catch(async () => {
         const cache = await caches.open(OFFLINE_QUEUE);
-        const body = await event.request.text();
+        const body = await request.text();
+        // Store original method in a header so sync can replay correctly
         await cache.put(
-          event.request,
-          new Response(body, { headers: { "Content-Type": "application/json" } })
+          request,
+          new Response(body, {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Original-Method": request.method,
+            },
+          })
         );
-        // Register for background sync
         if (self.registration.sync) {
           await self.registration.sync.register("keystone-offline-sync");
         }
@@ -81,47 +103,56 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Only handle GET requests for caching
-  if (event.request.method !== "GET") return;
+  if (request.method !== "GET") return;
 
-  const url = event.request.url;
+  const url = request.url;
 
-  // Firebase Realtime Database — stale-while-revalidate for offline access
+  // ── Firebase RTDB: stale-while-revalidate ─────────────────────────
   if (url.includes("firebaseio.com") && url.includes(".json")) {
     event.respondWith(
       caches.open(DATA_CACHE).then((cache) =>
-        fetch(event.request)
+        fetch(request)
           .then((response) => {
-            if (response.ok) cache.put(event.request, response.clone());
+            if (response.ok) cache.put(request, response.clone());
             return response;
           })
-          .catch(() => cache.match(event.request).then((cached) =>
-            cached || new Response("{}", { headers: { "Content-Type": "application/json" } })
-          ))
+          .catch(() =>
+            cache.match(request).then(
+              (cached) =>
+                cached ||
+                new Response("{}", {
+                  headers: { "Content-Type": "application/json" },
+                })
+            )
+          )
       )
     );
     return;
   }
 
-  // Skip other external APIs
+  // Skip other external origins
   if (!url.startsWith(self.location.origin)) return;
 
-  // Same-origin: network-first with cache fallback
+  // ── Same-origin: network-first with cache fallback ────────────────
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then((response) => {
         if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
+            cache.put(request, clone);
           });
         }
         return response;
       })
       .catch(() =>
-        caches.match(event.request).then((cached) => {
+        caches.match(request).then((cached) => {
           if (cached) return cached;
-          if (event.request.mode === "navigate") {
-            return caches.match("/");
+          // Navigation requests get the offline page
+          if (request.mode === "navigate") {
+            return caches.match(OFFLINE_PAGE).then(
+              (offlinePage) => offlinePage || caches.match("/")
+            );
           }
           return new Response("", { status: 408, statusText: "Offline" });
         })

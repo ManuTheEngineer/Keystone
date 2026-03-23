@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { adminAuth } from "./firebase-admin";
 
 /**
  * Verifies a Firebase ID token from the Authorization header.
@@ -14,24 +15,8 @@ export async function verifyAuth(
   const idToken = authHeader.split("Bearer ")[1];
 
   try {
-    // NOTE: Uses deprecated v3 endpoint. Migrate to Firebase Admin SDK
-    // (verifyIdToken) when server-side service account is configured.
-    const res = await fetch(
-      `https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? ""}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      }
-    );
-    if (!res.ok) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    const data = await res.json();
-    if (!data.users || data.users.length === 0) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    return { uid: data.users[0].localId };
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    return { uid: decodedToken.uid };
   } catch {
     return NextResponse.json({ error: "Token verification failed" }, { status: 401 });
   }

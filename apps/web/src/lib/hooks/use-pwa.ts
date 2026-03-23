@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 export function usePWA() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
 
   useEffect(() => {
     // Check install state
@@ -19,9 +21,24 @@ export function usePWA() {
         .register("/sw.js")
         .then((reg) => {
           setRegistration(reg);
+
+          // Listen for updates
+          reg.addEventListener("updatefound", () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener("statechange", () => {
+                if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                  setUpdateAvailable(true);
+                }
+              });
+            }
+          });
         })
-        .catch(() => {
-          // SW registration failed silently — non-critical
+        .catch((error) => {
+          // Log to Sentry — SW failure is critical for offline-first West African users
+          Sentry.captureException(error, {
+            tags: { component: "pwa", action: "sw-registration" },
+          });
         });
     }
 
@@ -39,5 +56,12 @@ export function usePWA() {
     };
   }, []);
 
-  return { isInstalled, isOnline, registration };
+  const applyUpdate = useCallback(() => {
+    if (registration?.waiting) {
+      registration.waiting.postMessage({ type: "SKIP_WAITING" });
+      window.location.reload();
+    }
+  }, [registration]);
+
+  return { isInstalled, isOnline, registration, updateAvailable, applyUpdate };
 }

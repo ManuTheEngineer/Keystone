@@ -562,8 +562,7 @@ export default function AnalyzePage() {
 
       showToast("Project created", "success");
       router.push(`/project/${projectId}/overview`);
-    } catch (err) {
-      console.error("Failed to create project:", err);
+    } catch {
       showToast("Failed to create project", "error");
       setCreating(false);
     }
