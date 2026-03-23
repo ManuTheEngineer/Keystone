@@ -390,7 +390,7 @@ export default function AnalyzePage() {
   const isUSA = input.market === "USA";
   const isWA = !!input.market && input.market !== "USA";
   const currency = getCurr(input.market);
-  const sizeUnit = isUSA ? "sqft" : (input.market ? "sqm" : "sqft");
+  const sizeUnit = isUSA ? "sqft" : (input.market ? "m\u00B2" : "sqft");
   const featureList = isUSA ? US_FEATURES : WA_FEATURES;
 
   const suggestions = useMemo(() => {

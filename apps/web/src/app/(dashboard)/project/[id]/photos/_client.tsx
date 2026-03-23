@@ -113,7 +113,7 @@ export function PhotosClient() {
   }, [user, projectId]);
 
   useEffect(() => {
-    setTopbar(project?.name || t("project.photos"), `${t("project.photos")} -- ${photos.length} photos`, "info");
+    setTopbar(project?.name || t("project.photos"), `${t("project.photos")} — ${photos.length} ${photos.length === 1 ? "photo" : "photos"}`, "info");
   }, [setTopbar, photos.length, project]);
 
   // Market data and phases
@@ -707,7 +707,7 @@ export function PhotosClient() {
           <div className="w-[220px] flex-shrink-0 border border-border rounded-[var(--radius)] bg-surface overflow-hidden self-start">
             <div className="px-3 py-2 border-b border-border bg-warm/30">
               <span className="text-[9px] font-semibold text-earth uppercase tracking-wider">
-                {PHASE_NAMES[currentPhaseKey as ProjectPhase]} -- Milestones
+                {PHASE_NAMES[currentPhaseKey as ProjectPhase]} — Milestones
               </span>
             </div>
             <div className="divide-y divide-border">

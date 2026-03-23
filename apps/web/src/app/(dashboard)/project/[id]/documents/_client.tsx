@@ -83,7 +83,13 @@ function formatFileSize(bytes?: number): string {
 function formatDate(dateStr?: string): string {
   if (!dateStr) return "--";
   try {
-    const d = new Date(dateStr);
+    let d = new Date(dateStr);
+    // If the date string has no year (e.g. "Mar 2"), Date may parse to 2001 or
+    // an unexpected year. Detect this and re-parse with the current year.
+    if (isNaN(d.getTime()) || (!/\d{4}/.test(dateStr) && d.getFullYear() < 2020)) {
+      d = new Date(`${dateStr}, ${new Date().getFullYear()}`);
+    }
+    if (isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   } catch {
     return dateStr;
@@ -504,7 +510,7 @@ export function DocumentsClient() {
   useEffect(() => {
     setTopbar(
       project?.name || t("project.documents"),
-      `${t("project.documents")} -- ${docs.length} files${generatedCount > 0 ? ` / ${generatedCount} generated` : ""}`,
+      `${t("project.documents")} — ${docs.length} ${docs.length === 1 ? "file" : "files"}${generatedCount > 0 ? ` / ${generatedCount} generated` : ""}`,
       "info"
     );
   }, [setTopbar, docs.length, generatedCount, project]);
@@ -522,6 +528,7 @@ export function DocumentsClient() {
         name: file.name.replace(/\.[^.]+$/, ""),
         type,
         fileUrl,
+        fileSize: file.size,
         phase,
         date: new Date().toISOString(),
       });
@@ -808,7 +815,7 @@ export function DocumentsClient() {
                     <span className="text-[9px] text-muted font-data">{formatDate(doc.date)}</span>
 
                     {/* Size */}
-                    <span className="text-[9px] text-muted font-data">--</span>
+                    <span className="text-[9px] text-muted font-data">{formatFileSize(doc.fileSize)}</span>
 
                     {/* Actions */}
                     <div className="flex items-center justify-end gap-1">

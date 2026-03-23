@@ -15,9 +15,6 @@ export default function ProjectLayout({ children }: { children: ReactNode }) {
   const [verified, setVerified] = useState(false);
   const [checking, setChecking] = useState(true);
 
-  const subscribe = useProjectStore((s) => s.subscribe);
-  const unsubscribe = useProjectStore((s) => s.unsubscribe);
-
   useEffect(() => {
     if (!user) return;
 
@@ -36,9 +33,11 @@ export default function ProjectLayout({ children }: { children: ReactNode }) {
   // Initialize the Zustand project store once verified
   useEffect(() => {
     if (!user || !verified) return;
-    subscribe(user.uid, projectId);
-    return () => unsubscribe();
-  }, [user, verified, projectId, subscribe, unsubscribe]);
+    // Call subscribe/unsubscribe directly from the store to avoid
+    // dependency-array churn (function references are stable in Zustand)
+    useProjectStore.getState().subscribe(user.uid, projectId);
+    return () => useProjectStore.getState().unsubscribe();
+  }, [user, verified, projectId]);
 
   if (checking || !verified) {
     return (

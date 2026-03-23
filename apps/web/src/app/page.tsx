@@ -736,7 +736,7 @@ export default function LandingPage() {
       </section>
 
       {/* Section: FAQ */}
-      <section className="py-12 sm:py-16 px-4 sm:px-6 bg-surface">
+      <section id="faq" className="py-12 sm:py-16 px-4 sm:px-6 bg-surface">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-[28px] sm:text-[32px] text-earth text-center mb-12" style={{ fontFamily: "var(--font-heading)" }}>
             Common questions
@@ -866,6 +866,16 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
+                  <a href="#faq" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                    FAQ
+                  </a>
+                </li>
+                <li>
+                  <Link href="/learn" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                    Learn
+                  </Link>
+                </li>
+                <li>
                   <a href="mailto:ManuTheEngineer@outlook.com?subject=Keystone Support" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
                     ManuTheEngineer@outlook.com
                   </a>
@@ -897,7 +907,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-2">
               <KeystoneIcon size={16} className="text-sand/40" />
               <span className="text-[12px] text-sand/40">
-                2026 Keystone. All rights reserved.
+                &copy; 2026 Keystone. All rights reserved.
               </span>
             </div>
           </div>

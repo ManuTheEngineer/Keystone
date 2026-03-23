@@ -100,6 +100,7 @@ export interface DocumentData {
   phase: string;
   date: string;
   fileUrl?: string;
+  fileSize?: number;
   type: string;
   templateId?: string;
   generatedAt?: string;
@@ -985,7 +986,7 @@ export async function addGeneratedDocument(userId: string, data: {
   const docRef = push(ref(db, `users/${userId}/projects/${data.projectId}/documents`));
   await set(docRef, {
     ...data,
-    date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    date: new Date().toISOString(),
   });
   return docRef.key!;
 }
@@ -1621,14 +1622,14 @@ export async function seedDemoProject(userId: string): Promise<string> {
 
   // Seed documents (8 across multiple phases)
   const docs: Omit<DocumentData, "id">[] = [
-    { projectId, name: "Construction loan agreement", phase: "Phase 1: Finance", date: "Mar 2", type: "CONTRACT" },
-    { projectId, name: "Land purchase agreement", phase: "Phase 2: Land", date: "Feb 15", type: "LEGAL" },
-    { projectId, name: "Building plans (full set)", phase: "Phase 3: Design", date: "Feb 28", type: "PLAN" },
-    { projectId, name: "Building permit #BP-2026-4421", phase: "Phase 4: Approve", date: "Mar 8", type: "PERMIT" },
-    { projectId, name: "Martinez Framing contract", phase: "Phase 5: Assemble", date: "Mar 10", type: "CONTRACT" },
-    { projectId, name: "Draw request #4 (approved)", phase: "Phase 6: Build", date: "Mar 12", type: "INVOICE" },
-    { projectId, name: "Framing inspection report", phase: "Phase 6: Build", date: "Mar 14", type: "REPORT" },
-    { projectId, name: "Change order #2 windows", phase: "Phase 6: Build", date: "Mar 15", type: "CONTRACT" },
+    { projectId, name: "Construction loan agreement", phase: "Phase 1: Finance", date: "2026-03-02T12:00:00.000Z", fileSize: 245760, type: "CONTRACT" },
+    { projectId, name: "Land purchase agreement", phase: "Phase 2: Land", date: "2026-02-15T12:00:00.000Z", fileSize: 189440, type: "LEGAL" },
+    { projectId, name: "Building plans (full set)", phase: "Phase 3: Design", date: "2026-02-28T12:00:00.000Z", fileSize: 4718592, type: "PLAN" },
+    { projectId, name: "Building permit #BP-2026-4421", phase: "Phase 4: Approve", date: "2026-03-08T12:00:00.000Z", fileSize: 102400, type: "PERMIT" },
+    { projectId, name: "Martinez Framing contract", phase: "Phase 5: Assemble", date: "2026-03-10T12:00:00.000Z", fileSize: 156672, type: "CONTRACT" },
+    { projectId, name: "Draw request #4 (approved)", phase: "Phase 6: Build", date: "2026-03-12T12:00:00.000Z", fileSize: 87040, type: "INVOICE" },
+    { projectId, name: "Framing inspection report", phase: "Phase 6: Build", date: "2026-03-14T12:00:00.000Z", fileSize: 327680, type: "REPORT" },
+    { projectId, name: "Change order #2 windows", phase: "Phase 6: Build", date: "2026-03-15T12:00:00.000Z", fileSize: 134144, type: "CONTRACT" },
   ];
   for (const d of docs) {
     await addDocument(userId, d);

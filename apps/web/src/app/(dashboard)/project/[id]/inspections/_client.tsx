@@ -144,12 +144,12 @@ export function InspectionsClient() {
   const currentPhaseIndex = project?.currentPhase ?? 0;
   const currentPhaseKey = PHASE_ORDER[currentPhaseIndex] ?? "DEFINE";
 
-  // Auto-select current phase on load
+  // Auto-select current phase on load (wait for project data)
   useEffect(() => {
-    if (selectedPhase === null) {
+    if (selectedPhase === null && project) {
       setSelectedPhase(currentPhaseKey);
     }
-  }, [currentPhaseKey, selectedPhase]);
+  }, [currentPhaseKey, selectedPhase, project]);
 
   // --- Derived data ---
 
@@ -226,7 +226,7 @@ export function InspectionsClient() {
   useEffect(() => {
     setTopbar(
       project?.name || t("project.inspections"),
-      `${t("project.inspections")} -- ${stats.passed}/${stats.total} passed`,
+      `${t("project.inspections")} — ${stats.passed}/${stats.total} passed`,
       stats.passed === stats.total && stats.total > 0 ? "success" : "info"
     );
   }, [setTopbar, stats, project?.name]);

@@ -140,14 +140,8 @@ import type { ExportData } from "@/lib/services/export-service";
 const PHASE_NAMES_EN = ["Define", "Finance", "Land", "Design", "Approve", "Assemble", "Build", "Verify", "Operate"];
 const PHASE_NAMES_FR = ["Definir", "Financer", "Terrain", "Concevoir", "Approuver", "Assembler", "Construire", "Verifier", "Exploiter"];
 
-function getPhaseName(phaseIndex: number, market?: string): string {
-  const isWA = market && ["TOGO", "GHANA", "BENIN"].includes(market);
-  const en = PHASE_NAMES_EN[phaseIndex] ?? "Define";
-  if (isWA && market !== "GHANA") {
-    const fr = PHASE_NAMES_FR[phaseIndex] ?? "";
-    return fr ? `${en} / ${fr}` : en;
-  }
-  return en;
+function getPhaseName(phaseIndex: number): string {
+  return PHASE_NAMES_EN[phaseIndex] ?? "Define";
 }
 
 // ---------------------------------------------------------------------------
@@ -738,7 +732,7 @@ export function OverviewClient() {
           <div className="flex items-baseline justify-between mb-4">
             <div className="flex items-baseline gap-2">
               <h3 className="text-[15px] font-semibold text-earth tracking-[-0.01em]" style={{ fontFamily: "var(--font-heading)" }}>
-                {getPhaseName(phase, project?.market)}
+                {getPhaseName(phase)}
               </h3>
               <span className="text-[11px] font-data text-muted/50">
                 {currentPhaseDone.length}/{currentPhaseTasks.length}

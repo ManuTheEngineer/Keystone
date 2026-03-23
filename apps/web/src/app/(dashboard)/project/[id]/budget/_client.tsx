@@ -556,7 +556,7 @@ export function BudgetClient() {
                         <div>
                           <span className="text-muted block">Variance</span>
                           <span className={`font-data ${isOver ? "text-danger" : "text-success"}`}>
-                            {isOver ? "+" : ""}{fmt(varianceAmt)}
+                            {isOver ? "+" : ""}{fmtCompact(varianceAmt)}
                           </span>
                         </div>
                       </div>
