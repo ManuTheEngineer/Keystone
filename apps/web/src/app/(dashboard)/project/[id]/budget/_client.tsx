@@ -630,7 +630,7 @@ export function BudgetClient() {
       {/* ================================================================= */}
       {/*  STICKY FOOTER                                                    */}
       {/* ================================================================= */}
-      <div className="fixed bottom-0 right-0 z-30 bg-earth/95 backdrop-blur-sm border-t border-earth-light/20 pr-16" style={{ left: "var(--sidebar-width, 0px)" }}>
+      <div className="fixed bottom-0 right-0 z-30 backdrop-blur-sm border-t pr-16" style={{ left: "var(--sidebar-width, 0px)", backgroundColor: "var(--sidebar-bg)", borderColor: "var(--sidebar-text)", opacity: 0.97 }}>
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-6">
             {[
@@ -639,14 +639,14 @@ export function BudgetClient() {
               { label: "Left", value: fmtCompact(remaining), danger: remaining < 0 },
             ].map((m) => (
               <div key={m.label}>
-                <p className="text-[8px] text-warm/50 uppercase tracking-wider">{m.label}</p>
-                <p className={`font-data text-sm font-medium ${m.danger ? "text-danger" : "text-warm"}`}>{m.value}</p>
+                <p className="text-[8px] uppercase tracking-wider" style={{ color: "var(--sidebar-text)" }}>{m.label}</p>
+                <p className={`font-data text-sm font-medium ${m.danger ? "text-danger" : ""}`} style={m.danger ? {} : { color: "var(--sidebar-text-bright)" }}>{m.value}</p>
               </div>
             ))}
           </div>
           <div>
-            <p className="text-[8px] text-warm/50 uppercase tracking-wider">Contingency (budget line item)</p>
-            <p className="font-data text-sm text-warm font-medium">
+            <p className="text-[8px] uppercase tracking-wider" style={{ color: "var(--sidebar-text)" }}>Contingency (budget line item)</p>
+            <p className="font-data text-sm font-medium" style={{ color: "var(--sidebar-text-bright)" }}>
               {(() => {
                 const c = items.find(i => i.category.toLowerCase().includes("contingency"));
                 return c ? fmtCompact(c.estimated - c.actual) : "--";
