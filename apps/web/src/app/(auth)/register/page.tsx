@@ -55,6 +55,9 @@ export default function RegisterPage() {
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [fadeIn, setFadeIn] = useState(true);
 
+  // Clear top-level error banner when any field changes
+  useEffect(() => { setError(""); }, [name, email, password, agreedToTerms]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setFadeIn(false);
@@ -75,7 +78,8 @@ export default function RegisterPage() {
     if (!name.trim()) errs.name = "Please enter your name.";
     if (!email.trim()) errs.email = "Please enter your email address.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errs.email = "Please enter a valid email address.";
-    if (password.length < 6) errs.password = "Password must be at least 6 characters.";
+    if (!password) errs.password = "Password is required.";
+    else if (password.length < 6) errs.password = "Password must be at least 6 characters.";
     if (!agreedToTerms) errs.terms = "Please agree to continue.";
     setFieldErrors(errs);
     if (Object.keys(errs).length > 0) {
@@ -196,7 +200,9 @@ export default function RegisterPage() {
                   </button>
                 </div>
                 <div className="h-5 mt-1.5">
-                  {password.length === 0 ? (
+                  {fieldErrors.password ? (
+                    <p className="text-[11px] text-danger">{fieldErrors.password}</p>
+                  ) : password.length === 0 ? (
                     <p className="text-[11px] text-muted/60">{t("auth.minChars", browserLocale)}</p>
                   ) : password.length < 6 ? (
                     <p className="text-[11px] text-danger">{t("auth.tooShort", browserLocale)}</p>

@@ -1190,8 +1190,12 @@ export default function DashboardPage() {
             <div className="space-y-3 animate-stagger">
               {priorityProjects.map((p) => {
                 const marketData = getMarketData(p.market as Market);
-                const keyMetric = getKeyMetric(p);
-                const nextAction = getNextAction(p);
+                const pTasks = projectTasks[p.id ?? ""] ?? [];
+                const computedProgress = pTasks.length > 0
+                  ? Math.round((pTasks.filter((t) => t.done).length / pTasks.length) * 100)
+                  : p.progress;
+                const keyMetric = getKeyMetric({ ...p, progress: computedProgress });
+                const nextAction = getNextAction({ ...p, progress: computedProgress });
 
                 return (
                   <Link
@@ -1201,7 +1205,7 @@ export default function DashboardPage() {
                   >
                     {/* Left: progress ring */}
                     <div className="shrink-0">
-                      <ProgressRing progress={p.progress} size={48} />
+                      <ProgressRing progress={computedProgress} size={48} />
                     </div>
 
                     {/* Middle: project info */}

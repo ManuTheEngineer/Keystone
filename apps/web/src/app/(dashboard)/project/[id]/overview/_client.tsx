@@ -634,7 +634,7 @@ export function OverviewClient() {
       {/* KPI row — clickable deep links */}
       <div className="flex items-stretch gap-px mb-4 bg-border/30 rounded-lg overflow-hidden">
         {[
-          { label: "Progress", value: `${computedProgress}%`, sub: `${completedTasks.length}/${tasks.length} tasks`, href: undefined as string | undefined },
+          { label: "Overall", value: `${computedProgress}%`, sub: `${currentPhaseDone.length}/${currentPhaseTasks.length} phase · ${completedTasks.length}/${tasks.length} total`, href: undefined as string | undefined },
           { label: "Budget", value: fmtCompact(project.totalBudget), sub: `${budgetUtilization}% spent`, href: `/project/${projectId}/budget` },
           { label: "Spent", value: fmtCompact(project.totalSpent), sub: fmtCompact(project.totalBudget - project.totalSpent) + " left", href: `/project/${projectId}/budget` },
           { label: "Timeline", value: `Wk ${project.currentWeek}`, sub: `of est. ${project.totalWeeks} wks`, href: `/project/${projectId}/schedule` },

@@ -36,6 +36,18 @@ const MARKET_CONFIG: Record<Market, MarketVisual> = {
     text: "text-accent-wa",
     bars: ["#2D6A4F", "#BC6C25"],
   },
+  IVORY_COAST: {
+    label: "Ivory Coast",
+    bg: "bg-accent-wa-light",
+    text: "text-accent-wa",
+    bars: ["#FF8C00", "#FFFFFF", "#009E60"],
+  },
+  SENEGAL: {
+    label: "Senegal",
+    bg: "bg-accent-wa-light",
+    text: "text-accent-wa",
+    bars: ["#009639", "#FDEF42", "#E31B23"],
+  },
 };
 
 function FlagBars({ colors }: { colors: string[] }) {

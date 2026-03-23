@@ -26,6 +26,8 @@ const MARKETS: Record<Market, MarketConfig> = {
   TOGO: TOGO_MARKET,
   GHANA: GHANA_MARKET,
   BENIN: BENIN_MARKET,
+  IVORY_COAST: TOGO_MARKET, // Same CFA zone, similar construction methods
+  SENEGAL: TOGO_MARKET, // Same CFA zone, similar construction methods
 };
 
 export function getMarketData(market: Market): MarketConfig {

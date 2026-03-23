@@ -104,6 +104,8 @@ const MARKET_DISPLAY_NAMES: Record<Market, string> = {
   TOGO: "Togo",
   GHANA: "Ghana",
   BENIN: "Benin",
+  IVORY_COAST: "Ivory Coast",
+  SENEGAL: "Senegal",
 };
 
 // ---------------------------------------------------------------------------

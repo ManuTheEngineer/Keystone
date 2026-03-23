@@ -1,6 +1,6 @@
 // === Core Enums (matching project-service.ts) ===
 
-export type Market = "USA" | "TOGO" | "GHANA" | "BENIN";
+export type Market = "USA" | "TOGO" | "GHANA" | "BENIN" | "IVORY_COAST" | "SENEGAL";
 export type ProjectPhase = "DEFINE" | "FINANCE" | "LAND" | "DESIGN" | "APPROVE" | "ASSEMBLE" | "BUILD" | "VERIFY" | "OPERATE";
 export type PropertyType = "SFH" | "DUPLEX" | "TRIPLEX" | "FOURPLEX" | "APARTMENT";
 export type BuildPurpose = "OCCUPY" | "RENT" | "SELL";

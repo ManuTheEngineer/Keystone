@@ -122,7 +122,7 @@ const WA_FEATURES = [
 ];
 
 // Fallback rates — overridden by live rates when fetched
-const DEFAULT_EXCHANGE_RATES: Record<string, number> = { TOGO: 567.76, GHANA: 10.96, BENIN: 567.76 };
+const DEFAULT_EXCHANGE_RATES: Record<string, number> = { TOGO: 567.76, GHANA: 10.96, BENIN: 567.76, IVORY_COAST: 567.76, SENEGAL: 567.76 };
 
 type ResultTab = "summary" | "breakdown" | "location" | "scenarios";
 
@@ -358,6 +358,8 @@ export default function AnalyzePage() {
             TOGO: data.rates.XOF ?? DEFAULT_EXCHANGE_RATES.TOGO,
             GHANA: data.rates.GHS ?? DEFAULT_EXCHANGE_RATES.GHANA,
             BENIN: data.rates.XOF ?? DEFAULT_EXCHANGE_RATES.BENIN,
+            IVORY_COAST: data.rates.XOF ?? DEFAULT_EXCHANGE_RATES.IVORY_COAST,
+            SENEGAL: data.rates.XOF ?? DEFAULT_EXCHANGE_RATES.SENEGAL,
           });
         }
       })
@@ -463,7 +465,7 @@ export default function AnalyzePage() {
   const crossMarket = useMemo(() => {
     if (!results || !input.market) return [];
     const toUSD = (a: number, m: string) => { const r = liveRates[m]; return r ? Math.round(a / r) : a; };
-    return (["USA", "TOGO", "GHANA", "BENIN"] as MarketType[]).map((m) => {
+    return (["USA", "TOGO", "GHANA", "BENIN", "IVORY_COAST", "SENEGAL"] as MarketType[]).map((m) => {
       try {
         const r = m === input.market ? results : calculateAnalysis({ ...input, market: m } as any);
         return { market: m, usd: m === "USA" ? r.totalCost : toUSD(r.totalCost, m), score: r.dealScore, current: m === input.market };
@@ -675,11 +677,11 @@ export default function AnalyzePage() {
                 {/* Market */}
                 <div>
                   <span className="text-[11px] font-medium text-earth mb-1.5 block">Market</span>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {(["USA", "TOGO", "GHANA", "BENIN"] as MarketType[]).map((m) => (
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(["USA", "TOGO", "GHANA", "BENIN", "IVORY_COAST", "SENEGAL"] as MarketType[]).map((m) => (
                       <button key={m} onClick={() => set("market", m)}
                         className={`py-2.5 rounded-xl text-center transition-all text-[11px] font-medium ${input.market === m ? "bg-clay/10 text-clay border border-clay/30" : "bg-warm/20 text-muted hover:bg-warm/40 border border-transparent"}`}>
-                        {m === "USA" ? "USA" : m.charAt(0) + m.slice(1).toLowerCase()}
+                        {m === "USA" ? "USA" : m === "IVORY_COAST" ? "Ivory Coast" : m.charAt(0) + m.slice(1).toLowerCase()}
                       </button>
                     ))}
                   </div>
@@ -1112,13 +1114,15 @@ export default function AnalyzePage() {
           </div>
 
           {/* Market selector as flag-style cards */}
-          <div className="grid grid-cols-4 gap-3">
-            {(["USA", "TOGO", "GHANA", "BENIN"] as MarketType[]).map((m) => {
+          <div className="grid grid-cols-3 gap-3">
+            {(["USA", "TOGO", "GHANA", "BENIN", "IVORY_COAST", "SENEGAL"] as MarketType[]).map((m) => {
               const labels: Record<string, { name: string; flag: string }> = {
                 USA: { name: "United States", flag: "US" },
                 TOGO: { name: "Togo", flag: "TG" },
                 GHANA: { name: "Ghana", flag: "GH" },
                 BENIN: { name: "Benin", flag: "BJ" },
+                IVORY_COAST: { name: "Ivory Coast", flag: "CI" },
+                SENEGAL: { name: "Senegal", flag: "SN" },
               };
               const info = labels[m];
               return (
