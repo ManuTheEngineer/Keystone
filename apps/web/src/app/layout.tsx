@@ -60,8 +60,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Blocking theme init + persistent theme-color observer. Only reads localStorage (safe, no user input). */}
-        <script dangerouslySetInnerHTML={{ __html: `try{var s=localStorage.getItem('keystone-theme');var dk=s==='dark';var tc=dk?'#F5E6D3':'#2C1810';if(dk){document.documentElement.classList.add('dark');document.documentElement.style.backgroundColor='#2C1810';document.documentElement.style.colorScheme='dark';}var old=document.querySelectorAll('meta[name="theme-color"]');old.forEach(function(e){e.remove();});var nm=document.createElement('meta');nm.name='theme-color';nm.content=tc;document.head.appendChild(nm);window.__ksThemeColor=tc;window.__ksFavicon=dk?'/favicon-dark.svg':'/favicon.svg';new MutationObserver(function(){var el=document.querySelector('meta[name="theme-color"]');if(el&&el.getAttribute('content')!==window.__ksThemeColor){el.remove();var n=document.createElement('meta');n.name='theme-color';n.content=window.__ksThemeColor;document.head.appendChild(n);}var ic=document.querySelector('link[rel="icon"][type="image/svg+xml"]');if(ic&&ic.getAttribute('href')!==window.__ksFavicon){ic.setAttribute('href',window.__ksFavicon);}}).observe(document.head,{childList:true,subtree:true,attributes:true});}catch(e){}` }} />
+        {/* Blocking theme init — applies dark mode class before first paint.
+            CRITICAL: Only modifies attributes on existing elements. Never
+            remove/create DOM nodes — that breaks React hydration. The content
+            is a static string with no user input (reads from localStorage only). */}
+        <script dangerouslySetInnerHTML={{ __html: "try{var s=localStorage.getItem('keystone-theme');if(s==='dark'){document.documentElement.classList.add('dark');document.documentElement.style.backgroundColor='#2C1810';document.documentElement.style.colorScheme='dark';var m=document.querySelector('meta[name=\"theme-color\"]');if(m)m.setAttribute('content','#F5E6D3');var ic=document.querySelector('link[rel=\"icon\"][type=\"image/svg+xml\"]');if(ic)ic.setAttribute('href','/favicon-dark.svg');}}catch(e){}" }} />
         <link
           href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap"
           rel="stylesheet"

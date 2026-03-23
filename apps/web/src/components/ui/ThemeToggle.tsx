@@ -95,29 +95,13 @@ function resolveIsDark(mode: ThemeMode): boolean {
   return mode === "dark";
 }
 
-// Persistent theme-color enforcer — survives Next.js head re-renders
-let themeColorTarget: string = "#2C1810";
-let themeColorObserver: MutationObserver | null = null;
-
+// Update theme-color meta tag without removing/creating DOM nodes.
+// CRITICAL: Never remove or create <meta> tags — that causes React
+// hydration mismatches (removeChild on null) which breaks ALL event handlers.
 function enforceThemeColor(color: string) {
-  themeColorTarget = color;
-  // Remove all existing theme-color tags and create a fresh one
-  // This forces mobile browsers to re-read the value
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.remove());
-  const meta = document.createElement("meta");
-  meta.name = "theme-color";
-  meta.content = color;
-  document.head.appendChild(meta);
-  // Watch for Next.js re-rendering the head and resetting the tag
-  if (!themeColorObserver) {
-    themeColorObserver = new MutationObserver(() => {
-      const current = document.querySelector('meta[name="theme-color"]');
-      if (current && current.getAttribute("content") !== themeColorTarget) {
-        current.setAttribute("content", themeColorTarget);
-        current.removeAttribute("media");
-      }
-    });
-    themeColorObserver.observe(document.head, { childList: true, subtree: true, attributes: true });
+  const existing = document.querySelector('meta[name="theme-color"]');
+  if (existing) {
+    existing.setAttribute("content", color);
   }
 }
 
