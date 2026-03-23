@@ -95,6 +95,33 @@ function resolveIsDark(mode: ThemeMode): boolean {
   return mode === "dark";
 }
 
+// Persistent theme-color enforcer — survives Next.js head re-renders
+let themeColorTarget: string = "#2C1810";
+let themeColorObserver: MutationObserver | null = null;
+
+function enforceThemeColor(color: string) {
+  themeColorTarget = color;
+  const metas = document.querySelectorAll('meta[name="theme-color"]');
+  metas.forEach((m) => { m.setAttribute("content", color); m.removeAttribute("media"); });
+  if (metas.length === 0) {
+    const meta = document.createElement("meta");
+    meta.name = "theme-color";
+    meta.content = color;
+    document.head.appendChild(meta);
+  }
+  // Watch for Next.js re-rendering the head and resetting the tag
+  if (!themeColorObserver) {
+    themeColorObserver = new MutationObserver(() => {
+      const current = document.querySelector('meta[name="theme-color"]');
+      if (current && current.getAttribute("content") !== themeColorTarget) {
+        current.setAttribute("content", themeColorTarget);
+        current.removeAttribute("media");
+      }
+    });
+    themeColorObserver.observe(document.head, { childList: true, subtree: true, attributes: true });
+  }
+}
+
 export function applyTheme(isDark: boolean) {
   const root = document.documentElement;
   if (isDark) {
@@ -105,21 +132,7 @@ export function applyTheme(isDark: boolean) {
     });
     document.body.style.backgroundColor = "#1A0F0A";
     document.body.style.color = "#E8DDD0";
-    // Update window title bar color
-    const setThemeColor = (color: string) => {
-      const metas = document.querySelectorAll('meta[name="theme-color"]');
-      if (metas.length > 0) {
-        metas.forEach((m) => { m.setAttribute("content", color); m.removeAttribute("media"); });
-      } else {
-        const meta = document.createElement("meta");
-        meta.name = "theme-color";
-        meta.content = color;
-        document.head.appendChild(meta);
-      }
-    };
-    setThemeColor("#F5E6D3");
-    // Some browsers need a re-trigger
-    setTimeout(() => setThemeColor("#F5E6D3"), 100);
+    enforceThemeColor("#F5E6D3");
   } else {
     root.classList.remove("dark");
     root.classList.add("light");
@@ -128,19 +141,7 @@ export function applyTheme(isDark: boolean) {
     });
     document.body.style.backgroundColor = "";
     document.body.style.color = "";
-    const setThemeColorLight = (color: string) => {
-      const metas = document.querySelectorAll('meta[name="theme-color"]');
-      if (metas.length > 0) {
-        metas.forEach((m) => { m.setAttribute("content", color); m.removeAttribute("media"); });
-      } else {
-        const meta = document.createElement("meta");
-        meta.name = "theme-color";
-        meta.content = color;
-        document.head.appendChild(meta);
-      }
-    };
-    setThemeColorLight("#2C1810");
-    setTimeout(() => setThemeColorLight("#2C1810"), 100);
+    enforceThemeColor("#2C1810");
   }
 }
 
