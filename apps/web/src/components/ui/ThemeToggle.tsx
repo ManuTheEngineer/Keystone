@@ -135,6 +135,7 @@ export function applyTheme(isDark: boolean) {
     enforceThemeColor("#F5E6D3");
     (window as any).__ksThemeColor = "#F5E6D3";
     // Swap favicon to light version
+    (window as any).__ksFavicon = "/favicon-dark.svg";
     const iconLink = document.querySelector('link[rel="icon"][type="image/svg+xml"]') as HTMLLinkElement;
     if (iconLink) iconLink.href = "/favicon-dark.svg";
   } else {
@@ -148,6 +149,7 @@ export function applyTheme(isDark: boolean) {
     enforceThemeColor("#2C1810");
     (window as any).__ksThemeColor = "#2C1810";
     // Swap favicon to dark version
+    (window as any).__ksFavicon = "/favicon.svg";
     const iconLink = document.querySelector('link[rel="icon"][type="image/svg+xml"]') as HTMLLinkElement;
     if (iconLink) iconLink.href = "/favicon.svg";
   }
