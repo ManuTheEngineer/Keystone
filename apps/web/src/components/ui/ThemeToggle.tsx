@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sun, Moon, Monitor } from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 
-type ThemeMode = "light" | "dark" | "system";
+type ThemeMode = "light" | "dark";
 
 // Dark mode: ALL CSS variables that need to change.
 const DARK_VARS: Record<string, string> = {
@@ -79,9 +79,7 @@ const DARK_VARS: Record<string, string> = {
 export { DARK_VARS };
 
 function resolveIsDark(mode: ThemeMode): boolean {
-  if (mode === "dark") return true;
-  if (mode === "light") return false;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  return mode === "dark";
 }
 
 export function applyTheme(isDark: boolean) {
@@ -106,50 +104,31 @@ export function applyTheme(isDark: boolean) {
 }
 
 export function ThemeToggle() {
-  const [mode, setMode] = useState<ThemeMode>("system");
+  const [mode, setMode] = useState<ThemeMode>("light");
 
   useEffect(() => {
     const stored = localStorage.getItem("keystone-theme") as ThemeMode | null;
-    const initial: ThemeMode = stored === "light" || stored === "dark" ? stored : "system";
+    const initial: ThemeMode = stored === "dark" ? "dark" : "light";
     setMode(initial);
     applyTheme(resolveIsDark(initial));
   }, []);
 
-  // Listen for system preference changes when in system mode
-  useEffect(() => {
-    if (mode !== "system") return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    function onChange() {
-      applyTheme(mq.matches);
-    }
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, [mode]);
-
-  function cycle() {
-    const order: ThemeMode[] = ["light", "dark", "system"];
-    const next = order[(order.indexOf(mode) + 1) % order.length];
+  function toggle() {
+    const next: ThemeMode = mode === "light" ? "dark" : "light";
     setMode(next);
     localStorage.setItem("keystone-theme", next);
     applyTheme(resolveIsDark(next));
   }
 
-  const labels: Record<ThemeMode, string> = {
-    light: "Light mode (click for dark)",
-    dark: "Dark mode (click for system)",
-    system: "System theme (click for light)",
-  };
-
   return (
     <button
-      onClick={cycle}
+      onClick={toggle}
       className="p-1.5 rounded-lg transition-colors"
       style={{ color: "var(--color-sand)" }}
-      title={labels[mode]}
+      title={mode === "light" ? "Switch to dark mode" : "Switch to light mode"}
     >
       {mode === "light" && <Sun size={16} />}
       {mode === "dark" && <Moon size={16} />}
-      {mode === "system" && <Monitor size={16} />}
     </button>
   );
 }

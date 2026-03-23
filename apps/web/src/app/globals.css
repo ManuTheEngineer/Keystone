@@ -449,28 +449,7 @@ h1, h2, h3 {
 
 html.dark {
   color-scheme: dark;
-
-  /* Flip the palette: dark content area, light sidebar feel */
-  --color-background: #1A1410;
-  --color-surface: #231C15;
-  --color-surface-alt: #2C231A;
-  --color-surface-dim: #171210;
-  --color-cream: #1A1410;
-  --color-warm: #2C231A;
-  --color-earth: #F5E6D3;
-  --color-earth-light: #D4A574;
-  --color-clay: #D4A574;
-  --color-sand: #8B7355;
-  --color-muted: #9B8B7A;
-  --color-foreground: #F5E6D3;
-  --color-border: #3D3025;
-  --color-slate: #C8B9A8;
-
-  /* Status colors — slightly muted for dark bg */
-  --color-success: #4ADE80;
-  --color-warning: #FBBF24;
-  --color-danger: #F87171;
-  --color-info: #60A5FA;
+  /* Dark mode variables are set via JavaScript in ThemeToggle.tsx (DARK_VARS) */
 }
 
 /* ── Background colors ── */
