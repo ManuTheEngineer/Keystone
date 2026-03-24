@@ -81,6 +81,7 @@ const SUGGESTIONS: Record<Mode, { usa: string[]; wa: string[] }> = {
 /* ------------------------------------------------------------------ */
 
 function renderMarkdown(text: string) {
+  if (!text) return null;
   return text.split("\n").map((line, i) => {
     if (line.trim() === "") return <p key={i} className="h-2" />;
 

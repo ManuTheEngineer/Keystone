@@ -47,7 +47,14 @@ export async function sendAIMessage(
     throw new Error(data.error ?? `AI service error (${res.status})`);
   }
 
-  return res.json().catch(() => {
+  const json = await res.json().catch(() => {
     throw new Error(`AI service returned invalid JSON (${res.status})`);
   });
+
+  // API returns { data: { message } } via apiSuccess() wrapper
+  // Unwrap for backward compatibility with callers expecting { message }
+  if (json.data) {
+    return json.data;
+  }
+  return json;
 }

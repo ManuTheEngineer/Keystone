@@ -150,11 +150,12 @@ export function FinancialsClient() {
     if (project?.market !== "USA") return;
     fetch("/api/location-data/mortgage-rate/")
       .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.rate) {
-          setLiveRate(data.rate);
+      .then((json) => {
+        const rate = json?.data?.rate ?? json?.rate;
+        if (rate) {
+          setLiveRate(rate);
           // Only set loan rate if user hasn't entered one from wizard
-          if (!project?.loanRate) setLoanRate(String(data.rate));
+          if (!project?.loanRate) setLoanRate(String(rate));
         }
       })
       .catch(() => {});

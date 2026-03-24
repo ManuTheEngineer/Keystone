@@ -676,7 +676,7 @@ export default function NewProjectPage() {
           const json = await res.json();
           if (json.data) {
             setLocationData(json.data);
-            setLocationSource(json.source ?? "unknown");
+            setLocationSource(json.meta?.source ?? json.source ?? "unknown");
           } else if (!staticFallback) {
             // API returned null and no static match — show nothing
             setLocationData(null);
@@ -1155,7 +1155,7 @@ export default function NewProjectPage() {
                             const json = await res.json();
                             if (json.data) {
                               setLocationData(json.data);
-                              setLocationSource(json.source ?? "unknown");
+                              setLocationSource(json.meta?.source ?? json.source ?? "unknown");
                             }
                           }
                         } catch {} finally { setLocationLoading(false); }
