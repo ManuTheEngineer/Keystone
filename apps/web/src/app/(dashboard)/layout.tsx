@@ -311,7 +311,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             badges={{ "punch-list": punchListCount, "overview": openTaskCount }}
           />
           <div className={`${sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[240px]"} transition-all duration-300 flex flex-col min-h-screen min-w-0 bg-[var(--sidebar-bg)] lg:pl-2 lg:pr-2`}>
-            <div className="flex flex-col flex-1 bg-background rounded-t-3xl mt-2 min-w-0 overflow-hidden h-[calc(100dvh-0.5rem)]">
+            <div className="flex flex-col bg-background rounded-t-3xl mt-2 min-w-0 h-[calc(100dvh-0.5rem)] overflow-clip">
               <Topbar
                 title={topbarState.title}
                 badge={topbarState.badge || undefined}
@@ -323,13 +323,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 onOpenNotifications={handleMarkAllRead}
               />
               {!isOnline && (
-                <div className="mx-5 mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warning-bg text-warning text-[11px]">
+                <div className="mx-5 mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warning-bg text-warning text-[11px] shrink-0">
                   <WifiOff size={14} />
                   You are offline. Changes will sync when connection is restored.
                 </div>
               )}
               {user && !user.emailVerified && !dismissedVerifyBanner && (
-                <div className="mx-5 mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warning-bg border border-warning/20 text-[12px]">
+                <div className="mx-5 mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-warning-bg border border-warning/20 text-[12px] shrink-0">
                   <Mail size={14} className="text-warning shrink-0" />
                   <span className="text-earth">
                     Please verify your email address. Check your inbox for a confirmation link.
@@ -365,7 +365,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </div>
               )}
               {profile?.subscriptionStatus === "trialing" && profile?.trialExpiresAt && (
-                <div className="mx-5 mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-info-bg border border-info/20 text-[12px]">
+                <div className="mx-5 mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-info-bg border border-info/20 text-[12px] shrink-0">
                   <Clock size={14} className="text-info shrink-0" />
                   <span className="text-earth">
                     <span className="font-medium">Trial active</span>
@@ -382,7 +382,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </Link>
                 </div>
               )}
-              <main id="main-content" className="flex-1 p-5 overflow-y-auto overflow-x-hidden min-w-0">
+              <main id="main-content" className="flex-1 min-h-0 p-5 overflow-y-auto overflow-x-hidden min-w-0">
                 {children}
               </main>
             </div>
