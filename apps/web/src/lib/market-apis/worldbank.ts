@@ -23,7 +23,7 @@ export async function fetchWorldBankCpi(market: string): Promise<CpiData | null>
 
   try {
     const url = `${WB_BASE}/country/${code}/indicator/FP.CPI.TOTL?format=json&date=${BASELINE_YEAR - 2}:${BASELINE_YEAR + 2}&per_page=10`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return null;
     const json = await res.json();
     const records = json?.[1];

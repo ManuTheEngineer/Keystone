@@ -19,6 +19,7 @@ import { useTranslation } from "@/lib/hooks/use-translation";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import { safeUnsubscribeAll } from "@/lib/utils/safe-cleanup";
 import {
   FolderOpen,
   Upload,
@@ -149,7 +150,7 @@ export function VaultClient() {
       subscribeToProject(user.uid, projectId, setProject),
       subscribeToVaultFiles(user.uid, projectId, setFiles),
     ];
-    return () => unsubs.forEach((u) => u());
+    return () => safeUnsubscribeAll(unsubs);
   }, [user, projectId]);
 
   useEffect(() => {

@@ -18,6 +18,7 @@ export async function fetchBlsWageByMetro(cbsaCode: string): Promise<BlsWageData
     const res = await fetch(BLS_BASE, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(8000),
       body: JSON.stringify({
         seriesid: [seriesId],
         startyear: String(new Date().getFullYear() - 1),

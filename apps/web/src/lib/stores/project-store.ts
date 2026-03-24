@@ -127,7 +127,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   unsubscribe: () => {
     const { _unsubscribers } = get();
     for (const unsub of _unsubscribers) {
-      unsub();
+      try { unsub(); } catch { /* non-critical */ }
     }
     set({
       project: null,

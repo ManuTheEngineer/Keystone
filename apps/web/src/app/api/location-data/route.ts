@@ -101,11 +101,14 @@ export async function GET(request: NextRequest) {
   const state = zipToState(zip);
   const cbsa = state ? STATE_TO_CBSA[state] : null;
 
-  const [census, hud, bls] = await Promise.all([
+  const [censusResult, hudResult, blsResult] = await Promise.allSettled([
     fetchCensusDataByZip(zip),
     fetchHudFmrByZip(zip),
     cbsa ? fetchBlsWageByMetro(cbsa) : Promise.resolve(null),
   ]);
+  const census = censusResult.status === "fulfilled" ? censusResult.value : null;
+  const hud = hudResult.status === "fulfilled" ? hudResult.value : null;
+  const bls = blsResult.status === "fulfilled" ? blsResult.value : null;
 
   if (!census && !hud) {
     const stale = await cacheGetStale<LocationData>("location", zip);

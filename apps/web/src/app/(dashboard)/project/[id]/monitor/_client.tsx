@@ -28,6 +28,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import { safeUnsubscribeAll } from "@/lib/utils/safe-cleanup";
 import { Card } from "@/components/ui/Card";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 // Badge import removed — not used on this page
@@ -906,7 +907,7 @@ export function MonitorClient() {
       subscribeToTasks(user.uid, projectId, setTasks),
       subscribeToPunchListItems(user.uid, projectId, setPunchListItems),
     ];
-    return () => unsubs.forEach((u) => u());
+    return () => safeUnsubscribeAll(unsubs);
   }, [user, projectId]);
 
   useEffect(() => {

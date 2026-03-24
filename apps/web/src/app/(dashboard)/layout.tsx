@@ -18,6 +18,7 @@ import { LocaleContext } from "@/lib/hooks/use-locale";
 
 import { AIMentor } from "@/components/ui/AIMentor";
 import { generateProjectNotifications, generateDetailedNotifications, sortNotifications, type AppNotification } from "@/lib/notifications";
+import { safeUnsubscribeAll } from "@/lib/utils/safe-cleanup";
 
 interface DashboardContextValue {
   setTopbar: (title: string, badge?: string, badgeVariant?: "success" | "warning" | "info" | "danger") => void;
@@ -209,9 +210,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       );
     }
 
-    return () => {
-      for (const unsub of unsubs) unsub();
-    };
+    return () => safeUnsubscribeAll(unsubs);
   }, [user, priorityProjects]);
 
   // Generate notifications

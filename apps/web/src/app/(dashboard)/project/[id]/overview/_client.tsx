@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { safeUnsubscribeAll } from "@/lib/utils/safe-cleanup";
 import Image from "next/image";
 import Link from "next/link";
 import { useTopbar } from "../../../layout";
@@ -366,7 +367,7 @@ export function OverviewClient() {
       subscribeToVaultFiles(user.uid, projectId, setVaultFiles),
       subscribeToChangeOrders(user.uid, projectId, setChangeOrders),
     ];
-    return () => unsubs.forEach((u) => u());
+    return () => safeUnsubscribeAll(unsubs);
   }, [user, projectId]);
 
   useEffect(() => {

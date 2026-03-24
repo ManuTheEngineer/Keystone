@@ -25,6 +25,7 @@ import { useTranslation } from "@/lib/hooks/use-translation";
 import { Send, Loader2, AlertTriangle, Zap, Trash2, RotateCcw } from "lucide-react";
 import { VoiceNote } from "@/components/ui/VoiceNote";
 import { incrementAiQueryCount } from "@/lib/hooks/use-ai-quota";
+import { safeUnsubscribeAll } from "@/lib/utils/safe-cleanup";
 
 /* ------------------------------------------------------------------ */
 /*  Mode definitions                                                   */
@@ -180,7 +181,7 @@ export function AIAssistantClient() {
         }
       }),
     ];
-    return () => unsubs.forEach((u) => u());
+    return () => safeUnsubscribeAll(unsubs);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, projectId]);
 

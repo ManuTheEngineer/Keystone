@@ -47,5 +47,7 @@ export async function sendAIMessage(
     throw new Error(data.error ?? `AI service error (${res.status})`);
   }
 
-  return res.json();
+  return res.json().catch(() => {
+    throw new Error(`AI service returned invalid JSON (${res.status})`);
+  });
 }

@@ -28,6 +28,7 @@ import {
 import type { Market, ProjectPhase, PhaseDefinition } from "@keystone/market-data";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useTranslation } from "@/lib/hooks/use-translation";
+import { safeUnsubscribeAll } from "@/lib/utils/safe-cleanup";
 import {
   Check,
   Circle,
@@ -353,7 +354,7 @@ export function ScheduleClient() {
       subscribeToAllMilestoneProgress(user.uid, projectId, setAllMilestoneProgress),
       subscribeToAllMilestoneDates(user.uid, projectId, setAllMilestoneDates),
     ];
-    return () => unsubs.forEach((u) => u());
+    return () => safeUnsubscribeAll(unsubs);
   }, [user, projectId]);
 
   useEffect(() => {

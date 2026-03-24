@@ -24,7 +24,7 @@ export async function fetchCensusDataByZip(zip: string): Promise<CensusData | nu
   const url = `${CENSUS_BASE}?get=${vars}&for=zip+code+tabulation+area:${zip}${keyParam}`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return null;
     const data = await res.json();
     if (!data || data.length < 2) return null;

@@ -137,12 +137,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Mark event as processed for idempotency
+    // Mark event as processed ONLY after all updates succeeded
     await markEventProcessed(event.id);
 
     return NextResponse.json({ data: { received: true } });
   } catch (error: unknown) {
+    // Do NOT mark event as processed — allow Stripe to retry
     const message = error instanceof Error ? error.message : "Webhook handler failed";
+    console.error(`[stripe-webhook] Event ${event.id} (${event.type}) failed: ${message}`);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

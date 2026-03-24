@@ -18,6 +18,7 @@ export async function fetchHudFmrByZip(zip: string): Promise<HudFmrData | null> 
   try {
     const xwalkRes = await fetch(`${HUD_BASE}/usps?type=2&query=${zip}`, {
       headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(8000),
     });
     if (!xwalkRes.ok) return null;
     const xwalkData = await xwalkRes.json();
@@ -28,6 +29,7 @@ export async function fetchHudFmrByZip(zip: string): Promise<HudFmrData | null> 
 
     const fmrRes = await fetch(`${HUD_BASE}/fmr/data/${countyFips}`, {
       headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(8000),
     });
     if (!fmrRes.ok) return null;
     const fmrData = await fmrRes.json();
