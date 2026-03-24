@@ -64,7 +64,8 @@ export function formatCurrencyCompact(amount: number, config: CurrencyConfig): s
   } else if (absAmount >= 1_000) {
     compact = `${(absAmount / 1_000).toFixed(0)}K`;
   } else {
-    return formatCurrency(amount, config);
+    // Sub-$1000: show as whole number without decimals for consistency
+    compact = Math.round(absAmount).toString();
   }
 
   if (config.position === "prefix") {

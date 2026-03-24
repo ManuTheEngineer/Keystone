@@ -1,704 +1,736 @@
-# KEYSTONE — COMPREHENSIVE TESTING SCRIPT
-## For Web Claude QA Testing
+# KEYSTONE — TOTAL EVALUATION SCRIPT
+## Technical QA + Business Analysis + Market Research + Gap Finding
 
-**Duration:** 3-4 hours estimated
 **URL:** https://keystonebuild.vercel.app
-**Scope:** Full app testing EXCEPT Stripe payments and PDF/CSV exports
-**Goal:** Find every bug, data mismatch, UX issue, and dead end
+**Duration:** 6-8 hours (full evaluation) or pick sections as needed
+**Scope:** Every feature, every button, every page, every flow — plus business viability, market positioning, and competitive analysis
+**Goal:** Score the app 0-100 across multiple dimensions, find every issue, and produce an actionable improvement roadmap
 
 ---
 
-## PHASE 1: FRESH USER EXPERIENCE (30 min)
-
-### 1.1 Landing Page Audit
-- [ ] Load the landing page. Record: load time, first visual impression, above-the-fold content
-- [ ] Check the headline, subheadline, and CTA buttons ("Start your project", "Analyze a deal")
-- [ ] Scroll through ALL sections. For each section record: purpose, content quality, any dead links
-- [ ] Check the FAQ section — click each accordion item, verify answers make sense
-- [ ] Check the pricing section — verify 4 tiers (Starter, Builder, Developer, Enterprise) with correct prices
-- [ ] Check the About section — verify founder info, email link works (should open mailto: with real email)
-- [ ] Check the footer — verify all links work (Terms, Privacy, email)
-- [ ] Click Terms of Service — opens in new tab? Content loads? Email link works?
-- [ ] Click Privacy Policy — opens in new tab? Content loads? Email link works?
-- [ ] Resize browser to mobile width (375px). Check: nav hamburger works, sections stack properly, no horizontal overflow, pricing cards readable
-- [ ] Check the "See it in action" interactive demo:
-  - Click each tab (Analyze, Plan, Build, Track, Complete)
-  - Does auto-rotation PAUSE when you click a tab?
-  - Does each tab show different content?
-- [ ] If logged in: does the nav show "Go to Dashboard" instead of "Sign in"?
-- [ ] Check mobile nav when logged in — same auth-aware behavior?
-
-### 1.2 Registration Flow
-- [ ] Navigate to /register
-- [ ] Try submitting the form completely empty — do inline errors appear for EACH field?
-- [ ] Enter an invalid email (e.g., "notanemail") — does inline error show "Please enter a valid email address"?
-- [ ] Enter a password less than 6 characters — does the strength indicator show "too short" in red?
-- [ ] Enter a valid password (8+ chars) — does indicator change to "fair" or "strong"?
-- [ ] Check the Terms checkbox — does it stay checked if you trigger a validation error on another field?
-- [ ] Click Terms of Service link — does it open in a NEW TAB (not navigate away from the form)?
-- [ ] Click Privacy Policy link — same new tab behavior?
-- [ ] Go back to the form — is all your entered data still there?
-- [ ] Select each market option (USA, Togo, Ghana, Benin, Ivory Coast, Senegal) — all 6 present?
-- [ ] Create a test account with: valid name, valid email (use a test email), 8+ char password, USA market, Terms checked
-- [ ] Verify: redirect to Dashboard, no errors
-- [ ] Record the account email for later use
-
-### 1.3 Login Flow
-- [ ] Log out (if possible) and navigate to /login
-- [ ] Try logging in with wrong password — error message appears?
-- [ ] Try logging in with non-existent email — error message appears?
-- [ ] Log in with the correct credentials — redirects to Dashboard?
-- [ ] Check "Forgot password" link — navigates to forgot password page?
-- [ ] On forgot password page: enter invalid email — inline error?
-- [ ] Enter valid email — success message with "Check your email"?
-- [ ] Is there a "Back to login" link?
+# PART A: TECHNICAL QA (Score: /40)
 
 ---
 
-## PHASE 2: DASHBOARD & NAVIGATION (20 min)
+## A1: LANDING PAGE & MARKETING SITE (30 min)
 
-### 2.1 Dashboard First Load
-- [ ] Record what's visible on first load: greeting (time-of-day aware?), date, Getting Started checklist
-- [ ] Getting Started checklist: how many items? Which are checked? Do unchecked items have working links?
-- [ ] Is the demo project (Robinson Residence) visible?
-- [ ] Click into the demo project — does it load? What phase is it in?
-- [ ] Go back to Dashboard
+### A1.1 First Impression & Performance
+- [ ] Load keystonebuild.vercel.app — record time to first meaningful paint
+- [ ] Lighthouse score: Performance, Accessibility, Best Practices, SEO (run in incognito)
+- [ ] Does the page load correctly on: Chrome, Firefox, Safari, Edge?
+- [ ] Mobile viewport (375px): any horizontal overflow? Text readable? Touch targets 44px+?
+- [ ] Tablet viewport (768px): layout correct? No awkward gaps?
+- [ ] Record: headline text, subheadline, primary CTA, secondary CTA
+- [ ] Is the value proposition clear within 5 seconds of landing?
+- [ ] Does the page clearly communicate WHAT Keystone does, WHO it's for, and WHY it's different?
 
-### 2.2 Dashboard Elements
-- [ ] Verify the greeting matches the time of day (Good morning/afternoon/evening)
-- [ ] Check Quick Actions: New Project, Deal Analyzer, Learn, Export Reports — do all links work?
-- [ ] "Export Reports" — where does it link? Does the destination make sense?
-- [ ] Check notifications bell — click it, do notifications appear? What do they say?
-- [ ] Click notification items — do they navigate to the right page?
-- [ ] Check the Mentor tip — is it contextual? Does the "Why this matters" expand?
-- [ ] Search (Ctrl+K or click search) — does the modal open? Type a search term — results appear?
-- [ ] Check the sidebar: Dashboard, Vault, Deal Analyzer, Learn, Settings, New project — all navigate correctly?
-- [ ] Collapse the sidebar — does it collapse to icons? Do icons work?
-- [ ] Expand the sidebar — back to normal?
+### A1.2 Navigation & Links
+- [ ] Sticky nav: appears on scroll? Logo links to top? All nav items work?
+- [ ] "How it works" link scrolls to correct section?
+- [ ] "About" link scrolls to founder section?
+- [ ] "Sign in" navigates to /login?
+- [ ] "Start free" navigates to /register?
+- [ ] Dark mode toggle in nav: works? Persists on refresh?
+- [ ] When LOGGED IN: nav shows "Go to Dashboard" instead of "Sign in"?
+- [ ] Mobile hamburger menu: opens/closes? All links work? Auth-aware?
 
-### 2.3 Vault Page
-- [ ] Navigate to /vault — does it load without errors?
-- [ ] Use browser back button — does it crash? (This was a known bug)
-- [ ] Check page header — does it say "Vault" (not "Portfolio")?
-- [ ] Check filters: All, Active, Paused, Done — do they filter correctly?
-- [ ] Check market filters: All, USA, W. Africa — correct filtering?
-- [ ] Check sort options: Priority, Recent, Progress — do they reorder?
-- [ ] Does the search box work?
-- [ ] Does the stat line at top update when filters are applied?
+### A1.3 Content Sections (scroll through ALL)
+- [ ] Hero section: headline, subheadline, 2 CTAs, hero image/demo
+- [ ] "Three steps" section: 3 cards, numbered, icons, descriptions
+- [ ] "See it in action" interactive demo:
+  - [ ] 5 tabs (Analyze, Plan, Build, Track, Complete) all switch content?
+  - [ ] Auto-rotation works? Pauses on click?
+  - [ ] Browser mockup renders correctly?
+  - [ ] Content in each tab is different and relevant?
+- [ ] "Everything you need" feature grid: 6 feature cards with icons
+- [ ] "Building from abroad" diaspora section: bullet points, CTA, live monitor mockup
+- [ ] Pricing section:
+  - [ ] 4 tiers: Starter ($0), Builder ($19), Developer ($49), Enterprise ($149)
+  - [ ] Annual pricing shown with savings %?
+  - [ ] "Most popular" badge on Developer?
+  - [ ] Feature lists accurate? Match the Settings > Plan page?
+  - [ ] CTA buttons all work?
+  - [ ] Enterprise "Contact us" opens mailto?
+  - [ ] Section has `id="pricing"` anchor?
+- [ ] FAQ section:
+  - [ ] All 6 accordion items expand/collapse?
+  - [ ] Answers are accurate and helpful?
+  - [ ] Section has `id="faq"` anchor?
+- [ ] About/Founder section:
+  - [ ] Photo, name, title, bio text
+  - [ ] Story is compelling and authentic?
+- [ ] Footer:
+  - [ ] Logo + tagline
+  - [ ] Product column: Features (#how-it-works), Pricing (#pricing), About (#about) — all anchor links work?
+  - [ ] Support column: Pricing, FAQ (#faq), Learn (/learn), email — all work?
+  - [ ] Legal column: Privacy (/privacy, new tab), Terms (/terms, new tab)
+  - [ ] Copyright: "© 2026 Keystone. All rights reserved."
+  - [ ] All mailto links use correct email?
+
+### A1.4 Legal Pages
+- [ ] /privacy: loads? Professional content? Contact email?
+- [ ] /terms: loads? Professional content? Contact email?
+- [ ] Both accessible without login?
+- [ ] Back navigation works from both?
+
+### A1.5 SEO & Meta
+- [ ] Page title: "Keystone"?
+- [ ] Meta description present and descriptive?
+- [ ] Open Graph tags: title, description, type?
+- [ ] Twitter card meta tags?
+- [ ] Favicon loads correctly?
+- [ ] manifest.json linked? PWA-installable on mobile?
 
 ---
 
-## PHASE 3: PROJECT CREATION WIZARD (45 min)
+## A2: AUTHENTICATION FLOWS (20 min)
 
-### 3.1 Create a USA "Build to Occupy" Project
-- [ ] Click "New project" from Dashboard or sidebar
-- [ ] Step 1 (Goal): Select "Build to occupy" — mentor tip appears?
-- [ ] Step 2 (Market): Select "United States" — description shows wood-frame construction?
-- [ ] Step 3 (Location): Enter ZIP code 77002 (Houston, TX)
-  - Does Location Intelligence panel appear?
-  - Shows cost index, labor rates, lot prices, climate data?
-  - Does the "Next" button enable?
-- [ ] Step 4 (Property type): Select "Single-family home"
+### A2.1 Registration
+- [ ] /register page loads correctly
+- [ ] Submit empty form: inline error on EVERY required field?
+- [ ] Invalid email ("notanemail"): specific error message?
+- [ ] Short password (<6 chars): strength indicator shows "too short"?
+- [ ] Valid password (8+ chars): indicator shows "fair" or "strong"?
+- [ ] Password with uppercase + number + special: shows "strong"?
+- [ ] Terms checkbox: stays checked when other field errors fire?
+- [ ] Terms link: opens in NEW TAB? (not navigate away)
+- [ ] Privacy link: same new tab behavior?
+- [ ] Tab back to form: data still there?
+- [ ] Market options: USA, Togo, Ghana, Benin, Ivory Coast, Senegal — all 6 present?
+- [ ] Submit valid form: redirects to Dashboard? No console errors?
+- [ ] Email verification banner appears?
+- [ ] Onboarding tour appears for new user?
+- [ ] Demo project auto-created?
+
+### A2.2 Login
+- [ ] /login page loads
+- [ ] Wrong password: error message? Doesn't reveal if email exists?
+- [ ] Non-existent email: same generic error?
+- [ ] Correct credentials: redirects to Dashboard?
+- [ ] "Show password" toggle works?
+- [ ] "Forgot password" link works?
+
+### A2.3 Forgot Password
+- [ ] /forgot-password page loads
+- [ ] Invalid email: inline error?
+- [ ] Valid email: success message ("Check your email")?
+- [ ] "Back to login" link works?
+
+### A2.4 Auth Guards
+- [ ] Visit /dashboard while logged out: redirects to /login?
+- [ ] Visit /project/[id]/overview while logged out: redirects?
+- [ ] Visit /settings while logged out: redirects?
+- [ ] After login, redirects back to intended page?
+
+### A2.5 Session Management
+- [ ] Open app in two tabs: both authenticated?
+- [ ] Sign out in one tab: other tab redirects to login?
+- [ ] Close browser, reopen: still logged in? (persistent session)
+
+---
+
+## A3: DASHBOARD & GLOBAL NAVIGATION (20 min)
+
+### A3.1 Dashboard Page
+- [ ] Greeting: matches time of day? Shows user name?
+- [ ] Date shown correctly?
+- [ ] Getting Started checklist: items present? Checked items match completed actions?
+- [ ] Quick Actions: New Project, Deal Analyzer, Learn, Export — all navigate correctly?
+- [ ] Project cards: each shows name, market badge, phase, progress ring, budget, last active
+- [ ] Click project card: navigates to project Overview?
+- [ ] Kebab menu (⋮) on project card: View, Set Priority, Delete — all work?
+- [ ] Delete project: confirmation dialog? Requires typing project name? Works?
+- [ ] Priority setting: P1/P2/P3/Clear — persists?
+- [ ] Pinned projects sort to top?
+- [ ] Multiple projects: all visible? Different markets show correct currencies?
+
+### A3.2 Sidebar Navigation
+- [ ] All items present: Dashboard, Vault, Deal Analyzer, Learn, Settings, New Project
+- [ ] When inside a project: project-specific nav appears (Overview, Budget, Schedule, etc.)
+- [ ] Active item highlighted?
+- [ ] Sidebar collapse (Ctrl+B or button): collapses to icons?
+- [ ] Collapsed tooltips appear on hover?
+- [ ] Expand: back to full sidebar?
+- [ ] Mobile: hamburger opens sidebar overlay? Clicking outside closes it?
+- [ ] User info at bottom: name, plan badge?
+- [ ] Sign out button works?
+
+### A3.3 Topbar
+- [ ] Shows page title and context badge?
+- [ ] Notification bell: shows count? Click opens notification panel?
+- [ ] Notifications: relevant to project state? Click navigates to correct page?
+- [ ] Dismiss single notification works?
+- [ ] "Dismiss all" works?
+- [ ] Search (Ctrl+K): modal opens? Type query: results appear? Click result navigates?
+
+### A3.4 Global Features
+- [ ] Dark mode toggle: all pages render correctly in dark mode?
+- [ ] Keystone Mentor: appears on pages? Context-aware tips? Dismissable?
+- [ ] Offline banner: appears when disconnected? Disappears when reconnected?
+- [ ] Email verify banner: appears if unverified? Dismiss works? Resend works?
+- [ ] Trial banner: appears if trialing? Shows expiry? "Upgrade now" link works?
+
+### A3.5 Vault Page
+- [ ] /vault loads without errors
+- [ ] All projects listed (not just current project's data)
+- [ ] Filters: All, Active, Paused, Done — all work?
+- [ ] Market filters: All, USA, W. Africa — correct?
+- [ ] Sort: Priority, Recent, Progress — reorders correctly?
+- [ ] Search box: filters by project name?
+- [ ] Stats line at top: updates when filters applied?
+- [ ] Grid view vs List view toggle (if exists)?
+- [ ] Browser back button: no crash?
+
+### A3.6 Learn Page
+- [ ] /learn loads
+- [ ] 9 construction phases listed with educational content?
+- [ ] Click a phase: content expands?
+- [ ] Content is educational, accurate, market-aware?
+- [ ] Glossary terms linked/highlighted?
+- [ ] Disclaimer present at bottom?
+
+---
+
+## A4: PROJECT CREATION WIZARD (45 min)
+
+### A4.1 USA "Build to Occupy" Project
+For each step, check: mentor tip visible, back button preserves data, step dots navigable
+
+- [ ] Step 1 (Goal): 3 options (Occupy, Rent, Sell). Select "Build to occupy"
+- [ ] Step 2 (Market): USA selected. Description mentions wood-frame construction
+- [ ] Step 3 (Location): Enter ZIP 77002 (Houston, TX)
+  - [ ] Location Intelligence panel loads with real data?
+  - [ ] Cost index, labor rates, lot prices, climate zone shown?
+  - [ ] Loading spinner while fetching? Error handling if API fails?
+- [ ] Step 4 (Property): Single-family home selected
 - [ ] Step 5 (Size):
-  - Select a size range (e.g., 1,200-2,000 sqft)
-  - Set bedrooms: 4, bathrooms: 3, stories: 2
-  - Toggle features: garage, porch — do costs update?
-  - Does the construction cost estimate show?
-  - Does the mentor tip say "square foot" (not "square meter" for USA)?
-- [ ] Step 6 (Land): Select "Still looking" — does it estimate land cost?
-  - OR select "Known price" and enter $80,000
-- [ ] Step 7 (Financing): Select "Construction loan"
-  - Down payment % (try 20%)
-  - Interest rate (try 7.5%)
-  - Timeline (try 18 months)
-- [ ] Step 8 (Financials): Review the cost breakdown
-  - Are all categories shown (Land, Construction, Soft costs, Financing, Contingency)?
-  - Does the donut chart render without text clipping?
-  - Is the total reasonable for the specs entered?
-- [ ] Step 9 (Deal Score):
-  - What score is shown? (Record it)
-  - Are scoring factors visible?
-  - Do risk warnings make sense?
-- [ ] Step 10 (Name):
-  - Is the default name something OTHER than "Robinson Residence"?
-  - Enter a custom name: "Houston Family Home"
-  - Click "Create project"
-  - Does it succeed? Redirect to Overview?
-  - Does a welcome banner appear?
+  - [ ] Size ranges correct for USA (sqft, not sqm)?
+  - [ ] Bedrooms/bathrooms/stories steppers work? Min/max enforced?
+  - [ ] Feature toggles: Garage, Porch, Pool, Basement, Solar, etc.
+  - [ ] **VERIFY: Toggling features CHANGES the cost estimate** (was Bug #5)
+  - [ ] Construction cost estimate displayed and reasonable?
+- [ ] Step 6 (Land): "Still looking" estimates land cost? "Known price" allows entry?
+- [ ] Step 7 (Financing): Construction loan selected
+  - [ ] Down payment %, interest rate, timeline fields
+  - [ ] Monthly payment estimate shown?
+- [ ] Step 8 (Financials): Cost breakdown with donut chart
+  - [ ] All categories: Land, Construction, Soft costs, Financing, Contingency?
+  - [ ] Donut chart renders without clipping?
+  - [ ] Total reasonable for specs entered?
+- [ ] Step 9 (Deal Score): Score shown with factors and risks?
+- [ ] Step 10 (Name): Default name generated? Can customize? Create succeeds?
+- [ ] Redirects to Overview with welcome banner?
 
-### 3.2 Create a Togo "Build to Rent" Project
-- [ ] Start a new project
-- [ ] Goal: "Build to rent"
+### A4.2 Togo "Build to Rent" Project
+- [ ] Goal: "Build to rent" selected
 - [ ] Market: "Togo" — description mentions reinforced concrete, CFA zone?
-- [ ] Location: Enter "Lome"
-- [ ] Property type: "Duplex"
-- [ ] Size: Select a range, set 3 bed / 2 bath / 1 story
-  - Does it say "square meters" (not sqft)?
-  - Does the mentor tip say "square meter"?
-- [ ] Land: "Estimate for me"
-- [ ] Financing: "Phased cash (build as you go)"
-  - No down payment or interest rate fields shown?
-  - "Family pooling" option available?
-- [ ] Financials: Check the breakdown
-  - Currency is FCFA?
-  - No financing costs for cash?
-- [ ] Deal Score: Record the score
-- [ ] Name: "Lome Rental Duplex" — create
-- [ ] Verify: redirects to Overview, welcome banner shows
+- [ ] Location: "Lome" entered — location data loads?
+- [ ] Property: "Duplex" selected
+- [ ] Size: uses **m²** (not sqft)? (was Bug #15)
+- [ ] Financing: "Phased cash" — no loan fields shown?
+- [ ] Financials: currency is FCFA? No financing costs for cash?
+- [ ] Create succeeds? Overview loads?
 
-### 3.3 Wizard Edge Cases
-- [ ] Try navigating backward in the wizard (click Back button) — does data persist?
-- [ ] Click step indicator dots at the top — do they navigate? Do completed steps keep their checkmarks?
-- [ ] Try clicking Cancel — does a confirmation dialog appear ("Are you sure?")?
-- [ ] Refresh the page mid-wizard — is all data lost? (Known limitation)
-- [ ] Try creating a project with "Build to sell" goal — does it succeed? (This was the critical bug)
+### A4.3 Edge Cases
+- [ ] "Build to sell" goal: creates successfully?
+- [ ] Ghana project: works end-to-end?
+- [ ] Benin project: works end-to-end?
+- [ ] Back button in wizard: data preserved?
+- [ ] Step indicator dots: clickable? Completed steps show checkmarks?
+- [ ] Cancel wizard: confirmation dialog? Returns to dashboard?
+- [ ] Refresh page mid-wizard: data lost? (acceptable)
+- [ ] Enter extremely large/small values: handled gracefully?
 
 ---
 
-## PHASE 4: OVERVIEW PAGE DEEP DIVE (30 min)
+## A5: PROJECT PAGES — FULL AUDIT (90 min)
 
-### 4.1 KPI Strip Verification
-For EACH of your created projects + the demo project:
-- [ ] Progress %: does it match the task fraction shown? (e.g., 0% = 0/X tasks)
-- [ ] Budget: matches the Budget page total?
-- [ ] Spent: matches the Budget page spent?
-- [ ] Timeline: shows "Wk X of est. Y wks"?
-- [ ] Team: matches the number of contacts on the Team page?
-- [ ] Tasks left: shows only incomplete tasks (not punch list items)?
-- [ ] Click Budget KPI — navigates to Budget page?
-- [ ] Click Timeline KPI — navigates to Schedule page?
-- [ ] Click Team KPI — navigates to Team page?
+### A5.1 Overview Page
+- [ ] KPI strip: Progress %, Budget, Spent, Timeline, Team count, Tasks left
+- [ ] Each KPI clickable: navigates to the correct page?
+- [ ] Progress % matches actual task completion (completed/total)?
+- [ ] Phase badge shows correct current phase?
+- [ ] Phase tracker visualization: correct phase highlighted?
+- [ ] Tasks grouped by milestone? Milestone headers visible?
+- [ ] Review banner: shows items needing review? Click navigates?
+- [ ] Task completion flow:
+  - [ ] Click task: inline form opens?
+  - [ ] Pre-filled evidence from wizard data?
+  - [ ] Can edit evidence text?
+  - [ ] Optional cost field: enter amount, complete — budget updates?
+  - [ ] Can attach photos to task evidence?
+  - [ ] Task marks as done? Next task auto-expands?
+  - [ ] Can reopen a completed task?
+  - [ ] Previous completion note still visible?
+- [ ] Complete ALL tasks in a phase: Phase Gate appears?
+  - [ ] "Move to [next phase]" button works?
+  - [ ] Celebration modal shows correct phase names?
+  - [ ] New phase tasks visible after advancing?
+- [ ] Welcome banner (new project): links work? Dismissable? Stays dismissed?
+- [ ] Right sidebar: Budget widget, Deal Score, Recent Activity, Insights, Quick links
+- [ ] Phase education card: relevant content for current phase?
 
-### 4.2 Task Workflow
-- [ ] Are tasks grouped under milestones?
-- [ ] Are milestone headers visible (e.g., "Goals and purpose defined")?
-- [ ] For a new project: are "Review" badges showing on wizard-derived tasks?
-- [ ] Click a "Review" task — does the completion form open?
-- [ ] Is the evidence pre-filled from wizard data?
-- [ ] Can you edit the pre-filled text?
-- [ ] Enter a note and click "Complete" — task marks as done?
-- [ ] Does the next task auto-expand?
-- [ ] Click a completed task — can you see the completion note?
-- [ ] Can you click "Reopen" to undo a completion?
-- [ ] After reopening: is the previous note still visible in the form?
-- [ ] Can you remove individual photos from evidence?
-- [ ] Complete ALL tasks in a phase — does the Phase Gate appear?
-- [ ] Does it say "Move to [next phase]" with a button?
-- [ ] Click "Move to [next phase]" — celebration appears?
-- [ ] Celebration shows correct phase names?
-- [ ] Click "Get started" — new phase tasks visible?
-- [ ] Does the Schedule page now reflect the completed phase?
+### A5.2 Budget Page
+- [ ] Donut chart: renders without clipping? Center text readable?
+- [ ] KPIs: Budget, Spent, Remaining, Utilization — correct values?
+- [ ] AI insight present and relevant?
+- [ ] Category table: Category, Estimated, Actual, Variance, Progress columns?
+- [ ] Colored dots match donut slices?
+- [ ] Sort by each column header: works?
+- [ ] "Show ranges" button: market benchmark ranges appear?
+- [ ] Add item: form appears? Save works?
+- [ ] Edit item: click to expand? Change values? Save on blur/button?
+- [ ] **Variance formatting: consistent compact format** (was Bug #4)?
+- [ ] Delete item: confirmation? Removed?
+- [ ] Sticky footer: Budget, Spent, Left, Contingency — visible on scroll? Values correct?
+- [ ] Mobile: donut stacks above KPIs? No overflow?
 
-### 4.3 Review Banner
-- [ ] If review items exist: does the review banner show at top?
-- [ ] Click a review item button — does it scroll to AND open that task?
-- [ ] After completing all review items — does the banner disappear?
-
-### 4.4 Optional Cost Tracking
-- [ ] When completing a task: is the optional "Cost" field visible?
-- [ ] Enter a cost amount and complete the task
-- [ ] Does the toast show the amount logged?
-- [ ] Check the Budget page — did totalSpent increase?
-- [ ] Check the Overview KPI — did "Spent" update?
-
-### 4.5 Welcome Banner
-- [ ] On a newly created project: welcome banner visible?
-- [ ] Does it have links to Budget, Timeline, Documents?
-- [ ] Can you dismiss it with the X button?
-- [ ] Does it NOT reappear after dismissal?
-
-### 4.6 Right Sidebar
-- [ ] Budget widget: shows correct spent/total?
-- [ ] Deal Score: shows the wizard's deal score?
-- [ ] Recent Activity: shows task completions, daily logs, photos?
-- [ ] Insights: are they relevant to the project state?
-- [ ] Quick links: Budget, Schedule, Team, Financials, Documents, Photos, Daily Log, Inspections — all 8 present? All navigate correctly?
-
----
-
-## PHASE 5: BUDGET PAGE (15 min)
-
-### 5.1 Layout & Data
-- [ ] Donut chart visible and not clipping text?
-- [ ] Donut center text readable (compact format, not overflow)?
-- [ ] KPIs next to donut: Budget, Spent, Remaining, Utilization — correct values?
-- [ ] AI insight present? Relevant?
-- [ ] Category table visible with columns: Category, Estimated, Actual, Variance, Progress?
-- [ ] Each row has a colored dot matching the donut slice?
-- [ ] Sort by each column header — does it work?
-- [ ] Click "Show ranges" — market benchmark ranges appear?
-
-### 5.2 Budget Editing
-- [ ] Click "+ Add" button — add item form appears?
-- [ ] Add a new category with an estimated amount — saves?
-- [ ] Click an existing category to expand — edit form visible?
-- [ ] Change the estimated amount — saves on blur/button?
-- [ ] Change the actual amount — variance updates?
-- [ ] Delete a category — confirmation? Item removed?
-
-### 5.3 Sticky Footer
-- [ ] Scroll down — footer bar stays visible?
-- [ ] Shows: Budget, Spent, Left, Contingency (budget line item)?
-- [ ] Values match the top KPI strip?
-
-### 5.4 Mobile Responsiveness
-- [ ] Resize to mobile width — donut stacks above KPIs? No overflow?
-
----
-
-## PHASE 6: SCHEDULE PAGE (15 min)
-
-### 6.1 Phase Cards
-- [ ] Horizontal scrollable row of phase cards visible?
-- [ ] Current phase highlighted/expanded?
-- [ ] Each card shows: phase name, duration range, milestone count?
-- [ ] Click a different phase — expands with milestone list?
-- [ ] Milestone checkboxes — are they interactive?
-- [ ] Check a milestone on Schedule — does the Overview task status change to "pending-review"?
-- [ ] Uncheck a milestone — do tasks reopen on Overview?
-- [ ] Complete all Overview tasks for a milestone — does the Schedule milestone auto-check?
-
-### 6.2 Milestone Detail
+### A5.3 Schedule Page
+- [ ] Phase cards: horizontal scroll? Current phase highlighted?
+- [ ] Each card: phase name, duration range, milestone count?
+- [ ] Click different phase: expands with milestone list?
+- [ ] Milestone checkboxes: interactive?
+- [ ] Check milestone on Schedule: Overview tasks show "Review" badge?
+- [ ] Complete all Overview tasks for a milestone: Schedule auto-checks?
 - [ ] Milestone Timeline visualization renders?
-- [ ] "Set date" button on milestones — date picker appears?
-- [ ] "Add to Calendar" button — does it generate an ICS file?
-
-### 6.3 Cross-Page Consistency
+- [ ] "Set date" on milestone: date picker works?
+- [ ] "Add to Calendar": generates ICS file?
 - [ ] Week number matches Overview KPI?
-- [ ] Phase highlighted matches Overview phase badge?
 
----
-
-## PHASE 7: FINANCIALS PAGE (15 min)
-
-### 7.1 Layout
+### A5.4 Financials Page
 - [ ] KPI strip: Budget, Spent, Remaining, Safety cushion (adjusted)?
 - [ ] "Safety cushion" label (NOT just "Contingency")?
 - [ ] Contingency analysis: base rate, adjusted rate, reserve amount?
-- [ ] Adjustment factors listed with +/- percentages?
-- [ ] "Show formula" link — expands with formula text?
+- [ ] Adjustment factors with +/- percentages?
+- [ ] "Show formula" link expands?
+- [ ] USA project — Loan Calculator:
+  - [ ] Income/debts fields EMPTY (not hardcoded)?
+  - [ ] Down payment pre-filled from wizard?
+  - [ ] Interest rate pre-filled (or live rate)?
+  - [ ] "Live: X%" hint shown?
+  - [ ] Calculate: DTI ratio, Max loan, Monthly PITI, Status?
+  - [ ] DTI tooltip explains "Debt-to-Income ratio"?
+  - [ ] Draw schedule: milestone payments? Sum ~100%?
+- [ ] Togo project — Phased Funding:
+  - [ ] "Phased funding" section (not loan calculator)?
+  - [ ] Progress bars per construction phase?
+  - [ ] Currency converter: USD → FCFA works? Live rate badge?
+- [ ] Rental project — Yield Calculator:
+  - [ ] Monthly rent field pre-filled?
+  - [ ] Calculate: cap rate, net yield, cash flow, break-even?
+  - [ ] Cash flow color: green positive, red negative?
 
-### 7.2 USA Project — Loan Calculator
-- [ ] Income and debts fields are EMPTY (not hardcoded)?
-- [ ] Down payment % pre-filled from wizard data?
-- [ ] Interest rate pre-filled from wizard data (or live rate)?
-- [ ] "Live: X%" hint shown under interest rate?
-- [ ] Enter income/debts, click Calculate
-- [ ] Results: DTI ratio, Max loan, Monthly PITI, Status (Qualified/Not)?
-- [ ] DTI has tooltip explaining "Debt-to-Income ratio"?
-- [ ] Draw schedule visible with milestone payments?
-- [ ] Draw schedule percentages sum to ~100%?
+### A5.5 Team Page
+- [ ] Add contact: modal opens? Fill name, role, phone — saves?
+- [ ] Empty email/WhatsApp: saves without error?
+- [ ] Contact card: correct info? Star rating? Edit? Delete?
+- [ ] Trades Needed tab: required trades for current phase? Matched/unmatched?
+- [ ] Performance tab: table with ratings?
 
-### 7.3 Togo Project — Phased Funding
-- [ ] "Phased funding" section visible (not loan calculator)?
-- [ ] Progress bars for each construction phase?
-- [ ] Can enter funded amounts per phase?
-- [ ] Save/Cancel buttons appear when editing?
-- [ ] Currency converter visible?
-- [ ] Enter a USD amount, click Convert — shows FCFA result?
-- [ ] Live/Approx rate badge shown?
-- [ ] Refresh rate button works?
+### A5.6 Documents Page
+- [ ] Two tabs: "My Documents" and "Templates"?
+- [ ] **Dates show correct year** (not 2001)? (was Bug #1)
+- [ ] **File sizes show actual values** (not "--")? (was Bug #2)
+- [ ] **Separator uses em dash** (—, not --)? (was Bug #8)
+- [ ] Templates tab: phase filter pills? Template cards with generate button?
+- [ ] Upload: file picker opens? Type/phase dropdowns? Upload succeeds?
+- [ ] Missing documents alert: shows for required but missing docs?
 
-### 7.4 Rental Project — Yield Calculator
-- [ ] Monthly rent field pre-filled from wizard if "build to rent"?
-- [ ] Enter rent, vacancy %, expenses %
-- [ ] Calculate: cap rate, net yield, monthly cash flow, break-even?
-- [ ] Cash flow color: green if positive, red if negative?
-
----
-
-## PHASE 8: TEAM PAGE (15 min)
-
-### 8.1 Add Contacts
-- [ ] Click "Add contact" — modal opens?
-- [ ] Fill: Name, Role, Phone — save successfully?
-- [ ] Fill: Name, Role (leave email/WhatsApp empty) — save without error? (This was a critical bug)
-- [ ] Contact card appears with correct info?
-- [ ] Edit a contact — modal pre-filled? Save works?
-- [ ] Delete a contact — confirmation? Removed?
-- [ ] Star rating: click stars — rating updates?
-
-### 8.2 Trades Needed Tab
-- [ ] Shows required trades for the current phase?
-- [ ] Matched trades show the contact name?
-- [ ] Unmatched trades show "Add" button?
-
-### 8.3 Performance Tab
-- [ ] Shows contacts in a table?
-- [ ] Ratings displayed?
-- [ ] Note about "Performance data populates as tasks are assigned"?
-
----
-
-## PHASE 9: DOCUMENTS PAGE (15 min)
-
-### 9.1 Two-Tab Layout
-- [ ] "My Documents" tab active by default?
-- [ ] "Templates" tab clickable?
-- [ ] Tab count badges accurate?
-
-### 9.2 Templates
-- [ ] Switch to Templates tab
-- [ ] Phase filter pills visible? Click different phases?
-- [ ] Template cards show: name, description, type badge, phase badge?
-- [ ] "Generate" button on templates — does it open a form/preview?
-- [ ] Required templates marked differently?
-
-### 9.3 Upload
-- [ ] "Upload document" button visible and prominent?
-- [ ] Click upload — file picker opens?
-- [ ] Upload form: type dropdown, phase dropdown, contractor link dropdown?
-- [ ] After upload: document appears in My Documents list?
-
-### 9.4 Missing Documents Alert
-- [ ] If current phase requires documents not uploaded: warning banner at top?
-
----
-
-## PHASE 10: PHOTOS PAGE (10 min)
-
-### 10.1 Upload
-- [ ] Drag-and-drop upload zone visible?
-- [ ] Click zone — file picker opens?
-- [ ] Select photo: preview shown? Phase auto-selected?
-- [ ] Upload completes? Photo appears in grid?
-
-### 10.2 Grid & Filtering
-- [ ] Photo grid: 4 columns on desktop?
-- [ ] Phase badge on each photo?
+### A5.7 Photos Page
+- [ ] Upload: drag-and-drop zone? File picker? Phase auto-selected?
+- [ ] **Pluralization: "1 photo" not "1 photos"** (was Bug #3)?
+- [ ] Grid: 4 columns desktop? Phase badge on each?
 - [ ] Filter pills: All, By Phase, By Milestone, By Date?
-- [ ] Click a phase filter — grid filters?
-
-### 10.3 Lightbox
-- [ ] Click a photo — lightbox opens?
-- [ ] Metadata sidebar: date, phase, GPS coords, caption?
-- [ ] Previous/Next navigation arrows?
-- [ ] Edit caption works?
-- [ ] Delete photo works?
-- [ ] Close lightbox — back to grid?
+- [ ] Lightbox: click photo opens fullscreen? Metadata sidebar? Nav arrows?
+- [ ] Edit caption? Delete photo? Close lightbox?
 - [ ] Keyboard navigation (arrow keys)?
 
----
-
-## PHASE 11: DAILY LOG PAGE (10 min)
-
-### 11.1 Stats Strip
-- [ ] Total entries, This week, Avg crew, Since last entry?
-- [ ] "Since last entry" shows "N/A" when no entries (not "Today")?
-
-### 11.2 Week Strip
-- [ ] Mon-Sun calendar strip visible?
-- [ ] Navigate weeks with < > arrows?
-- [ ] Days with entries have filled dots?
-- [ ] Click a day — filters the list?
-- [ ] "Today" button returns to current week?
-
-### 11.3 Add Entry
-- [ ] Add entry form: weather presets, temperature, crew size?
+### A5.8 Daily Log Page
+- [ ] Stats strip: Total entries, This week, Avg crew, Since last entry?
+- [ ] "Since last entry" shows "N/A" when no entries?
+- [ ] Week calendar strip: Mon-Sun, navigate with arrows, dots for entries?
+- [ ] Add entry: weather presets, temperature, crew size, content?
 - [ ] Temperature unit: F for USA, C for Togo?
 - [ ] Quick tags visible?
-- [ ] Save entry — appears in list?
-- [ ] Entry shows: day number, date, weather, crew, content preview?
+- [ ] Entry interaction: expand, edit, delete?
 
-### 11.4 Entry Interaction
-- [ ] Click entry — expands with full content?
-- [ ] Edit button — opens edit form?
-- [ ] Delete button — confirmation? Entry removed?
-- [ ] Photo count shown if photos exist for that date?
+### A5.9 Inspections Page
+- [ ] Stats: Passed, Failed, Pending, Total?
+- [ ] **Defaults to current project phase** (not Define)? (was Bug #5 from first QA)
+- [ ] Phase tabs with counts?
+- [ ] Record result: Pass/Fail/Conditional, inspector name, date, notes?
+- [ ] Add custom inspection: saves and persists on refresh?
 
----
-
-## PHASE 12: INSPECTIONS PAGE (10 min)
-
-### 12.1 Layout
-- [ ] Stats strip: Passed, Failed, Pending, Total?
-- [ ] Phase tabs with inspection counts?
-- [ ] Current phase pre-selected?
-- [ ] Formal/Informal legend visible?
-
-### 12.2 Inspection Actions
-- [ ] Click "Record result" — inline panel opens?
-- [ ] Pass/Fail/Conditional radio buttons?
-- [ ] Inspector name, date, notes fields?
-- [ ] Save result — status updates?
-
-### 12.3 Custom Inspections
-- [ ] "+ Add inspection" button at bottom?
-- [ ] Add form: name, type (formal/informal), phase?
-- [ ] Save — inspection appears in list?
-- [ ] Refresh page — custom inspection PERSISTS? (Was a critical bug)
-
----
-
-## PHASE 13: PUNCH LIST PAGE (10 min)
-
-### 13.1 Empty State
-- [ ] Beginner-friendly text (not jargon)?
-- [ ] "Add item" button visible?
-
-### 13.2 Add Items
-- [ ] Click "Add item" — form appears?
-- [ ] Fields: description, trade, severity, notes?
-- [ ] Save — item appears in list?
+### A5.10 Punch List Page
+- [ ] Empty state: beginner-friendly text?
+- [ ] Add item: description, trade, severity, notes? Saves?
 - [ ] Status filters: Open, In Progress, Resolved?
 - [ ] Severity filters: Critical, Major, Minor?
-- [ ] Change item status — updates?
+- [ ] Change status works?
 
-### 13.3 Page Header
-- [ ] Subtitle: "Items to fix or complete before final handoff"?
+### A5.11 Monitor Page (Diaspora Remote Monitoring)
+- [ ] Live camera section: empty state? Add camera? Feed displays?
+- [ ] Photo evidence feed: project photos? Date filters (All, 7d, 30d)?
+- [ ] Milestone payment tracker: milestones with amounts? Progress bar?
+- [ ] Weekly summary: 6 KPIs match other pages?
+- [ ] Activity log: merged timeline of logs + photos?
+- [ ] Material tracker: add material? Discrepancy alerts?
 
----
-
-## PHASE 14: MONITOR PAGE (15 min)
-
-### 14.1 Live Camera
-- [ ] "Live site cameras" section visible?
-- [ ] Empty state with "Connect a camera" button?
-- [ ] Click setup — form appears?
-- [ ] Add a camera with any URL — saves?
-- [ ] Camera feed displays (or placeholder)?
-- [ ] Remove camera — confirmation? Removed?
-
-### 14.2 Photo Evidence Feed
-- [ ] Shows project photos?
-- [ ] Date filters: All, 7d, 30d?
-- [ ] "Request photo update" button?
-
-### 14.3 Milestone Payment Tracker
-- [ ] Shows milestones with payment amounts?
-- [ ] Progress bar: Verified % vs Remaining %?
-
-### 14.4 Weekly Summary
-- [ ] 6 KPIs: activity days, crew-days, photos, spent, progress, open items?
-- [ ] Values match other pages?
-
-### 14.5 Activity Log
-- [ ] Merged timeline of daily logs + photos?
-- [ ] Sorted by date descending?
-
-### 14.6 Material Tracker
-- [ ] "Add material" button?
-- [ ] Form: name, qty ordered, qty delivered, unit price, supplier, status?
-- [ ] Discrepancy alerts when delivered < ordered?
-
----
-
-## PHASE 15: AI ASSISTANT (10 min)
-
-### 15.1 Chat Interface
+### A5.12 AI Assistant
 - [ ] 5 topic tabs: General, Budget, Schedule, Risk, Contract?
-- [ ] Each tab has different placeholder text?
-- [ ] Send a message — response appears?
-- [ ] Markdown renders correctly (headings, bold, lists)?
-- [ ] Response includes construction-specific advice?
-
-### 15.2 Per-Tab Conversations
-- [ ] Send a message in "Budget" tab
-- [ ] Switch to "Schedule" tab — different conversation?
-- [ ] Switch back to "Budget" — original message still there?
-- [ ] Tab badges show message counts?
-
-### 15.3 Query Counter
-- [ ] AI query counter visible on Mentor button? (e.g., "3/10")
-- [ ] Counter increments after sending a message?
+- [ ] Different placeholder per tab?
+- [ ] Send message: response appears? Markdown renders?
+- [ ] **Error message descriptive** (not generic "unable to reach")? (was Bug #2)
+- [ ] **Tab badges exclude errors from count**? (was Bug #6)
+- [ ] Per-tab conversations preserved when switching?
+- [ ] Query counter visible? Only increments on success?
 
 ---
 
-## PHASE 16: SETTINGS PAGE (10 min)
+## A6: DEAL ANALYZER (15 min)
 
-### 16.1 Profile Tab
-- [ ] Name, timezone, currency, language fields?
-- [ ] Change name — save — toast appears?
-- [ ] Change timezone — saves?
-
-### 16.2 Plan Tab
-- [ ] Current plan shown (Starter)?
-- [ ] 4 tier cards with correct pricing?
-- [ ] Trial code input field?
-- [ ] Enter a trial code — feedback shown? (Error if invalid, success if valid)
-
-### 16.3 Notifications Tab
-- [ ] Toggle switches for different notification types?
-- [ ] Toggles persist after page refresh?
-
-### 16.4 Data Tab
-- [ ] Export data option?
-- [ ] Reset demo data option?
-- [ ] Delete account:
-  - Click delete — confirmation appears?
-  - Type "DELETE" — delete button enables?
-  - No password field required?
-  - Cancel — closes confirmation?
-
-### 16.5 Keystone Mentor Toggle
-- [ ] Is there a setting to disable the floating Mentor button?
-
----
-
-## PHASE 17: DEAL ANALYZER (15 min)
-
-### 17.1 Analyze Mode
-- [ ] Select a goal (Build to sell)
-- [ ] Select a market (USA)
-- [ ] Enter ZIP code — location intelligence loads?
-- [ ] Select property type and size
-- [ ] Configure features
-- [ ] Set financing
-- [ ] Results update in real-time?
-- [ ] Deal score visible?
+- [ ] Select goal, market, location, property, size, features, financing
+- [ ] Real-time results update as inputs change?
+- [ ] Deal score with factors and risk warnings?
 - [ ] Cost breakdown chart?
 - [ ] Sensitivity analysis?
-- [ ] "Create Project" button — creates a project from analysis?
-
-### 17.2 What Can I Afford Mode
-- [ ] Switch to "What Can I Afford?" tab
-- [ ] Enter a budget amount
-- [ ] Select market
-- [ ] Results show what you can build?
-
-### 17.3 Timeline Selection
-- [ ] Change timeline (6mo, 9mo, 12mo, etc.)
-- [ ] Does the analysis update?
-- [ ] Does "+6 months" sensitivity row show a non-zero cost impact?
+- [ ] "Create Project" from analysis: works?
+- [ ] "What Can I Afford" mode: enter budget, see results?
+- [ ] **West Africa: size units show m²** (not sqft)? (was Bug #15)
+- [ ] Timeline selection: analysis updates?
+- [ ] Save analysis: works? Load saved analysis: works?
 
 ---
 
-## PHASE 18: CROSS-PAGE DATA CONSISTENCY (30 min)
+## A7: SETTINGS PAGE (15 min)
 
-### 18.1 Budget/Spent Consistency
-For EACH project, record and compare:
-- [ ] Overview Budget KPI
-- [ ] Budget page total
-- [ ] Financials page budget
-- [ ] Dashboard card budget
-- [ ] Vault card budget
-All should match exactly.
-
-### 18.2 Progress Consistency
-For EACH project, record and compare:
-- [ ] Overview Progress %
-- [ ] Overview task fraction (X/Y)
-- [ ] Dashboard progress ring %
-- [ ] Vault card progress ring %
-- [ ] Verify: Progress % = completed tasks / total tasks
-
-### 18.3 Phase Consistency
-For EACH project:
-- [ ] Overview phase badge
-- [ ] Schedule highlighted phase
-- [ ] Dashboard card phase badge
-- [ ] Vault card phase badge
-All should show the same phase.
-
-### 18.4 Task-Milestone Sync
-- [ ] Complete a task on Overview
-- [ ] Check Schedule — milestone auto-checked if all tasks for it are done?
-- [ ] Check a milestone on Schedule
-- [ ] Check Overview — tasks show "Review" badge?
-- [ ] Uncheck milestone on Schedule
-- [ ] Check Overview — tasks reopened?
-
-### 18.5 Contingency Differentiation
-- [ ] Budget page footer: says "Contingency (budget line item)"?
-- [ ] Financials page: says "Safety cushion (adjusted)"?
-- [ ] Values are DIFFERENT (adjusted vs raw)?
-- [ ] Both are clearly labeled so user knows which is which?
-
-### 18.6 Open Items / Tasks Left
-- [ ] Overview "Tasks left" KPI — shows only incomplete tasks (no punch list items mixed in)?
-- [ ] Does NOT link to punch list (it stays on overview)?
-- [ ] Dashboard "Needs Your Attention" — shows "Task:" prefix with checkbox icon?
+- [ ] Profile: name, timezone, currency, language — save works?
+- [ ] Plan tab: current plan shown? 4 tiers with correct pricing?
+- [ ] Trial code input: invalid code shows error? Valid code upgrades?
+- [ ] Notifications tab: toggles persist on refresh?
+- [ ] Data tab:
+  - [ ] **"Reset Demo Project" button exists** (was Bug #4)? Works?
+  - [ ] "Reset All Data": confirmation dialog? Destructive styling?
+  - [ ] Delete account: requires typing "DELETE"? Cancel works?
+- [ ] Mentor toggle: can disable floating Mentor button?
 
 ---
 
-## PHASE 19: LANGUAGE & LOCALIZATION (15 min)
+## A8: CROSS-PAGE DATA CONSISTENCY (20 min)
 
-### 19.1 English User + Togo Project
-- [ ] User language set to English in Settings
-- [ ] Navigate to the Togo project
-- [ ] Sidebar labels: are they in ENGLISH (not French)?
-- [ ] Section headers (PLANNING, EXECUTION, etc.): English?
-- [ ] Page titles: English?
-- [ ] Construction terms: use Togo-specific terms (poteau-poutre, titre foncier) with English explanations?
-- [ ] Currency: shows FCFA correctly?
-- [ ] Temperature in Daily Log: Celsius?
-- [ ] Size units in wizard: square meters?
+For EACH project, record and verify these match across pages:
 
-### 19.2 Naming Consistency
-- [ ] Sidebar says "Vault" (not "Portfolio")?
-- [ ] Dashboard card says "My Vault"?
-- [ ] Vault page header says "Vault"?
-- [ ] URL is /vault/?
-- [ ] All 4 match?
+| Data Point | Overview | Budget | Financials | Dashboard | Vault |
+|---|---|---|---|---|---|
+| Budget total | | | | | |
+| Amount spent | | | | | |
+| Progress % | | | | | |
+| Phase name | | | | | |
+| Team count | | | | | |
 
----
-
-## PHASE 20: DARK MODE (5 min)
-
-- [ ] Toggle dark mode (look for theme toggle in header or settings)
-- [ ] Check each page category: does dark mode render correctly?
-  - [ ] Dashboard
-  - [ ] Overview
-  - [ ] Budget (donut chart)
-  - [ ] Schedule
-  - [ ] Financials
-  - [ ] Team
-  - [ ] Documents
-  - [ ] Photos
-  - [ ] AI Assistant
-  - [ ] Settings
-- [ ] Any unreadable text or missing contrast?
-- [ ] Toggle back to light mode — returns to normal?
+Additional checks:
+- [ ] Contingency (Budget page, footer): labeled "budget line item"?
+- [ ] Safety Cushion (Financials page): labeled "adjusted"? Different value than raw contingency?
+- [ ] Task completion on Overview → progress updates everywhere?
+- [ ] Budget edit on Budget page → KPI updates on Overview?
+- [ ] Contact add on Team → count updates on Overview KPI?
+- [ ] **Togo project: phase labels in English only** (no mixed languages)? (was Bug #13)
 
 ---
 
-## PHASE 21: EDGE CASES & ERROR HANDLING (15 min)
+## A9: RESPONSIVE & MOBILE (15 min)
 
-### 21.1 Empty States
-- [ ] Team page with 0 contacts — helpful empty state?
-- [ ] Photos with 0 photos — upload prompt?
-- [ ] Daily Log with 0 entries — "Since last entry: N/A"?
-- [ ] Punch List with 0 items — beginner-friendly text?
-- [ ] Inspections with 0 results — meaningful empty state?
+Test at each breakpoint: 375px (phone), 768px (tablet), 1024px (small desktop), 1440px (desktop)
 
-### 21.2 Navigation Resilience
-- [ ] Navigate rapidly between pages — any crashes?
-- [ ] Use browser back/forward buttons — pages load correctly?
-- [ ] Open the same page in two tabs — data consistent?
-- [ ] Refresh any page — data persists?
-
-### 21.3 Demo Project Integrity
-- [ ] Robinson Residence: is it clearly marked as [Demo]?
-- [ ] Does it have realistic data across ALL pages?
-- [ ] Budget: 16+ categories with estimated amounts?
-- [ ] Schedule: milestones across phases?
-- [ ] Team: 6 contractors?
-- [ ] Daily Log: 3 entries?
-- [ ] Photos: at least 1?
-- [ ] Can demo data be reset from Settings > Data tab?
-
-### 21.4 Multi-Project Dashboard
-- [ ] With 3+ projects: Dashboard shows all active projects?
-- [ ] Projects from different markets show correct currencies?
-- [ ] W. Africa filter in Vault isolates only WA projects?
-- [ ] USA filter shows only USA projects?
+- [ ] Landing page: no overflow, readable text, stacking correct?
+- [ ] Dashboard: project cards stack on mobile?
+- [ ] Sidebar: hamburger on mobile? Overlay closes on tap outside?
+- [ ] Budget: donut chart stacks above table? No overflow?
+- [ ] Schedule: phase cards scroll horizontally?
+- [ ] Financials: calculator fields usable on mobile?
+- [ ] AI Assistant: chat input not covered by Mentor popup?
+- [ ] All modals: visible within viewport? Not cut off?
+- [ ] Touch targets: all buttons minimum 44px tap area?
 
 ---
 
-## PHASE 22: ACCESSIBILITY QUICK CHECK (5 min)
+## A10: DARK MODE (10 min)
 
-- [ ] Tab through the main navigation — visible focus rings?
-- [ ] All buttons have visible text or aria-labels?
-- [ ] Color contrast: can you read all text? (especially muted text on cream backgrounds)
-- [ ] All form inputs have labels?
-- [ ] Error messages are announced (not just color-coded)?
+Toggle dark mode and check every page category:
+- [ ] Landing page: all sections readable?
+- [ ] Dashboard: cards, progress rings, badges?
+- [ ] Overview: KPIs, task cards, phase tracker?
+- [ ] Budget: donut chart colors, table rows?
+- [ ] Schedule: phase cards, milestone items?
+- [ ] Financials: calculator, draw schedule?
+- [ ] Team: contact cards, modals?
+- [ ] Documents: table rows, preview modal?
+- [ ] Photos: grid, lightbox?
+- [ ] AI Assistant: chat bubbles, input field?
+- [ ] Settings: tabs, form fields, buttons?
+- [ ] Any unreadable text, missing contrast, invisible borders?
+- [ ] Toggle back to light: returns to normal? No flash?
 
 ---
 
-## REPORTING FORMAT
+## A11: PERFORMANCE & ERROR HANDLING (10 min)
 
-For each issue found, record:
+- [ ] Navigate rapidly between 10+ pages: any crashes?
+- [ ] Browser back/forward: all pages load correctly?
+- [ ] Open same page in 2 tabs: data consistent? No conflicts?
+- [ ] Refresh any page: data persists? No errors?
+- [ ] Slow network (throttle to 3G): loading states shown? No timeouts?
+- [ ] Disconnect network: offline banner? Data still visible? Reconnect syncs?
+- [ ] Console errors: check for any JavaScript errors on each page
+- [ ] Large data: add 20+ budget items, 10+ contacts — performance OK?
 
+---
+
+## A12: ACCESSIBILITY QUICK CHECK (5 min)
+
+- [ ] Tab through main navigation: visible focus rings?
+- [ ] All buttons have text or aria-labels?
+- [ ] Color contrast: all text readable (especially muted on cream/dark)?
+- [ ] Form inputs all have labels?
+- [ ] Error messages: text-based (not just color)?
+- [ ] Screen reader: page structure makes sense? Headings in order?
+- [ ] Skip-to-content link (if any)?
+
+---
+
+# PART B: BUSINESS & PRODUCT ANALYSIS (Score: /30)
+
+---
+
+## B1: VALUE PROPOSITION CLARITY (10 min)
+
+- [ ] Can a first-time visitor understand what Keystone does in 5 seconds?
+- [ ] Is the "zero construction knowledge" target user clearly communicated?
+- [ ] Is the dual-market (USA + West Africa) positioning clear?
+- [ ] Is the diaspora builder use case prominently featured?
+- [ ] Does the pricing make sense for the target market?
+  - [ ] $0 starter: enough to experience value?
+  - [ ] $19 builder: justified by features?
+  - [ ] $49 developer: clear upgrade path?
+  - [ ] $149 enterprise: what additional value?
+- [ ] Is there a clear "aha moment" in the first 5 minutes of using the app?
+- [ ] Does the onboarding tour explain HOW to use the tool, not just what it does?
+- [ ] Is the educational content genuinely helpful for a novice?
+
+## B2: USER JOURNEY ANALYSIS (15 min)
+
+Map the complete user journey for each persona and rate the experience:
+
+### Persona 1: First-time US home builder
+- [ ] Discovers Keystone → registers → creates project → tracks budget → hires contractors → monitors construction → moves in
+- [ ] Pain points in this journey?
+- [ ] Where does the user get stuck?
+- [ ] Where does the user feel confident?
+- [ ] What's missing from this journey?
+
+### Persona 2: Diaspora builder (in US, building in Togo)
+- [ ] Discovers Keystone → registers → creates Togo project → manages remotely → tracks payments in CFA → verifies via photos
+- [ ] Does the remote monitoring page provide enough visibility?
+- [ ] Is the currency handling seamless?
+- [ ] Does the contractor link sharing work for remote management?
+- [ ] What's missing for this persona?
+
+### Persona 3: Small-scale real estate developer
+- [ ] Manages 3-5 projects simultaneously → tracks budgets → compares deals → generates documents
+- [ ] Is the multi-project dashboard sufficient?
+- [ ] Does the deal analyzer help with investment decisions?
+- [ ] Is the reporting/export capability sufficient?
+- [ ] What's missing for this persona?
+
+## B3: PRICING ANALYSIS (10 min)
+
+- [ ] Is the free tier generous enough to demonstrate value?
+- [ ] What's the key feature that drives upgrade from Starter → Builder?
+- [ ] Is there a clear "must-have" feature behind the paywall?
+- [ ] Compare pricing with alternatives (Buildertrend: $199/mo, CoConstruct: $99/mo, Procore: enterprise)
+- [ ] For West African market: is $19/mo affordable? What about local alternatives?
+- [ ] Is annual pricing discount (20%) enough to incentivize commitment?
+- [ ] Would a "per project" pricing model work better than subscription?
+- [ ] Is there room for a $9/mo tier between Starter and Builder?
+
+## B4: MONETIZATION GAPS
+
+- [ ] What features should be free vs paid?
+- [ ] Is AI query limiting (10/day free, 50/day paid) the right balance?
+- [ ] Should document generation be a paid feature?
+- [ ] Should the deal analyzer be a standalone product?
+- [ ] Are there upsell opportunities within the app?
+- [ ] Is there a referral program or affiliate structure?
+- [ ] Could contractor partnerships generate revenue?
+
+---
+
+# PART C: MARKET RESEARCH & COMPETITIVE ANALYSIS (Score: /15)
+
+---
+
+## C1: COMPETITIVE LANDSCAPE
+
+Rate Keystone vs each competitor on: Features, Price, Ease of Use, Target Market Fit
+
+### US Market Competitors
+- [ ] **Buildertrend** ($199-599/mo): How does Keystone compare? What does BT have that Keystone doesn't?
+- [ ] **CoConstruct** ($99+/mo): Overlap in owner-builder market?
+- [ ] **BuildBook** (free-$199/mo): Similar novice-friendly positioning?
+- [ ] **Houzz Pro** ($65-399/mo): Design + project management overlap?
+- [ ] **Monday.com / Asana**: Generic PM tools being used for construction?
+- [ ] **Spreadsheets**: What % of owner-builders use Excel/Google Sheets?
+
+### West Africa Market Competitors
+- [ ] Are there ANY digital construction management tools in Togo/Ghana/Benin?
+- [ ] What do diaspora builders currently use? (WhatsApp groups? Spreadsheets? Nothing?)
+- [ ] Is there a first-mover advantage in the West Africa market?
+- [ ] Local alternatives: any Francophone construction apps?
+
+### Key Differentiators
+- [ ] What does Keystone offer that NO competitor offers?
+  - [ ] Dual-market intelligence (USA + West Africa)?
+  - [ ] Education-first UI for novices?
+  - [ ] AI construction advisor?
+  - [ ] Diaspora remote monitoring?
+  - [ ] Phase-based progressive disclosure?
+- [ ] What do competitors offer that Keystone lacks?
+  - [ ] Subcontractor bid management?
+  - [ ] Material procurement/ordering?
+  - [ ] Plan review/markup tools?
+  - [ ] Scheduling with Gantt charts?
+  - [ ] Integration with accounting software?
+  - [ ] Multi-user collaboration?
+  - [ ] Mobile-native app?
+
+## C2: MARKET SIZE & OPPORTUNITY
+
+- [ ] US owner-builder market: how many people build their own homes per year?
+- [ ] Togo/Ghana/Benin construction market: growth rate? Digital adoption?
+- [ ] Diaspora remittance to West Africa: size of market? % used for construction?
+- [ ] Total addressable market (TAM)?
+- [ ] Serviceable addressable market (SAM)?
+- [ ] Realistic first-year target?
+
+## C3: GO-TO-MARKET READINESS
+
+- [ ] Is the landing page optimized for conversion?
+- [ ] Is there an email capture for non-registering visitors?
+- [ ] Is there a blog or content marketing strategy?
+- [ ] Social media presence? (LinkedIn, Twitter, YouTube)
+- [ ] Is the app discoverable via search? (Google "construction project management for beginners")
+- [ ] Is there a Product Hunt / Launch strategy?
+- [ ] Community building: Discord, Facebook group, forum?
+- [ ] Partner channel: real estate agents, architects, lenders?
+
+---
+
+# PART D: GAP ANALYSIS & IMPROVEMENT ROADMAP (Score: /15)
+
+---
+
+## D1: MISSING FEATURES (Critical)
+
+- [ ] **Mobile app**: React Native/Expo app for offline photo uploads on construction sites
+- [ ] **Offline data**: Local SQLite/WatermelonDB for full CRUD without internet (critical for West Africa)
+- [ ] **Multi-user collaboration**: Currently single-user only — contractors, architects, lenders need access
+- [ ] **Real notifications**: Push notifications, email digests, SMS alerts for milestone payments
+- [ ] **Subcontractor bid management**: RFQ generation, bid comparison, award tracking
+- [ ] **Integration with accounting**: QuickBooks, Wave, Xero export
+
+## D2: MISSING FEATURES (Important)
+
+- [ ] **Photo comparison**: Side-by-side before/after views by location
+- [ ] **Weather integration**: Automatic weather logging from API (not manual entry)
+- [ ] **Material procurement**: Connect to suppliers, track orders, delivery scheduling
+- [ ] **Plan markup**: Upload floor plans, annotate with notes/issues
+- [ ] **Video walkthrough**: Upload and organize video tours by phase
+- [ ] **Gantt chart**: Visual timeline with dependencies (not just phase cards)
+- [ ] **Budget forecasting**: Project future spend based on current burn rate
+- [ ] **Payment processing**: In-app milestone payments to contractors (Stripe Connect)
+- [ ] **Custom inspection templates**: Beyond the built-in market-specific ones
+- [ ] **Warranty tracker**: Post-occupancy warranty management and reminders
+- [ ] **Property insurance integration**: Connect with insurance providers
+- [ ] **Tax document preparation**: Track construction expenses for tax deductions
+
+## D3: MISSING FEATURES (Nice-to-Have)
+
+- [ ] **Community forum**: Connect owner-builders in same market/region
+- [ ] **Contractor marketplace**: Find and rate contractors
+- [ ] **Material price tracker**: Track lumber, concrete, steel prices over time
+- [ ] **AR/VR visualization**: View designs in augmented reality
+- [ ] **Voice notes**: Record audio notes on construction site
+- [ ] **Automated progress photos**: Integration with site cameras for daily snapshots
+- [ ] **Lender portal**: Share project progress with construction loan officers
+- [ ] **Energy modeling**: Predict utility costs based on design choices
+- [ ] **Resale value estimator**: Project post-completion property value
+
+## D4: TECHNICAL DEBT & CLEANUP
+
+- [ ] Zustand stores created but not wired into all pages (still using Context in many places)
+- [ ] TanStack Query hooks created but most pages still use raw Firebase subscriptions
+- [ ] React Hook Form schemas created but forms still use manual useState
+- [ ] Middleware is API-only — page-level CSP headers not enforced
+- [ ] No Playwright e2e tests
+- [ ] No Sentry DSN configured (monitoring infrastructure exists but inactive)
+- [ ] Service worker caching strategy needs tuning for optimal offline experience
+- [ ] `unsafe-eval` in CSP should be removed for production
+- [ ] Firebase Security Rules should be audited for admin-only paths
+- [ ] No rate limiting per-user on non-AI endpoints
+
+## D5: CONTENT & LOCALIZATION
+
+- [ ] French translation: complete or partial?
+- [ ] Ewe (Togo): not started — critical for local market
+- [ ] Twi (Ghana): not started
+- [ ] Fon (Benin): not started
+- [ ] Educational content: reviewed by construction professionals?
+- [ ] Cost benchmarks: how current? Quarterly update process?
+- [ ] Legal templates: reviewed by lawyers in each market?
+- [ ] Construction terminology glossary: comprehensive enough?
+
+## D6: BUSINESS MODEL GAPS
+
+- [ ] No email marketing / drip campaign for onboarding
+- [ ] No in-app feedback mechanism (NPS, feature requests)
+- [ ] No analytics dashboard for founder (user counts, feature usage, conversion)
+- [ ] No A/B testing infrastructure
+- [ ] No customer support beyond email
+- [ ] No SLA or uptime guarantees for paid tiers
+- [ ] No data export for users leaving the platform (data portability)
+- [ ] No API for third-party integrations
+
+---
+
+# SCORING RUBRIC
+
+| Category | Weight | Score Range | Your Score |
+|---|---|---|---|
+| **A: Technical QA** | 40% | 0-40 | /40 |
+| A1-A2: Landing + Auth | 8% | 0-8 | |
+| A3: Dashboard + Navigation | 6% | 0-6 | |
+| A4: Project Wizard | 6% | 0-6 | |
+| A5: Project Pages (12 pages) | 10% | 0-10 | |
+| A6-A7: Analyzer + Settings | 4% | 0-4 | |
+| A8: Cross-page consistency | 3% | 0-3 | |
+| A9-A12: Responsive + Dark + Perf + A11y | 3% | 0-3 | |
+| **B: Business & Product** | 30% | 0-30 | /30 |
+| B1: Value proposition | 8% | 0-8 | |
+| B2: User journeys | 10% | 0-10 | |
+| B3-B4: Pricing + Monetization | 12% | 0-12 | |
+| **C: Market & Competitive** | 15% | 0-15 | /15 |
+| C1: Competitive landscape | 8% | 0-8 | |
+| C2-C3: Market size + GTM | 7% | 0-7 | |
+| **D: Gaps & Roadmap** | 15% | 0-15 | /15 |
+| D1-D3: Missing features | 8% | 0-8 | |
+| D4-D6: Tech debt + Content + Business | 7% | 0-7 | |
+| **TOTAL** | 100% | 0-100 | **/100** |
+
+---
+
+# REPORT TEMPLATE
+
+## For each bug found:
 ```
 **Bug #X: [Short title]**
 - Location: [Page / URL]
@@ -706,11 +738,15 @@ For each issue found, record:
 - Expected: [What should happen]
 - Actual: [What actually happens]
 - Severity: CRITICAL / MAJOR / MINOR
-- Screenshot: [If applicable]
 ```
 
-At the end, provide:
-1. Summary table of all issues by severity
-2. Cross-page consistency scorecard (matching the format in previous audits)
-3. Overall assessment: is the app ready for 50 beta users?
-4. Top 5 must-fix items before launch
+## Final deliverables:
+1. Bug list sorted by severity
+2. Cross-page consistency scorecard (table format)
+3. Business analysis with scoring
+4. Competitive comparison matrix
+5. Gap analysis with prioritized roadmap
+6. Overall score: /100 with breakdown by category
+7. Top 10 items to fix/build before public launch
+8. Top 5 items to fix/build before beta (50 users)
+9. 30-60-90 day improvement plan

@@ -200,9 +200,9 @@ function Stepper({ value, onChange, min, max, label }: { value: number; onChange
     <div className="flex flex-col items-center gap-1">
       <span className="text-[10px] text-muted uppercase tracking-wider">{label}</span>
       <div className="flex items-center gap-0.5">
-        <button onClick={() => onChange(Math.max(min, value - 1))} className="w-7 h-7 rounded-lg bg-warm/40 hover:bg-warm text-earth flex items-center justify-center text-[14px] font-medium transition-colors">-</button>
+        <button onClick={() => onChange(Math.max(min, value - 1))} aria-label={`Decrease ${label}`} className="w-7 h-7 rounded-lg bg-warm/40 hover:bg-warm text-earth flex items-center justify-center text-[14px] font-medium transition-colors">-</button>
         <span className="w-8 text-center text-[16px] font-data font-bold text-earth">{value}</span>
-        <button onClick={() => onChange(Math.min(max, value + 1))} className="w-7 h-7 rounded-lg bg-warm/40 hover:bg-warm text-earth flex items-center justify-center text-[14px] font-medium transition-colors">+</button>
+        <button onClick={() => onChange(Math.min(max, value + 1))} aria-label={`Increase ${label}`} className="w-7 h-7 rounded-lg bg-warm/40 hover:bg-warm text-earth flex items-center justify-center text-[14px] font-medium transition-colors">+</button>
       </div>
     </div>
   );
@@ -757,10 +757,10 @@ export default function AnalyzePage() {
                   <span className="text-[11px] font-medium text-earth mb-1.5 block">Size</span>
                   <div className="grid grid-cols-5 gap-1">
                     {[
-                      { id: "compact", label: isUSA ? "1,200" : "80" },
-                      { id: "standard", label: isUSA ? "1,800" : "130" },
-                      { id: "large", label: isUSA ? "2,800" : "200" },
-                      { id: "estate", label: isUSA ? "4,000" : "300" },
+                      { id: "compact", label: isWA ? "80" : "1,200" },
+                      { id: "standard", label: isWA ? "130" : "1,800" },
+                      { id: "large", label: isWA ? "200" : "2,800" },
+                      { id: "estate", label: isWA ? "300" : "4,000" },
                       { id: "custom", label: "Custom" },
                     ].map((s) => (
                       <button key={s.id} onClick={() => set("sizeCategory", s.id)}

@@ -161,6 +161,7 @@ export function ThemeToggle() {
       className="p-1.5 rounded-lg transition-colors"
       style={{ color: "var(--color-sand)" }}
       title={mode === "light" ? "Switch to dark mode" : "Switch to light mode"}
+      aria-label={mode === "light" ? "Switch to dark mode" : "Switch to light mode"}
     >
       {mode === "light" && <Sun size={16} />}
       {mode === "dark" && <Moon size={16} />}

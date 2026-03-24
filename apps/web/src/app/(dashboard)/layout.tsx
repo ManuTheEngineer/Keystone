@@ -383,7 +383,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </Link>
                 </div>
               )}
-              <main className="flex-1 p-5 overflow-y-auto overflow-x-hidden min-w-0">
+              <main id="main-content" className="flex-1 p-5 overflow-y-auto overflow-x-hidden min-w-0">
                 {children}
               </main>
             </div>

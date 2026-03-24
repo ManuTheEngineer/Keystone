@@ -106,11 +106,14 @@ export function generateProjectNotifications(
     if (project.currentPhase >= 4 && project.currentPhase <= 6) {
       const contactCount = project.contactCount ?? 0;
       if (contactCount < 3) {
+        const message = contactCount === 0
+          ? `${pName} has no team contacts yet. Add your contractors and trades for the Build phase.`
+          : `${pName} has ${contactCount} team contact${contactCount !== 1 ? "s" : ""} but needs at least 3 for the Build phase.`;
         notifications.push({
           id: `missing-team-${pid}`,
           type: "warning",
           title: "Team incomplete",
-          message: `${pName} has only ${contactCount} contractor${contactCount !== 1 ? "s" : ""}. You need more trades for the Build phase.`,
+          message,
           projectId: pid,
           projectName: pName,
           href: `/project/${pid}/team`,

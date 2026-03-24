@@ -5,6 +5,8 @@ html {
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;
+  scroll-padding-top: 5rem; /* offset for sticky nav on anchor scroll */
+  scroll-behavior: smooth;
 }
 
 body {

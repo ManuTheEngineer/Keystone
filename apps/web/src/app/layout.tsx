@@ -18,11 +18,13 @@ export const metadata: Metadata = {
     description: "From first idea to final key. Construction project management for owner-builders.",
     type: "website",
     siteName: "Keystone",
+    images: [{ url: "/icons/icon-512x512.png", width: 512, height: 512, alt: "Keystone" }],
   },
   twitter: {
     card: "summary",
     title: "Keystone",
     description: "From first idea to final key. Construction project management for owner-builders.",
+    images: ["/icons/icon-512x512.png"],
   },
   manifest: "/manifest.json",
   appleWebApp: {
@@ -48,8 +50,6 @@ export const viewport: Viewport = {
   themeColor: "#2C1810",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export default function RootLayout({
@@ -70,7 +70,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased">
+      <body className="antialiased scroll-pt-20">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-earth focus:text-warm focus:rounded-lg focus:text-sm">
+          Skip to content
+        </a>
         <QueryProvider>
           <AuthProvider>
             <ToastProvider>
