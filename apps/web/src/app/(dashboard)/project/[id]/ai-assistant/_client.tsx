@@ -257,11 +257,14 @@ export function AIAssistantClient() {
 
   const handleClearChat = useCallback(async () => {
     if (!user) return;
-    // Clear only current mode's messages
-    setAllMessages((prev) => prev.filter((m: any) => m.mode && m.mode !== mode));
-    const remaining = allMessages.filter((m: any) => m.mode && m.mode !== mode);
-    saveConversation(user.uid, projectId, remaining).catch(() => {});
-  }, [user, projectId, mode, allMessages]);
+    // Keep messages from OTHER modes, remove current mode's messages
+    setAllMessages((prev) => {
+      const remaining = prev.filter((m: any) => m.mode && m.mode !== mode);
+      saveConversation(user.uid, projectId, remaining).catch(() => {});
+      return remaining;
+    });
+    setError(null);
+  }, [user, projectId, mode]);
 
   const handleSend = useCallback(async () => {
     const text = input.trim();

@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { KeystoneIcon } from "@/components/icons/KeystoneIcon";
+import { ref, push, set } from "firebase/database";
+import { db } from "@/lib/firebase";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ProductDemo } from "@/components/ui/ProductDemo";
 import {
@@ -30,6 +32,38 @@ export default function LandingPage() {
   const [navScrolled, setNavScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
+
+  // Newsletter state
+  const [nlEmail, setNlEmail] = useState("");
+  const [nlError, setNlError] = useState("");
+  const [nlSubmitting, setNlSubmitting] = useState(false);
+  const [nlSuccess, setNlSuccess] = useState(false);
+
+  async function handleNewsletterSubmit(e: FormEvent) {
+    e.preventDefault();
+    setNlError("");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(nlEmail.trim())) {
+      setNlError("Please enter a valid email address.");
+      return;
+    }
+    setNlSubmitting(true);
+    try {
+      const waitlistRef = ref(db, "waitlist");
+      const newEntry = push(waitlistRef);
+      await set(newEntry, {
+        email: nlEmail.trim(),
+        timestamp: new Date().toISOString(),
+        source: "landing-page",
+      });
+      setNlSuccess(true);
+      setNlEmail("");
+    } catch {
+      setNlError("Something went wrong. Please try again.");
+    } finally {
+      setNlSubmitting(false);
+    }
+  }
 
   // Don't auto-redirect — let logged-in users view landing page
   // They can navigate to dashboard via nav button
@@ -807,6 +841,58 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Section: Newsletter / Email Capture */}
+      <section className="py-20 sm:py-28 px-4 sm:px-6 bg-warm">
+        <div className="max-w-xl mx-auto text-center">
+          <h2
+            className="text-[28px] sm:text-[34px] text-earth mb-3"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            Stay in the loop
+          </h2>
+          <p className="text-[15px] text-muted mb-8 leading-relaxed">
+            Get construction tips, market updates, and early access to new features.
+            No spam, unsubscribe anytime.
+          </p>
+
+          {nlSuccess ? (
+            <div className="flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-success/10 text-success">
+              <Check size={18} />
+              <span className="text-[15px] font-medium">
+                You&apos;re on the list! Check your inbox.
+              </span>
+            </div>
+          ) : (
+            <form onSubmit={handleNewsletterSubmit} className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="email"
+                  value={nlEmail}
+                  onChange={(e) => {
+                    setNlEmail(e.target.value);
+                    if (nlError) setNlError("");
+                  }}
+                  placeholder="you@example.com"
+                  className="flex-1 px-4 py-3 rounded-full border border-sand bg-surface text-foreground text-[15px] placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-clay/30 focus:border-clay transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={nlSubmitting}
+                  className="px-7 py-3 text-[14px] font-medium rounded-full btn-earth btn-hover disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  {nlSubmitting ? "Joining..." : "Join the list"}
+                </button>
+              </div>
+              {nlError && (
+                <p className="text-[13px] text-danger text-left sm:text-center">
+                  {nlError}
+                </p>
+              )}
+            </form>
+          )}
         </div>
       </section>
 

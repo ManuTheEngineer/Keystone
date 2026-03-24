@@ -164,6 +164,16 @@
       }
     },
 
+    "feedbacks": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('profile').child('role').val() === 'admin'",
+      ".write": "auth != null",
+      "$feedbackId": {
+        ".validate": "newData.hasChildren(['type', 'message', 'timestamp'])",
+        "message": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 5000" },
+        "type": { ".validate": "newData.isString() && (newData.val() === 'bug' || newData.val() === 'feature' || newData.val() === 'general')" }
+      }
+    },
+
     "locationCache": {
       ".read": false,
       ".write": false
@@ -190,6 +200,17 @@
     "webhookEvents": {
       ".read": false,
       ".write": false
+    },
+
+    "waitlist": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('profile').child('role').val() === 'admin'",
+      ".write": true,
+      "$pushId": {
+        ".validate": "newData.hasChildren(['email', 'timestamp', 'source'])",
+        "email": { ".validate": "newData.isString() && newData.val().length > 0" },
+        "timestamp": { ".validate": "newData.isString()" },
+        "source": { ".validate": "newData.isString()" }
+      }
     }
   }
 }

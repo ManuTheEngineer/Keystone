@@ -17,6 +17,7 @@ import { subscribeToUserProjects, subscribeToPunchListItems, subscribeToTasks, s
 import { LocaleContext } from "@/lib/hooks/use-locale";
 
 import { AIMentor } from "@/components/ui/AIMentor";
+import { FeedbackWidget } from "@/components/ui/FeedbackWidget";
 import { generateProjectNotifications, generateDetailedNotifications, sortNotifications, type AppNotification } from "@/lib/notifications";
 import { safeUnsubscribeAll } from "@/lib/utils/safe-cleanup";
 
@@ -393,6 +394,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 project={currentProject ?? undefined}
               />
             )}
+            <FeedbackWidget />
           </div>
         </div>
         </LocaleContext.Provider>
