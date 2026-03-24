@@ -10,6 +10,7 @@ import "./globals.css";
 logEnvValidation();
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://keystonebuild.vercel.app"),
   title: "Keystone",
   description:
     "Construction project lifecycle management for owner-builders. Guides you from initial idea through financing, design, construction, and occupancy.",
