@@ -32,8 +32,8 @@ import { StarRating } from "@/components/ui/StarRating";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AIInsight } from "@/components/ui/AIInsight";
 import { generateTeamInsights } from "@/lib/insights";
-import { getTradesForPhase, PHASE_ORDER, PHASE_NAMES, getMarketData, formatCurrency } from "@keystone/market-data";
-import type { Market, ProjectPhase, TradeDefinition } from "@keystone/market-data";
+import { getTradesForPhase, PHASE_ORDER, PHASE_NAMES, getMarketData, formatCurrency, getClosestLocation } from "@keystone/market-data";
+import type { Market, ProjectPhase, TradeDefinition, LocationData, CurrencyConfig } from "@keystone/market-data";
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -100,6 +100,8 @@ interface ContactModalProps {
     email: string;
     whatsapp: string;
     rating: number;
+    rate?: number;
+    rateUnit?: string;
   }) => Promise<void>;
   title: string;
   initialData?: {
@@ -109,6 +111,8 @@ interface ContactModalProps {
     email: string;
     whatsapp: string;
     rating: number;
+    rate?: number;
+    rateUnit?: string;
   };
   allTrades: TradeDefinition[];
   market: Market;
@@ -134,6 +138,8 @@ function ContactModal({ open, onClose, onSave, title, initialData, allTrades, ma
   const [email, setEmail] = useState(initialData?.email ?? "");
   const [whatsapp, setWhatsapp] = useState(initialData?.whatsapp ?? "");
   const [rating, setRating] = useState(initialData?.rating ?? 5);
+  const [rate, setRate] = useState<string>(initialData?.rate != null ? String(initialData.rate) : "");
+  const [rateUnit, setRateUnit] = useState(initialData?.rateUnit ?? "hour");
   const [saving, setSaving] = useState(false);
 
   // Reset form when modal opens with new data
@@ -149,6 +155,8 @@ function ContactModal({ open, onClose, onSave, title, initialData, allTrades, ma
       setEmail(initialData?.email ?? "");
       setWhatsapp(initialData?.whatsapp ?? "");
       setRating(initialData?.rating ?? 5);
+      setRate(initialData?.rate != null ? String(initialData.rate) : "");
+      setRateUnit(initialData?.rateUnit ?? "hour");
     }
   }, [open, initialData, allTrades]);
 
@@ -171,6 +179,7 @@ function ContactModal({ open, onClose, onSave, title, initialData, allTrades, ma
     if (!name.trim()) return;
     setSaving(true);
     try {
+      const parsedRate = rate.trim() ? parseFloat(rate.trim()) : undefined;
       await onSave({
         name: name.trim(),
         role: resolvedRole,
@@ -178,6 +187,8 @@ function ContactModal({ open, onClose, onSave, title, initialData, allTrades, ma
         email: email.trim(),
         whatsapp: whatsapp.trim(),
         rating,
+        rate: parsedRate && !isNaN(parsedRate) ? parsedRate : undefined,
+        rateUnit: parsedRate && !isNaN(parsedRate) ? rateUnit : undefined,
       });
       onClose();
     } finally {
@@ -244,6 +255,38 @@ function ContactModal({ open, onClose, onSave, title, initialData, allTrades, ma
               />
             )}
           </div>
+
+          {/* Rate fields — only shown when a trade/role is selected */}
+          {resolvedRole && (
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <label className="block text-[12px] font-medium text-earth mb-1.5">Rate</label>
+                <input
+                  type="number"
+                  value={rate}
+                  onChange={(e) => setRate(e.target.value)}
+                  placeholder="e.g. 45"
+                  min="0"
+                  step="any"
+                  className="px-3 py-2.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth placeholder:text-muted/50 focus:outline-none focus:border-emerald-500 w-full"
+                />
+              </div>
+              <div className="w-[100px]">
+                <label className="block text-[12px] font-medium text-earth mb-1.5">Per</label>
+                <select
+                  value={rateUnit}
+                  onChange={(e) => setRateUnit(e.target.value)}
+                  className="px-3 py-2.5 text-[12px] border border-border rounded-[var(--radius)] bg-surface text-earth focus:outline-none focus:border-emerald-500 w-full"
+                >
+                  <option value="hour">hour</option>
+                  <option value="day">day</option>
+                  <option value="project">project</option>
+                  <option value="sqft">sqft</option>
+                  <option value="sqm">m&sup2;</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* WhatsApp first for WA markets */}
           {isWA && (
@@ -328,12 +371,16 @@ function TradeRequirementList({
   phaseName,
   contacts,
   market,
+  costIndex = 1.0,
+  cityName,
   onAddContact,
 }: {
   trades: TradeDefinition[];
   phaseName: string;
   contacts: ContactData[];
   market: Market;
+  costIndex?: number;
+  cityName?: string;
   onAddContact: (tradeName: string) => void;
 }) {
   const marketData = getMarketData(market);
@@ -361,12 +408,21 @@ function TradeRequirementList({
         </thead>
         <tbody>
           {trades.map((trade) => {
-            const matchedContact = contacts.find(
+            const matchedContacts = contacts.filter(
               (c) =>
                 c.role?.toLowerCase() === trade.name.toLowerCase() ||
                 c.role?.toLowerCase() === trade.localName?.toLowerCase()
             );
-            const hasContact = !!matchedContact;
+            const hasContacts = matchedContacts.length > 0;
+
+            // Adjust rate range by cost index
+            const adjustedLow = trade.typicalRateRange
+              ? Math.round(trade.typicalRateRange.low * costIndex)
+              : null;
+            const adjustedHigh = trade.typicalRateRange
+              ? Math.round(trade.typicalRateRange.high * costIndex)
+              : null;
+            const isAdjusted = costIndex !== 1.0;
 
             return (
               <tr key={trade.id} className="border-b border-border last:border-b-0 hover:bg-surface-alt transition-colors">
@@ -380,8 +436,18 @@ function TradeRequirementList({
                   <div className="text-[9px] text-muted line-clamp-1">{trade.description}</div>
                 </td>
                 <td className="py-1.5 px-2 text-[10px] font-data text-muted whitespace-nowrap">
-                  {trade.typicalRateRange
-                    ? `${formatCurrency(trade.typicalRateRange.low, marketData.currency)} - ${formatCurrency(trade.typicalRateRange.high, marketData.currency)}/${trade.typicalRateRange.unit}`
+                  {adjustedLow != null && adjustedHigh != null && trade.typicalRateRange
+                    ? (
+                      <span>
+                        {formatCurrency(adjustedLow, marketData.currency)} - {formatCurrency(adjustedHigh, marketData.currency)}/{trade.typicalRateRange.unit}
+                        {isAdjusted && cityName && (
+                          <span className="text-[8px] text-muted/70 ml-1">(adj. for {cityName})</span>
+                        )}
+                        {isAdjusted && !cityName && (
+                          <span className="text-[8px] text-muted/70 ml-1">&times; {costIndex.toFixed(2)}</span>
+                        )}
+                      </span>
+                    )
                     : "--"
                   }
                 </td>
@@ -395,18 +461,21 @@ function TradeRequirementList({
                   )}
                 </td>
                 <td className="py-1.5 px-2 pr-3 text-right">
-                  {hasContact ? (
-                    <span className="text-[10px] text-success font-medium inline-flex items-center gap-1">
-                      <CheckCircle2 size={9} /> {matchedContact.name}
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => onAddContact(trade.name)}
-                      className="text-[10px] text-warning font-medium hover:underline inline-flex items-center gap-1"
-                    >
-                      <Plus size={9} /> Add
-                    </button>
+                  {hasContacts && (
+                    <div className="flex flex-col items-end gap-0.5 mb-0.5">
+                      {matchedContacts.map((mc) => (
+                        <span key={mc.id} className="text-[10px] text-success font-medium inline-flex items-center gap-1">
+                          <CheckCircle2 size={9} /> {mc.name}
+                        </span>
+                      ))}
+                    </div>
                   )}
+                  <button
+                    onClick={() => onAddContact(trade.name)}
+                    className="text-[10px] text-warning font-medium hover:underline inline-flex items-center gap-1"
+                  >
+                    <Plus size={9} /> Add
+                  </button>
                 </td>
               </tr>
             );
@@ -426,6 +495,7 @@ function ContactCard({
   index,
   perf,
   contractorLinks,
+  currency,
   onEdit,
   onDelete,
   onShareAccess,
@@ -434,6 +504,7 @@ function ContactCard({
   index: number;
   perf: PerfData | undefined;
   contractorLinks: ContractorLink[];
+  currency: CurrencyConfig;
   onEdit: () => void;
   onDelete: () => void;
   onShareAccess: () => void;
@@ -497,6 +568,11 @@ function ContactCard({
               <span className="text-[10px] text-muted">{contact.role || "No role assigned"}</span>
               {hasPortal && (
                 <Badge variant="emerald" className="text-[8px] px-1 py-0">Portal</Badge>
+              )}
+              {contact.rate != null && contact.rate > 0 && (
+                <span className="text-[10px] font-data text-clay">
+                  {formatCurrency(contact.rate, currency)}/{contact.rateUnit ?? "hour"}
+                </span>
               )}
             </div>
           </div>
@@ -755,6 +831,9 @@ export function TeamClient() {
 
   // Market + phase
   const market = (project?.market ?? "USA") as Market;
+  const marketData = getMarketData(market);
+  const locationData: LocationData | null = project?.city ? getClosestLocation(project.city, market) : null;
+  const costIndex = locationData?.costIndex ?? 1.0;
   const currentPhaseKey: ProjectPhase = PHASE_ORDER[project?.currentPhase ?? 0];
 
   // All trades for role dropdown
@@ -831,6 +910,7 @@ export function TeamClient() {
 
   const handleModalSave = useCallback(async (data: {
     name: string; role: string; phone: string; email: string; whatsapp: string; rating: number;
+    rate?: number; rateUnit?: string;
   }) => {
     if (!user) return;
     const words = data.name.split(/\s+/);
@@ -848,6 +928,8 @@ export function TeamClient() {
         email: data.email || undefined,
         whatsapp: data.whatsapp || undefined,
         rating: data.rating,
+        rate: data.rate,
+        rateUnit: data.rateUnit,
       });
       showToast("Contact updated", "success");
     } else {
@@ -861,6 +943,8 @@ export function TeamClient() {
         email: data.email || undefined,
         whatsapp: data.whatsapp || undefined,
         rating: data.rating,
+        rate: data.rate,
+        rateUnit: data.rateUnit,
       });
       showToast("Contact added", "success");
     }
@@ -911,6 +995,8 @@ export function TeamClient() {
         email: editingContact.email ?? "",
         whatsapp: editingContact.whatsapp ?? "",
         rating: editingContact.rating,
+        rate: editingContact.rate,
+        rateUnit: editingContact.rateUnit,
       }
     : prefillRole
     ? { name: "", role: prefillRole, phone: "", email: "", whatsapp: "", rating: 5 }
@@ -1014,6 +1100,7 @@ export function TeamClient() {
                   index={i}
                   perf={c.id ? contactPerformance.get(c.id) : undefined}
                   contractorLinks={contractorLinks}
+                  currency={marketData.currency}
                   onEdit={() => openEditModal(c)}
                   onDelete={() => handleDeleteContact(c.id!)}
                   onShareAccess={() => handleShareAccess(c)}
@@ -1036,6 +1123,8 @@ export function TeamClient() {
             phaseName={PHASE_NAMES[currentPhaseKey]}
             contacts={contacts}
             market={market}
+            costIndex={costIndex}
+            cityName={locationData?.city}
             onAddContact={(tradeName) => openAddModal(tradeName)}
           />
         </div>

@@ -80,6 +80,8 @@ export interface ContactData {
   phone?: string;
   email?: string;
   whatsapp?: string;
+  rate?: number;
+  rateUnit?: string;
 }
 
 export interface DailyLogData {
