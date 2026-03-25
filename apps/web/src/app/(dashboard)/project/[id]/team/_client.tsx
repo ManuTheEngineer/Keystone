@@ -36,6 +36,80 @@ import { getTradesForPhase, PHASE_ORDER, PHASE_NAMES, getMarketData, formatCurre
 import type { Market, ProjectPhase, TradeDefinition, LocationData, CurrencyConfig } from "@keystone/market-data";
 
 /* ------------------------------------------------------------------ */
+/*  Trade Category Mapping                                             */
+/* ------------------------------------------------------------------ */
+
+const TRADE_CATEGORY_ORDER = [
+  "Structural",
+  "Mechanical",
+  "Exterior",
+  "Interior",
+  "Professional",
+  "General",
+  "Other",
+] as const;
+
+type TradeCategory = (typeof TRADE_CATEGORY_ORDER)[number];
+
+const TRADE_CATEGORY_MAP: Record<string, TradeCategory> = {
+  // Structural
+  foundation: "Structural",
+  framing: "Structural",
+  mason: "Structural",
+  macon: "Structural",
+  "rebar worker": "Structural",
+  ferrailleur: "Structural",
+  concrete: "Structural",
+  // Mechanical
+  plumber: "Mechanical",
+  electrician: "Mechanical",
+  hvac: "Mechanical",
+  // Exterior
+  roofing: "Exterior",
+  roofer: "Exterior",
+  siding: "Exterior",
+  landscaping: "Exterior",
+  landscaper: "Exterior",
+  fencing: "Exterior",
+  "painter (exterior)": "Exterior",
+  "exterior painter": "Exterior",
+  // Interior
+  drywall: "Interior",
+  flooring: "Interior",
+  "painter (interior)": "Interior",
+  "interior painter": "Interior",
+  painter: "Interior",
+  tile: "Interior",
+  tiler: "Interior",
+  cabinetry: "Interior",
+  countertops: "Interior",
+  // Professional
+  architect: "Professional",
+  engineer: "Professional",
+  surveyor: "Professional",
+  attorney: "Professional",
+  inspector: "Professional",
+  "interior designer": "Professional",
+  // General
+  "general contractor": "General",
+  "project manager": "General",
+  foreman: "General",
+  "chef de chantier": "General",
+};
+
+function getTradeCategory(role: string): TradeCategory {
+  if (!role) return "Other";
+  const lower = role.toLowerCase().trim();
+  // Direct match
+  if (TRADE_CATEGORY_MAP[lower]) return TRADE_CATEGORY_MAP[lower];
+  // Partial match — check if role contains a known key or vice-versa
+  for (const [key, category] of Object.entries(TRADE_CATEGORY_MAP)) {
+    if (lower.includes(key) || key.includes(lower)) return category;
+  }
+  return "Other";
+}
+
+/* ------------------------------------------------------------------ */
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -441,7 +515,9 @@ function TradeRequirementList({
                       <span>
                         {formatCurrency(adjustedLow, marketData.currency)} - {formatCurrency(adjustedHigh, marketData.currency)}/{trade.typicalRateRange.unit}
                         {isAdjusted && cityName && (
-                          <span className="text-[8px] text-muted/70 ml-1">(adj. for {cityName})</span>
+                          <span className="text-[8px] text-muted/70 ml-1" title={`Cost index: ${costIndex.toFixed(2)}x`}>
+                            Adjusted for {cityName} ({costIndex.toFixed(2)}x)
+                          </span>
                         )}
                         {isAdjusted && !cityName && (
                           <span className="text-[8px] text-muted/70 ml-1">&times; {costIndex.toFixed(2)}</span>
@@ -834,6 +910,11 @@ export function TeamClient() {
   const marketData = getMarketData(market);
   const locationData: LocationData | null = project?.city ? getClosestLocation(project.city, market) : null;
   const costIndex = locationData?.costIndex ?? 1.0;
+  const locationLabel = locationData
+    ? locationData.state
+      ? `${locationData.city}, ${locationData.state}`
+      : locationData.city
+    : undefined;
   const currentPhaseKey: ProjectPhase = PHASE_ORDER[project?.currentPhase ?? 0];
 
   // All trades for role dropdown
@@ -1092,20 +1173,45 @@ export function TeamClient() {
               action={{ label: "Add contact", onClick: () => openAddModal() }}
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 animate-stagger">
-              {contacts.map((c, i) => (
-                <ContactCard
-                  key={c.id}
-                  contact={c}
-                  index={i}
-                  perf={c.id ? contactPerformance.get(c.id) : undefined}
-                  contractorLinks={contractorLinks}
-                  currency={marketData.currency}
-                  onEdit={() => openEditModal(c)}
-                  onDelete={() => handleDeleteContact(c.id!)}
-                  onShareAccess={() => handleShareAccess(c)}
-                />
-              ))}
+            <div className="space-y-5">
+              {(() => {
+                // Group contacts by trade category
+                const grouped = new Map<TradeCategory, ContactData[]>();
+                for (const c of contacts) {
+                  const cat = getTradeCategory(c.role ?? "");
+                  if (!grouped.has(cat)) grouped.set(cat, []);
+                  grouped.get(cat)!.push(c);
+                }
+                // Render groups in defined order, only if they have contacts
+                return TRADE_CATEGORY_ORDER.filter((cat) => grouped.has(cat)).map((cat) => {
+                  const groupContacts = grouped.get(cat)!;
+                  return (
+                    <div key={cat}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-[12px] font-semibold text-earth">{cat}</h3>
+                        <span className="text-[10px] text-muted font-data">
+                          {groupContacts.length} {groupContacts.length === 1 ? "contact" : "contacts"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 animate-stagger">
+                        {groupContacts.map((c, i) => (
+                          <ContactCard
+                            key={c.id}
+                            contact={c}
+                            index={contacts.indexOf(c)}
+                            perf={c.id ? contactPerformance.get(c.id) : undefined}
+                            contractorLinks={contractorLinks}
+                            currency={marketData.currency}
+                            onEdit={() => openEditModal(c)}
+                            onDelete={() => handleDeleteContact(c.id!)}
+                            onShareAccess={() => handleShareAccess(c)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           )}
 
@@ -1124,7 +1230,7 @@ export function TeamClient() {
             contacts={contacts}
             market={market}
             costIndex={costIndex}
-            cityName={locationData?.city}
+            cityName={locationLabel}
             onAddContact={(tradeName) => openAddModal(tradeName)}
           />
         </div>
