@@ -46,52 +46,38 @@ export function FeedbackWidget() {
   }, [open]);
 
   async function handleSubmit() {
-    if (!message.trim()) return;
+    if (!message.trim() || !user) return;
     setSending(true);
     setSubmitError(null);
 
     try {
-      // Store feedback in Firebase under a global feedbacks node
-      const { ref, push, set } = await import("firebase/database");
-      const { db } = await import("@/lib/firebase");
-
-      await set(push(ref(db, "feedbacks")), {
-        type,
-        message: message.trim(),
-        page: pathname,
-        userId: user?.uid ?? "anonymous",
-        userEmail: profile?.email ?? user?.email ?? "unknown",
-        userName: profile?.name ?? "unknown",
-        userPlan: profile?.plan ?? "FOUNDATION",
-        userAgent: navigator.userAgent,
-        screenSize: `${window.innerWidth}x${window.innerHeight}`,
-        timestamp: new Date().toISOString(),
+      // Send via API route — uses database secret, always writes to global feedbacks node
+      const token = await user.getIdToken();
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          type,
+          message: message.trim(),
+          page: pathname,
+          userEmail: profile?.email ?? user.email ?? "unknown",
+          userName: profile?.name ?? "unknown",
+          userPlan: profile?.plan ?? "FOUNDATION",
+          userAgent: navigator.userAgent,
+          screenSize: `${window.innerWidth}x${window.innerHeight}`,
+        }),
       });
 
-      setSent(true);
-      setTimeout(() => {
-        setOpen(false);
-      }, 2000);
-    } catch {
-      // Store under user's own node as fallback (always writable by the user)
-      try {
-        const { ref, push, set } = await import("firebase/database");
-        const { db } = await import("@/lib/firebase");
-
-        if (user?.uid) {
-          await set(push(ref(db, `users/${user.uid}/feedbacks`)), {
-            type,
-            message: message.trim(),
-            page: pathname,
-            timestamp: new Date().toISOString(),
-          });
-          setSent(true);
-          setTimeout(() => setOpen(false), 2000);
-          return;
-        }
-      } catch {
-        // Both paths failed
+      if (!res.ok) {
+        throw new Error("API error");
       }
+
+      setSent(true);
+      setTimeout(() => setOpen(false), 2000);
+    } catch {
       setSubmitError("Could not send feedback. Please try again later.");
     } finally {
       setSending(false);

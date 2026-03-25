@@ -8,10 +8,23 @@ import { sendAIMessage, type AIMessage, type AIUsage } from "@/lib/services/ai-s
 import {
   subscribeToProject,
   subscribeToConversation,
+  subscribeToBudgetItems,
+  subscribeToContacts,
+  subscribeToTasks,
+  subscribeToDailyLogs,
+  subscribeToPhotos,
+  subscribeToPunchListItems,
   saveConversation,
   clearConversation,
   type ProjectData,
+  type BudgetItemData,
+  type ContactData,
+  type TaskData,
+  type DailyLogData,
+  type PhotoData,
+  type PunchListItemData,
 } from "@/lib/services/project-service";
+import { safeUnsubscribeAll } from "@/lib/utils/safe-cleanup";
 import {
   getMarketData,
   getPhaseDefinition,
@@ -25,7 +38,6 @@ import { useTranslation } from "@/lib/hooks/use-translation";
 import { Send, Loader2, AlertTriangle, Zap, Trash2, RotateCcw } from "lucide-react";
 import { VoiceNote } from "@/components/ui/VoiceNote";
 import { incrementAiQueryCount } from "@/lib/hooks/use-ai-quota";
-import { safeUnsubscribeAll } from "@/lib/utils/safe-cleanup";
 
 /* ------------------------------------------------------------------ */
 /*  Mode definitions                                                   */
@@ -149,6 +161,12 @@ export function AIAssistantClient() {
   const projectId = params.id as string;
 
   const [project, setProject] = useState<ProjectData | null>(null);
+  const [budgetItems, setBudgetItems] = useState<BudgetItemData[]>([]);
+  const [contacts, setContacts] = useState<ContactData[]>([]);
+  const [tasks, setTasks] = useState<TaskData[]>([]);
+  const [dailyLogs, setDailyLogs] = useState<DailyLogData[]>([]);
+  const [photos, setPhotos] = useState<PhotoData[]>([]);
+  const [punchListItems, setPunchListItems] = useState<PunchListItemData[]>([]);
   const [allMessages, setAllMessages] = useState<AIMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -171,6 +189,12 @@ export function AIAssistantClient() {
     if (!user) return;
     const unsubs = [
       subscribeToProject(user.uid, projectId, setProject),
+      subscribeToBudgetItems(user.uid, projectId, setBudgetItems),
+      subscribeToContacts(user.uid, projectId, setContacts),
+      subscribeToTasks(user.uid, projectId, setTasks),
+      subscribeToDailyLogs(user.uid, projectId, setDailyLogs),
+      subscribeToPhotos(user.uid, projectId, setPhotos),
+      subscribeToPunchListItems(user.uid, projectId, setPunchListItems),
       subscribeToConversation(user.uid, projectId, (saved) => {
         if (!conversationLoaded) {
           if (saved.length > 0) {
@@ -225,6 +249,36 @@ export function AIAssistantClient() {
       )
       .join("; ");
 
+    // Budget breakdown
+    const budgetSummary = budgetItems.length > 0
+      ? budgetItems.map((b) => `${b.category}: estimated ${b.estimated}, actual ${b.actual} (${b.status})`).join("; ")
+      : "No budget items yet";
+
+    // Team summary
+    const teamSummary = contacts.length > 0
+      ? contacts.map((c) => `${c.name} (${c.role}${c.rate ? `, ${c.rate}/${c.rateUnit ?? "day"}` : ""}${c.rating ? `, ${c.rating}/5 stars` : ""})`).join("; ")
+      : "No team contacts yet";
+
+    // Task summary
+    const completedTasks = tasks.filter((t) => t.done).length;
+    const pendingTasks = tasks.filter((t) => !t.done && t.status !== "cancelled").length;
+    const taskSummary = tasks.length > 0
+      ? `${completedTasks} completed, ${pendingTasks} pending. Recent: ${tasks.filter((t) => !t.done).slice(0, 5).map((t) => t.label).join(", ")}`
+      : "No tasks yet";
+
+    // Recent daily logs
+    const recentLogs = dailyLogs
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 3)
+      .map((l) => `${l.date}: crew ${l.crew ?? "?"}, ${l.content?.slice(0, 100)}`)
+      .join(" | ");
+
+    // Punch list summary
+    const openPunchItems = punchListItems.filter((p) => p.status === "open").length;
+    const punchSummary = punchListItems.length > 0
+      ? `${punchListItems.length} total (${openPunchItems} open). Items: ${punchListItems.filter((p) => p.status === "open").slice(0, 5).map((p) => p.description).join(", ")}`
+      : "No punch list items";
+
     return {
       projectName: project.name,
       market: project.market,
@@ -241,8 +295,21 @@ export function AIAssistantClient() {
       constructionMethod: phaseDef?.constructionMethod ?? "",
       milestones: phaseDef?.milestones.map((m) => m.name) ?? [],
       costSummary,
+      // Full project data for comprehensive AI guidance
+      budgetSummary,
+      budgetItemCount: budgetItems.length,
+      teamSummary,
+      teamCount: contacts.length,
+      taskSummary,
+      taskCount: tasks.length,
+      completedTaskCount: completedTasks,
+      recentDailyLogs: recentLogs || "No daily logs yet",
+      dailyLogCount: dailyLogs.length,
+      photoCount: photos.length,
+      punchListSummary: punchSummary,
+      punchListOpenCount: openPunchItems,
     };
-  }, [project, market]);
+  }, [project, market, budgetItems, contacts, tasks, dailyLogs, photos, punchListItems]);
 
   /* ---------- send handler ---------- */
 
