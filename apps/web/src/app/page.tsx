@@ -937,6 +937,11 @@ export default function LandingPage() {
                     About
                   </a>
                 </li>
+                <li>
+                  <Link href="/blog" className="text-[13px] text-sand/70 hover:text-warm transition-colors">
+                    Blog
+                  </Link>
+                </li>
               </ul>
             </div>
 

@@ -1,0 +1,390 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - navigation [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - img "Keystone" [ref=e10]
+          - generic [ref=e12]: KEYSTONE
+        - generic [ref=e13]:
+          - link "How it works" [ref=e14] [cursor=pointer]:
+            - /url: "#how-it-works"
+          - link "About" [ref=e15] [cursor=pointer]:
+            - /url: "#about"
+          - link "Sign in" [ref=e16] [cursor=pointer]:
+            - /url: /login
+          - link "Start free" [ref=e17] [cursor=pointer]:
+            - /url: /register
+          - button "Switch to light mode" [ref=e18]:
+            - img [ref=e19]
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - heading "Build your home with confidence" [level=1] [ref=e25]:
+          - text: Build your home
+          - text: with confidence
+        - paragraph [ref=e26]: The first platform that guides you from initial idea to final key, whether you are building in the United States or West Africa.
+        - generic [ref=e27]:
+          - link "Start your project" [ref=e28] [cursor=pointer]:
+            - /url: /register
+            - text: Start your project
+            - img [ref=e29]
+          - link "Analyze a deal" [ref=e31] [cursor=pointer]:
+            - /url: /register?redirect=/analyze
+            - text: Analyze a deal
+            - img [ref=e32]
+        - paragraph [ref=e34]: Free to start. No credit card required.
+      - img [ref=e36]
+    - generic [ref=e52]:
+      - heading "Three steps to your new home" [level=2] [ref=e53]
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - generic [ref=e56]: "01"
+          - img [ref=e58]
+          - heading "Define your vision" [level=3] [ref=e62]
+          - paragraph [ref=e63]: Set your goals, choose your market, and establish a realistic budget. Our guided setup walks you through every decision with clear explanations.
+        - generic [ref=e64]:
+          - generic [ref=e65]: "02"
+          - img [ref=e67]
+          - heading "Build with guidance" [level=3] [ref=e71]
+          - paragraph [ref=e72]: Manage contractors, track budgets, schedule milestones, and get AI-powered advice at every phase of construction.
+        - generic [ref=e73]:
+          - generic [ref=e74]: "03"
+          - img [ref=e76]
+          - heading "Move in with confidence" [level=3] [ref=e80]
+          - paragraph [ref=e81]: Verify work quality with photo evidence, complete inspections, and transition smoothly to occupancy, rental, or sale.
+    - generic [ref=e83]:
+      - heading "See it in action" [level=2] [ref=e84]
+      - paragraph [ref=e85]: From analyzing a deal to handing over the keys, Keystone guides you through every step of the building process.
+      - generic [ref=e86]:
+        - generic [ref=e87]:
+          - button "Analyze" [ref=e88]
+          - button "Plan" [ref=e89]
+          - button "Build" [ref=e90]
+          - button "Track" [ref=e91]
+          - button "Complete" [ref=e93]: Complete
+          - button [ref=e94]:
+            - img [ref=e95]
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - heading "Move in with confidence" [level=3] [ref=e582]
+            - paragraph [ref=e101]: Final inspections, punch list resolution, and a complete record of your entire build.
+            - generic [ref=e102]:
+              - generic [ref=e583]:
+                - img [ref=e584]
+                - text: Final inspection
+              - generic [ref=e586]:
+                - img [ref=e587]
+                - text: Punch list
+              - generic [ref=e589]:
+                - img [ref=e590]
+                - text: Document archive
+              - generic [ref=e592]:
+                - img [ref=e593]
+                - text: Handover ready
+          - generic [ref=e115]:
+            - generic [ref=e116]:
+              - generic [ref=e123]:
+                - img [ref=e124]
+                - text: keystonebuild.vercel.app
+              - generic [ref=e127]:
+                - generic [ref=e128]:
+                  - generic [ref=e130]: K
+                  - img [ref=e133]
+                  - img [ref=e138]
+                  - img [ref=e142]
+                  - img [ref=e145]
+                  - img [ref=e151]
+                - generic [ref=e154]:
+                  - generic [ref=e155]:
+                    - generic [ref=e156]: Complete
+                    - generic [ref=e157]: /
+                    - generic [ref=e158]: Move in with confidence
+                  - generic [ref=e595]:
+                    - generic [ref=e596]:
+                      - img [ref=e598]
+                      - generic [ref=e601]:
+                        - paragraph [ref=e602]: Completing...
+                        - paragraph [ref=e603]: 3/5 verified
+                    - generic [ref=e604]:
+                      - generic [ref=e605]:
+                        - img [ref=e607]
+                        - generic [ref=e609]: Final walkthrough inspection
+                      - generic [ref=e610]:
+                        - img [ref=e612]
+                        - generic [ref=e614]: Punch list resolved (8/8)
+                      - generic [ref=e615]:
+                        - img [ref=e617]
+                        - generic [ref=e619]: Certificate of occupancy
+                      - generic [ref=e622]: Final payments released
+                      - generic [ref=e625]: Documents archived
+            - img [ref=e196]:
+              - generic [ref=e262]: Project complete!
+    - generic [ref=e269]:
+      - heading "Everything you need to build" [level=2] [ref=e270]
+      - generic [ref=e271]:
+        - generic [ref=e272]:
+          - img [ref=e274]
+          - heading "Dual-market intelligence" [level=3] [ref=e277]
+          - paragraph [ref=e278]: Cost benchmarks, regulations, and construction methods for both the United States and West Africa.
+        - generic [ref=e279]:
+          - img [ref=e281]
+          - heading "AI construction advisor" [level=3] [ref=e283]
+          - paragraph [ref=e284]: Ask questions about your project, get budget analysis, schedule recommendations, and risk assessments.
+        - generic [ref=e285]:
+          - img [ref=e287]
+          - heading "Financial modeling" [level=3] [ref=e289]
+          - paragraph [ref=e290]: Loan qualification, rental yield projections, draw schedules, and currency conversion for diaspora builders.
+        - generic [ref=e291]:
+          - img [ref=e293]
+          - heading "Document generation" [level=3] [ref=e296]
+          - paragraph [ref=e297]: Generate contracts, bid requests, checklists, and payment receipts ready to print or share.
+        - generic [ref=e298]:
+          - img [ref=e300]
+          - heading "Photo verification" [level=3] [ref=e303]
+          - paragraph [ref=e304]: Timestamped, geotagged photos organized by phase and milestone for transparent progress tracking.
+        - generic [ref=e305]:
+          - img [ref=e307]
+          - heading "Phase-by-phase education" [level=3] [ref=e310]
+          - paragraph [ref=e311]: Learn construction at every step with market-specific guides, glossary terms, and expert tips.
+    - generic [ref=e314]:
+      - generic [ref=e315]:
+        - heading "Building from abroad? We built this for you." [level=2] [ref=e316]:
+          - text: Building from abroad?
+          - text: We built this for you.
+        - paragraph [ref=e317]: Keystone was designed for diaspora builders who need to manage construction projects remotely. Monitor progress through verified photos, track milestone payments, navigate land title processes, and stay connected to your build from anywhere in the world.
+        - list [ref=e318]:
+          - listitem [ref=e319]:
+            - img [ref=e321]
+            - generic [ref=e323]: Timestamped, geotagged photo verification
+          - listitem [ref=e324]:
+            - img [ref=e326]
+            - generic [ref=e328]: Milestone-based payment tracking
+          - listitem [ref=e329]:
+            - img [ref=e331]
+            - generic [ref=e333]: Titre foncier and land tenure guidance
+          - listitem [ref=e334]:
+            - img [ref=e336]
+            - generic [ref=e338]: Contractor accountability tools
+          - listitem [ref=e339]:
+            - img [ref=e341]
+            - generic [ref=e343]: CFA/USD currency conversion and alerts
+        - link "Start building remotely" [ref=e344] [cursor=pointer]:
+          - /url: /register
+          - text: Start building remotely
+          - img [ref=e345]
+      - generic [ref=e347]:
+        - generic [ref=e350]: Live project monitor
+        - generic [ref=e351]:
+          - generic [ref=e353]:
+            - generic [ref=e354]: "Phase 6: Build"
+            - generic [ref=e355]: 68% complete
+          - generic [ref=e358]:
+            - generic [ref=e359]:
+              - generic [ref=e360]: Budget remaining
+              - text: 4,200,000 FCFA
+            - generic [ref=e361]:
+              - generic [ref=e362]: Photos this week
+              - text: "12"
+          - generic [ref=e363]:
+            - generic [ref=e364]: Latest milestone
+            - text: Roofing complete. Awaiting inspection.
+    - generic [ref=e366]:
+      - heading "Simple, transparent pricing" [level=2] [ref=e367]
+      - paragraph [ref=e368]: Start free and upgrade as your projects grow.
+      - generic [ref=e369]:
+        - generic [ref=e370]:
+          - heading "Starter" [level=3] [ref=e371]
+          - paragraph [ref=e372]: For first-time explorers
+          - generic [ref=e373]: $0/mo
+          - list [ref=e374]:
+            - listitem [ref=e375]:
+              - img [ref=e376]
+              - generic [ref=e378]: 1 project
+            - listitem [ref=e379]:
+              - img [ref=e380]
+              - generic [ref=e382]: 10 AI queries per day
+            - listitem [ref=e383]:
+              - img [ref=e384]
+              - generic [ref=e386]: Basic budget tracking
+            - listitem [ref=e387]:
+              - img [ref=e388]
+              - generic [ref=e390]: Photo uploads
+            - listitem [ref=e391]:
+              - img [ref=e392]
+              - generic [ref=e394]: Learning modules
+          - link "Get started" [ref=e395] [cursor=pointer]:
+            - /url: /register
+        - generic [ref=e396]:
+          - heading "Builder" [level=3] [ref=e397]
+          - paragraph [ref=e398]: For active owner-builders
+          - generic [ref=e399]: $19/mo
+          - paragraph [ref=e400]: or $182/yr (save 20%)
+          - list [ref=e401]:
+            - listitem [ref=e402]:
+              - img [ref=e403]
+              - generic [ref=e405]: 3 active projects
+            - listitem [ref=e406]:
+              - img [ref=e407]
+              - generic [ref=e409]: 50 AI queries per day
+            - listitem [ref=e410]:
+              - img [ref=e411]
+              - generic [ref=e413]: Document generation
+            - listitem [ref=e414]:
+              - img [ref=e415]
+              - generic [ref=e417]: PDF/CSV export
+            - listitem [ref=e418]:
+              - img [ref=e419]
+              - generic [ref=e421]: All market data
+            - listitem [ref=e422]:
+              - img [ref=e423]
+              - generic [ref=e425]: 500 photo uploads
+          - link "Start building" [ref=e426] [cursor=pointer]:
+            - /url: /register
+        - generic [ref=e427]:
+          - generic [ref=e428]: Most popular
+          - heading "Developer" [level=3] [ref=e429]
+          - paragraph [ref=e430]: For investors and multi-project builders
+          - generic [ref=e431]: $49/mo
+          - paragraph [ref=e432]: or $470/yr (save 20%)
+          - list [ref=e433]:
+            - listitem [ref=e434]:
+              - img [ref=e435]
+              - generic [ref=e437]: Unlimited projects
+            - listitem [ref=e438]:
+              - img [ref=e439]
+              - generic [ref=e441]: Unlimited AI queries
+            - listitem [ref=e442]:
+              - img [ref=e443]
+              - generic [ref=e445]: Advanced financial modeling
+            - listitem [ref=e446]:
+              - img [ref=e447]
+              - generic [ref=e449]: All document templates
+            - listitem [ref=e450]:
+              - img [ref=e451]
+              - generic [ref=e453]: Unlimited photos
+            - listitem [ref=e454]:
+              - img [ref=e455]
+              - generic [ref=e457]: Priority support
+          - link "Start building" [ref=e458] [cursor=pointer]:
+            - /url: /register
+        - generic [ref=e459]:
+          - heading "Enterprise" [level=3] [ref=e460]
+          - paragraph [ref=e461]: For teams and organizations
+          - generic [ref=e462]: $149/mo
+          - paragraph [ref=e463]: or $1,430/yr (save 20%)
+          - list [ref=e464]:
+            - listitem [ref=e465]:
+              - img [ref=e466]
+              - generic [ref=e468]: Everything in Developer
+            - listitem [ref=e469]:
+              - img [ref=e470]
+              - generic [ref=e472]: Team collaboration
+            - listitem [ref=e473]:
+              - img [ref=e474]
+              - generic [ref=e476]: SSO authentication
+            - listitem [ref=e477]:
+              - img [ref=e478]
+              - generic [ref=e480]: Audit logging
+            - listitem [ref=e481]:
+              - img [ref=e482]
+              - generic [ref=e484]: SLA guarantees
+            - listitem [ref=e485]:
+              - img [ref=e486]
+              - generic [ref=e488]: Dedicated support
+          - link "Contact us" [ref=e489] [cursor=pointer]:
+            - /url: mailto:ManuTheEngineer@outlook.com?subject=Keystone Support
+    - generic [ref=e491]:
+      - heading "Common questions" [level=2] [ref=e492]
+      - generic [ref=e493]:
+        - group [ref=e494]:
+          - generic "Do I need construction experience to use Keystone?" [ref=e495] [cursor=pointer]:
+            - text: Do I need construction experience to use Keystone?
+            - img [ref=e496]
+        - group [ref=e498]:
+          - generic "How does the free plan work?" [ref=e499] [cursor=pointer]:
+            - text: How does the free plan work?
+            - img [ref=e500]
+        - group [ref=e502]:
+          - generic "Can I use Keystone for projects in West Africa?" [ref=e503] [cursor=pointer]:
+            - text: Can I use Keystone for projects in West Africa?
+            - img [ref=e504]
+        - group [ref=e506]:
+          - generic "How does the deal analyzer work?" [ref=e507] [cursor=pointer]:
+            - text: How does the deal analyzer work?
+            - img [ref=e508]
+        - group [ref=e510]:
+          - generic "Is my project data secure?" [ref=e511] [cursor=pointer]:
+            - text: Is my project data secure?
+            - img [ref=e512]
+        - group [ref=e514]:
+          - generic "Can I manage a project remotely?" [ref=e515] [cursor=pointer]:
+            - text: Can I manage a project remotely?
+            - img [ref=e516]
+    - generic [ref=e519]:
+      - generic [ref=e520]:
+        - paragraph [ref=e521]: About
+        - heading "Built by a builder, for builders" [level=2] [ref=e522]
+      - generic [ref=e523]:
+        - img "Emmanuel Abok, Founder of Keystone" [ref=e524]
+        - generic [ref=e525]:
+          - heading "Emmanuel Abok" [level=3] [ref=e526]
+          - paragraph [ref=e527]: Founder & Lead Developer
+          - generic [ref=e528]:
+            - paragraph [ref=e529]: Keystone was born from a personal need. As a mechanical engineer with roots in Togo, I watched family and friends navigate the overwhelming complexity of building homes across two continents, managing contractors remotely, tracking budgets across currencies, and making high-stakes decisions with zero construction experience.
+            - paragraph [ref=e530]: The existing tools were built for professional contractors, not for the first-time owner-builder. There was nothing that combined education, project management, financial modeling, and remote monitoring in one platform. And certainly nothing that understood both the U.S. construction market and the realities of building in Togo, Ghana, or Benin.
+            - paragraph [ref=e531]: "Keystone is that tool. Every feature is designed to guide someone with zero construction knowledge through every phase of building a home, whether they are on-site or watching from thousands of miles away. The AI advisor, the dual-market intelligence, the phase-based learning system: these exist because I built what I wished existed when my own family started building."
+    - generic [ref=e533]:
+      - heading "Stay in the loop" [level=2] [ref=e534]
+      - paragraph [ref=e535]: Get construction tips, market updates, and early access to new features. No spam, unsubscribe anytime.
+      - generic [ref=e537]:
+        - textbox "you@example.com" [ref=e538]
+        - button "Join the list" [ref=e539]
+    - contentinfo [ref=e540]:
+      - generic [ref=e541]:
+        - generic [ref=e542]:
+          - generic [ref=e543]:
+            - generic [ref=e544]:
+              - img "Keystone" [ref=e545]
+              - generic [ref=e547]: KEYSTONE
+            - paragraph [ref=e548]: From first idea to final key. The construction management platform for owner-builders worldwide.
+          - generic [ref=e549]:
+            - heading "Product" [level=4] [ref=e550]
+            - list [ref=e551]:
+              - listitem [ref=e552]:
+                - link "Features" [ref=e553] [cursor=pointer]:
+                  - /url: "#how-it-works"
+              - listitem [ref=e554]:
+                - link "Pricing" [ref=e555] [cursor=pointer]:
+                  - /url: "#pricing"
+              - listitem [ref=e556]:
+                - link "About" [ref=e557] [cursor=pointer]:
+                  - /url: "#about"
+          - generic [ref=e558]:
+            - heading "Support" [level=4] [ref=e559]
+            - list [ref=e560]:
+              - listitem [ref=e561]:
+                - link "Pricing" [ref=e562] [cursor=pointer]:
+                  - /url: "#pricing"
+              - listitem [ref=e563]:
+                - link "FAQ" [ref=e564] [cursor=pointer]:
+                  - /url: "#faq"
+              - listitem [ref=e565]:
+                - link "Learn" [ref=e566] [cursor=pointer]:
+                  - /url: /learn
+              - listitem [ref=e567]:
+                - link "ManuTheEngineer@outlook.com" [ref=e568] [cursor=pointer]:
+                  - /url: mailto:ManuTheEngineer@outlook.com?subject=Keystone Support
+          - generic [ref=e569]:
+            - heading "Legal" [level=4] [ref=e570]
+            - list [ref=e571]:
+              - listitem [ref=e572]:
+                - link "Privacy policy" [ref=e573] [cursor=pointer]:
+                  - /url: /privacy
+              - listitem [ref=e574]:
+                - link "Terms of service" [ref=e575] [cursor=pointer]:
+                  - /url: /terms
+        - generic [ref=e577]:
+          - img "Keystone" [ref=e578]
+          - generic [ref=e580]: © 2026 Keystone. All rights reserved.
+  - alert [ref=e6]
