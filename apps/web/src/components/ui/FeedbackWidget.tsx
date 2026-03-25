@@ -19,6 +19,7 @@ export function FeedbackWidget() {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const { user, profile } = useAuth();
   const pathname = usePathname();
@@ -47,6 +48,7 @@ export function FeedbackWidget() {
   async function handleSubmit() {
     if (!message.trim()) return;
     setSending(true);
+    setSubmitError(null);
 
     try {
       // Store feedback in Firebase under a global feedbacks node
@@ -71,11 +73,26 @@ export function FeedbackWidget() {
         setOpen(false);
       }, 2000);
     } catch {
-      // If Firebase fails, open mailto as fallback
-      const subject = encodeURIComponent(`[Keystone ${type}] Feedback from ${profile?.name ?? "user"}`);
-      const body = encodeURIComponent(`Type: ${type}\nPage: ${pathname}\n\n${message}`);
-      window.open(`mailto:ManuTheEngineer@outlook.com?subject=${subject}&body=${body}`);
-      setOpen(false);
+      // Store under user's own node as fallback (always writable by the user)
+      try {
+        const { ref, push, set } = await import("firebase/database");
+        const { db } = await import("@/lib/firebase");
+
+        if (user?.uid) {
+          await set(push(ref(db, `users/${user.uid}/feedbacks`)), {
+            type,
+            message: message.trim(),
+            page: pathname,
+            timestamp: new Date().toISOString(),
+          });
+          setSent(true);
+          setTimeout(() => setOpen(false), 2000);
+          return;
+        }
+      } catch {
+        // Both paths failed
+      }
+      setSubmitError("Could not send feedback. Please try again later.");
     } finally {
       setSending(false);
     }
@@ -145,6 +162,10 @@ export function FeedbackWidget() {
             className="w-full h-24 px-3 py-2 text-[12px] bg-warm/20 border border-border/30 rounded-xl resize-none focus:outline-none focus:ring-1 focus:ring-clay/30 text-earth placeholder:text-muted/50"
             autoFocus
           />
+
+          {submitError && (
+            <p className="text-[10px] text-danger mb-2">{submitError}</p>
+          )}
 
           <div className="flex items-center justify-between mt-2">
             <p className="text-[9px] text-muted/50">
