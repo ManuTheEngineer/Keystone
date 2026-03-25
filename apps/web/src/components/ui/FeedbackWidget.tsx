@@ -101,7 +101,7 @@ export function FeedbackWidget() {
   // Success state
   if (open && sent) {
     return (
-      <div ref={formRef} className="fixed bottom-20 right-5 z-50 w-80 bg-surface border border-border/60 rounded-2xl shadow-xl p-6 text-center animate-fade-in">
+      <div ref={formRef} className="fixed bottom-28 right-5 z-50 w-80 bg-surface border border-border/60 rounded-2xl shadow-xl p-6 text-center animate-fade-in">
         <CheckCircle size={32} className="text-success mx-auto mb-3" />
         <p className="text-[14px] font-medium text-earth" style={{ fontFamily: "var(--font-heading)" }}>
           Thank you for your feedback
@@ -116,7 +116,7 @@ export function FeedbackWidget() {
   // Form state
   if (open) {
     return (
-      <div ref={formRef} className="fixed bottom-20 right-5 z-50 w-80 bg-surface border border-border/60 rounded-2xl shadow-xl overflow-hidden animate-fade-in">
+      <div ref={formRef} className="fixed bottom-28 right-5 z-50 w-80 bg-surface border border-border/60 rounded-2xl shadow-xl overflow-hidden animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
           <p className="text-[13px] font-medium text-earth">Send feedback</p>
@@ -189,7 +189,7 @@ export function FeedbackWidget() {
   return (
     <button
       onClick={() => setOpen(true)}
-      className="fixed bottom-5 left-5 z-50 flex items-center gap-2 px-3.5 py-2.5 bg-earth text-warm rounded-xl shadow-lg hover:opacity-90 transition-opacity text-[11px] font-medium"
+      className="fixed bottom-16 right-5 z-50 flex items-center gap-2 px-3.5 py-2.5 bg-earth text-warm rounded-xl shadow-lg hover:opacity-90 transition-opacity text-[11px] font-medium"
       aria-label="Send feedback"
     >
       <MessageSquarePlus size={14} />
