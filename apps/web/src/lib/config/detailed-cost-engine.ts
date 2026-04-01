@@ -508,6 +508,79 @@ export function calculateDetailedCosts(
     if (adjustedOutdoor > 0) { items.push({ label: `Outdoor living (${site.outdoorLiving.length} features)`, amount: adjustedOutdoor, category: "Outdoor" }); specialTotal += adjustedOutdoor; }
   }
 
+  // Basement / Underground
+  const hasBasement = structure.foundation === "full-basement" || structure.foundation === "walkout-basement";
+  if (hasBasement && isUSA) {
+    const basementFootprint = structure.basementSize === "partial" ? buildingFootprint * 0.5 : buildingFootprint;
+
+    // Finish level cost
+    const finishCostPerSqft: Record<string, number> = {
+      unfinished: 0,
+      "partially-finished": 25,
+      "fully-finished": 45,
+    };
+    const finishCost = Math.round(basementFootprint * (finishCostPerSqft[structure.basementFinish] ?? 0) * costIndex);
+    if (finishCost > 0) {
+      items.push({ label: `Basement finishing (${structure.basementFinish})`, amount: finishCost, formula: `${Math.round(basementFootprint)} sqft x $${finishCostPerSqft[structure.basementFinish]}/sqft`, category: "Basement" });
+      specialTotal += finishCost;
+    }
+
+    // Basement bathroom
+    const bathCosts: Record<string, number> = { no: 0, half: 4500, full: 8500 };
+    const basementBathCost = Math.round((bathCosts[structure.basementBathroom] ?? 0) * costIndex);
+    if (basementBathCost > 0) {
+      items.push({ label: `Basement bathroom (${structure.basementBathroom})`, amount: basementBathCost, formula: structure.basementBathroom === "full" ? "Includes ejector pump for below-grade plumbing" : "", category: "Basement" });
+      specialTotal += basementBathCost;
+    }
+
+    // Waterproofing
+    const wpCosts: Record<string, number> = { basic: 3, "interior-drainage": 8, "exterior-membrane": 15 };
+    const wpCost = Math.round(basementFootprint * (wpCosts[structure.basementWaterproofing] ?? 0) * costIndex);
+    if (wpCost > 0) {
+      items.push({ label: `Waterproofing (${structure.basementWaterproofing})`, amount: wpCost, category: "Basement" });
+      specialTotal += wpCost;
+    }
+
+    // Egress windows
+    const egressCosts: Record<string, number> = { none: 0, "1-window": 3500, "2-windows": 6500, walkout: 0 };
+    const egressCost = Math.round((egressCosts[structure.basementEgress] ?? 0) * costIndex);
+    if (egressCost > 0) {
+      items.push({ label: `Egress windows (${structure.basementEgress})`, amount: egressCost, category: "Basement" });
+      specialTotal += egressCost;
+    }
+  }
+
+  // Rooftop features
+  if (structure.rooftopFeatures && structure.rooftopFeatures.length > 0) {
+    const rooftopCosts: Record<string, number> = isUSA
+      ? {
+          "rooftop-deck": 25000, "green-roof": 20000, "solar-panels": 18000,
+          "rooftop-hvac": 5000, "rooftop-lounge": 15000, "skylights": 4000,
+          "antenna-satellite": 500, "water-tank": 3000, "rooftop-laundry": 2000,
+        }
+      : {
+          "rooftop-deck": 5000000, "green-roof": 4000000, "solar-panels": 5000000,
+          "rooftop-hvac": 800000, "rooftop-lounge": 3000000, "skylights": 600000,
+          "antenna-satellite": 100000, "water-tank": 2500000, "rooftop-laundry": 300000,
+        };
+    const rooftopTotal = structure.rooftopFeatures.reduce((sum, f) => sum + (rooftopCosts[f] ?? 0), 0);
+    const adjustedRooftop = Math.round(rooftopTotal * costIndex);
+    if (adjustedRooftop > 0) {
+      items.push({ label: `Rooftop features (${structure.rooftopFeatures.length} items)`, amount: adjustedRooftop, category: "Rooftop" });
+      specialTotal += adjustedRooftop;
+    }
+
+    // Rooftop access structure
+    const accessCosts: Record<string, number> = isUSA
+      ? { none: 0, hatch: 2000, "stair-penthouse": 15000 }
+      : { none: 0, hatch: 300000, "stair-penthouse": 3000000 };
+    const accessCost = Math.round((accessCosts[structure.rooftopAccess] ?? 0) * costIndex);
+    if (accessCost > 0) {
+      items.push({ label: `Rooftop access (${structure.rooftopAccess})`, amount: accessCost, category: "Rooftop" });
+      specialTotal += accessCost;
+    }
+  }
+
   // --- PARKING ---
   let parkingTotal = 0;
   if (propertyType !== "SFH") {

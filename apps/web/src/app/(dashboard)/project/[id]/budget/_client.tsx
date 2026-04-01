@@ -109,6 +109,8 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   "land": MapPin,
   "financing": CreditCard,
   "management": Users,
+  "basement": Layers,
+  "rooftop": Home,
 };
 
 function getCategoryIcon(category: string): React.ElementType {

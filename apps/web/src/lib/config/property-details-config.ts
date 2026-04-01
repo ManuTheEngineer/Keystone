@@ -65,6 +65,16 @@ export interface StructureSelections {
   adaCompliance: string;
   fireSystem: string;
   commercialGround: string;
+  // Basement / Underground (conditional on foundation)
+  basementFinish: string;
+  basementUse: string[];
+  basementBathroom: string;
+  basementSize: string;
+  basementWaterproofing: string;
+  basementEgress: string;
+  // Rooftop features
+  rooftopFeatures: string[];
+  rooftopAccess: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -145,6 +155,9 @@ export const INITIAL_STRUCTURE: StructureSelections = {
   soundproofing: "", entrances: "", buildingLayout: "",
   floors: 2, stairwell: "", elevator: "none",
   adaCompliance: "none", fireSystem: "", commercialGround: "no",
+  basementFinish: "", basementUse: [], basementBathroom: "no",
+  basementSize: "full", basementWaterproofing: "", basementEgress: "",
+  rooftopFeatures: [], rooftopAccess: "",
 };
 
 export const INITIAL_INTERIOR: InteriorSelections = {
@@ -429,6 +442,134 @@ export function getStructureQuestions(
         { id: "no", label: "No — all residential" },
         { id: "yes", label: "Yes — retail-ready shell" },
       ],
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Basement / Underground (conditional on foundation type)
+  // ---------------------------------------------------------------------------
+
+  const hasBasement = true; // Show conditionally in UI via conditionalOn
+  if (hasBasement && isUSA) {
+    questions.push({
+      key: "basementFinish",
+      label: "Basement finish level",
+      options: [
+        { id: "unfinished", label: "Unfinished", subtitle: "Bare walls, concrete floor, utility access only" },
+        { id: "partially-finished", label: "Partially finished", subtitle: "Some rooms finished, some left open" },
+        { id: "fully-finished", label: "Fully finished", subtitle: "Drywall, flooring, lighting throughout" },
+      ],
+      conditionalOn: { field: "foundation", values: ["full-basement", "walkout-basement"] },
+    });
+
+    questions.push({
+      key: "basementUse",
+      label: "Basement intended use",
+      multiSelect: true,
+      options: [
+        { id: "storage", label: "Storage" },
+        { id: "living-space", label: "Living space" },
+        { id: "rental-unit", label: "Rental unit / ADU" },
+        { id: "home-gym", label: "Home gym" },
+        { id: "media-room", label: "Media room" },
+        { id: "home-office", label: "Home office" },
+        { id: "laundry", label: "Laundry room" },
+        { id: "mechanical", label: "Mechanical / Utilities" },
+      ],
+      conditionalOn: { field: "foundation", values: ["full-basement", "walkout-basement"] },
+    });
+
+    questions.push({
+      key: "basementBathroom",
+      label: "Basement bathroom",
+      options: [
+        { id: "no", label: "None" },
+        { id: "half", label: "Half bath (toilet + sink)" },
+        { id: "full", label: "Full bath", subtitle: "Requires ejector pump for below-grade plumbing" },
+      ],
+      conditionalOn: { field: "foundation", values: ["full-basement", "walkout-basement"] },
+    });
+
+    questions.push({
+      key: "basementSize",
+      label: "Basement coverage",
+      options: [
+        { id: "full", label: "Full footprint", subtitle: "Basement covers entire house footprint" },
+        { id: "partial", label: "Partial", subtitle: "Basement covers roughly half the footprint" },
+      ],
+      conditionalOn: { field: "foundation", values: ["full-basement", "walkout-basement"] },
+    });
+
+    questions.push({
+      key: "basementWaterproofing",
+      label: "Waterproofing level",
+      options: [
+        { id: "basic", label: "Basic", subtitle: "Damp-proofing coating on exterior walls" },
+        { id: "interior-drainage", label: "Interior drainage", subtitle: "French drain + sump pump system" },
+        { id: "exterior-membrane", label: "Exterior membrane", subtitle: "Full waterproof membrane + drainage board" },
+      ],
+      conditionalOn: { field: "foundation", values: ["full-basement", "walkout-basement"] },
+    });
+
+    questions.push({
+      key: "basementEgress",
+      label: "Egress windows",
+      options: [
+        { id: "none", label: "None", subtitle: "Storage/utility only — no habitable rooms" },
+        { id: "1-window", label: "1 egress window", subtitle: "Required for one habitable bedroom" },
+        { id: "2-windows", label: "2 egress windows", subtitle: "Two habitable bedrooms below grade" },
+        { id: "walkout", label: "Walkout door", subtitle: "Walk-out basement with full-size door" },
+      ],
+      conditionalOn: { field: "foundation", values: ["full-basement", "walkout-basement"] },
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Rooftop features
+  // ---------------------------------------------------------------------------
+
+  questions.push({
+    key: "rooftopFeatures",
+    label: "Rooftop features",
+    multiSelect: true,
+    options: propertyType === "APARTMENT"
+      ? [
+          { id: "rooftop-deck", label: "Rooftop deck / terrace" },
+          { id: "green-roof", label: "Green roof / garden" },
+          { id: "solar-panels", label: "Solar panel array" },
+          { id: "rooftop-hvac", label: "Rooftop HVAC equipment" },
+          { id: "rooftop-lounge", label: "Rooftop lounge area" },
+          { id: "rooftop-laundry", label: "Rooftop clothesline area" },
+          { id: "antenna-satellite", label: "Antenna / satellite mount" },
+          { id: "water-tank", label: isUSA ? "Rooftop water tank" : "Chateau d'eau (water tank)" },
+        ]
+      : isUSA
+      ? [
+          { id: "solar-panels", label: "Solar panel array" },
+          { id: "rooftop-deck", label: "Rooftop deck" },
+          { id: "green-roof", label: "Green roof" },
+          { id: "skylights", label: "Skylights" },
+          { id: "antenna-satellite", label: "Antenna / satellite mount" },
+        ]
+      : [
+          { id: "solar-panels", label: "Solar panel array (panneaux solaires)" },
+          { id: "water-tank", label: "Chateau d'eau (water tank)" },
+          { id: "antenna-satellite", label: "Antenna / satellite" },
+          { id: "rooftop-deck", label: "Rooftop terrace" },
+          { id: "skylights", label: "Skylights (puits de lumiere)" },
+        ],
+  });
+
+  if (propertyType === "APARTMENT" || propertyType === "TRIPLEX" || propertyType === "FOURPLEX") {
+    questions.push({
+      key: "rooftopAccess",
+      label: "Rooftop access",
+      options: [
+        { id: "none", label: "No access", subtitle: "Maintenance only" },
+        { id: "hatch", label: "Roof hatch", subtitle: "Ladder access for maintenance" },
+        { id: "stair-penthouse", label: "Stair penthouse", subtitle: "Full stairway to rooftop" },
+      ],
+      conditionalOn: { field: "rooftopFeatures", values: ["rooftop-deck", "rooftop-lounge", "green-roof"], negate: false },
     });
   }
 
@@ -1131,6 +1272,14 @@ export function getSmartDefaults(
     adaCompliance: "none",
     fireSystem: "extinguishers",
     commercialGround: "no",
+    basementFinish: "unfinished",
+    basementUse: ["storage", "mechanical"],
+    basementBathroom: "no",
+    basementSize: "full",
+    basementWaterproofing: "basic",
+    basementEgress: "none",
+    rooftopFeatures: isUSA ? [] : ["water-tank"],
+    rooftopAccess: "none",
   };
 
   if (propertyType === "SFH") {
