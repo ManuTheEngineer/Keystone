@@ -349,8 +349,9 @@ function getEstimatedMonthlyRent(state: WizardState, locationData?: LocationData
 // Deal scoring
 // ---------------------------------------------------------------------------
 
-function calculateDealScore(state: WizardState, locData?: LocationData | null): { score: number; factors: ScoreFactor[]; risks: string[]; verdict: string; verdictLevel: "strong" | "decent" | "risky" } {
-  const costs = getTotalProjectCost(state, locData);
+function calculateDealScore(state: WizardState, locData?: LocationData | null, totalOverride?: number): { score: number; factors: ScoreFactor[]; risks: string[]; verdict: string; verdictLevel: "strong" | "decent" | "risky" } {
+  const rawCosts = getTotalProjectCost(state, locData);
+  const costs = totalOverride && totalOverride > 0 ? { ...rawCosts, total: totalOverride } : rawCosts;
   const factors: ScoreFactor[] = [];
   const risks: string[] = [];
   const currency = getCurrencyForMarket(state.market);
@@ -753,22 +754,42 @@ export default function NewProjectPage() {
   }, [state.market]);
 
   const costs = useMemo(() => getTotalProjectCost(state, locationData), [state, locationData]);
-  const dealResult = useMemo(() => calculateDealScore(state, locationData), [state, locationData]);
 
-  // Revenue projections
+  const detailedCosts = useMemo(() => {
+    return calculateDetailedCosts(
+      state.propertyType as any,
+      state.market as any,
+      state.structure,
+      state.interior,
+      state.site,
+      state.unitConfig,
+      locationData,
+      state.landOption,
+      state.landPrice,
+      state.financingType,
+      state.downPaymentPct,
+      state.loanRate,
+      state.timelineMonths,
+    );
+  }, [state, locationData]);
+
+  const dealResult = useMemo(() => calculateDealScore(state, locationData, detailedCosts.grandTotal), [state, locationData, detailedCosts.grandTotal]);
+
+  // Revenue projections — prefer detailedCosts.grandTotal when available
   const revenueProjection = useMemo(() => {
+    const totalCost = detailedCosts.grandTotal > 0 ? detailedCosts.grandTotal : costs.total;
     if (state.goal === "sell") {
       const salePrice = state.targetSalePrice > 0 ? state.targetSalePrice : getEstimatedSaleValue(state, locationData);
-      const profit = salePrice - costs.total;
+      const profit = salePrice - totalCost;
       return { label: "Projected sale price", value: salePrice, secondary: `Profit: ${formatCurrencyCompact(profit, currency)}` };
     } else if (state.goal === "rent") {
       const monthlyRent = state.monthlyRent > 0 ? state.monthlyRent : getEstimatedMonthlyRent(state, locationData);
       const annualRent = monthlyRent * 12;
-      const capRate = costs.total > 0 ? (annualRent / costs.total) * 100 : 0;
+      const capRate = totalCost > 0 ? (annualRent / totalCost) * 100 : 0;
       return { label: "Monthly rental income", value: monthlyRent, secondary: `Cap rate: ${capRate.toFixed(1)}%` };
     }
     return null;
-  }, [state, costs, currency, locationData]);
+  }, [state, costs, detailedCosts, currency, locationData]);
 
   // Step validation
   function canProceed(): boolean {
@@ -831,7 +852,7 @@ export default function NewProjectPage() {
         phaseName: "Phase 0: Define",
         progress: 0,
         status: "ACTIVE",
-        totalBudget: costs.total,
+        totalBudget: detailedCosts.grandTotal > 0 ? detailedCosts.grandTotal : costs.total,
         totalSpent: 0,
         currency: curr,
         currentWeek: 0,
@@ -848,24 +869,39 @@ export default function NewProjectPage() {
         timelineMonths: state.timelineMonths,
         targetSalePrice: state.targetSalePrice > 0 ? state.targetSalePrice : 0,
         monthlyRent: state.monthlyRent > 0 ? state.monthlyRent : 0,
+        specs: {
+          structure: state.structure,
+          interior: state.interior,
+          site: state.site,
+          unitConfig: needsUnitConfig(state.propertyType as any) ? state.unitConfig : undefined,
+          detailedCosts: {
+            grandTotal: detailedCosts.grandTotal,
+            land: detailedCosts.land,
+            totalHardCosts: detailedCosts.totalHardCosts,
+            softCosts: detailedCosts.softCosts,
+            contingency: detailedCosts.contingency,
+            financing: detailedCosts.financing,
+          },
+        },
       });
 
       // Auto-generate budget + seed initial tasks in parallel
+      const budgetTotal = detailedCosts.grandTotal > 0 ? detailedCosts.grandTotal : costs.total;
       await Promise.allSettled([
-        generateBudgetFromSpecs(user.uid, projectId, costs.total, market, state.features, {
-          land: costs.land,
-          construction: costs.construction,
-          softCosts: costs.soft,
-          financingCosts: costs.financing,
-          contingency: costs.contingency,
-        }),
+        generateBudgetFromSpecs(user.uid, projectId, budgetTotal, market, state.features, {
+          land: detailedCosts.land > 0 ? detailedCosts.land : costs.land,
+          construction: detailedCosts.totalHardCosts > 0 ? detailedCosts.totalHardCosts : costs.construction,
+          softCosts: detailedCosts.softCosts > 0 ? detailedCosts.softCosts : costs.soft,
+          financingCosts: detailedCosts.financing > 0 ? detailedCosts.financing : costs.financing,
+          contingency: detailedCosts.contingency > 0 ? detailedCosts.contingency : costs.contingency,
+        }, detailedCosts.lineItems.length > 0 ? detailedCosts.lineItems : undefined),
         seedInitialTasks(user.uid, projectId, {
           market,
           purpose: purpose,
           propertyType: propertyType,
           city: state.city.trim(),
           financingType: state.financingType,
-          totalBudget: costs.total,
+          totalBudget: budgetTotal,
           bedrooms: state.bedrooms,
           bathrooms: state.bathrooms,
           features: state.features,
@@ -947,14 +983,17 @@ export default function NewProjectPage() {
     }
   }
 
-  // Donut chart segments
-  const donutSegments = useMemo(() => [
-    { label: "Land", value: costs.land, color: "#8B4513" },
-    { label: "Construction", value: costs.construction, color: "#2C1810" },
-    { label: "Soft costs", value: costs.soft, color: "#D4A574" },
-    { label: "Financing", value: costs.financing, color: "#1B4965" },
-    { label: "Contingency", value: costs.contingency, color: "#BC6C25" },
-  ], [costs]);
+  // Donut chart segments — prefer detailedCosts when available
+  const donutSegments = useMemo(() => {
+    const useDetailed = detailedCosts.grandTotal > 0;
+    return [
+      { label: "Land", value: useDetailed ? detailedCosts.land : costs.land, color: "#8B4513" },
+      { label: "Construction", value: useDetailed ? detailedCosts.totalHardCosts : costs.construction, color: "#2C1810" },
+      { label: "Soft costs", value: useDetailed ? detailedCosts.softCosts : costs.soft, color: "#D4A574" },
+      { label: "Financing", value: useDetailed ? detailedCosts.financing : costs.financing, color: "#1B4965" },
+      { label: "Contingency", value: useDetailed ? detailedCosts.contingency : costs.contingency, color: "#BC6C25" },
+    ];
+  }, [costs, detailedCosts]);
 
   // ---------------------------------------------------------------------------
   // Step renderers
@@ -1600,34 +1639,25 @@ export default function NewProjectPage() {
             </div>
           </div>
 
-          {/* Features */}
-          <div className="mt-4">
-            <p className="text-[12px] font-semibold text-earth mb-2">Features & Extras</p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {(state.market === "USA" ? US_FEATURES : WA_FEATURES).map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => {
-                    const next = state.features.includes(f.id)
-                      ? state.features.filter((x) => x !== f.id)
-                      : [...state.features, f.id];
-                    update("features", next);
-                  }}
-                  className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border text-[11px] transition-all ${
-                    state.features.includes(f.id)
-                      ? "border-emerald-500 bg-emerald-50/30 text-emerald-700"
-                      : "border-border/50 text-muted hover:bg-warm/20"
-                  }`}
-                >
-                  <f.Icon size={12} />
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
-        {constructionCostNow > 0 && (
+        {detailedCosts.grandTotal > 0 && (
+          <div className="mt-4 p-4 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 text-left">
+            <div className="flex items-center gap-2 mb-1">
+              <Info size={14} className="text-emerald-700 shrink-0" />
+              <span className="text-[12px] font-semibold text-emerald-800">Estimated total project cost</span>
+            </div>
+            <span className="text-[16px] font-data font-semibold text-emerald-800">
+              {formatCurrency(detailedCosts.grandTotal, currency)}
+            </span>
+            <p className="text-[10px] text-emerald-600 mt-1">
+              Based on your selections across structure, interior, and site.
+              Construction: {formatCurrencyCompact(detailedCosts.totalHardCosts, currency)}.
+              {locationData ? ` Adjusted for ${locationData.city} (${locationData.costIndex.toFixed(2)}x cost index).` : ""}
+            </p>
+          </div>
+        )}
+        {detailedCosts.grandTotal <= 0 && constructionCostNow > 0 && (
           <div className="mt-4 p-4 rounded-[var(--radius)] border border-emerald-200 bg-emerald-50 text-left">
             <div className="flex items-center gap-2 mb-1">
               <Info size={14} className="text-emerald-700 shrink-0" />
@@ -1639,12 +1669,6 @@ export default function NewProjectPage() {
             <p className="text-[10px] text-emerald-600 mt-1">
               Based on market benchmarks for {getBuildingSize(state).toLocaleString()} {sizeUnit}{locationData ? `, adjusted for ${locationData.city} (${locationData.costIndex.toFixed(2)}x cost index)` : ""}. Actual costs vary by finishes and site conditions.
             </p>
-            {getBuildingSize(state) > 0 && (
-              <p className="text-[11px] text-muted mt-1">
-                That is approximately {formatCurrencyCompact(constructionCostNow / getBuildingSize(state), currency)} per {sizeUnit === "sqm" ? "sqm" : "sqft"}.{" "}
-                {locationData?.costIndex && locationData.costIndex > 1.1 ? "above average for the broader market" : locationData?.costIndex && locationData.costIndex < 0.9 ? "below average for the broader market" : "within the typical range"}
-              </p>
-            )}
           </div>
         )}
 
@@ -1814,20 +1838,42 @@ export default function NewProjectPage() {
   }
 
   function renderFinancialsStep() {
-    const locationLabel = locationData ? ` Adjusted for ${locationData.city} (${locationData.costIndex.toFixed(2)}x cost index).` : "";
-    const landDetail = state.landOption === "known"
-      ? "Your entered land price."
-      : locationData
-        ? `Based on typical lot prices in ${locationData.city}.`
-        : "Estimated at 25% of construction cost.";
+    const useDetailed = detailedCosts.grandTotal > 0;
+    const totalCost = useDetailed ? detailedCosts.grandTotal : costs.total;
+    const landValue = useDetailed ? detailedCosts.land : costs.land;
+    const constructionValue = useDetailed ? detailedCosts.totalHardCosts : costs.construction;
+    const softValue = useDetailed ? detailedCosts.softCosts : costs.soft;
+    const financingValue = useDetailed ? detailedCosts.financing : costs.financing;
+    const contingencyValue = useDetailed ? detailedCosts.contingency : costs.contingency;
 
-    const costRows = [
-      { label: "Land", value: costs.land, pct: costs.total > 0 ? (costs.land / costs.total) * 100 : 0, color: "#8B4513", detail: landDetail },
-      { label: "Construction", value: costs.construction, pct: costs.total > 0 ? (costs.construction / costs.total) * 100 : 0, color: "#2C1810", detail: `Based on ${getBuildingSize(state).toLocaleString()} ${sizeUnit} at market mid-range cost per ${sizeUnit}.${locationLabel}` },
-      { label: "Soft costs (permits, design, fees)", value: costs.soft, pct: costs.total > 0 ? (costs.soft / costs.total) * 100 : 0, color: "#D4A574", detail: `Estimated at 15% of construction cost. Includes architectural design, permits, engineering, and inspections.${locationData ? ` Typical permit cost in ${locationData.city}: ${formatCurrency(locationData.permitCostEstimate, currency)}.` : ""}` },
-      { label: "Financing costs", value: costs.financing, pct: costs.total > 0 ? (costs.financing / costs.total) * 100 : 0, color: "#1B4965", detail: state.financingType === "cash" || state.financingType === "phased_cash" || state.financingType === "family_pooling" ? "No financing costs with cash payment." : `Based on ${state.downPaymentPct}% down at ${state.loanRate}% over ${state.timelineMonths} months.` },
-      { label: "Contingency (15%)", value: costs.contingency, pct: costs.total > 0 ? (costs.contingency / costs.total) * 100 : 0, color: "#BC6C25", detail: "A 15% contingency protects against cost overruns. This is the industry standard safety buffer." },
-    ];
+    // Group detailed line items by category
+    const groupedItems: Record<string, { label: string; amount: number; formula?: string }[]> | null = (() => {
+      if (!useDetailed || detailedCosts.lineItems.length === 0) return null;
+      const groups: Record<string, { label: string; amount: number; formula?: string }[]> = {};
+      for (const item of detailedCosts.lineItems) {
+        if (item.amount <= 0) continue;
+        if (!groups[item.category]) groups[item.category] = [];
+        groups[item.category].push({ label: item.label, amount: item.amount, formula: item.formula });
+      }
+      return groups;
+    })();
+
+    // Category colors for the grouped view
+    const categoryColors: Record<string, string> = {
+      "Land": "#8B4513",
+      "Site Work": "#6B4226",
+      "Foundation": "#2C1810",
+      "Framing / Structure": "#3A3A3A",
+      "Exterior": "#1B4965",
+      "Interior Finishes": "#D4A574",
+      "Mechanical Systems": "#BC6C25",
+      "Special Items": "#2D6A4F",
+      "Parking / Garage": "#6A6A6A",
+      "Common Areas": "#8B6914",
+      "Soft Costs": "#D4A574",
+      "Contingency": "#BC6C25",
+      "Financing": "#1B4965",
+    };
 
     return (
       <div className="animate-fade-in">
@@ -1847,59 +1893,94 @@ export default function NewProjectPage() {
             </div>
           </div>
 
-          {/* Cost rows */}
+          {/* Cost rows — detailed grouped view or legacy flat view */}
           <div className="space-y-2 mb-6">
-            {costRows.map((row) => (
-              <div key={row.label} className="p-3 rounded-lg border border-border/50 bg-surface">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: row.color }} />
-                    <span className="text-[13px] text-earth">{row.label}</span>
+            {groupedItems ? (
+              // Detailed view: line items grouped by category
+              Object.entries(groupedItems).map(([category, items]) => {
+                const groupTotal = items.reduce((s, it) => s + it.amount, 0);
+                const pct = totalCost > 0 ? (groupTotal / totalCost) * 100 : 0;
+                const color = categoryColors[category] ?? "#6A6A6A";
+                return (
+                  <div key={category} className="p-3 rounded-lg border border-border/50 bg-surface">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                        <span className="text-[13px] font-medium text-earth">{category}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[13px] font-data font-semibold text-earth">{formatCurrency(groupTotal, currency)}</span>
+                        <span className="text-[10px] text-muted ml-2">{pct.toFixed(0)}%</span>
+                      </div>
+                    </div>
+                    <ExpandableDetail label={`${items.length} line item${items.length === 1 ? "" : "s"}`}>
+                      <div className="space-y-1.5">
+                        {items.map((item, idx) => (
+                          <div key={idx} className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[11px] text-earth">{item.label}</span>
+                              {item.formula && (
+                                <p className="text-[10px] text-muted truncate">{item.formula}</p>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-data text-earth ml-3 shrink-0">{formatCurrency(item.amount, currency)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </ExpandableDetail>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[13px] font-data font-semibold text-earth">{formatCurrency(row.value, currency)}</span>
-                    <span className="text-[10px] text-muted ml-2">{row.pct.toFixed(0)}%</span>
+                );
+              })
+            ) : (
+              // Legacy flat view (fallback when no detailed costs)
+              <>
+                {[
+                  { label: "Land", value: landValue, pct: totalCost > 0 ? (landValue / totalCost) * 100 : 0, color: "#8B4513" },
+                  { label: "Construction", value: constructionValue, pct: totalCost > 0 ? (constructionValue / totalCost) * 100 : 0, color: "#2C1810" },
+                  { label: "Soft costs (permits, design, fees)", value: softValue, pct: totalCost > 0 ? (softValue / totalCost) * 100 : 0, color: "#D4A574" },
+                  { label: "Financing costs", value: financingValue, pct: totalCost > 0 ? (financingValue / totalCost) * 100 : 0, color: "#1B4965" },
+                  { label: "Contingency (15%)", value: contingencyValue, pct: totalCost > 0 ? (contingencyValue / totalCost) * 100 : 0, color: "#BC6C25" },
+                ].map((row) => (
+                  <div key={row.label} className="p-3 rounded-lg border border-border/50 bg-surface">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: row.color }} />
+                        <span className="text-[13px] text-earth">{row.label}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[13px] font-data font-semibold text-earth">{formatCurrency(row.value, currency)}</span>
+                        <span className="text-[10px] text-muted ml-2">{row.pct.toFixed(0)}%</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                {row.label === "Soft costs (permits, design, fees)" && (
-                  <p className="text-[10px] text-muted mt-0.5">Architectural design, engineering, permits, survey, and professional inspections.</p>
-                )}
-                {row.label === "Contingency (15%)" && (
-                  <p className="text-[10px] text-muted mt-0.5">A safety buffer for unexpected costs. Industry standard is 10-20%. Never build without one.</p>
-                )}
-                {row.label === "Financing costs" && row.value > 0 && (
-                  <p className="text-[10px] text-muted mt-0.5">Interest and fees paid to your lender during construction. Cash buyers pay zero here.</p>
-                )}
-                <ExpandableDetail label="How we calculated this">
-                  {row.detail}
-                </ExpandableDetail>
-              </div>
-            ))}
+                ))}
+              </>
+            )}
           </div>
 
           {/* Total */}
           <div className="p-4 rounded-xl border-2 border-earth bg-warm/50">
             <div className="flex items-center justify-between">
               <span className="text-[15px] font-semibold text-earth">Total project cost</span>
-              <span className="text-[18px] font-data font-bold text-earth">{formatCurrency(costs.total, currency)}</span>
+              <span className="text-[18px] font-data font-bold text-earth">{formatCurrency(totalCost, currency)}</span>
             </div>
           </div>
 
           {/* What this means summary */}
-          {costs.total > 0 && (
+          {totalCost > 0 && (
             <div className="mt-3 p-3 rounded-xl bg-warm/30 border border-sand/20">
               <p className="text-[12px] text-earth leading-relaxed">
-                <span className="font-semibold">In plain terms:</span> You will need approximately {formatCurrencyCompact(costs.total, currency)} to complete this build.
-                {costs.land > 0 && ` About ${Math.round((costs.land / costs.total) * 100)}% goes to land.`}
-                {` Construction is the biggest cost at ${Math.round((costs.construction / costs.total) * 100)}%.`}
-                {costs.financing > 0 && ` Financing adds ${Math.round((costs.financing / costs.total) * 100)}% to your total.`}
-                {` Your ${Math.round((costs.contingency / costs.total) * 100)}% contingency of ${formatCurrencyCompact(costs.contingency, currency)} protects against surprises.`}
+                <span className="font-semibold">In plain terms:</span> You will need approximately {formatCurrencyCompact(totalCost, currency)} to complete this build.
+                {landValue > 0 && ` About ${Math.round((landValue / totalCost) * 100)}% goes to land.`}
+                {` Construction is the biggest cost at ${Math.round((constructionValue / totalCost) * 100)}%.`}
+                {financingValue > 0 && ` Financing adds ${Math.round((financingValue / totalCost) * 100)}% to your total.`}
+                {` Your ${Math.round((contingencyValue / totalCost) * 100)}% contingency of ${formatCurrencyCompact(contingencyValue, currency)} protects against surprises.`}
               </p>
             </div>
           )}
 
           <MentorTip>
-            These estimates use conservative market averages. Actual costs depend on your specific site, materials chosen, and local labor rates. The 15% contingency is your safety buffer. Never skip it.
+            These estimates are based on your specific selections across structure, interior, and site. Actual costs depend on your contractor quotes, material prices, and site conditions. The contingency is your safety buffer. Never skip it.
           </MentorTip>
 
           {/* Revenue projection */}
@@ -2057,7 +2138,7 @@ export default function NewProjectPage() {
             <SummaryRow label="Location" value={state.city} />
             <SummaryRow label="Property type" value={state.propertyType as string} />
             <SummaryRow label="Size" value={`${getBuildingSize(state).toLocaleString()} ${sizeUnit}`} />
-            <SummaryRow label="Total budget" value={formatCurrency(costs.total, currency)} />
+            <SummaryRow label="Total budget" value={formatCurrency(detailedCosts.grandTotal > 0 ? detailedCosts.grandTotal : costs.total, currency)} />
             <SummaryRow label="Financing" value={state.financingType.replace(/_/g, " ")} />
             <SummaryRow label="Deal score" value={`${dealResult.score}/100`} />
           </div>

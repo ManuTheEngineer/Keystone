@@ -52,6 +52,13 @@ export interface ProjectData {
   targetSalePrice?: number;
   monthlyRent?: number;
   analysisId?: string; // Link back to the Deal Analyzer analysis
+  specs?: {
+    structure?: Record<string, any>;
+    interior?: Record<string, any>;
+    site?: Record<string, any>;
+    unitConfig?: Record<string, any>;
+    detailedCosts?: Record<string, any>;
+  };
   isDemo?: boolean;
   priority?: number; // 1, 2, 3 (1 = highest)
   pinned?: boolean;
@@ -506,7 +513,28 @@ export async function generateBudgetFromSpecs(
   market: Market,
   features?: string[],
   costBreakdown?: WizardCostBreakdown,
+  detailedLineItems?: { label: string; amount: number; category: string }[],
 ): Promise<void> {
+  // If detailed line items provided, use them directly
+  if (detailedLineItems && detailedLineItems.length > 0) {
+    const budgetRef = ref(db, `users/${userId}/projects/${projectId}/budgetItems`);
+    const items: Record<string, Omit<BudgetItemData, "id">> = {};
+    for (const item of detailedLineItems) {
+      if (item.amount > 0) {
+        const key = push(budgetRef).key!;
+        items[key] = {
+          projectId,
+          category: item.category,
+          estimated: Math.round(item.amount),
+          actual: 0,
+          status: "not-started",
+        };
+      }
+    }
+    await update(budgetRef, items);
+    return;
+  }
+
   const isUSA = market === "USA";
 
   // Construction sub-category percentages (relative to construction cost)
