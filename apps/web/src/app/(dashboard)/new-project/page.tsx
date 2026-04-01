@@ -755,7 +755,7 @@ export default function NewProjectPage() {
       state.loanRate,
       state.timelineMonths,
     );
-  }, [state, locationData]);
+  }, [state.propertyType, state.market, state.structure, state.interior, state.site, state.unitConfig, state.landOption, state.landPrice, state.financingType, state.downPaymentPct, state.loanRate, state.timelineMonths, locationData]);
 
   const dealResult = useMemo(() => calculateDealScore(state, locationData, detailedCosts.grandTotal), [state, locationData, detailedCosts.grandTotal]);
 

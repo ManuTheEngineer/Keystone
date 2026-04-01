@@ -232,9 +232,53 @@ const WA_COSTS: MarketCosts = {
   trashSystem: { "individual-curbside": 0, "shared-dumpster": 500000, "shared-enclosure": 500000, compactor: 2000000, chute: 3000000 },
 };
 
+// Ghana uses GHS, not XOF. Approximate conversion: 1 GHS ≈ 83 XOF.
+// We scale WA_COSTS (XOF) by this factor to produce GHS-denominated values.
+const XOF_TO_GHS = 0.012;
+
+function scaleMarketCosts(base: MarketCosts, factor: number): MarketCosts {
+  const scaleRecord = (r: Record<string, number>) =>
+    Object.fromEntries(Object.entries(r).map(([k, v]) => [k, Math.round(v * factor)]));
+  return {
+    ...base,
+    foundation: scaleRecord(base.foundation),
+    roof: scaleRecord(base.roof),
+    exterior: scaleRecord(base.exterior),
+    flooring: scaleRecord(base.flooring),
+    kitchen: {
+      base: scaleRecord(base.kitchen.base),
+      finishMultiplier: { ...base.kitchen.finishMultiplier }, // multipliers stay the same
+    },
+    bath: scaleRecord(base.bath),
+    hvac: scaleRecord(base.hvac),
+    waterHeater: scaleRecord(base.waterHeater),
+    garage: scaleRecord(base.garage),
+    parking: scaleRecord(base.parking),
+    windows: scaleRecord(base.windows),
+    elevator: scaleRecord(base.elevator),
+    fireSystem: scaleRecord(base.fireSystem),
+    security: scaleRecord(base.security),
+    smartHome: scaleRecord(base.smartHome),
+    landscaping: scaleRecord(base.landscaping),
+    driveway: scaleRecord(base.driveway),
+    fencing: scaleRecord(base.fencing),
+    soundproofing: scaleRecord(base.soundproofing),
+    ceilingHeight: { ...base.ceilingHeight }, // multipliers stay the same
+    adu: Object.fromEntries(
+      Object.entries(base.adu).map(([k, v]) => [k, { perUnit: Math.round(v.perUnit * factor), connection: Math.round(v.connection * factor) }])
+    ),
+    outdoorLiving: scaleRecord(base.outdoorLiving),
+    commonArea: scaleRecord(base.commonArea),
+    accessSystem: scaleRecord(base.accessSystem),
+    trashSystem: scaleRecord(base.trashSystem),
+  };
+}
+
+const GHANA_COSTS: MarketCosts = scaleMarketCosts(WA_COSTS, XOF_TO_GHS);
+
 function getCosts(market: MarketType | ""): MarketCosts {
   if (market === "USA") return USA_COSTS;
-  // Ghana uses WA costs with a GHS conversion factor applied at the market-data level
+  if (market === "GHANA") return GHANA_COSTS;
   return WA_COSTS;
 }
 
