@@ -25,14 +25,6 @@ import {
   Bed,
   Bath,
   Layers,
-  Car,
-  Trees,
-  Waves,
-  Fence,
-  Sun,
-  Zap,
-  Droplets,
-  ShieldCheck,
   Sparkles,
   Calculator,
   ArrowRight,
@@ -164,31 +156,6 @@ function getStepIndex(name: string, propertyType: string): number {
   };
   return map[name] ?? -1;
 }
-
-const US_FEATURES = [
-  { id: "garage-single", label: "Single garage", Icon: Car },
-  { id: "garage-double", label: "Double garage", Icon: Car },
-  { id: "porch-patio", label: "Porch / Patio", Icon: Trees },
-  { id: "pool", label: "Pool", Icon: Waves },
-  { id: "fence", label: "Fencing", Icon: Fence },
-  { id: "solar", label: "Solar panels", Icon: Sun },
-  { id: "outdoor-kitchen", label: "Outdoor kitchen", Icon: Zap },
-  { id: "basement", label: "Basement", Icon: Layers },
-  { id: "sprinkler", label: "Sprinkler system", Icon: Droplets },
-];
-
-const WA_FEATURES = [
-  { id: "garage-single", label: "Single garage", Icon: Car },
-  { id: "garage-double", label: "Double garage", Icon: Car },
-  { id: "porch-patio", label: "Veranda / Terrace", Icon: Trees },
-  { id: "pool", label: "Pool", Icon: Waves },
-  { id: "fence", label: "Perimeter wall", Icon: Fence },
-  { id: "solar", label: "Solar panels", Icon: Sun },
-  { id: "guest-house", label: "Guest house", Icon: Home },
-  { id: "water-tank", label: "Water tank", Icon: Droplets },
-  { id: "generator-house", label: "Generator house", Icon: Zap },
-  { id: "security-post", label: "Security post", Icon: ShieldCheck },
-];
 
 const MARKET_MAP: Record<string, Market> = { USA: "USA", TOGO: "TOGO", GHANA: "GHANA", BENIN: "BENIN", IVORY_COAST: "TOGO", SENEGAL: "TOGO" };
 const PURPOSE_MAP: Record<string, BuildPurpose> = { occupy: "OCCUPY", rent: "RENT", sell: "SELL" };
@@ -559,6 +526,20 @@ export default function NewProjectPage() {
     if (typeof window === "undefined") return INITIAL_STATE;
     const params = new URLSearchParams(window.location.search);
     if (params.get("from") === "analyzer") {
+      const baseStructure = { ...INITIAL_STRUCTURE };
+      const baseInterior = { ...INITIAL_INTERIOR };
+      const baseSite = { ...INITIAL_SITE };
+
+      // Pre-fill detail steps from optional URL params
+      if (params.get("foundation")) baseStructure.foundation = params.get("foundation")!;
+      if (params.get("roof")) baseStructure.roof = params.get("roof")!;
+      if (params.get("exterior")) baseStructure.exterior = params.get("exterior")!;
+      if (params.get("hvac")) baseInterior.hvac = params.get("hvac")!;
+      if (params.get("kitchen")) baseInterior.kitchenStyle = params.get("kitchen")!;
+      if (params.get("flooring")) baseInterior.flooring = params.get("flooring")!;
+      if (params.get("lotsize")) baseSite.lotSize = params.get("lotsize")!;
+      if (params.get("lotshape")) baseSite.lotShape = params.get("lotshape")!;
+
       return {
         ...INITIAL_STATE,
         fromAnalyzer: true,
@@ -579,6 +560,9 @@ export default function NewProjectPage() {
         timelineMonths: Number(params.get("months")) || 12,
         monthlyRent: Number(params.get("rent")) || 0,
         targetSalePrice: Number(params.get("sale")) || 0,
+        structure: baseStructure,
+        interior: baseInterior,
+        site: baseSite,
       };
     }
     return INITIAL_STATE;
@@ -1730,7 +1714,7 @@ export default function NewProjectPage() {
                 <h5 className="text-[14px] font-semibold text-earth">I am still looking</h5>
                 <p className="text-[11px] text-muted">
                   {locationData
-                    ? `Based on typical lot prices in ${locationData.city}: ${formatCurrencyCompact(estimatedLand, currency)}`
+                    ? `Based on a ${state.site.lotSize || "standard"} lot in ${locationData.city}: ${formatCurrencyCompact(estimatedLand, currency)}`
                     : `We will estimate land at 25% of construction cost (${formatCurrencyCompact(estimatedLand, currency)})`
                   }
                 </p>
@@ -2212,7 +2196,7 @@ export default function NewProjectPage() {
       </div>
 
       {/* Pre-filled from Deal Analyzer banner */}
-      {state.fromAnalyzer && step < 8 && (
+      {state.fromAnalyzer && step < getStepIndex("name", state.propertyType) && (
         <div className="flex items-center gap-2 px-4 py-2.5 mb-4 rounded-xl border border-emerald-200 bg-emerald-50/50 text-left">
           <Sparkles size={14} className="text-emerald-600 shrink-0" />
           <p className="text-[12px] text-emerald-800">

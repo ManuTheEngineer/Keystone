@@ -308,6 +308,18 @@ export function AIAssistantClient() {
       photoCount: photos.length,
       punchListSummary: punchSummary,
       punchListOpenCount: openPunchItems,
+      specs: project.specs ? {
+        foundation: project.specs.structure?.foundation,
+        roof: project.specs.structure?.roof,
+        exterior: project.specs.structure?.exterior,
+        hvac: project.specs.interior?.hvac,
+        flooring: project.specs.interior?.flooring,
+        kitchenFinish: project.specs.interior?.kitchenFinish,
+        unitMix: project.specs.unitConfig?.unitMix,
+        unitCount: project.specs.unitConfig?.unitCount,
+        parking: project.specs.site?.parking,
+        lotShape: project.specs.site?.lotShape,
+      } : undefined,
     };
   }, [project, market, budgetItems, contacts, tasks, dailyLogs, photos, punchListItems]);
 
