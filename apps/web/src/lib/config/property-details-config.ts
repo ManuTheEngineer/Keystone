@@ -1215,13 +1215,6 @@ export interface UnitBreakdown {
   avgSqm: number;     // WA
 }
 
-const UNIT_SIZE_DEFAULTS: Record<string, { sqft: number; sqm: number }> = {
-  studio: { sqft: 400, sqm: 35 },
-  "1br": { sqft: 650, sqm: 60 },
-  "2br": { sqft: 900, sqm: 85 },
-  "3br": { sqft: 1200, sqm: 110 },
-};
-
 export function parseUnitMix(
   propertyType: PropertyType,
   unitMix: string,
