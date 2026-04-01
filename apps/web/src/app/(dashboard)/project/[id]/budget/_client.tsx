@@ -42,6 +42,16 @@ import {
   DollarSign,
   Pencil,
   Trash2,
+  Car,
+  Bath,
+  UtensilsCrossed,
+  Lock,
+  Flame,
+  ArrowUpDown,
+  Building2,
+  Users,
+  CreditCard,
+  MapPin,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useTranslation } from "@/lib/hooks/use-translation";
@@ -83,6 +93,22 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   "permits": Receipt,
   "permits/fees": Receipt,
   "contingency": Shield,
+  // Detailed cost engine categories
+  "kitchen": UtensilsCrossed,
+  "bathroom": Bath,
+  "garage": Car,
+  "parking": Car,
+  "elevator": ArrowUpDown,
+  "fire protection": Flame,
+  "soundproofing": Package,
+  "security": Lock,
+  "outdoor": Home,
+  "common area": Building2,
+  "adu": Home,
+  "land acquisition": MapPin,
+  "land": MapPin,
+  "financing": CreditCard,
+  "management": Users,
 };
 
 function getCategoryIcon(category: string): React.ElementType {

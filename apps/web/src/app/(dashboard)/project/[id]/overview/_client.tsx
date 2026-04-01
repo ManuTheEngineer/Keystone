@@ -1070,6 +1070,63 @@ export function OverviewClient() {
             </div>
           )}
 
+          {/* Project Specs Summary */}
+          {project.specs && (
+            <div className="bg-surface border border-border/40 rounded-lg p-3">
+              <p className="text-[9px] font-semibold text-muted uppercase tracking-wider mb-2">Building Specs</p>
+              <div className="space-y-1">
+                {project.specs.structure?.foundation && (
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted">Foundation</span>
+                    <span className="text-earth capitalize">{project.specs.structure.foundation.replace(/-/g, " ")}</span>
+                  </div>
+                )}
+                {project.specs.structure?.roof && (
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted">Roof</span>
+                    <span className="text-earth capitalize">{project.specs.structure.roof.replace(/-/g, " ")}</span>
+                  </div>
+                )}
+                {project.specs.structure?.exterior && (
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted">Exterior</span>
+                    <span className="text-earth capitalize">{project.specs.structure.exterior.replace(/-/g, " ")}</span>
+                  </div>
+                )}
+                {project.specs.interior?.flooring && (
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted">Flooring</span>
+                    <span className="text-earth capitalize">{project.specs.interior.flooring.replace(/-/g, " ")}</span>
+                  </div>
+                )}
+                {project.specs.interior?.hvac && (
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted">HVAC</span>
+                    <span className="text-earth capitalize">{project.specs.interior.hvac.replace(/-/g, " ")}</span>
+                  </div>
+                )}
+                {project.specs.interior?.kitchenFinish && (
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted">Kitchen</span>
+                    <span className="text-earth capitalize">{project.specs.interior.kitchenFinish} finish</span>
+                  </div>
+                )}
+                {project.specs.site?.lotShape && (
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted">Lot</span>
+                    <span className="text-earth capitalize">{project.specs.site.lotSize?.replace(/-/g, " ")}, {project.specs.site.lotShape.replace(/-/g, " ")}</span>
+                  </div>
+                )}
+                {project.specs.unitConfig?.unitMix && (
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted">Units</span>
+                    <span className="text-earth capitalize">{project.specs.unitConfig.unitMix.replace(/-/g, " ").replace(/x/g, "x ")}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Recent Activity */}
           <div className="bg-surface border border-border/40 rounded-lg p-3">
             <p className="text-[9px] font-semibold text-muted uppercase tracking-wider mb-2">Recent Activity</p>

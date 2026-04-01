@@ -582,7 +582,17 @@ export default function NewProjectPage() {
         const draft = localStorage.getItem("keystone-new-project-draft");
         if (draft) {
           const parsed = JSON.parse(draft);
-          if (parsed.state) setState(parsed.state);
+          if (parsed.state) {
+            // Merge with INITIAL_STATE to handle drafts saved before new spec fields existed
+            setState({
+              ...INITIAL_STATE,
+              ...parsed.state,
+              structure: { ...INITIAL_STRUCTURE, ...(parsed.state.structure ?? {}) },
+              interior: { ...INITIAL_INTERIOR, ...(parsed.state.interior ?? {}) },
+              site: { ...INITIAL_SITE, ...(parsed.state.site ?? {}) },
+              unitConfig: { ...INITIAL_UNIT_CONFIG, ...(parsed.state.unitConfig ?? {}) },
+            });
+          }
           if (typeof parsed.step === "number") {
             setStepRaw(parsed.step);
             setMaxStepReached(parsed.maxStep ?? parsed.step);
