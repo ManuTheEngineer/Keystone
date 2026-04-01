@@ -1511,12 +1511,118 @@ export default function NewProjectPage() {
 
   function renderStructureStep() {
     const questions = getStructureQuestions(state.propertyType as any, state.market as any);
+    const isSFH = state.propertyType === "SFH";
+    const isMultiStory = state.structure.layout === "two-story" || state.structure.layout === "split-level";
+
+    const sfhRoomOptions = [
+      { id: "living", label: "Living room" },
+      { id: "kitchen", label: "Kitchen" },
+      { id: "dining", label: "Dining room" },
+      { id: "master-bed", label: "Primary bedroom" },
+      { id: "bedroom-2", label: "Bedroom 2" },
+      { id: "bedroom-3", label: "Bedroom 3" },
+      { id: "bedroom-4", label: "Bedroom 4" },
+      { id: "full-bath", label: "Full bathroom" },
+      { id: "half-bath", label: "Half bath" },
+      { id: "office", label: "Home office" },
+      { id: "laundry", label: "Laundry" },
+      { id: "garage-access", label: "Garage access" },
+      { id: "mudroom", label: "Mudroom / Entry" },
+      { id: "bonus-room", label: "Bonus room" },
+    ];
+
+    function initSFHFloorPlans() {
+      return [
+        {
+          floor: 1, label: "First floor",
+          use: "residential", unitMix: "", unitCount: 0,
+          rooms: ["living", "kitchen", "dining", "half-bath", "garage-access"],
+        },
+        {
+          floor: 2, label: state.structure.layout === "split-level" ? "Upper level" : "Second floor",
+          use: "residential", unitMix: "", unitCount: 0,
+          rooms: ["master-bed", "bedroom-2", "bedroom-3", "full-bath"],
+        },
+      ];
+    }
+
+    function toggleSFHRoom(floorIndex: number, roomId: string) {
+      setState(prev => {
+        const plans = [...(prev.structure.floorPlans.length > 0 ? prev.structure.floorPlans : initSFHFloorPlans())];
+        const rooms = plans[floorIndex].rooms || [];
+        const next = rooms.includes(roomId)
+          ? rooms.filter(r => r !== roomId)
+          : [...rooms, roomId];
+        plans[floorIndex] = { ...plans[floorIndex], rooms: next };
+        return { ...prev, structure: { ...prev.structure, floorPlans: plans } };
+      });
+    }
+
     return (
       <div className="animate-fade-in">
         <StepHeading title="Structure & Foundation" subtitle="These choices drive your biggest cost line items — foundation, framing, and envelope." />
         {renderDetailQuestions(questions, state.structure, (key, value) =>
           setState(prev => ({ ...prev, structure: { ...prev.structure, [key]: value } }))
         )}
+
+        {/* SFH per-floor room layout (two-story / split-level) */}
+        {isSFH && isMultiStory && (
+          <div className="mt-5">
+            <div className="flex items-center gap-3 mb-3">
+              <button
+                onClick={() => {
+                  const newVal = !state.structure.useFloorPlans;
+                  setState(prev => ({
+                    ...prev,
+                    structure: {
+                      ...prev.structure,
+                      useFloorPlans: newVal,
+                      floorPlans: newVal ? initSFHFloorPlans() : [],
+                    },
+                  }));
+                }}
+                className={`relative w-10 h-5 rounded-full transition-colors ${
+                  state.structure.useFloorPlans ? "bg-emerald-500" : "bg-sand/60"
+                }`}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                  state.structure.useFloorPlans ? "left-5" : "left-0.5"
+                }`} />
+              </button>
+              <span className="text-[12px] font-semibold text-earth">Specify room layout per floor</span>
+            </div>
+
+            {state.structure.useFloorPlans && (
+              <div className="space-y-3 text-left">
+                {(state.structure.floorPlans.length > 0 ? state.structure.floorPlans : initSFHFloorPlans()).map((fp, idx) => (
+                  <div key={fp.floor} className="p-4 rounded-xl border border-border bg-surface">
+                    <p className="text-[13px] font-semibold text-earth mb-3">{fp.label}</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {sfhRoomOptions.map(room => {
+                        const isSelected = (fp.rooms || []).includes(room.id);
+                        return (
+                          <button
+                            key={room.id}
+                            onClick={() => toggleSFHRoom(idx, room.id)}
+                            className={`px-3 py-2 rounded-lg border text-[11px] text-left transition-all ${
+                              isSelected
+                                ? "border-emerald-500 border-2 bg-emerald-50/30 text-emerald-800"
+                                : "border-border/50 text-muted hover:bg-warm/20"
+                            }`}
+                          >
+                            {room.label}
+                            {isSelected && <Check size={10} className="inline ml-1 text-emerald-600" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <MentorTip>
           Your foundation choice is one of the biggest cost drivers. Basements can add 15% to your build cost but give you usable space below grade.
           {state.market !== "USA" && " In West Africa, raised slabs protect against flooding and termites."}
@@ -1559,34 +1665,90 @@ export default function NewProjectPage() {
   function renderUnitConfigStep() {
     const questions = getUnitConfigQuestions(state.propertyType as any, state.market as any);
     const isApartment = state.propertyType === "APARTMENT";
-    const floorCount = state.structure.floors || 2;
+    const isDuplex = state.propertyType === "DUPLEX";
+    const isTriplex = state.propertyType === "TRIPLEX";
+    const isFourplex = state.propertyType === "FOURPLEX";
+    const isMultiSmall = isDuplex || isTriplex || isFourplex;
 
-    const floorUseOptions = [
-      { id: "residential", label: "Residential" },
-      { id: "commercial", label: "Commercial / Retail" },
-      { id: "parking", label: "Parking" },
-      { id: "amenity", label: "Amenity space" },
+    // Determine floor count based on property type and structure
+    const floorCount = isApartment
+      ? (state.structure.floors || 2)
+      : isDuplex && state.structure.buildingLayout === "stacked" ? 2
+      : isTriplex ? (state.structure.buildingLayout === "stacked" ? 3 : 1)
+      : isFourplex ? (state.structure.buildingLayout === "stacked" ? 4 : state.structure.buildingLayout === "2x2-grid" ? 2 : 1)
+      : 1;
+
+    const showPerFloor = floorCount > 1;
+
+    const floorUseOptions = isApartment
+      ? [
+          { id: "residential", label: "Residential" },
+          { id: "commercial", label: "Commercial / Retail" },
+          { id: "parking", label: "Parking" },
+          { id: "amenity", label: "Amenity space" },
+        ]
+      : [
+          { id: "residential", label: "Residential units" },
+          { id: "amenity", label: "Shared amenity" },
     ];
 
-    const floorMixOptions = [
-      { id: "all-studio", label: "All Studios" },
-      { id: "all-1br", label: "All 1BR" },
-      { id: "all-2br", label: "All 2BR" },
-      { id: "all-3br", label: "All 3BR" },
-      { id: "mix-1br-2br", label: "Mix 1BR + 2BR" },
-      { id: "mix-studio-1br", label: "Mix Studio + 1BR" },
-    ];
+    const floorMixOptions = isMultiSmall
+      ? [
+          { id: "1x-studio", label: "1 Studio" },
+          { id: "1x-1br", label: "1x 1BR" },
+          { id: "1x-2br", label: "1x 2BR" },
+          { id: "1x-3br", label: "1x 3BR" },
+          { id: "2x-1br", label: "2x 1BR" },
+          { id: "2x-2br", label: "2x 2BR" },
+        ]
+      : [
+          { id: "all-studio", label: "All Studios" },
+          { id: "all-1br", label: "All 1BR" },
+          { id: "all-2br", label: "All 2BR" },
+          { id: "all-3br", label: "All 3BR" },
+          { id: "mix-1br-2br", label: "Mix 1BR + 2BR" },
+          { id: "mix-studio-1br", label: "Mix Studio + 1BR" },
+        ];
 
-    // Initialize floor plans if switching to per-floor mode
+    function getFloorLabel(i: number, total: number): string {
+      if (i === 0) return "Basement";
+      if (i === 1 && total > 1) return "Ground floor";
+      if (i === total) return "Top floor";
+      return `Floor ${i}`;
+    }
+
+    // Initialize floor plans based on property type
     function initFloorPlans() {
-      const plans = [];
+      const plans: { floor: number; label: string; use: string; unitMix: string; unitCount: number; rooms: string[] }[] = [];
+      const totalUnits = state.unitConfig.unitCount;
+
       for (let i = 1; i <= floorCount; i++) {
-        plans.push({
-          floor: i,
-          use: i === 1 && state.structure.commercialGround === "yes" ? "commercial" : "residential",
-          unitMix: "all-2br",
-          unitCount: Math.max(1, Math.round(state.unitConfig.unitCount / floorCount)),
-        });
+        const label = getFloorLabel(i, floorCount);
+        if (isApartment) {
+          plans.push({
+            floor: i, label,
+            use: i === 1 && state.structure.commercialGround === "yes" ? "commercial" : "residential",
+            unitMix: "all-2br",
+            unitCount: Math.max(1, Math.round(totalUnits / floorCount)),
+            rooms: [],
+          });
+        } else if (isDuplex) {
+          plans.push({
+            floor: i, label: i === 1 ? "Lower unit" : "Upper unit",
+            use: "residential", unitMix: "1x-2br", unitCount: 1, rooms: [],
+          });
+        } else if (isTriplex) {
+          plans.push({
+            floor: i, label: `Unit ${i} (${label})`,
+            use: "residential", unitMix: "1x-2br", unitCount: 1, rooms: [],
+          });
+        } else if (isFourplex) {
+          const unitsPerFloor = floorCount === 2 ? 2 : 1;
+          plans.push({
+            floor: i, label,
+            use: "residential", unitMix: unitsPerFloor === 2 ? "2x-2br" : "1x-2br", unitCount: unitsPerFloor, rooms: [],
+          });
+        }
       }
       return plans;
     }
@@ -1608,30 +1770,33 @@ export default function NewProjectPage() {
       <div className="animate-fade-in">
         <StepHeading title="Unit Configuration" subtitle="Define your unit mix, metering, and management. These drive your revenue projections." />
 
+        {/* Unit count stepper (apartment only) */}
         {isApartment && (
-          <>
-            {/* Unit count stepper */}
-            <div className="mb-5 p-4 rounded-xl border border-border bg-surface text-center">
-              <p className="text-[12px] font-semibold text-earth mb-2">Total units</p>
-              <div className="flex items-center justify-center gap-3">
-                <button
-                  onClick={() => setState(prev => ({
-                    ...prev,
-                    unitConfig: { ...prev.unitConfig, unitCount: Math.max(5, prev.unitConfig.unitCount - 1) }
-                  }))}
-                  className="w-9 h-9 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[15px]"
-                >-</button>
-                <span className="w-8 text-center font-data text-[20px] font-semibold text-earth">{state.unitConfig.unitCount}</span>
-                <button
-                  onClick={() => setState(prev => ({
-                    ...prev,
-                    unitConfig: { ...prev.unitConfig, unitCount: Math.min(12, prev.unitConfig.unitCount + 1) }
-                  }))}
-                  className="w-9 h-9 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[15px]"
-                >+</button>
-              </div>
+          <div className="mb-5 p-4 rounded-xl border border-border bg-surface text-center">
+            <p className="text-[12px] font-semibold text-earth mb-2">Total units</p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setState(prev => ({
+                  ...prev,
+                  unitConfig: { ...prev.unitConfig, unitCount: Math.max(5, prev.unitConfig.unitCount - 1) }
+                }))}
+                className="w-9 h-9 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[15px]"
+              >-</button>
+              <span className="w-8 text-center font-data text-[20px] font-semibold text-earth">{state.unitConfig.unitCount}</span>
+              <button
+                onClick={() => setState(prev => ({
+                  ...prev,
+                  unitConfig: { ...prev.unitConfig, unitCount: Math.min(12, prev.unitConfig.unitCount + 1) }
+                }))}
+                className="w-9 h-9 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[15px]"
+              >+</button>
             </div>
+          </div>
+        )}
 
+        {/* Per-floor configuration (all multi-unit with 2+ floors) */}
+        {showPerFloor && (
+          <>
             {/* Per-floor toggle */}
             <div className="mb-5">
               <div className="flex items-center gap-3 mb-3">
@@ -1666,7 +1831,7 @@ export default function NewProjectPage() {
                 {(state.unitConfig.floorPlans.length > 0 ? state.unitConfig.floorPlans : initFloorPlans()).map((fp, idx) => (
                   <div key={fp.floor} className="p-4 rounded-xl border border-border bg-surface">
                     <p className="text-[13px] font-semibold text-earth mb-3">
-                      {fp.floor === 1 ? "Ground floor" : fp.floor === floorCount ? "Top floor" : `Floor ${fp.floor}`}
+                      {fp.label || getFloorLabel(fp.floor, floorCount)}
                     </p>
 
                     {/* Floor use */}

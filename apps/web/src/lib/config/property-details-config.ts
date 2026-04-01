@@ -75,6 +75,9 @@ export interface StructureSelections {
   // Rooftop features
   rooftopFeatures: string[];
   rooftopAccess: string;
+  // Per-floor layout (SFH multi-story)
+  useFloorPlans: boolean;
+  floorPlans: FloorPlan[];
 }
 
 // ---------------------------------------------------------------------------
@@ -130,12 +133,15 @@ export interface SiteSelections {
 // Unit Config step selections state (multi-unit only)
 // ---------------------------------------------------------------------------
 
-/** Per-floor plan for apartments */
+/** Per-floor plan for any multi-story property */
 export interface FloorPlan {
-  floor: number;           // 1-based floor number
+  floor: number;           // 1-based floor number (0 = basement)
+  label: string;           // "Basement" | "Ground floor" | "Floor 2" | "Top floor"
   use: string;             // "residential" | "commercial" | "parking" | "amenity"
-  unitMix: string;         // e.g., "2x-2br" or "3x-1br" — only for residential
-  unitCount: number;       // units on this floor
+  unitMix: string;         // Multi-unit: "all-2br", "mix-1br-2br" etc.
+  unitCount: number;       // Units on this floor (multi-unit only)
+  // SFH floor layout
+  rooms: string[];         // SFH: ["living", "kitchen", "dining", "half-bath", "garage"]
 }
 
 export interface UnitConfigSelections {
@@ -169,6 +175,7 @@ export const INITIAL_STRUCTURE: StructureSelections = {
   basementFinish: "", basementUse: [], basementBathroom: "no",
   basementSize: "full", basementWaterproofing: "", basementEgress: "",
   rooftopFeatures: [], rooftopAccess: "",
+  useFloorPlans: false, floorPlans: [],
 };
 
 export const INITIAL_INTERIOR: InteriorSelections = {
