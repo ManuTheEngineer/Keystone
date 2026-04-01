@@ -65,6 +65,7 @@ type BuildGoal = "sell" | "rent" | "occupy" | "";
 type SizeCategory = "compact" | "standard" | "large" | "estate" | "custom";
 type LandOption = "known" | "estimate" | "";
 type FinancingType = "construction_loan" | "cash" | "fha_203k" | "diaspora" | "tontine" | "phased_cash" | "family_pooling" | "";
+type WizardMode = "simple" | "advanced" | "";
 
 interface WizardState {
   goal: BuildGoal;
@@ -87,6 +88,7 @@ interface WizardState {
   monthlyRent: number;
   projectName: string;
   fromAnalyzer: boolean;
+  wizardMode: WizardMode;
   structure: StructureSelections;
   interior: InteriorSelections;
   site: SiteSelections;
@@ -126,14 +128,22 @@ const INITIAL_STATE: WizardState = {
   monthlyRent: 0,
   projectName: "",
   fromAnalyzer: false,
+  wizardMode: "",
   structure: { ...INITIAL_STRUCTURE },
   interior: { ...INITIAL_INTERIOR },
   site: { ...INITIAL_SITE },
   unitConfig: { ...INITIAL_UNIT_CONFIG },
 };
 
-function getStepLabels(propertyType: string): string[] {
-  const base = ["Goal", "Market", "Location", "Type", "Structure", "Interior", "Site"];
+function getStepLabels(propertyType: string, wizardMode: WizardMode): string[] {
+  if (wizardMode === "simple") {
+    // Simple mode: skip detail steps entirely
+    const base = ["Goal", "Market", "Location", "Type", "Mode"];
+    base.push("Size", "Land", "Financing", "Financials", "Score", "Name");
+    return base;
+  }
+  // Advanced mode: include detail steps
+  const base = ["Goal", "Market", "Location", "Type", "Mode", "Structure", "Interior", "Site"];
   if (needsUnitConfig(propertyType as any)) {
     base.push("Units");
   }
@@ -141,20 +151,17 @@ function getStepLabels(propertyType: string): string[] {
   return base;
 }
 
-function getStepIndex(name: string, propertyType: string): number {
-  const hasUnits = needsUnitConfig(propertyType as any);
-  const map: Record<string, number> = {
-    goal: 0, market: 1, location: 2, type: 3,
-    structure: 4, interior: 5, site: 6,
-    units: hasUnits ? 7 : -1,
-    size: hasUnits ? 8 : 7,
-    land: hasUnits ? 9 : 8,
-    financing: hasUnits ? 10 : 9,
-    financials: hasUnits ? 11 : 10,
-    score: hasUnits ? 12 : 11,
-    name: hasUnits ? 13 : 12,
+function getStepIndex(name: string, propertyType: string, wizardMode: WizardMode): number {
+  const labels = getStepLabels(propertyType, wizardMode);
+  const labelMap: Record<string, string> = {
+    goal: "Goal", market: "Market", location: "Location", type: "Type",
+    mode: "Mode", structure: "Structure", interior: "Interior", site: "Site",
+    units: "Units", size: "Size", land: "Land", financing: "Financing",
+    financials: "Financials", score: "Score", name: "Name",
   };
-  return map[name] ?? -1;
+  const label = labelMap[name];
+  if (!label) return -1;
+  return labels.indexOf(label);
 }
 
 const MARKET_MAP: Record<string, Market> = { USA: "USA", TOGO: "TOGO", GHANA: "GHANA", BENIN: "BENIN", IVORY_COAST: "TOGO", SENEGAL: "TOGO" };
@@ -574,8 +581,8 @@ export default function NewProjectPage() {
   // Skip to Name step when coming from Deal Analyzer
   useEffect(() => {
     if (state.fromAnalyzer) {
-      const nameIdx = getStepIndex("name", state.propertyType);
-      setStep(nameIdx >= 0 ? nameIdx : getStepLabels(state.propertyType).length - 1);
+      const nameIdx = getStepIndex("name", state.propertyType, state.wizardMode);
+      setStep(nameIdx >= 0 ? nameIdx : getStepLabels(state.propertyType, state.wizardMode).length - 1);
     } else {
       // Restore draft from localStorage
       try {
@@ -665,7 +672,7 @@ export default function NewProjectPage() {
   const currency = useMemo(() => getCurrencyForMarket(state.market), [state.market]);
   const sizeUnit = useMemo(() => getSizeUnit(state.market), [state.market]);
 
-  const stepLabels = useMemo(() => getStepLabels(state.propertyType), [state.propertyType]);
+  const stepLabels = useMemo(() => getStepLabels(state.propertyType, state.wizardMode), [state.propertyType, state.wizardMode]);
   const stepCount = stepLabels.length;
 
   // Apply smart defaults when propertyType/market/goal change
@@ -787,11 +794,12 @@ export default function NewProjectPage() {
 
   // Step validation
   function canProceed(): boolean {
-    const si = (name: string) => getStepIndex(name, state.propertyType);
+    const si = (name: string) => getStepIndex(name, state.propertyType, state.wizardMode);
     if (step === si("goal")) return state.goal !== "";
     if (step === si("market")) return state.market !== "";
     if (step === si("location")) return state.market === "USA" ? /^\d{5}(-\d{4})?$/.test(state.city.trim()) : state.city.trim().length > 0;
     if (step === si("type")) return state.propertyType !== "";
+    if (step === si("mode")) return state.wizardMode !== "";
     if (step === si("structure")) return true; // smart defaults
     if (step === si("interior")) return true;
     if (step === si("site")) return true;
@@ -913,7 +921,7 @@ export default function NewProjectPage() {
   }
 
   function getValidationMessage(): string {
-    const si = (name: string) => getStepIndex(name, state.propertyType);
+    const si = (name: string) => getStepIndex(name, state.propertyType, state.wizardMode);
     if (step === si("goal")) return state.goal === "" ? "Select a goal to continue" : "";
     if (step === si("market")) return state.market === "" ? "Select a market to continue" : "";
     if (step === si("location")) {
@@ -921,6 +929,7 @@ export default function NewProjectPage() {
       return state.city.trim().length === 0 ? "Enter a city or region" : "";
     }
     if (step === si("type")) return state.propertyType === "" ? "Select a property type" : "";
+    if (step === si("mode")) return state.wizardMode === "" ? "Choose a setup mode" : "";
     if (step === si("size")) return state.sizeCategory === "custom" && state.customSize <= 0 ? "Enter a custom size greater than 0" : "";
     if (step === si("land")) return state.landOption === "" ? "Select a land option" : "";
     if (step === si("financing")) return state.financingType === "" ? "Select a financing method" : "";
@@ -944,7 +953,7 @@ export default function NewProjectPage() {
   }
 
   function handleBack() {
-    if (state.fromAnalyzer && step === getStepIndex("name", state.propertyType)) {
+    if (state.fromAnalyzer && step === getStepIndex("name", state.propertyType, state.wizardMode)) {
       router.back();
     } else if (step > 0) {
       setStepRaw(step - 1);
@@ -994,11 +1003,12 @@ export default function NewProjectPage() {
   // ---------------------------------------------------------------------------
 
   function renderStep() {
-    const si = (name: string) => getStepIndex(name, state.propertyType);
+    const si = (name: string) => getStepIndex(name, state.propertyType, state.wizardMode);
     if (step === si("goal")) return renderGoalStep();
     if (step === si("market")) return renderMarketStep();
     if (step === si("location")) return renderLocationStep();
     if (step === si("type")) return renderPropertyStep();
+    if (step === si("mode")) return renderModeStep();
     if (step === si("structure")) return renderStructureStep();
     if (step === si("interior")) return renderInteriorStep();
     if (step === si("site")) return renderSiteStep();
@@ -1383,6 +1393,50 @@ export default function NewProjectPage() {
     );
   }
 
+  function renderModeStep() {
+    const modes: { id: WizardMode; title: string; desc: string; detail: string }[] = [
+      {
+        id: "simple",
+        title: "Quick setup",
+        desc: "Use smart defaults and get to your estimate fast",
+        detail: "We will pre-fill structure, interior, and site details based on your market and property type. You can always edit these later from your project dashboard.",
+      },
+      {
+        id: "advanced",
+        title: "Detailed setup",
+        desc: "Specify every detail for the most accurate estimate",
+        detail: "Choose your foundation type, roof style, kitchen finishes, lot shape, unit configuration, and more. Each selection refines your cost estimate.",
+      },
+    ];
+
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="How detailed do you want to go?" subtitle="You can always adjust your specs later from the project dashboard." />
+        <div className="space-y-3 text-left animate-stagger">
+          {modes.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => update("wizardMode", m.id)}
+              className={`w-full p-5 rounded-xl border text-left transition-all card-hover ${
+                state.wizardMode === m.id
+                  ? "border-emerald-500 border-2 bg-emerald-50/30 shadow-sm"
+                  : "border-border bg-surface hover:border-sand"
+              }`}
+            >
+              <h5 className="text-[15px] font-semibold text-earth">{m.title}</h5>
+              <p className="text-[12px] text-muted mt-1">{m.desc}</p>
+              <p className="text-[11px] text-muted/70 mt-2 leading-relaxed">{m.detail}</p>
+            </button>
+          ))}
+        </div>
+
+        <MentorTip>
+          Not sure? Start with Quick Setup. You will get a solid estimate based on market averages for your property type. You can drill into the details from your project settings after creation.
+        </MentorTip>
+      </div>
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Generic detail question renderer (tap-card groups)
   // ---------------------------------------------------------------------------
@@ -1504,31 +1558,176 @@ export default function NewProjectPage() {
 
   function renderUnitConfigStep() {
     const questions = getUnitConfigQuestions(state.propertyType as any, state.market as any);
+    const isApartment = state.propertyType === "APARTMENT";
+    const floorCount = state.structure.floors || 2;
+
+    const floorUseOptions = [
+      { id: "residential", label: "Residential" },
+      { id: "commercial", label: "Commercial / Retail" },
+      { id: "parking", label: "Parking" },
+      { id: "amenity", label: "Amenity space" },
+    ];
+
+    const floorMixOptions = [
+      { id: "all-studio", label: "All Studios" },
+      { id: "all-1br", label: "All 1BR" },
+      { id: "all-2br", label: "All 2BR" },
+      { id: "all-3br", label: "All 3BR" },
+      { id: "mix-1br-2br", label: "Mix 1BR + 2BR" },
+      { id: "mix-studio-1br", label: "Mix Studio + 1BR" },
+    ];
+
+    // Initialize floor plans if switching to per-floor mode
+    function initFloorPlans() {
+      const plans = [];
+      for (let i = 1; i <= floorCount; i++) {
+        plans.push({
+          floor: i,
+          use: i === 1 && state.structure.commercialGround === "yes" ? "commercial" : "residential",
+          unitMix: "all-2br",
+          unitCount: Math.max(1, Math.round(state.unitConfig.unitCount / floorCount)),
+        });
+      }
+      return plans;
+    }
+
+    function updateFloorPlan(floorIndex: number, field: string, value: any) {
+      setState(prev => {
+        const plans = [...(prev.unitConfig.floorPlans.length > 0 ? prev.unitConfig.floorPlans : initFloorPlans())];
+        plans[floorIndex] = { ...plans[floorIndex], [field]: value };
+        // Recalculate total unit count from residential floors
+        const totalUnits = plans.filter(p => p.use === "residential").reduce((sum, p) => sum + p.unitCount, 0);
+        return {
+          ...prev,
+          unitConfig: { ...prev.unitConfig, floorPlans: plans, unitCount: totalUnits },
+        };
+      });
+    }
+
     return (
       <div className="animate-fade-in">
         <StepHeading title="Unit Configuration" subtitle="Define your unit mix, metering, and management. These drive your revenue projections." />
-        {state.propertyType === "APARTMENT" && (
-          <div className="mb-5 p-4 rounded-xl border border-border bg-surface text-center">
-            <p className="text-[12px] font-semibold text-earth mb-2">Number of units</p>
-            <div className="flex items-center justify-center gap-3">
-              <button
-                onClick={() => setState(prev => ({
-                  ...prev,
-                  unitConfig: { ...prev.unitConfig, unitCount: Math.max(5, prev.unitConfig.unitCount - 1) }
-                }))}
-                className="w-9 h-9 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[15px]"
-              >-</button>
-              <span className="w-8 text-center font-data text-[20px] font-semibold text-earth">{state.unitConfig.unitCount}</span>
-              <button
-                onClick={() => setState(prev => ({
-                  ...prev,
-                  unitConfig: { ...prev.unitConfig, unitCount: Math.min(12, prev.unitConfig.unitCount + 1) }
-                }))}
-                className="w-9 h-9 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[15px]"
-              >+</button>
+
+        {isApartment && (
+          <>
+            {/* Unit count stepper */}
+            <div className="mb-5 p-4 rounded-xl border border-border bg-surface text-center">
+              <p className="text-[12px] font-semibold text-earth mb-2">Total units</p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setState(prev => ({
+                    ...prev,
+                    unitConfig: { ...prev.unitConfig, unitCount: Math.max(5, prev.unitConfig.unitCount - 1) }
+                  }))}
+                  className="w-9 h-9 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[15px]"
+                >-</button>
+                <span className="w-8 text-center font-data text-[20px] font-semibold text-earth">{state.unitConfig.unitCount}</span>
+                <button
+                  onClick={() => setState(prev => ({
+                    ...prev,
+                    unitConfig: { ...prev.unitConfig, unitCount: Math.min(12, prev.unitConfig.unitCount + 1) }
+                  }))}
+                  className="w-9 h-9 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[15px]"
+                >+</button>
+              </div>
             </div>
-          </div>
+
+            {/* Per-floor toggle */}
+            <div className="mb-5">
+              <div className="flex items-center gap-3 mb-3">
+                <button
+                  onClick={() => {
+                    const newVal = !state.unitConfig.useFloorPlans;
+                    setState(prev => ({
+                      ...prev,
+                      unitConfig: {
+                        ...prev.unitConfig,
+                        useFloorPlans: newVal,
+                        floorPlans: newVal ? initFloorPlans() : [],
+                      },
+                    }));
+                  }}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${
+                    state.unitConfig.useFloorPlans ? "bg-emerald-500" : "bg-sand/60"
+                  }`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                    state.unitConfig.useFloorPlans ? "left-5" : "left-0.5"
+                  }`} />
+                </button>
+                <span className="text-[12px] font-semibold text-earth">Configure each floor individually</span>
+              </div>
+              <p className="text-[10px] text-muted ml-13">Specify the use and unit mix for each of the {floorCount} floors</p>
+            </div>
+
+            {/* Per-floor cards */}
+            {state.unitConfig.useFloorPlans && (
+              <div className="space-y-3 mb-5 text-left">
+                {(state.unitConfig.floorPlans.length > 0 ? state.unitConfig.floorPlans : initFloorPlans()).map((fp, idx) => (
+                  <div key={fp.floor} className="p-4 rounded-xl border border-border bg-surface">
+                    <p className="text-[13px] font-semibold text-earth mb-3">
+                      {fp.floor === 1 ? "Ground floor" : fp.floor === floorCount ? "Top floor" : `Floor ${fp.floor}`}
+                    </p>
+
+                    {/* Floor use */}
+                    <p className="text-[10px] text-muted mb-1.5">Floor use</p>
+                    <div className="grid grid-cols-2 gap-1.5 mb-3">
+                      {floorUseOptions.map(opt => (
+                        <button
+                          key={opt.id}
+                          onClick={() => updateFloorPlan(idx, "use", opt.id)}
+                          className={`px-3 py-2 rounded-lg border text-[11px] transition-all ${
+                            fp.use === opt.id
+                              ? "border-emerald-500 border-2 bg-emerald-50/30 text-emerald-800"
+                              : "border-border/50 text-muted hover:bg-warm/20"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Unit mix for residential floors */}
+                    {fp.use === "residential" && (
+                      <>
+                        <p className="text-[10px] text-muted mb-1.5">Unit mix on this floor</p>
+                        <div className="grid grid-cols-3 gap-1.5 mb-3">
+                          {floorMixOptions.map(opt => (
+                            <button
+                              key={opt.id}
+                              onClick={() => updateFloorPlan(idx, "unitMix", opt.id)}
+                              className={`px-2 py-2 rounded-lg border text-[10px] transition-all ${
+                                fp.unitMix === opt.id
+                                  ? "border-emerald-500 border-2 bg-emerald-50/30 text-emerald-800"
+                                  : "border-border/50 text-muted hover:bg-warm/20"
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <p className="text-[10px] text-muted mb-1.5">Units on this floor</p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => updateFloorPlan(idx, "unitCount", Math.max(1, fp.unitCount - 1))}
+                            className="w-7 h-7 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[13px]"
+                          >-</button>
+                          <span className="w-6 text-center font-data text-[15px] font-semibold text-earth">{fp.unitCount}</span>
+                          <button
+                            onClick={() => updateFloorPlan(idx, "unitCount", Math.min(6, fp.unitCount + 1))}
+                            className="w-7 h-7 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[13px]"
+                          >+</button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
+
         {renderDetailQuestions(questions, state.unitConfig, (key, value) =>
           setState(prev => ({ ...prev, unitConfig: { ...prev.unitConfig, [key]: value } }))
         )}
@@ -2206,7 +2405,7 @@ export default function NewProjectPage() {
       </div>
 
       {/* Pre-filled from Deal Analyzer banner */}
-      {state.fromAnalyzer && step < getStepIndex("name", state.propertyType) && (
+      {state.fromAnalyzer && step < getStepIndex("name", state.propertyType, state.wizardMode) && (
         <div className="flex items-center gap-2 px-4 py-2.5 mb-4 rounded-xl border border-emerald-200 bg-emerald-50/50 text-left">
           <Sparkles size={14} className="text-emerald-600 shrink-0" />
           <p className="text-[12px] text-emerald-800">

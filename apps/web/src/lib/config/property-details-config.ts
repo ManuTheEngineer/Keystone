@@ -130,6 +130,14 @@ export interface SiteSelections {
 // Unit Config step selections state (multi-unit only)
 // ---------------------------------------------------------------------------
 
+/** Per-floor plan for apartments */
+export interface FloorPlan {
+  floor: number;           // 1-based floor number
+  use: string;             // "residential" | "commercial" | "parking" | "amenity"
+  unitMix: string;         // e.g., "2x-2br" or "3x-1br" — only for residential
+  unitCount: number;       // units on this floor
+}
+
 export interface UnitConfigSelections {
   unitSimilarity: string;
   unitMix: string;
@@ -143,6 +151,9 @@ export interface UnitConfigSelections {
   commonMaintenance: string;
   unitCount: number;
   management: string;
+  // Per-floor configuration (apartment only)
+  useFloorPlans: boolean;
+  floorPlans: FloorPlan[];
 }
 
 // ---------------------------------------------------------------------------
@@ -181,6 +192,7 @@ export const INITIAL_UNIT_CONFIG: UnitConfigSelections = {
   ownerOccupied: "no", ownerUnit: "", utilities: "",
   metering: "", storage: "", commonAreas: [],
   commonMaintenance: "", unitCount: 5, management: "",
+  useFloorPlans: false, floorPlans: [],
 };
 
 // ---------------------------------------------------------------------------
