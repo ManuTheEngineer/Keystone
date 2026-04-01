@@ -52,6 +52,18 @@ import {
   formatMonthList,
 } from "@keystone/market-data";
 import type { Market as MarketType, CurrencyConfig, LocationData } from "@keystone/market-data";
+import {
+  type StructureSelections, type InteriorSelections,
+  type SiteSelections, type UnitConfigSelections,
+  INITIAL_STRUCTURE, INITIAL_INTERIOR, INITIAL_SITE, INITIAL_UNIT_CONFIG,
+  getStructureQuestions, getInteriorQuestions, getSiteQuestions, getUnitConfigQuestions,
+  getSmartDefaults, needsUnitConfig,
+  type DetailQuestion,
+} from "@/lib/config/property-details-config";
+import {
+  calculateDetailedCosts,
+  type DetailedCostBreakdown,
+} from "@/lib/config/detailed-cost-engine";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -83,6 +95,10 @@ interface WizardState {
   monthlyRent: number;
   projectName: string;
   fromAnalyzer: boolean;
+  structure: StructureSelections;
+  interior: InteriorSelections;
+  site: SiteSelections;
+  unitConfig: UnitConfigSelections;
 }
 
 interface ScoreFactor {
@@ -118,22 +134,36 @@ const INITIAL_STATE: WizardState = {
   monthlyRent: 0,
   projectName: "",
   fromAnalyzer: false,
+  structure: { ...INITIAL_STRUCTURE },
+  interior: { ...INITIAL_INTERIOR },
+  site: { ...INITIAL_SITE },
+  unitConfig: { ...INITIAL_UNIT_CONFIG },
 };
 
-const STEP_COUNT = 10;
+function getStepLabels(propertyType: string): string[] {
+  const base = ["Goal", "Market", "Location", "Type", "Structure", "Interior", "Site"];
+  if (needsUnitConfig(propertyType as any)) {
+    base.push("Units");
+  }
+  base.push("Size", "Land", "Financing", "Financials", "Score", "Name");
+  return base;
+}
 
-const STEP_LABELS = [
-  "Goal",
-  "Market",
-  "Location",
-  "Type",
-  "Size",
-  "Land",
-  "Financing",
-  "Financials",
-  "Score",
-  "Name",
-];
+function getStepIndex(name: string, propertyType: string): number {
+  const hasUnits = needsUnitConfig(propertyType as any);
+  const map: Record<string, number> = {
+    goal: 0, market: 1, location: 2, type: 3,
+    structure: 4, interior: 5, site: 6,
+    units: hasUnits ? 7 : -1,
+    size: hasUnits ? 8 : 7,
+    land: hasUnits ? 9 : 8,
+    financing: hasUnits ? 10 : 9,
+    financials: hasUnits ? 11 : 10,
+    score: hasUnits ? 12 : 11,
+    name: hasUnits ? 13 : 12,
+  };
+  return map[name] ?? -1;
+}
 
 const US_FEATURES = [
   { id: "garage-single", label: "Single garage", Icon: Car },
@@ -559,7 +589,8 @@ export default function NewProjectPage() {
   // Skip to Name step when coming from Deal Analyzer
   useEffect(() => {
     if (state.fromAnalyzer) {
-      setStep(9);
+      const nameIdx = getStepIndex("name", state.propertyType);
+      setStep(nameIdx >= 0 ? nameIdx : getStepLabels(state.propertyType).length - 1);
     } else {
       // Restore draft from localStorage
       try {
@@ -638,6 +669,27 @@ export default function NewProjectPage() {
 
   const currency = useMemo(() => getCurrencyForMarket(state.market), [state.market]);
   const sizeUnit = useMemo(() => getSizeUnit(state.market), [state.market]);
+
+  const stepLabels = useMemo(() => getStepLabels(state.propertyType), [state.propertyType]);
+  const stepCount = stepLabels.length;
+
+  // Apply smart defaults when propertyType/market/goal change
+  useEffect(() => {
+    if (state.propertyType && state.market && state.goal) {
+      const defaults = getSmartDefaults(
+        state.propertyType as any,
+        state.market as any,
+        state.goal,
+      );
+      setState(prev => ({
+        ...prev,
+        structure: { ...INITIAL_STRUCTURE, ...defaults.structure },
+        interior: { ...INITIAL_INTERIOR, ...defaults.interior },
+        site: { ...INITIAL_SITE, ...defaults.site },
+        unitConfig: { ...INITIAL_UNIT_CONFIG, ...defaults.unitConfig },
+      }));
+    }
+  }, [state.propertyType, state.market, state.goal]);
 
   const totalWeeksFromMarket = useMemo(() => {
     if (!marketData) return 0;
@@ -720,19 +772,22 @@ export default function NewProjectPage() {
 
   // Step validation
   function canProceed(): boolean {
-    switch (step) {
-      case 0: return state.goal !== "";
-      case 1: return state.market !== "";
-      case 2: return state.market === "USA" ? /^\d{5}(-\d{4})?$/.test(state.city.trim()) : state.city.trim().length > 0;
-      case 3: return state.propertyType !== "";
-      case 4: return state.sizeCategory === "custom" ? state.customSize > 0 : true;
-      case 5: return state.landOption !== "";
-      case 6: return state.financingType !== "";
-      case 7: return true; // financials review
-      case 8: return true; // score review
-      case 9: return state.projectName.trim().length > 0;
-      default: return false;
-    }
+    const si = (name: string) => getStepIndex(name, state.propertyType);
+    if (step === si("goal")) return state.goal !== "";
+    if (step === si("market")) return state.market !== "";
+    if (step === si("location")) return state.market === "USA" ? /^\d{5}(-\d{4})?$/.test(state.city.trim()) : state.city.trim().length > 0;
+    if (step === si("type")) return state.propertyType !== "";
+    if (step === si("structure")) return true; // smart defaults
+    if (step === si("interior")) return true;
+    if (step === si("site")) return true;
+    if (step === si("units")) return true;
+    if (step === si("size")) return state.sizeCategory === "custom" ? state.customSize > 0 : true;
+    if (step === si("land")) return state.landOption !== "";
+    if (step === si("financing")) return state.financingType !== "";
+    if (step === si("financials")) return true;
+    if (step === si("score")) return true;
+    if (step === si("name")) return state.projectName.trim().length > 0;
+    return false;
   }
 
   async function handleCreate() {
@@ -828,19 +883,19 @@ export default function NewProjectPage() {
   }
 
   function getValidationMessage(): string {
-    switch (step) {
-      case 0: return state.goal === "" ? "Select a goal to continue" : "";
-      case 1: return state.market === "" ? "Select a market to continue" : "";
-      case 2:
-        if (state.market === "USA") return !/^\d{5}(-\d{4})?$/.test(state.city.trim()) ? "Enter a valid 5-digit ZIP code" : "";
-        return state.city.trim().length === 0 ? "Enter a city or region" : "";
-      case 3: return state.propertyType === "" ? "Select a property type" : "";
-      case 4: return state.sizeCategory === "custom" && state.customSize <= 0 ? "Enter a custom size greater than 0" : "";
-      case 5: return state.landOption === "" ? "Select a land option" : "";
-      case 6: return state.financingType === "" ? "Select a financing method" : "";
-      case 9: return state.projectName.trim().length === 0 ? "Enter a project name" : "";
-      default: return "";
+    const si = (name: string) => getStepIndex(name, state.propertyType);
+    if (step === si("goal")) return state.goal === "" ? "Select a goal to continue" : "";
+    if (step === si("market")) return state.market === "" ? "Select a market to continue" : "";
+    if (step === si("location")) {
+      if (state.market === "USA") return !/^\d{5}(-\d{4})?$/.test(state.city.trim()) ? "Enter a valid 5-digit ZIP code" : "";
+      return state.city.trim().length === 0 ? "Enter a city or region" : "";
     }
+    if (step === si("type")) return state.propertyType === "" ? "Select a property type" : "";
+    if (step === si("size")) return state.sizeCategory === "custom" && state.customSize <= 0 ? "Enter a custom size greater than 0" : "";
+    if (step === si("land")) return state.landOption === "" ? "Select a land option" : "";
+    if (step === si("financing")) return state.financingType === "" ? "Select a financing method" : "";
+    if (step === si("name")) return state.projectName.trim().length === 0 ? "Enter a project name" : "";
+    return "";
   }
 
   function handleNext() {
@@ -851,7 +906,7 @@ export default function NewProjectPage() {
     setValidationError("");
     // Mark current step as completed
     setCompletedSteps((prev) => new Set(prev).add(step));
-    if (step < STEP_COUNT - 1) {
+    if (step < stepCount - 1) {
       setStep(step + 1);
     } else {
       handleCreate();
@@ -859,7 +914,7 @@ export default function NewProjectPage() {
   }
 
   function handleBack() {
-    if (state.fromAnalyzer && step === 9) {
+    if (state.fromAnalyzer && step === getStepIndex("name", state.propertyType)) {
       router.back();
     } else if (step > 0) {
       setStepRaw(step - 1);
@@ -906,19 +961,22 @@ export default function NewProjectPage() {
   // ---------------------------------------------------------------------------
 
   function renderStep() {
-    switch (step) {
-      case 0: return renderGoalStep();
-      case 1: return renderMarketStep();
-      case 2: return renderLocationStep();
-      case 3: return renderPropertyStep();
-      case 4: return renderSizeStep();
-      case 5: return renderLandStep();
-      case 6: return renderFinancingStep();
-      case 7: return renderFinancialsStep();
-      case 8: return renderScoreStep();
-      case 9: return renderNameStep();
-      default: return null;
-    }
+    const si = (name: string) => getStepIndex(name, state.propertyType);
+    if (step === si("goal")) return renderGoalStep();
+    if (step === si("market")) return renderMarketStep();
+    if (step === si("location")) return renderLocationStep();
+    if (step === si("type")) return renderPropertyStep();
+    if (step === si("structure")) return renderStructureStep();
+    if (step === si("interior")) return renderInteriorStep();
+    if (step === si("site")) return renderSiteStep();
+    if (step === si("units")) return renderUnitConfigStep();
+    if (step === si("size")) return renderSizeStepContent();
+    if (step === si("land")) return renderLandStep();
+    if (step === si("financing")) return renderFinancingStep();
+    if (step === si("financials")) return renderFinancialsStep();
+    if (step === si("score")) return renderScoreStep();
+    if (step === si("name")) return renderNameStep();
+    return null;
   }
 
   function renderGoalStep() {
@@ -1292,7 +1350,163 @@ export default function NewProjectPage() {
     );
   }
 
-  function renderSizeStep() {
+  // ---------------------------------------------------------------------------
+  // Generic detail question renderer (tap-card groups)
+  // ---------------------------------------------------------------------------
+
+  function renderDetailQuestions(
+    questions: DetailQuestion[],
+    stateObj: Record<string, any>,
+    updateFn: (key: string, value: any) => void,
+  ) {
+    return (
+      <div className="space-y-5 text-left animate-stagger">
+        {questions.map((q) => {
+          // Conditional visibility
+          if (q.conditionalOn) {
+            const fieldVal = stateObj[q.conditionalOn.field];
+            const matches = q.conditionalOn.values.includes(fieldVal);
+            if (q.conditionalOn.negate ? matches : !matches) return null;
+          }
+          const currentValue = stateObj[q.key];
+          return (
+            <div key={q.key}>
+              <p className="text-[12px] font-semibold text-earth mb-2">{q.label}</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {q.options.map((opt) => {
+                  const isSelected = q.multiSelect
+                    ? (currentValue as string[] | undefined)?.includes(opt.id)
+                    : currentValue === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => {
+                        if (q.multiSelect) {
+                          const arr = (currentValue as string[]) || [];
+                          const next = arr.includes(opt.id)
+                            ? arr.filter((x: string) => x !== opt.id)
+                            : [...arr, opt.id];
+                          updateFn(q.key, next);
+                        } else {
+                          updateFn(q.key, opt.id);
+                        }
+                      }}
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all ${
+                        isSelected
+                          ? "border-emerald-500 border-2 bg-emerald-50/30 text-emerald-800"
+                          : "border-border/50 text-muted hover:bg-warm/20 hover:border-sand"
+                      }`}
+                    >
+                      {opt.Icon && <opt.Icon size={14} className="shrink-0" />}
+                      <div>
+                        <span className="text-[12px] font-medium">{opt.label}</span>
+                        {opt.subtitle && (
+                          <p className="text-[10px] text-muted mt-0.5">{opt.subtitle}</p>
+                        )}
+                      </div>
+                      {q.multiSelect && isSelected && (
+                        <Check size={12} className="ml-auto text-emerald-600 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // New detail step renderers
+  // ---------------------------------------------------------------------------
+
+  function renderStructureStep() {
+    const questions = getStructureQuestions(state.propertyType as any, state.market as any);
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="Structure & Foundation" subtitle="These choices drive your biggest cost line items — foundation, framing, and envelope." />
+        {renderDetailQuestions(questions, state.structure, (key, value) =>
+          setState(prev => ({ ...prev, structure: { ...prev.structure, [key]: value } }))
+        )}
+        <MentorTip>
+          Your foundation choice is one of the biggest cost drivers. Basements can add 15% to your build cost but give you usable space below grade.
+          {state.market !== "USA" && " In West Africa, raised slabs protect against flooding and termites."}
+        </MentorTip>
+      </div>
+    );
+  }
+
+  function renderInteriorStep() {
+    const questions = getInteriorQuestions(state.propertyType as any, state.market as any);
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="Interior Finishes" subtitle="Kitchen, bath, and flooring choices shape your budget and your future residents' experience." />
+        {renderDetailQuestions(questions, state.interior, (key, value) =>
+          setState(prev => ({ ...prev, interior: { ...prev.interior, [key]: value } }))
+        )}
+        <MentorTip>
+          Kitchen and bath finishes are where budgets balloon. A high-end kitchen can cost 3x a standard one.
+          {state.goal === "rent" && " Renters rarely pay premium rent for luxury finishes — standard or mid-range is usually the best ROI."}
+        </MentorTip>
+      </div>
+    );
+  }
+
+  function renderSiteStep() {
+    const questions = getSiteQuestions(state.propertyType as any, state.market as any);
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="Site & Outdoor" subtitle="Lot characteristics and outdoor features affect site work costs and usable space." />
+        {renderDetailQuestions(questions, state.site, (key, value) =>
+          setState(prev => ({ ...prev, site: { ...prev.site, [key]: value } }))
+        )}
+        <MentorTip>
+          Lot shape matters more than you think. An irregular lot can add 10-20% to your site work costs for custom grading and foundation layout. Corner lots give you more street frontage but also more fencing.
+        </MentorTip>
+      </div>
+    );
+  }
+
+  function renderUnitConfigStep() {
+    const questions = getUnitConfigQuestions(state.propertyType as any, state.market as any);
+    return (
+      <div className="animate-fade-in">
+        <StepHeading title="Unit Configuration" subtitle="Define your unit mix, metering, and management. These drive your revenue projections." />
+        {state.propertyType === "APARTMENT" && (
+          <div className="mb-5 p-4 rounded-xl border border-border bg-surface text-center">
+            <p className="text-[12px] font-semibold text-earth mb-2">Number of units</p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setState(prev => ({
+                  ...prev,
+                  unitConfig: { ...prev.unitConfig, unitCount: Math.max(5, prev.unitConfig.unitCount - 1) }
+                }))}
+                className="w-9 h-9 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[15px]"
+              >-</button>
+              <span className="w-8 text-center font-data text-[20px] font-semibold text-earth">{state.unitConfig.unitCount}</span>
+              <button
+                onClick={() => setState(prev => ({
+                  ...prev,
+                  unitConfig: { ...prev.unitConfig, unitCount: Math.min(12, prev.unitConfig.unitCount + 1) }
+                }))}
+                className="w-9 h-9 rounded-lg border border-border text-earth hover:bg-warm/30 flex items-center justify-center text-[15px]"
+              >+</button>
+            </div>
+          </div>
+        )}
+        {renderDetailQuestions(questions, state.unitConfig, (key, value) =>
+          setState(prev => ({ ...prev, unitConfig: { ...prev.unitConfig, [key]: value } }))
+        )}
+        <MentorTip>
+          Separate utility meters cost more upfront but save you money every month. With owner-pays-all, you absorb usage spikes. With separate meters, tenants pay their own consumption.
+        </MentorTip>
+      </div>
+    );
+  }
+
+  function renderSizeStepContent() {
     if (!state.market) return null;
     const presets = getSizePresets(sizeUnit);
     const presetEntries = Object.entries(presets) as [string, { min: number; max: number; typical: number; label: string }][];
@@ -1887,7 +2101,7 @@ export default function NewProjectPage() {
 
       {/* Step indicator dots */}
       <div className="flex items-center justify-center gap-1 mb-6">
-        {STEP_LABELS.map((label, i) => {
+        {stepLabels.map((label: string, i: number) => {
           const isCompleted = completedSteps.has(i);
           const isCurrent = i === step;
           const isReachable = i <= maxStepReached;
@@ -1973,7 +2187,7 @@ export default function NewProjectPage() {
               : "bg-warm/60 text-sand border border-warm cursor-not-allowed opacity-50"
           }`}
         >
-          {step === STEP_COUNT - 1 ? (creating ? "Creating..." : "Create project") : "Next"}
+          {step === stepCount - 1 ? (creating ? "Creating..." : "Create project") : "Next"}
         </button>
       </div>
 
