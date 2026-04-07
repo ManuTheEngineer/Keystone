@@ -120,16 +120,16 @@ export function LivePreview() {
 
   // Build section summaries
   const structureSummary = buildSummary({
+    layout: state.structure.layout,
     foundation: state.structure.foundation,
     roof: state.structure.roof,
     exterior: state.structure.exterior,
-    framing: state.structure.framing,
   });
 
   const interiorSummary = buildSummary({
     flooring: state.interior.flooring,
     kitchen: state.interior.kitchenStyle,
-    bathroom: state.interior.bathroomStyle,
+    bathroom: state.interior.primaryBath,
     hvac: state.interior.hvac,
   });
 
@@ -142,8 +142,8 @@ export function LivePreview() {
 
   const unitsSummary = buildSummary({
     unitCount: state.unitConfig.unitCount ? `${state.unitConfig.unitCount} units` : undefined,
-    laundry: state.unitConfig.laundry,
-    parking: state.unitConfig.parking,
+    unitMix: state.unitConfig.unitMix,
+    management: state.unitConfig.management,
   });
 
   return (
