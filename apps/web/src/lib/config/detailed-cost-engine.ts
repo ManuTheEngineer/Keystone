@@ -822,3 +822,69 @@ export function emptyBreakdown(): DetailedCostBreakdown {
     financing: 0, totalHardCosts: 0, totalSoftCosts: 0, grandTotal: 0,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Lightweight cost delta (for OptionCard previews)
+// ---------------------------------------------------------------------------
+
+const AREA_BASED = new Set([
+  "foundation", "roof", "exterior", "flooring", "fireSystem",
+  "landscaping", "driveway", "soundproofing",
+]);
+
+export function getCostDelta(
+  market: string,
+  category: string,
+  candidateId: string,
+  currentId: string,
+  buildingSqft: number,
+): number | undefined {
+  // Pick correct cost table based on market
+  const costs = market === "GHANA" ? GHANA_COSTS
+    : ["TOGO", "BENIN"].includes(market) ? WA_COSTS
+    : USA_COSTS;
+
+  const table = (costs as any)[category];
+  if (!table) return undefined;
+
+  // Handle kitchen (nested: base + finishMultiplier)
+  if (category === "kitchen") {
+    const base = table.base;
+    if (!base) return undefined;
+    const candidateCost = base[candidateId] ?? 0;
+    const currentCost = base[currentId] ?? 0;
+    return candidateCost - currentCost;
+  }
+
+  // Handle kitchen finish (multiplier, not direct cost)
+  if (category === "kitchenFinish") {
+    const mults = (costs as any).kitchen?.finishMultiplier;
+    if (!mults) return undefined;
+    // Approximate: assume mid-range kitchen base ~$8000 for delta display
+    const baseKitchen = 8000;
+    const candidateMult = mults[candidateId] ?? 1;
+    const currentMult = mults[currentId] ?? 1;
+    return Math.round(baseKitchen * (candidateMult - currentMult));
+  }
+
+  // Handle ADU (nested: perUnit + connection)
+  if (category === "adu") {
+    const candidateData = table[candidateId];
+    const currentData = table[currentId];
+    if (!candidateData && !currentData) return undefined;
+    const candidateCost = candidateData ? (candidateData.perUnit * 400 + candidateData.connection) : 0; // ~400sqft studio
+    const currentCost = currentData ? (currentData.perUnit * 400 + currentData.connection) : 0;
+    return Math.round(candidateCost - currentCost);
+  }
+
+  const candidateCost = table[candidateId];
+  const currentCost = table[currentId];
+  if (candidateCost === undefined || currentCost === undefined) return undefined;
+
+  if (AREA_BASED.has(category)) {
+    return Math.round((candidateCost - currentCost) * buildingSqft);
+  }
+
+  // Fixed cost items (garage, elevator, hvac, waterHeater, security, smartHome, etc.)
+  return Math.round(candidateCost - currentCost);
+}
