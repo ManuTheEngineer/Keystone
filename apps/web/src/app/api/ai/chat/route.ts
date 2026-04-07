@@ -107,6 +107,10 @@ RULES:
 - Progress: ${context.progress ?? 0}%
 - Budget: ${context.totalBudget ?? 0} ${context.currency ?? "USD"} (spent: ${context.totalSpent ?? 0})
 - Week: ${context.currentWeek ?? 0} of ${context.totalWeeks ?? 0}`;
+
+    if (context.buildSpecsSummary) {
+      prompt += `\n\nBuild Specifications:\n- ${context.buildSpecsSummary}`;
+    }
   }
 
   if (mode === "budget") {

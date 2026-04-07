@@ -21,6 +21,7 @@ export interface CostLineItem {
   amount: number;
   formula?: string;     // human-readable formula for transparency
   category: string;     // groups items for budget page
+  sourceSpec?: string;  // traces to wizard selection (e.g. "structure.foundation")
 }
 
 export interface DetailedCostBreakdown {
@@ -354,22 +355,22 @@ export function calculateDetailedCosts(
   items.push({ label: "Grading & Site prep", amount: gradingCost, formula: `${buildingFootprint.toLocaleString()} ${sizeUnit} footprint x ${lotShapeMult}x shape`, category: "Site Preparation" });
 
   const drivewayCost = Math.round((isUSA ? 400 : 40) * (costs.driveway[site.driveway] ?? 0) * costIndex);
-  if (drivewayCost > 0) items.push({ label: `Driveway (${site.driveway})`, amount: drivewayCost, category: "Site Preparation" });
+  if (drivewayCost > 0) items.push({ label: `Driveway (${site.driveway})`, amount: drivewayCost, category: "Site Preparation", sourceSpec: "site.driveway" });
 
   const fencingLinearFt = Math.round(Math.sqrt(lotSizeValue) * 4 * 0.7);
   const fencingCost = Math.round(fencingLinearFt * (costs.fencing[site.fencing] ?? 0) * costIndex);
-  if (fencingCost > 0) items.push({ label: `Fencing (${site.fencing})`, amount: fencingCost, formula: `${fencingLinearFt} linear ${isUSA ? "ft" : "m"} x cost`, category: "Site Preparation" });
+  if (fencingCost > 0) items.push({ label: `Fencing (${site.fencing})`, amount: fencingCost, formula: `${fencingLinearFt} linear ${isUSA ? "ft" : "m"} x cost`, category: "Site Preparation", sourceSpec: "site.fencing" });
 
   const landscapeArea = Math.max(0, lotSizeValue - buildingFootprint);
   const landscapeCost = Math.round(landscapeArea * (costs.landscaping[site.landscaping] ?? 0) * costIndex);
-  if (landscapeCost > 0) items.push({ label: `Landscaping (${site.landscaping})`, amount: landscapeCost, category: "Site Preparation" });
+  if (landscapeCost > 0) items.push({ label: `Landscaping (${site.landscaping})`, amount: landscapeCost, category: "Site Preparation", sourceSpec: "site.landscaping" });
 
   const siteWorkTotal = gradingCost + drivewayCost + fencingCost + landscapeCost;
 
   // --- FOUNDATION ---
   const foundationCostPerUnit = costs.foundation[structure.foundation] ?? (isUSA ? 8 : 35000);
   const foundationCost = Math.round(buildingFootprint * foundationCostPerUnit * costIndex);
-  items.push({ label: `Foundation (${structure.foundation})`, amount: foundationCost, formula: `${buildingFootprint.toLocaleString()} ${sizeUnit} x ${foundationCostPerUnit}/${sizeUnit}`, category: "Foundation" });
+  items.push({ label: `Foundation (${structure.foundation})`, amount: foundationCost, formula: `${buildingFootprint.toLocaleString()} ${sizeUnit} x ${foundationCostPerUnit}/${sizeUnit}`, category: "Foundation", sourceSpec: "structure.foundation" });
 
   // --- FRAMING ---
   const framingBase = isUSA ? 14 : 35000;
@@ -379,7 +380,7 @@ export function calculateDetailedCosts(
   // --- ROOF ---
   const roofCostPerUnit = costs.roof[structure.roof] ?? (isUSA ? 6 : 18000);
   const roofCost = Math.round(buildingFootprint * roofCostPerUnit * costIndex);
-  items.push({ label: `Roofing (${structure.roof})`, amount: roofCost, category: "Roofing" });
+  items.push({ label: `Roofing (${structure.roof})`, amount: roofCost, category: "Roofing", sourceSpec: "structure.roof" });
 
   // --- EXTERIOR ---
   const stories = structure.floors || (structure.layout === "two-story" ? 2 : structure.layout === "split-level" ? 1.5 : 1);
@@ -388,10 +389,10 @@ export function calculateDetailedCosts(
   const exteriorSqUnits = Math.round(perimeter * wallHeight);
   const extCostPerUnit = costs.exterior[structure.exterior] ?? (isUSA ? 7 : 12000);
   const exteriorCost = Math.round(exteriorSqUnits * extCostPerUnit * costIndex);
-  items.push({ label: `Exterior finish (${structure.exterior})`, amount: exteriorCost, category: "Exterior" });
+  items.push({ label: `Exterior finish (${structure.exterior})`, amount: exteriorCost, category: "Exterior", sourceSpec: "structure.exterior" });
 
   const windowCost = Math.round(windowCount * (costs.windows[structure.windows] ?? (isUSA ? 400 : 60000)) * costIndex);
-  items.push({ label: `Windows (${structure.windows}) x ${windowCount}`, amount: windowCost, category: "Exterior" });
+  items.push({ label: `Windows (${structure.windows}) x ${windowCount}`, amount: windowCost, category: "Exterior", sourceSpec: "structure.windows" });
 
   const exteriorTotal = exteriorCost + windowCost;
 
@@ -399,10 +400,10 @@ export function calculateDetailedCosts(
   const kitchenBase = costs.kitchen.base[interior.kitchenStyle] ?? (isUSA ? 8000 : 1500000);
   const kitchenMult = costs.kitchen.finishMultiplier[interior.kitchenFinish] ?? 1;
   const kitchenCost = Math.round(kitchenBase * kitchenMult * totalUnits * costIndex);
-  items.push({ label: `Kitchen (${interior.kitchenStyle}, ${interior.kitchenFinish}) x ${totalUnits}`, amount: kitchenCost, category: "Kitchen" });
+  items.push({ label: `Kitchen (${interior.kitchenStyle}, ${interior.kitchenFinish}) x ${totalUnits}`, amount: kitchenCost, category: "Kitchen", sourceSpec: "interior.kitchenStyle" });
 
   const primaryBathCost = Math.round((costs.bath[interior.primaryBath] ?? (isUSA ? 4000 : 500000)) * totalUnits * costIndex);
-  items.push({ label: `Primary bath (${interior.primaryBath}) x ${totalUnits}`, amount: primaryBathCost, category: "Bathrooms" });
+  items.push({ label: `Primary bath (${interior.primaryBath}) x ${totalUnits}`, amount: primaryBathCost, category: "Bathrooms", sourceSpec: "interior.primaryBath" });
 
   // Estimate secondary baths (1 per unit for 2BR+, 0 for studio/1BR)
   const secondaryBathCount = unitBreakdown
@@ -414,7 +415,7 @@ export function calculateDetailedCosts(
   }
 
   const flooringCost = Math.round(buildingSize * (costs.flooring[interior.flooring] ?? (isUSA ? 4 : 12000)) * costIndex);
-  items.push({ label: `Flooring (${interior.flooring})`, amount: flooringCost, formula: `${buildingSize.toLocaleString()} ${sizeUnit} x cost`, category: "Interior Finishes" });
+  items.push({ label: `Flooring (${interior.flooring})`, amount: flooringCost, formula: `${buildingSize.toLocaleString()} ${sizeUnit} x cost`, category: "Interior Finishes", sourceSpec: "interior.flooring" });
 
   // Painting (all interior walls)
   const paintCost = Math.round(buildingSize * (isUSA ? 3.5 : 6000) * costIndex);
@@ -430,11 +431,11 @@ export function calculateDetailedCosts(
   const hvacSystemCount = (interior.hvacConfig === "shared" || interior.hvacConfig === "central-boiler")
     ? 1 : totalUnits;
   const hvacCost = Math.round((costs.hvac[interior.hvac] ?? (isUSA ? 10000 : 800000)) * hvacSystemCount * costIndex);
-  items.push({ label: `HVAC (${interior.hvac}) x ${hvacSystemCount} systems`, amount: hvacCost, category: "HVAC" });
+  items.push({ label: `HVAC (${interior.hvac}) x ${hvacSystemCount} systems`, amount: hvacCost, category: "HVAC", sourceSpec: "interior.hvac" });
 
   const waterHeaterCount = (interior.waterHeatingConfig === "central-boiler") ? 1 : totalUnits;
   const whCost = Math.round((costs.waterHeater[interior.waterHeater] ?? (isUSA ? 1500 : 300000)) * waterHeaterCount * costIndex);
-  items.push({ label: `Water heater (${interior.waterHeater}) x ${waterHeaterCount}`, amount: whCost, category: "Plumbing" });
+  items.push({ label: `Water heater (${interior.waterHeater}) x ${waterHeaterCount}`, amount: whCost, category: "Plumbing", sourceSpec: "interior.waterHeater" });
 
   const plumbingBase = isUSA ? 4000 : 800000;
   const plumbingPerUnit = isUSA ? 3000 : 500000;
@@ -454,7 +455,7 @@ export function calculateDetailedCosts(
   const electricalPerUnit = isUSA ? 2500 : 400000;
   const smartHomeCost = (costs.smartHome[interior.smartHome] ?? 0) * totalUnits;
   const electricalCost = Math.round((electricalBase + electricalPerUnit * totalUnits + smartHomeCost) * costIndex);
-  items.push({ label: `Electrical + smart home (${interior.smartHome})`, amount: electricalCost, category: "Electrical" });
+  items.push({ label: `Electrical + smart home (${interior.smartHome})`, amount: electricalCost, category: "Electrical", sourceSpec: "interior.smartHome" });
 
   // Insulation / drywall
   const insulationCost = Math.round(buildingSize * (isUSA ? 4 : 8000) * costIndex);
@@ -467,7 +468,7 @@ export function calculateDetailedCosts(
 
   // Garage
   const garageCost = Math.round((costs.garage[site.garage] ?? 0) * costIndex);
-  if (garageCost > 0) { items.push({ label: `Garage (${site.garage})`, amount: garageCost, category: "Garage" }); specialTotal += garageCost; }
+  if (garageCost > 0) { items.push({ label: `Garage (${site.garage})`, amount: garageCost, category: "Garage", sourceSpec: "site.garage" }); specialTotal += garageCost; }
 
   // ADU
   if (propertyType === "SFH" && structure.adu && structure.adu !== "none") {
@@ -499,7 +500,7 @@ export function calculateDetailedCosts(
 
   // Security
   const securityCost = Math.round((costs.security[site.security] ?? 0) * costIndex);
-  if (securityCost > 0) { items.push({ label: `Security (${site.security})`, amount: securityCost, category: "Security" }); specialTotal += securityCost; }
+  if (securityCost > 0) { items.push({ label: `Security (${site.security})`, amount: securityCost, category: "Security", sourceSpec: "site.security" }); specialTotal += securityCost; }
 
   // Outdoor living (SFH)
   if (site.outdoorLiving && site.outdoorLiving.length > 0) {

@@ -1070,60 +1070,88 @@ export function OverviewClient() {
             </div>
           )}
 
-          {/* Project Specs Summary */}
-          {project.specs && (
+          {/* Build Specs Summary */}
+          {project.specs?.structure && (
             <div className="bg-surface border border-border/40 rounded-lg p-3">
-              <p className="text-[9px] font-semibold text-muted uppercase tracking-wider mb-2">Building Specs</p>
-              <div className="space-y-1">
-                {project.specs.structure?.foundation && (
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted">Foundation</span>
-                    <span className="text-earth capitalize">{project.specs.structure.foundation.replace(/-/g, " ")}</span>
-                  </div>
-                )}
-                {project.specs.structure?.roof && (
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted">Roof</span>
-                    <span className="text-earth capitalize">{project.specs.structure.roof.replace(/-/g, " ")}</span>
-                  </div>
-                )}
-                {project.specs.structure?.exterior && (
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted">Exterior</span>
-                    <span className="text-earth capitalize">{project.specs.structure.exterior.replace(/-/g, " ")}</span>
-                  </div>
-                )}
-                {project.specs.interior?.flooring && (
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted">Flooring</span>
-                    <span className="text-earth capitalize">{project.specs.interior.flooring.replace(/-/g, " ")}</span>
-                  </div>
-                )}
-                {project.specs.interior?.hvac && (
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted">HVAC</span>
-                    <span className="text-earth capitalize">{project.specs.interior.hvac.replace(/-/g, " ")}</span>
-                  </div>
-                )}
-                {project.specs.interior?.kitchenFinish && (
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted">Kitchen</span>
-                    <span className="text-earth capitalize">{project.specs.interior.kitchenFinish} finish</span>
-                  </div>
-                )}
-                {project.specs.site?.lotShape && (
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted">Lot</span>
-                    <span className="text-earth capitalize">{project.specs.site.lotSize?.replace(/-/g, " ")}, {project.specs.site.lotShape.replace(/-/g, " ")}</span>
-                  </div>
-                )}
-                {project.specs.unitConfig?.unitMix && (
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-muted">Units</span>
-                    <span className="text-earth capitalize">{project.specs.unitConfig.unitMix.replace(/-/g, " ").replace(/x/g, "x ")}</span>
-                  </div>
-                )}
+              <p className="text-[9px] font-semibold text-muted uppercase tracking-wider mb-3">Build Specs</p>
+              <div className="space-y-2.5">
+                {/* Structure */}
+                {(() => {
+                  const s = project.specs!.structure!;
+                  const parts = [s.layout, s.foundation, s.roof, s.exterior, s.ceilingHeight ? `${s.ceilingHeight} ceilings` : "", s.windows]
+                    .filter((v): v is string => !!v && v !== "" && v !== "none")
+                    .map((v) => v.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()));
+                  return parts.length > 0 ? (
+                    <div>
+                      <p className="text-[9px] font-semibold text-clay mb-0.5">Structure</p>
+                      <p className="text-[10px] text-earth leading-snug">{parts.join(" · ")}</p>
+                    </div>
+                  ) : null;
+                })()}
+
+                {/* Interior */}
+                {(() => {
+                  const i = project.specs!.interior;
+                  if (!i) return null;
+                  const parts = [
+                    i.kitchenStyle ? `${i.kitchenStyle} kitchen` : "",
+                    i.kitchenFinish ? `${i.kitchenFinish} finish` : "",
+                    i.primaryBath, i.flooring, i.hvac,
+                    i.waterHeater, i.smartHome && i.smartHome !== "none" ? `${i.smartHome} smart home` : "",
+                  ]
+                    .filter((v): v is string => !!v && v !== "" && v !== "none")
+                    .map((v) => v.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()));
+                  return parts.length > 0 ? (
+                    <div>
+                      <p className="text-[9px] font-semibold text-clay mb-0.5">Interior</p>
+                      <p className="text-[10px] text-earth leading-snug">{parts.join(" · ")}</p>
+                    </div>
+                  ) : null;
+                })()}
+
+                {/* Site */}
+                {(() => {
+                  const st = project.specs!.site;
+                  if (!st) return null;
+                  const parts = [
+                    st.lotSize, st.lotShape ? `${st.lotShape} lot` : "",
+                    st.garage, st.driveway, st.landscaping,
+                    st.fencing, st.security,
+                  ]
+                    .filter((v): v is string => !!v && v !== "" && v !== "none")
+                    .map((v) => v.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()));
+                  return parts.length > 0 ? (
+                    <div>
+                      <p className="text-[9px] font-semibold text-clay mb-0.5">Site</p>
+                      <p className="text-[10px] text-earth leading-snug">{parts.join(" · ")}</p>
+                    </div>
+                  ) : null;
+                })()}
+
+                {/* Units (multi-unit only) */}
+                {(() => {
+                  const u = project.specs!.unitConfig;
+                  if (!u || !u.unitCount) return null;
+                  const parts = [
+                    u.unitCount ? `${u.unitCount} units` : "",
+                    u.unitMix, u.metering ? `${u.metering} meters` : "",
+                    u.management,
+                  ]
+                    .filter((v): v is string => !!v && v !== "" && v !== "none")
+                    .map((v) => v.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()));
+                  return parts.length > 0 ? (
+                    <div>
+                      <p className="text-[9px] font-semibold text-clay mb-0.5">Units</p>
+                      <p className="text-[10px] text-earth leading-snug">{parts.join(" · ")}</p>
+                    </div>
+                  ) : null;
+                })()}
               </div>
+
+              {/* Defaults note */}
+              {project.specs?.structure && (project as any).defaultsApplied?.length > 0 && (
+                <p className="text-[9px] text-muted mt-2 italic">Some specifications used default assumptions</p>
+              )}
             </div>
           )}
 

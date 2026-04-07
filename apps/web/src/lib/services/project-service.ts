@@ -75,6 +75,8 @@ export interface BudgetItemData {
   estimated: number;
   actual: number;
   status: "on-track" | "over" | "under" | "not-started";
+  sourceSpec?: string; // traces back to the wizard spec (e.g. "structure.foundation")
+  formula?: string;    // human-readable cost formula when available
 }
 
 export interface ContactData {
@@ -513,22 +515,25 @@ export async function generateBudgetFromSpecs(
   market: Market,
   features?: string[],
   costBreakdown?: WizardCostBreakdown,
-  detailedLineItems?: { label: string; amount: number; category: string }[],
+  detailedLineItems?: { label: string; amount: number; category: string; sourceSpec?: string; formula?: string }[],
 ): Promise<void> {
-  // If detailed line items provided, use them directly
+  // If detailed line items provided, use them directly with full traceability
   if (detailedLineItems && detailedLineItems.length > 0) {
     const budgetRef = ref(db, `users/${userId}/projects/${projectId}/budgetItems`);
     const items: Record<string, Omit<BudgetItemData, "id">> = {};
     for (const item of detailedLineItems) {
       if (item.amount > 0) {
         const key = push(budgetRef).key!;
-        items[key] = {
+        const entry: Omit<BudgetItemData, "id"> = {
           projectId,
-          category: item.category,
+          category: item.label || item.category,
           estimated: Math.round(item.amount),
           actual: 0,
           status: "not-started",
         };
+        if (item.sourceSpec) entry.sourceSpec = item.sourceSpec;
+        if (item.formula) entry.formula = item.formula;
+        items[key] = entry;
       }
     }
     await update(budgetRef, items);

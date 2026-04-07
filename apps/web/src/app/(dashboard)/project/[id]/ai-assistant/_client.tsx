@@ -308,18 +308,46 @@ export function AIAssistantClient() {
       photoCount: photos.length,
       punchListSummary: punchSummary,
       punchListOpenCount: openPunchItems,
-      specs: project.specs ? {
-        foundation: project.specs.structure?.foundation,
-        roof: project.specs.structure?.roof,
-        exterior: project.specs.structure?.exterior,
-        hvac: project.specs.interior?.hvac,
-        flooring: project.specs.interior?.flooring,
-        kitchenFinish: project.specs.interior?.kitchenFinish,
-        unitMix: project.specs.unitConfig?.unitMix,
-        unitCount: project.specs.unitConfig?.unitCount,
-        parking: project.specs.site?.parking,
-        lotShape: project.specs.site?.lotShape,
-      } : undefined,
+      buildSpecsSummary: project.specs?.structure ? (() => {
+        const tc = (v: string) => v.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+        const join = (entries: Record<string, string | undefined>) =>
+          Object.values(entries).filter((v): v is string => !!v && v !== "" && v !== "none").map(tc).join(", ");
+
+        const s = project.specs!.structure!;
+        const i = project.specs!.interior ?? {};
+        const st = project.specs!.site ?? {};
+        const u = project.specs!.unitConfig ?? {};
+
+        const structureLine = join({
+          layout: s.layout, foundation: s.foundation, roof: s.roof,
+          exterior: s.exterior, ceilingHeight: s.ceilingHeight ? `${s.ceilingHeight} ceilings` : undefined,
+          windows: s.windows,
+        });
+        const interiorLine = join({
+          kitchen: i.kitchenStyle ? `${i.kitchenStyle} kitchen` : undefined,
+          finish: i.kitchenFinish ? `${i.kitchenFinish} finish` : undefined,
+          bath: i.primaryBath, flooring: i.flooring, hvac: i.hvac,
+          waterHeater: i.waterHeater,
+          smart: i.smartHome && i.smartHome !== "none" ? `${i.smartHome} smart home` : undefined,
+        });
+        const siteLine = join({
+          lotSize: st.lotSize, lotShape: st.lotShape ? `${st.lotShape} lot` : undefined,
+          garage: st.garage, driveway: st.driveway, landscaping: st.landscaping,
+          fencing: st.fencing, security: st.security,
+        });
+        const unitsLine = u.unitCount ? join({
+          count: `${u.unitCount} units`, mix: u.unitMix,
+          metering: u.metering ? `${u.metering} meters` : undefined,
+          management: u.management,
+        }) : "";
+
+        return [
+          structureLine && `Structure: ${structureLine}`,
+          interiorLine && `Interior: ${interiorLine}`,
+          siteLine && `Site: ${siteLine}`,
+          unitsLine && `Units: ${unitsLine}`,
+        ].filter(Boolean).join("\n- ");
+      })() : undefined,
     };
   }, [project, market, budgetItems, contacts, tasks, dailyLogs, photos, punchListItems]);
 
